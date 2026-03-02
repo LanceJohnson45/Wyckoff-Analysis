@@ -18,6 +18,7 @@
 | 🎓 **AI 分析（大师模式）** | "Alpha"虚拟投委会，七位历史级交易大师人格（利弗莫尔/威科夫/缠论/彼得林奇等）多维分析 |
 | 🕶️ **私人决断** | 结合个人持仓与外部候选，生成 Buy/Hold/Sell 私密指令，并通过 Telegram 单独发送；自动跳过停牌股、验证数据日期对齐，AI 乱出止损价时自动降级为持有 |
 | 🛡️ **RAG 防雷** | 基于新闻检索自动过滤有负面舆情的股票（立案/调查/减持/业绩预亏等） |
+| 🧪 **日线回测** | 轻量回放 Funnel 命中后的 N 日收益，输出胜率/分位数（无需分钟级数据） |
 | 📁 **行情导出** | Web 或命令行拉取指定股票日线，导出原始/增强两份 CSV（OHLCV 开高低收量等） |
 | 🧰 **自定义导出** | 支持 A股/指数/ETF/宏观 CPI 等多数据源，灵活配置参数 |
 | 📈 **持仓管理** | 实时同步持仓至云端，记录成本价、买入日期、策略标签 |
@@ -66,14 +67,15 @@ python -u -m integrations.fetch_a_share_csv --symbols 000973 600798 601390
 
 ## 📅 每日选股（Wyckoff Funnel）
 
-从全市场（主板 + 创业板）多轮过滤，最终输出**最值得次日操作的 6 只股票**，并生成 AI 研报，推送到飞书。
+从全市场（主板 + 创业板）多轮过滤，最终输出**最值得次日操作的 6 只股票**，并生成 AI 研报，推送到飞书。  
+水温判断同时参考指数趋势 + 市场广度（站上 MA20 占比），弱市会自动收紧阈值。
 
 ### 4 层漏斗筛选逻辑
 
 | 层级 | 名称 | 筛选逻辑 |
 |------|------|----------|
 | Layer 1 | **剥离垃圾** | 剔除 ST/北交所/科创板，保留市值 ≥ 20 亿、日均成交额 ≥ 5000 万的股票 |
-| Layer 2 | **强弱甄别** | MA50 > MA200（多头排列），或大盘连跌时守住 MA20；相对强度 RS 筛选 |
+| Layer 2 | **强弱甄别** | MA50 > MA200（多头排列），或大盘连跌时守住 MA20；相对强度 RS + RPS50/RPS120 截面筛选 |
 | Layer 3 | **板块共振** | 行业分布 Top-N，筛选与热门板块共振的标的 |
 | Layer 4 | **威科夫狙击** | Spring（终极震仓）、LPS（缩量回踩）、Effort vs Result（放量不跌） |
 
@@ -115,6 +117,25 @@ python -u -m integrations.fetch_a_share_csv --symbols 000973 600798 601390
 - 飞书收到漏斗结果 + 研报
 
 常规跑完约 90～130 分钟。报错时看日志里缺哪个配置。
+
+### 日线回测（轻量）
+
+不依赖分钟级和高价数据源，直接回放 Funnel 命中后的未来 N 日表现：
+
+```bash
+python -m scripts.backtest_runner \
+  --start 2025-01-01 \
+  --end 2025-12-31 \
+  --hold-days 5 \
+  --top-n 6 \
+  --board all \
+  --sample-size 300 \
+  --output-dir analysis/backtest
+```
+
+输出文件：
+- `summary_*.md`：胜率、平均收益、中位数、分位数
+- `trades_*.csv`：逐笔信号收益明细
 
 ### 常见报错
 
@@ -200,7 +221,8 @@ Step4 完全由 GitHub Actions Secrets 驱动：读取 `SUPABASE_USER_ID` 定位
 │   ├── step3_batch_report.py  # AI 研报
 │   ├── step4_rebalancer.py    # 私人决断
 │   ├── daily_job.py      # 日终流水线
-│   └── benchmark_funnel_fetch.py  # 取数性能基准测试
+│   ├── benchmark_funnel_fetch.py  # 取数性能基准测试
+│   └── backtest_runner.py  # 日线轻量回测
 ├── requirements.txt
 └── .env.example
 ```

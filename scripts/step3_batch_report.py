@@ -791,6 +791,7 @@ def run(
 
     benchmark_lines = []
     if benchmark_context:
+        breadth_ctx = benchmark_context.get("breadth", {}) or {}
         benchmark_lines.append("[宏观水温 / Benchmark Context]")
         benchmark_lines.append(
             f"regime={benchmark_context.get('regime')}, "
@@ -804,6 +805,14 @@ def run(
             f"recent3_cum_pct={benchmark_context.get('recent3_cum_pct')}, "
             f"tuned={benchmark_context.get('tuned')}"
         )
+        if breadth_ctx:
+            benchmark_lines.append(
+                f"breadth_pct={breadth_ctx.get('ratio_pct')}, "
+                f"breadth_prev_pct={breadth_ctx.get('prev_ratio_pct')}, "
+                f"breadth_delta_pct={breadth_ctx.get('delta_pct')}, "
+                f"breadth_sample={breadth_ctx.get('sample_size')}, "
+                f"breadth_ma_window={breadth_ctx.get('ma_window')}"
+            )
 
     user_message = (
         ("{}\n\n".format("\n".join(benchmark_lines)) if benchmark_lines else "")

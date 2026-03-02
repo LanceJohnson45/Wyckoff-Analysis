@@ -84,6 +84,10 @@ FUNNEL_ENABLE_SPOT_PATCH = os.getenv("FUNNEL_ENABLE_SPOT_PATCH", "1").strip().lo
 }
 FUNNEL_SPOT_PATCH_RETRIES = int(os.getenv("FUNNEL_SPOT_PATCH_RETRIES", "2"))
 FUNNEL_SPOT_PATCH_SLEEP = float(os.getenv("FUNNEL_SPOT_PATCH_SLEEP", "0.2"))
+BREADTH_MA_WINDOW = int(os.getenv("FUNNEL_BREADTH_MA_WINDOW", "20"))
+BREADTH_RISK_OFF_THRESHOLD = float(os.getenv("FUNNEL_BREADTH_RISK_OFF_PCT", "20.0"))
+BREADTH_RISK_ON_THRESHOLD = float(os.getenv("FUNNEL_BREADTH_RISK_ON_PCT", "60.0"))
+BREADTH_RISK_ON_MIN_DELTA = float(os.getenv("FUNNEL_BREADTH_RISK_ON_DELTA", "0.0"))
 
 
 def _normalize_hist(df: pd.DataFrame) -> pd.DataFrame:
@@ -271,6 +275,7 @@ def _terminate_executor_processes(ex: ProcessPoolExecutor, batch_no: int) -> Non
 def _analyze_benchmark_and_tune_cfg(
     bench_df: pd.DataFrame | None,
     cfg: FunnelConfig,
+    breadth: dict | None = None,
 ) -> dict:
     """
     Step 0：大盘总闸
@@ -289,34 +294,46 @@ def _analyze_benchmark_and_tune_cfg(
             "min_avg_amount_wan": cfg.min_avg_amount_wan,
             "rs_min_long": cfg.rs_min_long,
             "rs_min_short": cfg.rs_min_short,
+            "rps_fast_min": cfg.rps_fast_min,
+            "rps_slow_min": cfg.rps_slow_min,
+        },
+        "breadth": {
+            "ratio_pct": None,
+            "prev_ratio_pct": None,
+            "delta_pct": None,
+            "sample_size": 0,
+            "ma_window": BREADTH_MA_WINDOW,
         },
     }
-    if bench_df is None or bench_df.empty:
-        return context
-
-    b = bench_df.sort_values("date").copy()
-    b["close"] = pd.to_numeric(b["close"], errors="coerce")
-    b["pct_chg"] = pd.to_numeric(b["pct_chg"], errors="coerce")
-    if len(b) < 60:
-        return context
-
-    close = float(b["close"].iloc[-1])
-    ma50 = float(b["close"].rolling(50).mean().iloc[-1])
-    ma200 = float(b["close"].rolling(200).mean().iloc[-1])
-    ma50_prev = b["close"].rolling(50).mean().shift(5).iloc[-1]
-    ma50_slope_5d = None if pd.isna(ma50_prev) else float(ma50 - ma50_prev)
-    recent3 = b["pct_chg"].dropna().tail(3)
-    recent3_list = [float(x) for x in recent3.tolist()]
+    close = None
+    ma50 = None
+    ma200 = None
+    ma50_slope_5d = None
+    recent3_list: list[float] = []
     recent3_cum = None
-    if not recent3.empty:
-        recent3_cum = float(((recent3 / 100.0 + 1.0).prod() - 1.0) * 100.0)
+
+    if bench_df is not None and not bench_df.empty:
+        b = bench_df.sort_values("date").copy()
+        b["close"] = pd.to_numeric(b["close"], errors="coerce")
+        b["pct_chg"] = pd.to_numeric(b["pct_chg"], errors="coerce")
+        if len(b) >= 60:
+            close = float(b["close"].iloc[-1])
+            ma50 = float(b["close"].rolling(50).mean().iloc[-1])
+            ma200 = float(b["close"].rolling(200).mean().iloc[-1])
+            ma50_prev = b["close"].rolling(50).mean().shift(5).iloc[-1]
+            ma50_slope_5d = None if pd.isna(ma50_prev) else float(ma50 - ma50_prev)
+            recent3 = b["pct_chg"].dropna().tail(3)
+            recent3_list = [float(x) for x in recent3.tolist()]
+            if not recent3.empty:
+                recent3_cum = float(((recent3 / 100.0 + 1.0).prod() - 1.0) * 100.0)
 
     regime = "NEUTRAL"
     if (
-        pd.notna(ma200)
-        and pd.notna(ma50)
+        ma200 is not None
+        and ma50 is not None
         and ma50_slope_5d is not None
         and recent3_cum is not None
+        and close is not None
     ):
         risk_off = (
             (close < ma200)
@@ -332,11 +349,29 @@ def _analyze_benchmark_and_tune_cfg(
         elif risk_on:
             regime = "RISK_ON"
 
+    breadth_ratio = None
+    breadth_prev = None
+    breadth_delta = None
+    breadth_sample = 0
+    if breadth:
+        breadth_ratio = breadth.get("ratio_pct")
+        breadth_prev = breadth.get("prev_ratio_pct")
+        breadth_delta = breadth.get("delta_pct")
+        breadth_sample = int(breadth.get("sample_size") or 0)
+    if breadth_ratio is not None:
+        if float(breadth_ratio) <= BREADTH_RISK_OFF_THRESHOLD:
+            regime = "RISK_OFF"
+        elif float(breadth_ratio) >= BREADTH_RISK_ON_THRESHOLD:
+            if breadth_delta is None or float(breadth_delta) >= BREADTH_RISK_ON_MIN_DELTA:
+                regime = "RISK_ON"
+
     # 动态调参：风险越冷，过滤越严
     if regime == "RISK_OFF":
         cfg.min_avg_amount_wan = max(cfg.min_avg_amount_wan, 10000.0)
         cfg.rs_min_long = max(cfg.rs_min_long, 2.0)
         cfg.rs_min_short = max(cfg.rs_min_short, 0.5)
+        cfg.rps_fast_min = max(cfg.rps_fast_min, 90.0)
+        cfg.rps_slow_min = max(cfg.rps_slow_min, 85.0)
         if recent3_cum is not None and recent3_cum <= -4.0:
             cfg.min_avg_amount_wan = max(cfg.min_avg_amount_wan, 15000.0)
             cfg.rs_min_long = max(cfg.rs_min_long, 4.0)
@@ -344,6 +379,8 @@ def _analyze_benchmark_and_tune_cfg(
     elif regime == "RISK_ON":
         cfg.rs_min_long = max(cfg.rs_min_long, 0.0)
         cfg.rs_min_short = max(cfg.rs_min_short, 0.0)
+        cfg.rps_fast_min = min(cfg.rps_fast_min, 80.0)
+        cfg.rps_slow_min = min(cfg.rps_slow_min, 75.0)
 
     context.update(
         {
@@ -358,10 +395,69 @@ def _analyze_benchmark_and_tune_cfg(
                 "min_avg_amount_wan": cfg.min_avg_amount_wan,
                 "rs_min_long": cfg.rs_min_long,
                 "rs_min_short": cfg.rs_min_short,
+                "rps_fast_min": cfg.rps_fast_min,
+                "rps_slow_min": cfg.rps_slow_min,
+            },
+            "breadth": {
+                "ratio_pct": breadth_ratio,
+                "prev_ratio_pct": breadth_prev,
+                "delta_pct": breadth_delta,
+                "sample_size": breadth_sample,
+                "ma_window": BREADTH_MA_WINDOW,
             },
         }
     )
     return context
+
+
+def _calc_market_breadth(
+    df_map: dict[str, pd.DataFrame],
+    ma_window: int = BREADTH_MA_WINDOW,
+) -> dict:
+    """
+    全市场广度：
+    breadth = 收盘价站上 MA20 的股票占比（%）。
+    额外给出前一日广度与日变化，用于识别扩散/收敛。
+    """
+    valid_now = 0
+    valid_prev = 0
+    above_now = 0
+    above_prev = 0
+    w = max(int(ma_window), 2)
+    for df in df_map.values():
+        if df is None or df.empty:
+            continue
+        s = df.sort_values("date")
+        close = pd.to_numeric(s.get("close"), errors="coerce")
+        if close.dropna().shape[0] < (w + 1):
+            continue
+        ma = close.rolling(w).mean()
+
+        c_now = close.iloc[-1]
+        ma_now = ma.iloc[-1]
+        if pd.notna(c_now) and pd.notna(ma_now):
+            valid_now += 1
+            if float(c_now) >= float(ma_now):
+                above_now += 1
+
+        c_prev = close.iloc[-2]
+        ma_prev = ma.iloc[-2]
+        if pd.notna(c_prev) and pd.notna(ma_prev):
+            valid_prev += 1
+            if float(c_prev) >= float(ma_prev):
+                above_prev += 1
+
+    ratio_now = (above_now / valid_now * 100.0) if valid_now > 0 else None
+    ratio_prev = (above_prev / valid_prev * 100.0) if valid_prev > 0 else None
+    delta = None
+    if ratio_now is not None and ratio_prev is not None:
+        delta = ratio_now - ratio_prev
+    return {
+        "ratio_pct": ratio_now,
+        "prev_ratio_pct": ratio_prev,
+        "delta_pct": delta,
+        "sample_size": valid_now,
+    }
 
 
 def run_funnel_job() -> tuple[dict[str, list[tuple[str, float]]], dict]:
@@ -421,17 +517,6 @@ def run_funnel_job() -> tuple[dict[str, list[tuple[str, float]]], dict]:
         print(f"[funnel] 大盘基准加载成功")
     except Exception as e:
         print(f"[funnel] 大盘基准加载失败: {e}")
-
-    # Step 0: 大盘总闸 + 动态阈值
-    benchmark_context = _analyze_benchmark_and_tune_cfg(bench_df, cfg)
-    print(
-        "[funnel] 大盘总闸: "
-        f"regime={benchmark_context['regime']}, "
-        f"close={benchmark_context['close']}, ma50={benchmark_context['ma50']}, ma200={benchmark_context['ma200']}, "
-        f"ma50_slope_5d={benchmark_context['ma50_slope_5d']}, recent3={benchmark_context['recent3_pct']}, "
-        f"recent3_cum={benchmark_context['recent3_cum_pct']}, "
-        f"tuned={benchmark_context['tuned']}"
-    )
 
     # 并发拉取日线（只负责取数，不负责计算）
     all_df_map: dict[str, pd.DataFrame] = {}
@@ -553,6 +638,23 @@ def run_funnel_job() -> tuple[dict[str, list[tuple[str, float]]], dict]:
             f"spot_patched={fetch_spot_patched}, target_trade_date={window.end_trade_date}"
         )
 
+    # Step 0: 大盘总闸 + 全市场广度 + 动态阈值
+    breadth_context = _calc_market_breadth(all_df_map, BREADTH_MA_WINDOW)
+    benchmark_context = _analyze_benchmark_and_tune_cfg(
+        bench_df,
+        cfg,
+        breadth=breadth_context,
+    )
+    print(
+        "[funnel] 大盘总闸: "
+        f"regime={benchmark_context['regime']}, "
+        f"close={benchmark_context['close']}, ma50={benchmark_context['ma50']}, ma200={benchmark_context['ma200']}, "
+        f"ma50_slope_5d={benchmark_context['ma50_slope_5d']}, recent3={benchmark_context['recent3_pct']}, "
+        f"recent3_cum={benchmark_context['recent3_cum_pct']}, "
+        f"breadth={benchmark_context.get('breadth')}, "
+        f"tuned={benchmark_context['tuned']}"
+    )
+
     # 统一漏斗计算：L1 -> L2 -> L3 -> L4
     print(f"[funnel] 开始执行全量漏斗筛选...")
 
@@ -638,10 +740,18 @@ def run(webhook_url: str) -> tuple[bool, list[dict], dict]:
 
     bench_line = "未知"
     if benchmark_context:
+        breadth = benchmark_context.get("breadth", {}) or {}
+        breadth_text = (
+            f", breadth={breadth.get('ratio_pct')}% "
+            f"(prev={breadth.get('prev_ratio_pct')}%, Δ={breadth.get('delta_pct')}%, n={breadth.get('sample_size')})"
+            if breadth
+            else ""
+        )
         bench_line = (
             f"{benchmark_context.get('regime')} | close={benchmark_context.get('close')} "
             f"ma50={benchmark_context.get('ma50')} ma200={benchmark_context.get('ma200')} "
             f"3d={benchmark_context.get('recent3_pct')} cum3={benchmark_context.get('recent3_cum_pct')}"
+            f"{breadth_text}"
         )
 
     lines = [

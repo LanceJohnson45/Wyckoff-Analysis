@@ -93,6 +93,11 @@ class FunnelConfig:
     rs_min_long: float = 0.0
     rs_min_short: float = 0.0
     enable_rs_filter: bool = True
+    enable_rps_filter: bool = True
+    rps_window_fast: int = 50
+    rps_window_slow: int = 120
+    rps_fast_min: float = 85.0
+    rps_slow_min: float = 80.0
     require_bench_latest_alignment: bool = True
 
     # Layer 3
@@ -197,6 +202,17 @@ def layer2_strength(
             return None
         return float(((s / 100.0 + 1.0).prod() - 1.0) * 100.0)
 
+    def _close_return_pct(close_series: pd.Series, lookback: int) -> float | None:
+        s = pd.to_numeric(close_series, errors="coerce").dropna()
+        lb = max(int(lookback), 1)
+        if len(s) <= lb:
+            return None
+        start = float(s.iloc[-lb - 1])
+        end = float(s.iloc[-1])
+        if start == 0:
+            return None
+        return (end - start) / start * 100.0
+
     def _calc_rs(
         stock_df: pd.DataFrame, bench_sorted_df: pd.DataFrame
     ) -> tuple[float | None, float | None]:
@@ -227,6 +243,41 @@ def layer2_strength(
             recent_bench = bench_sorted.tail(cfg.bench_drop_days)
             bench_cum = (recent_bench["pct_chg"].dropna() / 100.0 + 1).prod() - 1
             bench_dropping = bench_cum * 100 <= cfg.bench_drop_threshold
+
+    # 截面强弱：RPS50 / RPS120（欧奈尔思路）
+    rps_fast_map: dict[str, float] = {}
+    rps_slow_map: dict[str, float] = {}
+    rps_filter_active = False
+    if cfg.enable_rps_filter and symbols:
+        rows: list[tuple[str, float, float]] = []
+        for sym in symbols:
+            df = df_map.get(sym)
+            if df is None or df.empty:
+                continue
+            df_sorted = _sorted_if_needed(df)
+            close = pd.to_numeric(df_sorted.get("close"), errors="coerce")
+            ret_fast = _close_return_pct(close, cfg.rps_window_fast)
+            ret_slow = _close_return_pct(close, cfg.rps_window_slow)
+            if ret_fast is None or ret_slow is None:
+                continue
+            rows.append((sym, ret_fast, ret_slow))
+        if rows:
+            rps_df = pd.DataFrame(rows, columns=["sym", "ret_fast", "ret_slow"])
+            rps_df["rps_fast"] = (
+                rps_df["ret_fast"].rank(pct=True, ascending=True, method="average")
+                * 100.0
+            )
+            rps_df["rps_slow"] = (
+                rps_df["ret_slow"].rank(pct=True, ascending=True, method="average")
+                * 100.0
+            )
+            rps_fast_map = (
+                rps_df.set_index("sym")["rps_fast"].astype(float).to_dict()
+            )
+            rps_slow_map = (
+                rps_df.set_index("sym")["rps_slow"].astype(float).to_dict()
+            )
+            rps_filter_active = True
 
     passed: list[str] = []
     for sym in symbols:
@@ -268,7 +319,18 @@ def layer2_strength(
             else:
                 rs_ok = (rs_long >= cfg.rs_min_long) and (rs_short >= cfg.rs_min_short)
 
-        if (bullish_alignment or holding_ma20) and rs_ok:
+        rps_ok = True
+        if cfg.enable_rps_filter and rps_filter_active:
+            rps_fast = rps_fast_map.get(sym)
+            rps_slow = rps_slow_map.get(sym)
+            rps_ok = (
+                rps_fast is not None
+                and rps_slow is not None
+                and rps_fast >= cfg.rps_fast_min
+                and rps_slow >= cfg.rps_slow_min
+            )
+
+        if (bullish_alignment or holding_ma20) and rs_ok and rps_ok:
             passed.append(sym)
     return passed
 
