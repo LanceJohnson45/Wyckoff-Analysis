@@ -14,6 +14,7 @@ import argparse
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import fields as dataclass_fields
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -77,6 +78,87 @@ def _build_universe(board: str, sample_size: int) -> tuple[list[str], dict[str, 
     if sample_size > 0:
         symbols = symbols[:sample_size]
     return symbols, name_map
+
+
+def _load_snapshot_hist_map(
+    snapshot_dir: Path,
+    symbols_filter: set[str] | None = None,
+) -> tuple[dict[str, pd.DataFrame], int]:
+    full_path = snapshot_dir / "hist_full.csv.gz"
+    if not full_path.exists():
+        raise FileNotFoundError(f"snapshot missing file: {full_path}")
+    df = pd.read_csv(full_path, compression="gzip", low_memory=False)
+    if df.empty:
+        return {}, 0
+    if "symbol" not in df.columns:
+        raise RuntimeError(f"snapshot file missing symbol column: {full_path}")
+
+    if symbols_filter:
+        df = df[df["symbol"].astype(str).isin(symbols_filter)]
+    if df.empty:
+        return {}, 0
+
+    keep_cols = [c for c in ["symbol", "date", "open", "high", "low", "close", "volume", "amount", "pct_chg"] if c in df.columns]
+    df = df[keep_cols].copy()
+    df["symbol"] = df["symbol"].astype(str)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
+    df = df.dropna(subset=["symbol", "date"]).reset_index(drop=True)
+    for c in ["open", "high", "low", "close", "volume", "amount", "pct_chg"]:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    out: dict[str, pd.DataFrame] = {}
+    for sym, g in df.groupby("symbol", sort=False):
+        one = g.drop(columns=["symbol"]).sort_values("date").reset_index(drop=True)
+        if not one.empty:
+            out[sym] = one
+    return out, int(len(df))
+
+
+def _load_snapshot_benchmark(
+    snapshot_dir: Path,
+) -> pd.DataFrame | None:
+    bench_path = snapshot_dir / "benchmark_main.csv"
+    if not bench_path.exists():
+        return None
+    df = pd.read_csv(bench_path, low_memory=False)
+    if df.empty or "date" not in df.columns:
+        return None
+    out = df.copy()
+    out["date"] = pd.to_datetime(out["date"], errors="coerce").dt.date
+    out = out.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+    for c in ["open", "high", "low", "close", "volume", "pct_chg"]:
+        if c in out.columns:
+            out[c] = pd.to_numeric(out[c], errors="coerce")
+    return out if not out.empty else None
+
+
+def _apply_funnel_cfg_overrides(cfg: FunnelConfig) -> None:
+    """
+    与生产漏斗同口径：读取 FUNNEL_CFG_* 环境变量覆盖 FunnelConfig。
+    """
+    for f in dataclass_fields(FunnelConfig):
+        key = f"FUNNEL_CFG_{f.name.upper()}"
+        raw = os.getenv(key)
+        if raw is None:
+            continue
+        val = str(raw).strip()
+        if not val:
+            continue
+        try:
+            current = getattr(cfg, f.name, None)
+            if isinstance(current, bool):
+                parsed = val.lower() in {"1", "true", "yes", "on"}
+            elif isinstance(current, int) and not isinstance(current, bool):
+                parsed = int(float(val))
+            elif isinstance(current, float):
+                parsed = float(val)
+            else:
+                parsed = val
+            setattr(cfg, f.name, parsed)
+        except Exception:
+            # 回测不中断，保留原值
+            pass
 
 
 def _fetch_hist_norm(
@@ -149,6 +231,7 @@ def run_backtest(
     sample_size: int,
     trading_days: int,
     max_workers: int,
+    snapshot_dir: Path | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     if end_dt <= start_dt:
         raise ValueError("end 必须晚于 start")
@@ -163,44 +246,63 @@ def run_backtest(
     prefetch_start = start_dt - timedelta(days=trading_days * 3)
     prefetch_end = end_dt + timedelta(days=hold_days * 3 + 30)
 
-    try:
-        bench_raw = fetch_index_hist("000001", prefetch_start, prefetch_end)
-    except Exception as exc:
-        raise RuntimeError(
-            "回测需要大盘交易日历与基准收益，请先配置可用的 TUSHARE_TOKEN。"
-        ) from exc
-    bench_df = normalize_hist_from_fetch(bench_raw).sort_values("date").copy()
-    bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce").dt.date
-    bench_df = bench_df.dropna(subset=["date"]).reset_index(drop=True)
+    all_df_map: dict[str, pd.DataFrame] = {}
+    failures: list[str] = []
+    bench_df: pd.DataFrame | None = None
+    snapshot_rows_total = 0
+    snapshot_used = False
+
+    if snapshot_dir is not None:
+        snapshot_dir = Path(snapshot_dir).resolve()
+        print(f"[backtest] 使用本地快照: {snapshot_dir}")
+        all_df_map, snapshot_rows_total = _load_snapshot_hist_map(
+            snapshot_dir, symbols_filter=set(symbols)
+        )
+        bench_df = _load_snapshot_benchmark(snapshot_dir)
+        snapshot_used = True
+        if not all_df_map:
+            raise RuntimeError(f"快照无可用历史数据: {snapshot_dir}")
+        print(
+            f"[backtest] 快照载入完成: ok={len(all_df_map)}, rows={snapshot_rows_total}"
+        )
+    else:
+        print(f"[backtest] 开始拉取历史日线: symbols={len(symbols)}, workers={max_workers}")
+        with ThreadPoolExecutor(max_workers=max(int(max_workers), 1)) as ex:
+            futures = {
+                ex.submit(_fetch_hist_norm, sym, prefetch_start, prefetch_end): sym for sym in symbols
+            }
+            done = 0
+            for ft in as_completed(futures):
+                done += 1
+                sym = futures[ft]
+                code, df, err = ft.result()
+                if df is not None and not df.empty:
+                    all_df_map[code] = df
+                else:
+                    failures.append(f"{sym}:{err or 'unknown'}")
+                if done % 200 == 0 or done == len(futures):
+                    print(f"[backtest] 拉取进度 {done}/{len(futures)}")
+        print(f"[backtest] 历史拉取完成: ok={len(all_df_map)}, fail={len(failures)}")
+
+    if bench_df is None or bench_df.empty:
+        try:
+            bench_raw = fetch_index_hist("000001", prefetch_start, prefetch_end)
+        except Exception as exc:
+            raise RuntimeError(
+                "回测需要大盘交易日历与基准收益，请先配置可用的 TUSHARE_TOKEN。"
+            ) from exc
+        bench_df = normalize_hist_from_fetch(bench_raw).sort_values("date").copy()
+        bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce").dt.date
+        bench_df = bench_df.dropna(subset=["date"]).reset_index(drop=True)
+
     trade_dates = [d for d in bench_df["date"].tolist() if start_dt <= d <= end_dt]
     if len(trade_dates) <= hold_days:
         raise RuntimeError("回测区间交易日过少，无法计算 forward return")
 
-    # 全量历史一次拉取，后续只做日期切片
-    all_df_map: dict[str, pd.DataFrame] = {}
-    failures: list[str] = []
-    print(f"[backtest] 开始拉取历史日线: symbols={len(symbols)}, workers={max_workers}")
-    with ThreadPoolExecutor(max_workers=max(int(max_workers), 1)) as ex:
-        futures = {
-            ex.submit(_fetch_hist_norm, sym, prefetch_start, prefetch_end): sym for sym in symbols
-        }
-        done = 0
-        for ft in as_completed(futures):
-            done += 1
-            sym = futures[ft]
-            code, df, err = ft.result()
-            if df is not None and not df.empty:
-                all_df_map[code] = df
-            else:
-                failures.append(f"{sym}:{err or 'unknown'}")
-            if done % 200 == 0 or done == len(futures):
-                print(f"[backtest] 拉取进度 {done}/{len(futures)}")
-    print(f"[backtest] 历史拉取完成: ok={len(all_df_map)}, fail={len(failures)}")
-
     market_cap_map = fetch_market_cap_map()
     sector_map = fetch_sector_map()
-    # 默认关闭 EVR 提高信号质量
-    cfg = FunnelConfig(trading_days=trading_days, enable_evr_trigger=False)
+    cfg = FunnelConfig(trading_days=trading_days)
+    _apply_funnel_cfg_overrides(cfg)
 
     records: list[TradeRecord] = []
     signal_days = 0
@@ -284,6 +386,8 @@ def run_backtest(
         "trading_days": trading_days,
         "universe_ok": len(all_df_map),
         "universe_fail": len(failures),
+        "snapshot_used": snapshot_used,
+        "snapshot_rows_total": snapshot_rows_total,
         "eval_days": eval_days,
         "signal_days": signal_days,
         "trades": len(trades_df),
@@ -358,6 +462,11 @@ def main() -> int:
     parser.add_argument("--trading-days", type=int, default=500, help="单次筛选回看交易日数")
     parser.add_argument("--workers", type=int, default=8, help="历史拉取并发数")
     parser.add_argument(
+        "--snapshot-dir",
+        default="",
+        help="本地快照目录（由 wyckoff_funnel 的 FUNNEL_EXPORT_FULL_FETCH 生成）",
+    )
+    parser.add_argument(
         "--output-dir",
         default="analysis/backtest",
         help="输出目录（会写 summary.md 与 trades.csv）",
@@ -375,6 +484,7 @@ def main() -> int:
         sample_size=args.sample_size,
         trading_days=args.trading_days,
         max_workers=args.workers,
+        snapshot_dir=Path(args.snapshot_dir).resolve() if str(args.snapshot_dir).strip() else None,
     )
 
     out_dir = Path(args.output_dir).resolve()

@@ -120,6 +120,7 @@ class FunnelConfig:
     lps_vol_ref_window: int = 60
 
     # Layer 4 - Effort vs Result
+    # 默认关闭：2025-09~2026-03 快照回测中，开启 EVR 会显著拉低胜率与收益质量。
     enable_evr_trigger: bool = False
     evr_lookback: int = 3
     evr_vol_ratio: float = 1.6

@@ -681,10 +681,13 @@ def _fetch_market_extreme_snapshot() -> dict:
         "down_10_count": 0,
         "up_9_count": 0,
     }
+    timeout_s = float(os.getenv("FUNNEL_PANIC_SNAPSHOT_TIMEOUT", "8.0"))
     try:
         import akshare as ak
 
-        df = ak.stock_zh_a_spot_em()
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            fut = ex.submit(ak.stock_zh_a_spot_em)
+            df = fut.result(timeout=max(timeout_s, 1.0))
         if df is None or df.empty:
             return out
         pct = pd.to_numeric(df.get("涨跌幅"), errors="coerce")
@@ -697,6 +700,9 @@ def _fetch_market_extreme_snapshot() -> dict:
         out["down_10_count"] = int((pct <= -10.0).sum())
         out["up_9_count"] = int((pct >= 9.0).sum())
         return out
+    except FuturesTimeoutError:
+        print(f"[funnel] 市场极端快照超时: >{timeout_s:.1f}s")
+        return out
     except Exception as e:
         print(f"[funnel] 市场极端快照获取失败: {e}")
         return out
@@ -707,6 +713,8 @@ def _dump_full_fetch_snapshot(
     all_symbols: list[str],
     window,
     fetch_stats: dict,
+    bench_df: pd.DataFrame | None = None,
+    smallcap_df: pd.DataFrame | None = None,
 ) -> str | None:
     """
     将本轮全量拉取结果落盘，便于后续离线复现和自测。
@@ -714,6 +722,7 @@ def _dump_full_fetch_snapshot(
     - hist_full.csv.gz: 全量历史（日线）明细（含 symbol 列）
     - latest_quotes.csv: 每只股票最新一条记录
     - fetch_status.csv: 每只股票拉取状态
+    - benchmark_main.csv / benchmark_smallcap.csv: 基准指数日线
     - metadata.json: 运行元信息
     """
     if not FUNNEL_EXPORT_FULL_FETCH:
@@ -777,6 +786,21 @@ def _dump_full_fetch_snapshot(
         status_df = pd.DataFrame(status_rows).sort_values("symbol").reset_index(drop=True)
         status_df.to_csv(run_dir / "fetch_status.csv", index=False)
 
+        def _dump_benchmark(df_src: pd.DataFrame | None, filename: str) -> bool:
+            if df_src is None or df_src.empty:
+                return False
+            cols = [c for c in ["date", "open", "high", "low", "close", "volume", "pct_chg"] if c in df_src.columns]
+            if not cols:
+                return False
+            one = df_src[cols].copy()
+            if "date" in one.columns:
+                one["date"] = pd.to_datetime(one["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+            one.to_csv(run_dir / filename, index=False)
+            return True
+
+        has_bench_main = _dump_benchmark(bench_df, "benchmark_main.csv")
+        has_bench_smallcap = _dump_benchmark(smallcap_df, "benchmark_smallcap.csv")
+
         metadata = {
             "generated_at": datetime.now(CN_TZ).isoformat(),
             "export_dir": str(run_dir),
@@ -786,6 +810,8 @@ def _dump_full_fetch_snapshot(
             "symbols_fetched": int(sum(1 for s in status_rows if s["fetched"] == 1)),
             "rows_total": int(len(full_df)),
             "fetch_stats": fetch_stats,
+            "has_benchmark_main": has_bench_main,
+            "has_benchmark_smallcap": has_bench_smallcap,
         }
         with open(run_dir / "metadata.json", "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
@@ -1127,6 +1153,8 @@ def run_funnel_job() -> tuple[dict[str, list[tuple[str, float]]], dict]:
             "fetch_elapsed_s": round(total_fetch_elapsed, 2),
             "fetch_qps": round(overall_qps, 3),
         },
+        bench_df=bench_df,
+        smallcap_df=smallcap_df,
     )
 
     # Step 0: 大盘总闸 + 全市场广度 + 动态阈值

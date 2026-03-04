@@ -18,6 +18,7 @@ import re
 import socket
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import date
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -31,6 +32,9 @@ _BAOSTOCK_EXIT_HOOKED = False
 _BAOSTOCK_MODULE = None
 _BAOSTOCK_LOCK = threading.RLock()
 _SPOT_SNAPSHOT_TTL_SECONDS = int(os.getenv("SPOT_SNAPSHOT_TTL_SECONDS", "20"))
+_SPOT_SNAPSHOT_TIMEOUT_SECONDS = float(
+    os.getenv("SPOT_SNAPSHOT_TIMEOUT_SECONDS", "8.0")
+)
 _SPOT_SNAPSHOT_TS = 0.0
 _SPOT_SNAPSHOT_MAP: dict[str, dict[str, float | None]] = {}
 _SPOT_SNAPSHOT_LOCK = threading.RLock()
@@ -191,7 +195,9 @@ def _load_spot_snapshot_map(force_refresh: bool = False) -> dict[str, dict[str, 
         try:
             import akshare as ak
 
-            df = ak.stock_zh_a_spot_em()
+            with ThreadPoolExecutor(max_workers=1) as ex:
+                fut = ex.submit(ak.stock_zh_a_spot_em)
+                df = fut.result(timeout=max(_SPOT_SNAPSHOT_TIMEOUT_SECONDS, 1.0))
             if df is None or df.empty:
                 raise RuntimeError("spot snapshot empty")
 
@@ -234,6 +240,14 @@ def _load_spot_snapshot_map(force_refresh: bool = False) -> dict[str, dict[str, 
 
             _SPOT_SNAPSHOT_MAP = spot_map
             _SPOT_SNAPSHOT_TS = now_ts
+            return _SPOT_SNAPSHOT_MAP
+        except FuturesTimeoutError:
+            _debug_source_fail(
+                "spot_snapshot",
+                TimeoutError(
+                    f"timeout>{_SPOT_SNAPSHOT_TIMEOUT_SECONDS:.1f}s"
+                ),
+            )
             return _SPOT_SNAPSHOT_MAP
         except Exception as e:
             _debug_source_fail("spot_snapshot", e)
