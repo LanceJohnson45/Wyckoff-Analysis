@@ -60,9 +60,9 @@ STEP4_BUY_HARD_STOP_PCT = max(
     float(os.getenv("STEP4_BUY_HARD_STOP_PCT", "9.0")),
     0.0,
 )
-STEP4_BUY_STOP_MODE = os.getenv("STEP4_BUY_STOP_MODE", "fixed").strip().lower()
+STEP4_BUY_STOP_MODE = os.getenv("STEP4_BUY_STOP_MODE", "floor").strip().lower()
 if STEP4_BUY_STOP_MODE not in {"fixed", "floor"}:
-    STEP4_BUY_STOP_MODE = "fixed"
+    STEP4_BUY_STOP_MODE = "floor"
 STEP4_ENABLE_SPOT_PATCH = os.getenv("STEP4_ENABLE_SPOT_PATCH", "1").strip().lower() in {
     "1",
     "true",
@@ -264,12 +264,18 @@ class WyckoffOrderEngine:
             if hard_stop > 0:
                 if STEP4_BUY_STOP_MODE == "fixed":
                     prev_stop = effective_stop_loss
-                    effective_stop_loss = hard_stop
                     if prev_stop is None:
+                        effective_stop_loss = hard_stop
                         audit_parts.append(f"hard_stop_fixed_init({effective_stop_loss:.2f})")
-                    elif abs(prev_stop - hard_stop) >= 1e-6:
+                    elif prev_stop < hard_stop:
+                        # fixed 模式也不允许放宽已有更紧止损，最多只做风控兜底上调。
+                        effective_stop_loss = hard_stop
                         audit_parts.append(
-                            f"hard_stop_fixed_override({prev_stop:.2f}->{hard_stop:.2f})"
+                            f"hard_stop_fixed_raise({prev_stop:.2f}->{hard_stop:.2f})"
+                        )
+                    else:
+                        audit_parts.append(
+                            f"hard_stop_fixed_keep_tighter({prev_stop:.2f})"
                         )
                 else:
                     if effective_stop_loss is None:

@@ -62,6 +62,10 @@ RETRY_BASE_DELAY = float(os.getenv("FUNNEL_RETRY_BASE_DELAY", "1.0"))
 SOCKET_TIMEOUT = int(os.getenv("FUNNEL_SOCKET_TIMEOUT", "20"))
 FETCH_TIMEOUT = int(os.getenv("FUNNEL_FETCH_TIMEOUT", "45"))
 BATCH_TIMEOUT = int(os.getenv("FUNNEL_BATCH_TIMEOUT", "420"))
+PANIC_SNAPSHOT_TIMEOUT = max(
+    float(os.getenv("FUNNEL_PANIC_SNAPSHOT_TIMEOUT", "20.0")),
+    1.0,
+)
 BATCH_SIZE = int(os.getenv("FUNNEL_BATCH_SIZE", "250"))
 BATCH_SLEEP = float(os.getenv("FUNNEL_BATCH_SLEEP", "2"))
 MAX_WORKERS = int(os.getenv("FUNNEL_MAX_WORKERS", "8"))
@@ -681,7 +685,7 @@ def _fetch_market_extreme_snapshot() -> dict:
         "down_10_count": 0,
         "up_9_count": 0,
     }
-    timeout_s = float(os.getenv("FUNNEL_PANIC_SNAPSHOT_TIMEOUT", "8.0"))
+    timeout_s = PANIC_SNAPSHOT_TIMEOUT
     try:
         import akshare as ak
 
