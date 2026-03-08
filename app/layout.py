@@ -213,11 +213,11 @@ h1, h2, h3 {
 }
 
 .market-signal-banner .ms-chip-positive {
-  color: #067647;
+  color: #c43221;
 }
 
 .market-signal-banner .ms-chip-positive .ms-chip-label {
-  color: #039855;
+  color: #e04f39;
 }
 
 .market-signal-banner .ms-chip-neutral {
@@ -237,11 +237,11 @@ h1, h2, h3 {
 }
 
 .market-signal-banner .ms-chip-negative {
-  color: #b42318;
+  color: #067647;
 }
 
 .market-signal-banner .ms-chip-negative .ms-chip-label {
-  color: #d92d20;
+  color: #039855;
 }
 
 .market-signal-banner .ms-body {
