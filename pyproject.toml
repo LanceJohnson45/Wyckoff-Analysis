@@ -1,0 +1,15 @@
+[project]
+name = "wyckoff-analysis"
+version = "2.1.0"
+requires-python = ">=3.11"
+description = "Wyckoff method quantitative analysis system for A-shares"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*", "core*", "integrations*", "utils*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

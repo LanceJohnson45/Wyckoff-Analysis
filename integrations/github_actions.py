@@ -9,13 +9,20 @@ from dataclasses import dataclass
 from typing import Any
 
 import requests
-import streamlit as st
-
 
 DEFAULT_OWNER = "YoungCan-Wang"
 DEFAULT_REPO = "Wyckoff-Analysis"
 DEFAULT_REF = "feature/visible"
 DEFAULT_WORKFLOW_FILE = "web_quant_jobs.yml"
+
+
+def _optional_cache(ttl: int, **kwargs):
+    """Return ``st.cache_data`` decorator when Streamlit is available, else a no-op."""
+    try:
+        import streamlit as st
+        return st.cache_data(ttl=ttl, **kwargs)
+    except Exception:
+        return lambda fn: fn
 
 
 @dataclass
@@ -32,9 +39,16 @@ class WorkflowRun:
 
 
 def _secrets_get(name: str, default: str = "") -> str:
-    if name in st.secrets:
-        return str(st.secrets.get(name) or "").strip()
-    return str(os.getenv(name, default) or "").strip()
+    val = str(os.getenv(name, "") or "").strip()
+    if val:
+        return val
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and name in st.secrets:
+            return str(st.secrets.get(name) or "").strip()
+    except Exception:
+        pass
+    return default
 
 
 def _config() -> dict[str, str]:
@@ -88,9 +102,9 @@ def create_request_id(prefix: str = "web") -> str:
 
 
 def clear_github_actions_caches() -> None:
-    find_run_by_request_id.clear()
-    list_recent_runs.clear()
-    load_result_json_for_run.clear()
+    for fn in (find_run_by_request_id, list_recent_runs, load_result_json_for_run):
+        if hasattr(fn, "clear"):
+            fn.clear()
 
 
 def trigger_web_job(job_kind: str, payload: dict[str, Any]) -> str:
@@ -125,7 +139,7 @@ def _parse_run(row: dict[str, Any]) -> WorkflowRun:
     )
 
 
-@st.cache_data(ttl=8, show_spinner=False, max_entries=20)
+@_optional_cache(ttl=8, show_spinner=False, max_entries=20)
 def find_run_by_request_id(request_id: str, *, per_page: int = 20) -> WorkflowRun | None:
     cfg = _config()
     url = (
@@ -142,7 +156,7 @@ def find_run_by_request_id(request_id: str, *, per_page: int = 20) -> WorkflowRu
     return None
 
 
-@st.cache_data(ttl=10, show_spinner=False, max_entries=10)
+@_optional_cache(ttl=10, show_spinner=False, max_entries=10)
 def list_recent_runs(*, per_page: int = 10) -> list[WorkflowRun]:
     cfg = _config()
     url = (
@@ -162,7 +176,7 @@ def _list_run_artifacts(run_id: int) -> list[dict[str, Any]]:
     return resp.json().get("artifacts", []) or []
 
 
-@st.cache_data(ttl=10, show_spinner=False, max_entries=20)
+@_optional_cache(ttl=10, show_spinner=False, max_entries=20)
 def load_result_json_for_run(run_id: int) -> dict[str, Any] | None:
     artifacts = _list_run_artifacts(run_id)
     target = next(

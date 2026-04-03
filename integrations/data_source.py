@@ -568,7 +568,7 @@ def _fetch_stock_tushare(
     symbol: str, start: str, end: str, adjust: str
 ) -> pd.DataFrame:
     import tushare as ts
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
     if pro is None:
@@ -654,7 +654,7 @@ def fetch_stock_hist(
 
     failed_sources: list[str] = []
     failed_details: list[str] = []
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
 
@@ -782,7 +782,7 @@ def fetch_stock_hist(
 
 
 def _fetch_index_tushare(code: str, start: str, end: str) -> pd.DataFrame:
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
     if pro is None:
@@ -874,7 +874,7 @@ def fetch_sector_map() -> dict[str, str]:
     except Exception as e:
         _debug_source_fail("sector_cache_read", e)
 
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
     if pro is None:
@@ -919,7 +919,7 @@ def fetch_market_cap_map() -> dict[str, float]:
     except Exception as e:
         _debug_source_fail("market_cap_cache_read", e)
 
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
     if pro is None:

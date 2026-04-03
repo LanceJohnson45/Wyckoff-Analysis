@@ -10,8 +10,6 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 
 def _sanitize(obj: Any) -> Any:
     if obj is None or isinstance(obj, (str, int, float, bool)):
@@ -81,7 +79,7 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
 
 def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     _apply_funnel_env(payload)
-    from scripts.wyckoff_funnel import run as run_funnel
+    from core.funnel_pipeline import run_funnel
 
     ok, symbols_for_report, benchmark_context, details = run_funnel(
         "",
@@ -136,7 +134,7 @@ def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, An
 
 
 def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, str]:
-    from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS, SUPPORTED_PROVIDERS
+    from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS, SUPPORTED_PROVIDERS
 
     user_id = str(payload.get("user_id", "") or "").strip()
     provider = str(payload.get("provider", "") or "gemini").strip().lower()
@@ -194,7 +192,7 @@ def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, 
     if not model:
         model = str(os.getenv(env_model, "") or "").strip()
     if not model and provider == "gemini":
-        model = str(os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview") or "").strip()
+        model = str(os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL) or "").strip()
     if not base_url:
         base_url = str(os.getenv(env_base_url, "") or "").strip()
     if not base_url:
@@ -219,7 +217,7 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
     webhook_url = str(payload.get("webhook_url", "") or "").strip()
     benchmark_context = payload.get("benchmark_context", {}) or {}
 
-    from scripts.step3_batch_report import run as run_step3
+    from core.batch_report import run_step3
 
     ok, reason, report_text = run_step3(
         symbols_info,

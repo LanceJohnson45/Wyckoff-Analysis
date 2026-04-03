@@ -26,16 +26,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scripts.backtest_runner import (
-    _calc_max_drawdown_pct,
-    _calc_sharpe_ratio,
-    _calc_calmar_ratio,
-    _calc_information_ratio,
-    _calc_cvar95_pct,
-    _fmt_metric,
-    _parse_date,
+# Ensure project root is on sys.path for direct script invocation
+if __name__ == "__main__" or not __package__:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.backtester import (
+    calc_max_drawdown_pct,
+    calc_sharpe_ratio,
+    calc_calmar_ratio,
+    calc_information_ratio,
+    calc_cvar95_pct,
+    fmt_metric,
+    parse_date,
 )
 
 
@@ -155,13 +157,13 @@ def calc_portfolio_metrics(
     max_dd_pct = float(dd.min()) * 100.0 if not dd.empty else None
 
     # Sharpe from daily returns
-    sharpe = _calc_sharpe_ratio(daily_ret, periods_per_year=250.0)
+    sharpe = calc_sharpe_ratio(daily_ret, periods_per_year=250.0)
     calmar = None
     if max_dd_pct is not None and max_dd_pct < 0:
         calmar = ann_ret_pct / abs(max_dd_pct)
 
-    ir = _calc_information_ratio(daily_ret, bench_daily_ret, periods_per_year=250.0)
-    var95, cvar95 = _calc_cvar95_pct(daily_ret)
+    ir = calc_information_ratio(daily_ret, bench_daily_ret, periods_per_year=250.0)
+    var95, cvar95 = calc_cvar95_pct(daily_ret)
 
     # Positions stats
     pos_counts = pd.to_numeric(nav_df.get("positions_count"), errors="coerce").dropna()
@@ -187,21 +189,21 @@ def _build_portfolio_md(metrics: dict, nav_df: pd.DataFrame) -> str:
         "# 组合级回测结果 (Portfolio Backtest)",
         "",
         "## 组合收益",
-        f"- 总收益: {_fmt_metric(metrics.get('total_return_pct'), 3)}%",
-        f"- 年化收益: {_fmt_metric(metrics.get('annualized_return_pct'), 3)}%",
-        f"- 最终净值: {_fmt_metric(metrics.get('final_nav'), 2)}",
+        f"- 总收益: {fmt_metric(metrics.get('total_return_pct'), 3)}%",
+        f"- 年化收益: {fmt_metric(metrics.get('annualized_return_pct'), 3)}%",
+        f"- 最终净值: {fmt_metric(metrics.get('final_nav'), 2)}",
         f"- 交易日数: {metrics.get('trading_days', 0)}",
         "",
         "## 风险调整指标",
-        f"- 夏普比 (Sharpe): {_fmt_metric(metrics.get('sharpe_ratio'), 3)}",
-        f"- 卡玛比 (Calmar): {_fmt_metric(metrics.get('calmar_ratio'), 3)}",
-        f"- 信息比 (IR vs Benchmark): {_fmt_metric(metrics.get('information_ratio'), 3)}",
-        f"- 最大回撤: {_fmt_metric(metrics.get('max_drawdown_pct'), 3)}%",
-        f"- VaR95(日): {_fmt_metric(metrics.get('var95_daily_pct'), 3)}%",
-        f"- CVaR95(日): {_fmt_metric(metrics.get('cvar95_daily_pct'), 3)}%",
+        f"- 夏普比 (Sharpe): {fmt_metric(metrics.get('sharpe_ratio'), 3)}",
+        f"- 卡玛比 (Calmar): {fmt_metric(metrics.get('calmar_ratio'), 3)}",
+        f"- 信息比 (IR vs Benchmark): {fmt_metric(metrics.get('information_ratio'), 3)}",
+        f"- 最大回撤: {fmt_metric(metrics.get('max_drawdown_pct'), 3)}%",
+        f"- VaR95(日): {fmt_metric(metrics.get('var95_daily_pct'), 3)}%",
+        f"- CVaR95(日): {fmt_metric(metrics.get('cvar95_daily_pct'), 3)}%",
         "",
         "## 持仓统计",
-        f"- 平均持仓数: {_fmt_metric(metrics.get('avg_positions'), 1)}",
+        f"- 平均持仓数: {fmt_metric(metrics.get('avg_positions'), 1)}",
         f"- 最大同时持仓: {metrics.get('max_positions', 0)}",
         "",
     ]

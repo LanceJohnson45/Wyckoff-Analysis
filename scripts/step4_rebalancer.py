@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import sys
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -19,9 +20,13 @@ from uuid import uuid4
 
 import pandas as pd
 
+
+# Ensure project root is on sys.path for direct script invocation
+if __name__ == "__main__" or not __package__:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.wyckoff_engine import normalize_hist_from_fetch, FunnelConfig
 from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_for_llm
-from integrations.ai_prompts import PRIVATE_PM_DECISION_JSON_PROMPT
+from core.prompts import PRIVATE_PM_DECISION_JSON_PROMPT
 from integrations.fetch_a_share_csv import _fetch_hist, _resolve_trading_window
 from integrations.llm_client import call_llm
 from integrations.data_source import fetch_stock_spot_snapshot
@@ -35,7 +40,7 @@ from integrations.supabase_portfolio import (
     update_position_stops,
     upsert_daily_nav,
 )
-from scripts.step3_batch_report import generate_stock_payload
+from core.batch_report import generate_stock_payload
 from utils.trading_clock import CN_TZ, resolve_end_calendar_day
 
 TRADING_DAYS = 320

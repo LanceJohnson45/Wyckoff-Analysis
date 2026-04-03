@@ -1,10 +1,11 @@
 import json
 import os
 import streamlit as st
-from supabase import create_client, Client
+from supabase import Client
 from postgrest.exceptions import APIError
 from core.constants import TABLE_USER_SETTINGS
-from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS
+from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS
+from integrations.supabase_base import create_anon_client
 
 CUSTOM_PROVIDER_KEYS = ("zhipu", "minimax", "qwen", "kimi", "volcengine")
 
@@ -44,7 +45,7 @@ def reset_user_settings_state() -> None:
     st.session_state.dingtalk_webhook = ""
     st.session_state.gemini_api_key = ""
     st.session_state.tushare_token = ""
-    st.session_state.gemini_model = "gemini-3.1-flash-lite-preview"
+    st.session_state.gemini_model = DEFAULT_GEMINI_MODEL
     st.session_state.gemini_base_url = ""
     st.session_state.tg_bot_token = ""
     st.session_state.tg_chat_id = ""
@@ -74,27 +75,9 @@ def reset_user_settings_state() -> None:
 
 
 def _get_supabase_client_base() -> Client:
-    # 优先尝试从 os.getenv 读取（本地 .env 文件）
-    # 其次尝试从 st.secrets 读取（Streamlit Cloud 部署环境）
-    url = os.getenv("SUPABASE_URL")
     # ⚠️  此处必须填 anon key（公开权限），不得填 service_role key。
     # 若误填 service_role key，未登录用户将绕过 RLS，可读写所有用户数据。
-    key = os.getenv("SUPABASE_KEY")
-
-    if not url or not key:
-        # 如果 os.getenv 没取到，再试 st.secrets
-        try:
-            url = st.secrets["SUPABASE_URL"]
-            key = st.secrets["SUPABASE_KEY"]
-        except (FileNotFoundError, KeyError):
-            pass
-
-    if not url or not key:
-        raise ValueError(
-            "Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_KEY in .env or secrets."
-        )
-
-    return create_client(url, key)
+    return create_anon_client()
 
 
 def _apply_user_session(supabase: Client) -> None:
@@ -151,7 +134,7 @@ def load_user_settings(user_id: str):
             # 大模型配置
             st.session_state.gemini_api_key = settings.get("gemini_api_key") or ""
             st.session_state.gemini_model = (
-                settings.get("gemini_model") or "gemini-3.1-flash-lite-preview"
+                settings.get("gemini_model") or DEFAULT_GEMINI_MODEL
             )
             st.session_state.gemini_base_url = settings.get("gemini_base_url") or ""
             st.session_state.openai_api_key = settings.get("openai_api_key") or ""
@@ -189,9 +172,13 @@ def load_user_settings(user_id: str):
             st.session_state.tg_chat_id = settings.get("tg_chat_id") or ""
             return True
     except APIError as e:
-        print(f"Supabase API Error in load_user_settings: {e.code} - {e.message}")
+        import logging
+        logging.warning("Supabase API Error in load_user_settings: %s - %s", e.code, e.message)
+        st.toast(f"⚠️ 配置加载异常: {e.code}", icon="⚠️")
     except Exception as e:
-        print(f"Unexpected error in load_user_settings: {e}")
+        import logging
+        logging.warning("Unexpected error in load_user_settings: %s", e)
+        st.toast("⚠️ 配置加载失败，将使用默认值", icon="⚠️")
     return False
 
 

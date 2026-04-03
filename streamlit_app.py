@@ -23,7 +23,7 @@ from integrations.fetch_a_share_csv import (
     _stock_name_from_code,
 )
 from utils import extract_symbols_from_text, safe_filename_part, stock_sector_em
-from core.download_history import add_download_history
+from integrations.download_history import add_download_history
 from app.auth_component import logout
 from app.layout import is_data_source_failure_message, setup_page, show_user_error
 from app.ui_helpers import show_page_loading, inject_custom_css
@@ -56,6 +56,11 @@ with st.sidebar:
 @st.cache_data(ttl=3600, show_spinner=False, max_entries=1)
 def load_stock_list():
     return get_all_stocks()
+
+
+@st.cache_data(ttl=3600, show_spinner=False, max_entries=4)
+def _cached_stocks_by_board(board: str):
+    return get_stocks_by_board(board)
 
 
 EXPORT_CLEANUP_INTERVAL_SECONDS = 3 * 60 * 60
@@ -200,19 +205,19 @@ with content_col:
 
             if check_main:
                 selected_boards_codes.extend(
-                    [s["code"] for s in get_stocks_by_board("main")]
+                    [s["code"] for s in _cached_stocks_by_board("main")]
                 )
             if check_chinext:
                 selected_boards_codes.extend(
-                    [s["code"] for s in get_stocks_by_board("chinext")]
+                    [s["code"] for s in _cached_stocks_by_board("chinext")]
                 )
             if check_star:
                 selected_boards_codes.extend(
-                    [s["code"] for s in get_stocks_by_board("star")]
+                    [s["code"] for s in _cached_stocks_by_board("star")]
                 )
             if check_bse:
                 selected_boards_codes.extend(
-                    [s["code"] for s in get_stocks_by_board("bse")]
+                    [s["code"] for s in _cached_stocks_by_board("bse")]
                 )
 
             if selected_boards_codes:

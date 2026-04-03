@@ -100,7 +100,7 @@ def _trade_dates() -> list[date]:
         return sorted(set(dates))
 
     def _fetch_from_tushare_calendar() -> list[date]:
-        from utils.tushare_client import get_pro
+        from integrations.tushare_client import get_pro
 
         pro = get_pro()
         if pro is None:
@@ -271,7 +271,7 @@ def get_all_stocks() -> list[dict[str, str]]:
 
     # 1. tushare 优先
     try:
-        from utils.tushare_client import get_pro
+        from integrations.tushare_client import get_pro
 
         pro = get_pro()
         if pro is not None:

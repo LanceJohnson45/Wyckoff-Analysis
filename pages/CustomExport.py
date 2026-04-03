@@ -1,15 +1,11 @@
-import sys
 import os
-
-# Add parent directory to path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from datetime import date, timedelta
 import time
 import akshare as ak
 import pandas as pd
-from core.download_history import add_download_history
+from integrations.download_history import add_download_history
 from core.export_artifacts import cleanup_export_artifacts, file_loader, write_dataframe_csv
 from integrations.fetch_a_share_csv import get_all_stocks
 from integrations.stock_hist_repository import get_stock_hist

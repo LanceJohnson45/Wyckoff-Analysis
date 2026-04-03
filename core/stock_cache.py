@@ -7,9 +7,10 @@ from typing import Optional
 
 import pandas as pd
 from postgrest.exceptions import APIError
-from supabase import Client, create_client
+from supabase import Client
 
 from core.constants import TABLE_STOCK_HIST_CACHE
+from integrations.supabase_base import create_admin_client as _create_admin_client
 
 _ADMIN_CLIENT: Client | None = None
 
@@ -67,16 +68,8 @@ def _get_admin_supabase_client() -> Client | None:
     global _ADMIN_CLIENT
     if _ADMIN_CLIENT is not None:
         return _ADMIN_CLIENT
-    url = str(os.getenv("SUPABASE_URL", "") or "").strip()
-    key = str(
-        os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-        or os.getenv("SUPABASE_KEY", "")
-        or ""
-    ).strip()
-    if not url or not key:
-        return None
     try:
-        _ADMIN_CLIENT = create_client(url, key)
+        _ADMIN_CLIENT = _create_admin_client()
     except Exception:
         _ADMIN_CLIENT = None
     return _ADMIN_CLIENT

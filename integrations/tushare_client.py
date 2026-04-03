@@ -6,7 +6,7 @@ Tushare Pro 客户端封装
 使用时：在 GitHub Secrets 中配置 TUSHARE_TOKEN，本地可在 .env 中配置。
 
 用法:
-    from utils.tushare_client import get_pro
+    from integrations.tushare_client import get_pro
 
     pro = get_pro()
     if pro:

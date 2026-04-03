@@ -15,7 +15,7 @@ import os
 from integrations.fetch_a_share_csv import _fetch_hist, _resolve_trading_window, _stock_name_from_code
 from utils import extract_symbols_from_text, stock_sector_em
 from integrations.llm_client import call_llm
-from core.wyckoff_single_prompt import WYCKOFF_SINGLE_SYSTEM_PROMPT
+from core.prompts import WYCKOFF_SINGLE_SYSTEM_PROMPT
 from app.layout import is_data_source_failure_message
 from app.ui_helpers import show_page_loading
 

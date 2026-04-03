@@ -27,8 +27,6 @@ import sys
 from collections import Counter
 from datetime import date
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # ── 配置 ──
 HHI_WARN = float(os.getenv("RISK_HHI_WARN_THRESHOLD", "0.3"))
 TRACK_IMBALANCE_PCT = float(os.getenv("RISK_TRACK_IMBALANCE_PCT", "70.0"))
