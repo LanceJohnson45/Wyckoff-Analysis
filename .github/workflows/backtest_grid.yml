@@ -361,8 +361,8 @@ jobs:
       - name: Aggregate and notify
         shell: bash
         run: |
-          python3 -c "
-          import os, glob, json, urllib.request
+          python3 -u -c "
+          import os, glob, json, re, urllib.request
 
           webhook = os.environ.get('FEISHU_WEBHOOK_URL', '').strip()
           if not webhook:
@@ -372,28 +372,117 @@ jobs:
           summaries = sorted(glob.glob('artifacts/**/summary_*.md', recursive=True))
           run_url = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
-          lines = ['**Backtest Grid 回测完成**', '']
-          lines.append(f'**Run**: {run_url}')
-          lines.append(f'**Matrix**: hold_days=[5,6,7,8] × stop_loss=[-6,-7,-8,-9]')
-          lines.append('')
+          def extract(content, keyword):
+              for line in content.split('\n'):
+                  if keyword in line:
+                      val = line.split(':')[-1].strip().rstrip('%')
+                      try:
+                          return float(val)
+                      except ValueError:
+                          return None
+              return None
 
-          if not summaries:
-              lines.append('⚠️ 未找到回测结果文件')
+          # ---- 解析所有单元 ----
+          cells = []  # [{hold, sl, win, avg, sharpe, mdd, trades}, ...]
+          for sf in summaries:
+              dirname = os.path.basename(os.path.dirname(sf))
+              # 从目录名提取参数，如 h5_sl6_tp0
+              m_hold = re.search(r'h(\d+)', dirname)
+              m_sl = re.search(r'sl(\d+)', dirname)
+              if not m_hold or not m_sl:
+                  continue
+              with open(sf, 'r') as f:
+                  content = f.read()
+              cells.append({
+                  'hold': int(m_hold.group(1)),
+                  'sl': int(m_sl.group(1)),
+                  'win': extract(content, '胜率'),
+                  'avg': extract(content, '平均收益'),
+                  'sharpe': extract(content, '夏普比'),
+                  'mdd': extract(content, '最大回撤'),
+                  'trades': extract(content, '成交样本'),
+                  'calmar': extract(content, '卡玛比'),
+              })
+
+          if not cells:
+              lines = ['⚠️ 未找到回测结果文件']
           else:
-              lines.append(f'共 {len(summaries)} 个单元完成')
+              holds = sorted(set(c['hold'] for c in cells))
+              sls = sorted(set(c['sl'] for c in cells))
+              cell_map = {(c['hold'], c['sl']): c for c in cells}
+
+              # 找出最优参数（按夏普排序）
+              valid = [c for c in cells if c['sharpe'] is not None]
+              best = max(valid, key=lambda c: c['sharpe']) if valid else None
+
+              lines = []
+              lines.append(f'**区间**: ${{ env.BT_START }} ~ ${{ env.BT_END }}  |  **TopN**: ${{ env.BT_TOP_N }}  |  **共 {len(cells)} 单元**')
+              lines.append(f'[查看详情]({run_url})')
               lines.append('')
-              for sf in summaries:
-                  name = os.path.basename(os.path.dirname(sf))
-                  with open(sf, 'r') as f:
-                      content = f.read()
-                  win_line = [l for l in content.split('\n') if '胜率' in l]
-                  avg_line = [l for l in content.split('\n') if '平均收益' in l]
-                  sharpe_line = [l for l in content.split('\n') if '夏普' in l]
-                  win = win_line[0].split(':')[-1].strip() if win_line else 'N/A'
-                  avg = avg_line[0].split(':')[-1].strip() if avg_line else 'N/A'
-                  sharpe = sharpe_line[0].split(':')[-1].strip() if sharpe_line else 'N/A'
-                  tag = name.replace('backtest-grid-', '').replace(f'-\${{ github.run_number }}', '')
-                  lines.append(f'**{tag}**: 胜率{win} 均收{avg} 夏普{sharpe}')
+
+              if best:
+                  bh = best.get('hold', '?')
+                  bs = best.get('sl', '?')
+                  bsharpe = best.get('sharpe', 0) or 0
+                  tag = '🏆' if bsharpe > 0 else '📌'
+                  lines.append(f'{tag} **最优参数**: 持有{bh}天 / 止损-{bs}%')
+                  parts = []
+                  if best.get('sharpe') is not None: parts.append(f'夏普 **{bsharpe:.3f}**')
+                  bwin = best.get('win')
+                  bavg = best.get('avg')
+                  bmdd = best.get('mdd')
+                  if bwin is not None: parts.append(f'胜率 {bwin:.1f}%')
+                  if bavg is not None: parts.append(f'均收 {bavg:+.2f}%')
+                  if bmdd is not None: parts.append(f'回撤 {bmdd:.1f}%')
+                  lines.append('  '.join(parts))
+                  lines.append('')
+
+              # ---- 构建矩阵辅助函数 ----
+              def fmt(val, spec):
+                  if val is None:
+                      return '-'
+                  return format(val, spec)
+
+              header = '| | ' + ' | '.join(f'-{s}%' for s in sls) + ' |'
+              sep = '|---|' + '|'.join(['---:'] * len(sls)) + '|'
+
+              # ---- 夏普矩阵表 ----
+              lines.append('**夏普比矩阵** (行=持有天数, 列=止损线)')
+              lines.append(header)
+              lines.append(sep)
+              for h in holds:
+                  row_vals = []
+                  for s in sls:
+                      c = cell_map.get((h, s))
+                      v = fmt(c.get('sharpe') if c else None, '.3f')
+                      if best and c and c.get('hold') == best.get('hold') and c.get('sl') == best.get('sl') and v != '-':
+                          v = f'**{v}** 🏆'
+                      row_vals.append(v)
+                  lines.append(f'| {h}天 | ' + ' | '.join(row_vals) + ' |')
+              lines.append('')
+
+              # ---- 胜率矩阵表 ----
+              lines.append('**胜率矩阵** (%)')
+              lines.append(header)
+              lines.append(sep)
+              for h in holds:
+                  row_vals = []
+                  for s in sls:
+                      c = cell_map.get((h, s))
+                      row_vals.append(fmt(c.get('win') if c else None, '.1f'))
+                  lines.append(f'| {h}天 | ' + ' | '.join(row_vals) + ' |')
+              lines.append('')
+
+              # ---- 均收矩阵表 ----
+              lines.append('**平均收益矩阵** (%)')
+              lines.append(header)
+              lines.append(sep)
+              for h in holds:
+                  row_vals = []
+                  for s in sls:
+                      c = cell_map.get((h, s))
+                      row_vals.append(fmt(c.get('avg') if c else None, '+.2f'))
+                  lines.append(f'| {h}天 | ' + ' | '.join(row_vals) + ' |')
 
           content = '\n'.join(lines)[:2800]
 
@@ -401,8 +490,8 @@ jobs:
               'msg_type': 'interactive',
               'card': {
                   'header': {
-                      'title': {'tag': 'plain_text', 'content': '📊 Backtest Grid 回测结果'},
-                      'template': 'blue',
+                      'title': {'tag': 'plain_text', 'content': '📊 Backtest Grid 回测完成'},
+                      'template': 'blue' if (best and (best.get('sharpe') or 0) > 0) else 'orange',
                   },
                   'elements': [
                       {'tag': 'div', 'text': {'tag': 'lark_md', 'content': content}},
