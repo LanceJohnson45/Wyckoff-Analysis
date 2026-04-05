@@ -36,10 +36,13 @@ SECTOR_STATE_GUIDANCE: dict[str, str] = {
 }
 
 SECTOR_STATE_SCORE_BONUS: dict[str, float] = {
-    "DISAGREEMENT_PULLBACK": 0.06,
+    # 2025-10 ~ 2026-04 实测校准（analyze_sector_reversal.py）:
+    #   DISAGREEMENT_PULLBACK 后续3日均收益-0.51%、胜率仅50% → 大幅降低
+    #   CONSENSUS_CLIMAX 后续3日跌>2%概率29.8% → 加大惩罚
+    "DISAGREEMENT_PULLBACK": 0.01,
     "HEALTHY_MAINLINE": 0.03,
-    "CONSENSUS_CLIMAX": -0.04,
-    "DISTRIBUTION_RISK": -0.08,
+    "CONSENSUS_CLIMAX": -0.08,
+    "DISTRIBUTION_RISK": -0.10,
     "NEUTRAL_MIXED": 0.0,
 }
 

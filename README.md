@@ -428,16 +428,16 @@ tushare → akshare → baostock → efinance
 
 ---
 
-**版权声明 | Copyright & License**
+**开源协议 | License**
 
-- **版权所有** © 2026 youngcan. All Rights Reserved.
-- **开源用途**：个人学习研究免费使用，署名即可
-- **商业授权**：如需将本项目用于商业产品或服务（包括但不限于 SaaS、付费咨询、代客选股、量化基金、OEM/嵌入式等），**必须先联系作者获得授权并支付授权费用**
-- **联系方式**：可通过微信/飞书，或 GitHub Issue 联系
+本项目基于 [GNU Affero General Public License v3.0 (AGPL-3.0)](LICENSE) 开源。
 
----
+- ✅ 个人学习、研究、自用：自由使用
+- ✅ 修改和再分发：需保持同样的 AGPL-3.0 协议并开源
+- ✅ 通过网络提供服务（SaaS）：必须向用户公开完整源代码
+- 📧 **联系方式**：可通过微信/飞书，或 GitHub Issue 联系
 
-> ⚠️ 未经授权的商业使用将被视为侵权，作者保留追究法律责任的权利。
+Copyright (c) 2024-2026 youngcan.
 
 ---
 

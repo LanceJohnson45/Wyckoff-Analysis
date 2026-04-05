@@ -93,11 +93,12 @@ def get_stock_hist(
     adjust: AdjustType = "qfq",
     *,
     context: str = "auto",
+    cache_only: bool = False,
 ) -> pd.DataFrame:
     """
     统一股票历史数据入口：
     1) Supabase 缓存优先
-    2) 缺口补拉
+    2) 缺口补拉（cache_only=True 时跳过，直接返回缓存中已有的数据）
     3) 回写缓存后返回
     """
     start_d = _to_date(start_date)
@@ -124,6 +125,23 @@ def get_stock_hist(
             end_date=meta.end_date,
             context=context,
         )
+
+    # cache_only 模式：只返回缓存中已有的数据，不去 tushare 补拉
+    if cache_only:
+        if cached_norm is not None and not cached_norm.empty:
+            result_norm = _slice_df_by_date(cached_norm, start_d, end_d)
+            result = denormalize_hist_df(result_norm)
+            result.attrs["source"] = "cache"
+            print(
+                f"[stock_repo] cache_only symbol={symbol} adjust={cache_adjust} "
+                f"range={start_d}..{end_d} rows={len(result_norm)}"
+            )
+            return result
+        print(
+            f"[stock_repo] cache_only symbol={symbol} adjust={cache_adjust} "
+            f"range={start_d}..{end_d} rows=0 (no cache)"
+        )
+        return pd.DataFrame()
 
     gaps = _compute_gap_ranges(start_d, end_d, meta)
     fetched_frames: list[pd.DataFrame] = []

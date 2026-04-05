@@ -50,9 +50,21 @@ DEFAULT_HOLD_DAYS = 30  # 网格优化：30天夏普2.493 > 25天1.967 > 20天1.
 DEFAULT_EXIT_MODE = "sltp"
 DEFAULT_STOP_LOSS_PCT = -7.0   # 网格优化最佳：SL7/TP18（夏普1.928 > SL6/TP15的1.679 > SL8/TP20的1.466）
 DEFAULT_TAKE_PROFIT_PCT = 18.0
+DEFAULT_TRAILING_STOP_PCT = 0.0  # 0 = 不启用移动止盈；如 -5.0 表示从最高点回撤 5% 卖出
 DEFAULT_USE_CURRENT_META = False
 DEFAULT_BUY_FRICTION_PCT = float(os.getenv("BACKTEST_BUY_FRICTION_PCT", "0.5"))
 DEFAULT_SELL_FRICTION_PCT = float(os.getenv("BACKTEST_SELL_FRICTION_PCT", "0.5"))
+
+# ── 大盘水温仓位控制 ──
+# 回测数据显示 NEUTRAL 下策略盈利（+1.17%），CRASH/RISK_ON 下亏损严重。
+# 通过 regime 动态调节每日候选上限（相当于仓位控制），减少逆势开仓。
+REGIME_POSITION_RATIO: dict[str, float] = {
+    "NEUTRAL": 1.0,        # 震荡市 → 全仓
+    "RISK_ON": 0.5,        # 热点追涨期反转率高 → 半仓
+    "PANIC_REPAIR": 0.5,   # 恐慌修复 → 半仓试探
+    "RISK_OFF": 0.3,       # 避险 → 仅少量试探
+    "CRASH": 0.0,          # 崩盘 → 不开仓
+}
 FUNNEL_AI_SELECTION_MODE = (
     os.getenv("FUNNEL_AI_SELECTION_MODE", "legacy_full_hits").strip().lower()
 )
@@ -193,6 +205,51 @@ def _load_snapshot_benchmark(
     return out if not out.empty else None
 
 
+def _load_snapshot_name_map(snapshot_dir: Path) -> dict[str, str] | None:
+    """从快照加载股票列表 {code: name}，Phase 1 导出。"""
+    p = snapshot_dir / "name_map.json"
+    if not p.exists():
+        return None
+    try:
+        import json
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data:
+            return {str(k): str(v) for k, v in data.items()}
+    except Exception:
+        pass
+    return None
+
+
+def _load_snapshot_sector_map(snapshot_dir: Path) -> dict[str, str] | None:
+    """从快照加载行业映射 {code: industry}，Phase 1 导出。"""
+    p = snapshot_dir / "sector_map.json"
+    if not p.exists():
+        return None
+    try:
+        import json
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data:
+            return {str(k): str(v) for k, v in data.items()}
+    except Exception:
+        pass
+    return None
+
+
+def _load_snapshot_market_cap_map(snapshot_dir: Path) -> dict[str, float] | None:
+    """从快照加载市值映射 {code: total_mv_亿}，Phase 1 导出。"""
+    p = snapshot_dir / "market_cap_map.json"
+    if not p.exists():
+        return None
+    try:
+        import json
+        data = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and data:
+            return {str(k): float(v) for k, v in data.items() if v is not None}
+    except Exception:
+        pass
+    return None
+
+
 def _apply_funnel_cfg_overrides(cfg: FunnelConfig) -> None:
     """
     与生产漏斗同口径：读取 FUNNEL_CFG_* 环境变量覆盖 FunnelConfig。
@@ -227,7 +284,22 @@ def _fetch_hist_norm(
     end_dt: date,
 ) -> tuple[str, pd.DataFrame | None, str | None]:
     try:
-        raw = fetch_stock_hist(symbol, start_dt, end_dt, adjust="qfq")
+        # 优先走 Supabase 缓存（cache_only：只读缓存，不回 tushare 补缺口）
+        try:
+            from integrations.stock_hist_repository import get_stock_hist as _cached
+            raw = _cached(
+                symbol=symbol,
+                start_date=start_dt,
+                end_date=end_dt,
+                adjust="qfq",
+                context="background",
+                cache_only=True,
+            )
+        except Exception:
+            raw = None
+        # 仅当缓存完全无数据时 fallback 到直连数据源
+        if raw is None or raw.empty:
+            raw = fetch_stock_hist(symbol, start_dt, end_dt, adjust="qfq")
         df = normalize_hist_from_fetch(raw)
         if df is None or df.empty:
             return symbol, None, "empty"
@@ -449,10 +521,12 @@ def run_backtest(
     exit_mode: str = DEFAULT_EXIT_MODE,
     stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
     take_profit_pct: float = DEFAULT_TAKE_PROFIT_PCT,
+    trailing_stop_pct: float = DEFAULT_TRAILING_STOP_PCT,
     sltp_priority: str = "stop_first",
     use_current_meta: bool = DEFAULT_USE_CURRENT_META,
     buy_friction_pct: float = DEFAULT_BUY_FRICTION_PCT,
     sell_friction_pct: float = DEFAULT_SELL_FRICTION_PCT,
+    regime_filter: bool = False,
 ) -> tuple[pd.DataFrame, dict]:
     if end_dt <= start_dt:
         raise ValueError("end 必须晚于 start")
@@ -462,6 +536,8 @@ def run_backtest(
         raise ValueError("exit_mode 必须是 close_only 或 sltp")
     if sltp_priority not in {"stop_first", "take_first"}:
         raise ValueError("sltp_priority 必须是 stop_first 或 take_first")
+    if trailing_stop_pct > 0:
+        raise ValueError("trailing_stop_pct 必须 <= 0（如 -5.0 表示从最高点回撤 5%），0 表示不启用")
     if stop_loss_pct > 0:
         raise ValueError("stop_loss_pct 必须 <= 0，0 表示不设止损")
     if take_profit_pct < 0:
@@ -471,10 +547,26 @@ def run_backtest(
     if buy_friction_pct >= 100 or sell_friction_pct >= 100:
         raise ValueError("buy_friction_pct / sell_friction_pct 必须 < 100")
 
-    symbols, name_map = _build_universe(board=board, sample_size=sample_size)
+    # ── 快照模式：优先从快照加载股票列表，避免网络调用 ──
+    snapshot_name_map: dict[str, str] | None = None
+    if snapshot_dir is not None:
+        snapshot_dir = Path(snapshot_dir).resolve()
+        snapshot_name_map = _load_snapshot_name_map(snapshot_dir)
+
+    if snapshot_name_map is not None:
+        # 从快照的 name_map 派生 symbols（零网络调用）
+        name_map = snapshot_name_map
+        all_codes = sorted(name_map.keys())
+        # ST 过滤 + 采样，与 _build_universe 保持同口径
+        symbols = [s for s in _normalize_symbols(all_codes) if "ST" not in name_map.get(s, "").upper()]
+        if sample_size > 0:
+            symbols = symbols[:sample_size]
+        print(f"[backtest] 股票池={len(symbols)} (快照 name_map, board={board}, sample_size={sample_size})")
+    else:
+        symbols, name_map = _build_universe(board=board, sample_size=sample_size)
+        print(f"[backtest] 股票池={len(symbols)} (网络拉取, board={board}, sample_size={sample_size})")
     if not symbols:
         raise RuntimeError("股票池为空")
-    print(f"[backtest] 股票池={len(symbols)} (board={board}, sample_size={sample_size})")
 
     prefetch_start = start_dt - timedelta(days=trading_days * 3)
     prefetch_end = end_dt + timedelta(days=hold_days * 3 + 30)
@@ -486,7 +578,6 @@ def run_backtest(
     snapshot_used = False
 
     if snapshot_dir is not None:
-        snapshot_dir = Path(snapshot_dir).resolve()
         print(f"[backtest] 使用本地快照: {snapshot_dir}")
         all_df_map, snapshot_rows_total = _load_snapshot_hist_map(
             snapshot_dir, symbols_filter=set(symbols)
@@ -535,11 +626,23 @@ def run_backtest(
         raise RuntimeError(f"回测区间交易日过少({len(trade_dates)})，无法计算 forward return (hold_days={hold_days}，需至少 {hold_days + 2} 个交易日)")
 
     if use_current_meta:
-        market_cap_map = fetch_market_cap_map()
-        sector_map = fetch_sector_map()
-        print(
-            "[backtest] ⚠️ 使用当前截面市值/行业映射（会引入 look-ahead bias）"
-        )
+        # 快照优先：从快照加载 sector_map / market_cap_map（Phase 1 已导出）
+        # 仅在快照不存在时 fallback 到网络拉取
+        _snap_sector = _load_snapshot_sector_map(snapshot_dir) if snapshot_dir is not None else None
+        _snap_cap = _load_snapshot_market_cap_map(snapshot_dir) if snapshot_dir is not None else None
+
+        if _snap_sector is not None or _snap_cap is not None:
+            sector_map = _snap_sector or {}
+            market_cap_map = _snap_cap or {}
+            print(
+                f"[backtest] 元数据从快照加载: sector_map={len(sector_map)}, market_cap_map={len(market_cap_map)}"
+            )
+        else:
+            market_cap_map = fetch_market_cap_map()
+            sector_map = fetch_sector_map()
+            print(
+                "[backtest] ⚠️ 使用当前截面市值/行业映射（会引入 look-ahead bias）"
+            )
         if not market_cap_map:
             print("[backtest] ⚠️ 当前市值映射为空，Layer1 市值过滤将被跳过")
     else:
@@ -614,6 +717,15 @@ def run_backtest(
 
         ranked_codes = selected_for_ai if int(top_n) <= 0 else selected_for_ai[:top_n]
 
+        # ── 大盘水温仓位控制 ──
+        if regime_filter and ranked_codes:
+            ratio = REGIME_POSITION_RATIO.get(regime, 1.0)
+            if ratio <= 0:
+                continue  # CRASH → 完全不开仓
+            if ratio < 1.0:
+                keep_n = max(1, int(len(ranked_codes) * ratio + 0.5))
+                ranked_codes = ranked_codes[:keep_n]
+
         # Only needed for string names
         name_score_map = _combine_trigger_scores(result.triggers)
 
@@ -662,6 +774,8 @@ def run_backtest(
                     if take_profit_pct > 0
                     else None
                 )
+                use_trailing = trailing_stop_pct < 0
+                peak_high = entry_close  # 持仓期间最高价，用于移动止盈
 
                 for mkt_day in market_window:
                     candle = day_ohlc.get(mkt_day)
@@ -669,10 +783,22 @@ def run_backtest(
                         continue
                     open_px, high, low, _ = candle
 
+                    # 更新持仓期间最高价（用当日最高价）
+                    peak_high = max(peak_high, high)
+
+                    # 移动止盈线 = 最高价 × (1 + trailing_stop_pct/100)
+                    trailing_price = (
+                        peak_high * (1.0 + trailing_stop_pct / 100.0)
+                        if use_trailing
+                        else None
+                    )
+
+                    # 检查顺序：固定止损 → 移动止盈 → 固定止盈
+                    # （先保命、再锁利、最后达标止盈）
                     if sltp_priority == "stop_first":
-                        checks = [("sl", sl_price), ("tp", tp_price)]
+                        checks = [("sl", sl_price), ("trail", trailing_price), ("tp", tp_price)]
                     else:
-                        checks = [("tp", tp_price), ("sl", sl_price)]
+                        checks = [("tp", tp_price), ("trail", trailing_price), ("sl", sl_price)]
 
                     hit = False
                     for kind, px in checks:
@@ -680,6 +806,13 @@ def run_backtest(
                             continue
                         if kind == "sl" and low <= px:
                             # 若开盘已跳空跌破止损，只能按开盘附近成交；否则按止损价成交。
+                            exit_close = px if open_px >= px else open_px
+                            exit_date = mkt_day
+                            hit = True
+                            break
+                        if kind == "trail" and low <= px:
+                            # 移动止盈触发（从最高点回撤超限）
+                            # 跳空逻辑同止损：开盘已低于 trailing_price 时按开盘成交
                             exit_close = px if open_px >= px else open_px
                             exit_date = mkt_day
                             hit = True
@@ -750,10 +883,12 @@ def run_backtest(
         "exit_mode": exit_mode,
         "stop_loss_pct": stop_loss_pct,
         "take_profit_pct": take_profit_pct,
+        "trailing_stop_pct": trailing_stop_pct,
         "sltp_priority": sltp_priority,
         "use_current_meta": bool(use_current_meta),
         "buy_friction_pct": float(buy_friction_pct),
         "sell_friction_pct": float(sell_friction_pct),
+        "regime_filter": bool(regime_filter),
     }
     if not trades_df.empty:
         ret = pd.to_numeric(trades_df["ret_pct"], errors="coerce").dropna()
@@ -1009,10 +1144,12 @@ def _build_summary_md(summary: dict) -> str:
             f"- 离场模式: {summary.get('exit_mode')}",
             f"- 止损线: {_fmt_metric(summary.get('stop_loss_pct'), 1)}%",
             f"- 止盈线: {_fmt_metric(summary.get('take_profit_pct'), 1)}%",
+            f"- 移动止盈: {_fmt_metric(summary.get('trailing_stop_pct'), 1)}%（从最高点回撤）" if summary.get('trailing_stop_pct', 0) < 0 else "- 移动止盈: 关闭",
             f"- 日内触发优先级: {summary.get('sltp_priority')}",
             f"- 买入摩擦成本: {_fmt_metric(summary.get('buy_friction_pct'), 3)}%",
             f"- 卖出摩擦成本: {_fmt_metric(summary.get('sell_friction_pct'), 3)}%",
             f"- 元数据口径: {meta_mode}",
+            f"- 大盘水温仓控: {'开启' if summary.get('regime_filter') else '关闭'}",
             f"- 成交样本: {summary.get('trades')}",
             "",
             "## 收益统计",
@@ -1123,6 +1260,12 @@ def main() -> int:
         help=f"止盈线(%%), 如 10.0 表示涨超 10%% 止盈. 0 表示不设止盈 (default: {DEFAULT_TAKE_PROFIT_PCT})",
     )
     parser.add_argument(
+        "--trailing-stop",
+        type=float,
+        default=DEFAULT_TRAILING_STOP_PCT,
+        help=f"移动止盈(%%), 如 -5.0 表示从最高点回撤 5%% 卖出. 0 表示不启用 (default: {DEFAULT_TRAILING_STOP_PCT})",
+    )
+    parser.add_argument(
         "--sltp-priority",
         choices=["stop_first", "take_first"],
         default="stop_first",
@@ -1131,7 +1274,7 @@ def main() -> int:
     parser.add_argument(
         "--snapshot-dir",
         default="",
-        help="本地快照目录（由 wyckoff_funnel 的 FUNNEL_EXPORT_FULL_FETCH 生成）",
+        help="CI 专用：GitHub Actions Phase 1 导出的快照目录（留空则从 Supabase 缓存取数）",
     )
     parser.add_argument(
         "--output-dir",
@@ -1162,6 +1305,12 @@ def main() -> int:
         type=float,
         default=DEFAULT_SELL_FRICTION_PCT,
         help=f"卖出端摩擦成本(%%): 滑点+手续费+税费近似 (default: {DEFAULT_SELL_FRICTION_PCT})",
+    )
+    parser.add_argument(
+        "--regime-filter",
+        action="store_true",
+        default=False,
+        help="启用大盘水温仓位控制: CRASH 不开仓, RISK_ON/PANIC_REPAIR 半仓, NEUTRAL 全仓",
     )
     args = parser.parse_args()
 
@@ -1194,10 +1343,12 @@ def main() -> int:
                 exit_mode=args.exit_mode,
                 stop_loss_pct=args.stop_loss,
                 take_profit_pct=args.take_profit,
+                trailing_stop_pct=args.trailing_stop,
                 sltp_priority=args.sltp_priority,
                 use_current_meta=args.use_current_meta,
                 buy_friction_pct=args.buy_friction_pct,
                 sell_friction_pct=args.sell_friction_pct,
+                regime_filter=args.regime_filter,
             )
         except Exception as exc:
             last_error = exc

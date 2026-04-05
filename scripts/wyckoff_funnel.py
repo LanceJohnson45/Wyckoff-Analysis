@@ -1020,6 +1020,7 @@ def _rank_l3_candidates(
         sector_state = str((rotation_map.get(industry, {}) or {}).get("state", "") or "")
         ret20 = None
         ret5 = None
+        ret3 = None
         min_vol_ratio_5d = None
         if df is not None and not df.empty:
             s = df.sort_values("date")
@@ -1027,6 +1028,7 @@ def _rank_l3_candidates(
             volume = pd.to_numeric(s.get("volume"), errors="coerce")
             ret20 = _calc_close_return_pct(close, 20)
             ret5 = _calc_close_return_pct(close, 5)
+            ret3 = _calc_close_return_pct(close, 3)
             vol_ma20 = volume.rolling(20).mean()
             vol_ratio = volume / vol_ma20.replace(0, pd.NA)
             min_vol_ratio_5d = pd.to_numeric(vol_ratio.tail(5), errors="coerce").min()
@@ -1037,6 +1039,7 @@ def _rank_l3_candidates(
                 "industry": industry,
                 "ret20": ret20,
                 "ret5": ret5,
+                "ret3": ret3,
                 "min_vol_ratio_5d": min_vol_ratio_5d,
                 "trigger_score": float(trigger_score_map.get(code, 0.0)),
                 "l2_channel": l2_channel,
@@ -1045,7 +1048,7 @@ def _rank_l3_candidates(
         )
 
     rank_df = pd.DataFrame(rows)
-    for col, fill_default in (("ret20", 0.0), ("ret5", 0.0), ("min_vol_ratio_5d", 1.0)):
+    for col, fill_default in (("ret20", 0.0), ("ret5", 0.0), ("ret3", 0.0), ("min_vol_ratio_5d", 1.0)):
         rank_df[col] = pd.to_numeric(rank_df[col], errors="coerce")
         if rank_df[col].notna().any():
             rank_df[col] = rank_df[col].fillna(float(rank_df[col].median()))
@@ -1054,6 +1057,7 @@ def _rank_l3_candidates(
 
     rank_df["q20"] = rank_df["ret20"].rank(pct=True, ascending=True, method="average")
     rank_df["q5"] = rank_df["ret5"].rank(pct=True, ascending=True, method="average")
+    rank_df["q3"] = rank_df["ret3"].rank(pct=True, ascending=True, method="average")
     rank_df["dry_q"] = rank_df["min_vol_ratio_5d"].rank(
         pct=True, ascending=False, method="average"
     )
@@ -1067,15 +1071,19 @@ def _rank_l3_candidates(
         )
 
     hot_sector_set = set(top_sectors or [])
-    rank_df["hot_bonus"] = rank_df["industry"].isin(hot_sector_set).astype(float) * 0.05
+    # 板块快速轮动期 hot_bonus 降低：Top3 板块次日有 49% 概率反转
+    rank_df["hot_bonus"] = rank_df["industry"].isin(hot_sector_set).astype(float) * 0.02
     rank_df["sector_bonus"] = rank_df["sector_state"].map(
         lambda x: float(SECTOR_STATE_SCORE_BONUS.get(str(x), 0.0))
     )
+    # 权重重新分配：降低滞后动量(q20)权重，提升 Wyckoff 触发(trigger_q)权重，
+    # 加入 3 日短期动量(q3) 适配板块快速轮动。
     rank_df["watch_score"] = (
-        0.40 * rank_df["q20"]
-        + 0.25 * rank_df["q5"]
+        0.25 * rank_df["q20"]
+        + 0.20 * rank_df["q5"]
+        + 0.05 * rank_df["q3"]
         + 0.20 * rank_df["dry_q"]
-        + 0.15 * rank_df["trigger_q"]
+        + 0.30 * rank_df["trigger_q"]
         + rank_df["hot_bonus"]
         + rank_df["sector_bonus"]
     )

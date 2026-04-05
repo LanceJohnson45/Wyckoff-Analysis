@@ -44,14 +44,15 @@ def extract_symbols_from_text(
         return []
 
     out: list[str] = []
+    seen: set[str] = set()
 
     def accept(code: str) -> bool:
         if not re.fullmatch(r"\d{6}", code):
             return False
-        if valid_codes is None:
-            out.append(code)
+        if code in seen:
             return True
-        if code in valid_codes:
+        if valid_codes is None or code in valid_codes:
+            seen.add(code)
             out.append(code)
             return True
         return False

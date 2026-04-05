@@ -814,10 +814,11 @@ def layer3_sector_resonance(
         if sector:
             base_counts[sector] = base_counts.get(sector, 0) + 1
 
-    # 个股强度：20日收益(70%) + 5日收益(30%) 的截面百分位分数
+    # 个股强度：20日收益(40%) + 5日收益(30%) + 3日收益(30%) 的截面百分位分数
+    # 加入 3 日动量以适配 A 股板块快速轮动（"一日游"）特征。
     strength_map: dict[str, float] = {}
     if df_map:
-        rows: list[tuple[str, float, float]] = []
+        rows: list[tuple[str, float, float, float]] = []
         for sym in symbols:
             df = df_map.get(sym)
             if df is None or df.empty:
@@ -828,12 +829,14 @@ def layer3_sector_resonance(
                 continue
             ret20 = (float(close.iloc[-1]) - float(close.iloc[-21])) / float(close.iloc[-21]) * 100.0
             ret5 = (float(close.iloc[-1]) - float(close.iloc[-6])) / float(close.iloc[-6]) * 100.0 if len(close) > 5 else ret20
-            rows.append((sym, ret20, ret5))
+            ret3 = (float(close.iloc[-1]) - float(close.iloc[-4])) / float(close.iloc[-4]) * 100.0 if len(close) > 3 else ret5
+            rows.append((sym, ret20, ret5, ret3))
         if rows:
-            st_df = pd.DataFrame(rows, columns=["sym", "ret20", "ret5"])
+            st_df = pd.DataFrame(rows, columns=["sym", "ret20", "ret5", "ret3"])
             st_df["q20"] = st_df["ret20"].rank(pct=True, ascending=True, method="average")
             st_df["q5"] = st_df["ret5"].rank(pct=True, ascending=True, method="average")
-            st_df["strength"] = 0.7 * st_df["q20"] + 0.3 * st_df["q5"]
+            st_df["q3"] = st_df["ret3"].rank(pct=True, ascending=True, method="average")
+            st_df["strength"] = 0.4 * st_df["q20"] + 0.3 * st_df["q5"] + 0.3 * st_df["q3"]
             strength_map = st_df.set_index("sym")["strength"].astype(float).to_dict()
 
     ranked = sorted(counts.items(), key=lambda x: -x[1])
@@ -905,7 +908,8 @@ def layer3_sector_resonance(
     )
 
     # L3 板块共振过滤：保留 Top 行业内的股票 + 强势个股通配。
-    # 三级放行机制：核心热门板块直通 → 次优板块需个股强度 ≥70% → 极强个股(Top10%)无视板块。
+    # 三级放行机制：核心热门板块直通 → 次优板块需个股强度 ≥60% → 强势个股(Top20%)无视板块。
+    # 门槛已放宽以适配 A 股板块快速轮动特征，减少好股票因板块切换被误杀。
     top_sector_set = set(top_sectors)
     keep_sector_set = set(keep_sectors_sorted)
     filtered: list[str] = []
@@ -915,11 +919,11 @@ def layer3_sector_resonance(
         if sector in top_sector_set:
             # 核心热门板块：直接保留
             filtered.append(sym)
-        elif sector in keep_sector_set and sym_strength >= 0.70:
-            # 次优板块 + 个股强度 70%+：有条件保留
+        elif sector in keep_sector_set and sym_strength >= 0.60:
+            # 次优板块 + 个股强度 60%+：有条件保留
             filtered.append(sym)
-        elif sym_strength >= 0.90:
-            # 极强个股通配：无论板块，个股强度 Top 10% 可绕过
+        elif sym_strength >= 0.80:
+            # 强势个股通配：无论板块，个股强度 Top 20% 可绕过
             filtered.append(sym)
 
     # 安全兜底：避免极端行情下池子被清空
