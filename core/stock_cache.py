@@ -40,14 +40,37 @@ _COL_MAP = {
     "成交量": "volume",
     "成交额": "amount",
     "涨跌幅": "pct_chg",
+    "换手率": "turnover_rate",
+    "振幅": "amplitude",
 }
 
 
 def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
     out = df.rename(columns=_COL_MAP).copy()
-    keep = ["date", "open", "high", "low", "close", "volume", "amount", "pct_chg"]
+    keep = [
+        "date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount",
+        "pct_chg",
+        "turnover_rate",
+        "amplitude",
+    ]
     out = out[[c for c in keep if c in out.columns]].copy()
-    for col in ["open", "high", "low", "close", "volume", "amount", "pct_chg"]:
+    for col in [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount",
+        "pct_chg",
+        "turnover_rate",
+        "amplitude",
+    ]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
     if "date" in out.columns:
@@ -103,7 +126,9 @@ def _get_stock_cache_client(context: str = "auto") -> Client | None:
     return None
 
 
-def get_cache_meta(symbol: str, adjust: str, *, context: str = "auto") -> Optional[CacheMeta]:
+def get_cache_meta(
+    symbol: str, adjust: str, *, context: str = "auto"
+) -> Optional[CacheMeta]:
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return None
@@ -134,7 +159,9 @@ def get_cache_meta(symbol: str, adjust: str, *, context: str = "auto") -> Option
     first_row = first_resp.data[0]
     last_row = last_resp.data[0]
     updated_raw = last_row.get("updated_at")
-    updated_at = _parse_iso_datetime(updated_raw) if updated_raw else datetime.now(timezone.utc)
+    updated_at = (
+        _parse_iso_datetime(updated_raw) if updated_raw else datetime.now(timezone.utc)
+    )
     return CacheMeta(
         symbol=symbol,
         adjust=adjust,
@@ -160,7 +187,9 @@ def load_cached_history(
     try:
         resp = (
             supabase.table(TABLE_STOCK_HIST_CACHE)
-            .select("date,open,high,low,close,volume,amount,pct_chg")
+            .select(
+                "date,open,high,low,close,volume,amount,pct_chg,turnover_rate,amplitude"
+            )
             .eq("symbol", symbol)
             .eq("adjust", adjust)
             .gte("date", start_date.isoformat())
@@ -220,7 +249,9 @@ def _trim_symbol_history_window(
     adjust: str,
     retention_days: int,
 ) -> None:
-    cutoff_date = (datetime.utcnow().date() - timedelta(days=max(retention_days, 1))).isoformat()
+    cutoff_date = (
+        datetime.utcnow().date() - timedelta(days=max(retention_days, 1))
+    ).isoformat()
     try:
         (
             supabase.table(TABLE_STOCK_HIST_CACHE)
@@ -232,6 +263,7 @@ def _trim_symbol_history_window(
         )
     except Exception:
         pass
+
 
 def upsert_cache_meta(
     symbol: str,
@@ -247,7 +279,9 @@ def upsert_cache_meta(
     return
 
 
-def cleanup_cache(ttl_days: int = _STOCK_HIST_RETENTION_DAYS, *, context: str = "auto") -> None:
+def cleanup_cache(
+    ttl_days: int = _STOCK_HIST_RETENTION_DAYS, *, context: str = "auto"
+) -> None:
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return

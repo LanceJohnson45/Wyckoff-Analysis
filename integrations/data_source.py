@@ -87,8 +87,7 @@ def _baostock_mark_failure(reason: str) -> None:
             )
             if _DATA_SOURCE_DEBUG:
                 print(
-                    "[data_source] baostock circuit opened: "
-                    f"{_BAOSTOCK_CIRCUIT_NOTE}"
+                    f"[data_source] baostock circuit opened: {_BAOSTOCK_CIRCUIT_NOTE}"
                 )
 
 
@@ -246,7 +245,9 @@ def _normalize_spot_turnover(
     return (None, None, False)
 
 
-def _load_spot_snapshot_map(force_refresh: bool = False) -> dict[str, dict[str, float | None]]:
+def _load_spot_snapshot_map(
+    force_refresh: bool = False,
+) -> dict[str, dict[str, float | None]]:
     global _SPOT_SNAPSHOT_TS, _SPOT_SNAPSHOT_MAP
     now_ts = time.time()
     with _SPOT_SNAPSHOT_LOCK:
@@ -287,7 +288,9 @@ def _load_spot_snapshot_map(force_refresh: bool = False) -> dict[str, dict[str, 
                 open_v = _to_float_or_none(_pick_first(row, ("今开", "开盘")))
                 high_v = _to_float_or_none(_pick_first(row, ("最高",)))
                 low_v = _to_float_or_none(_pick_first(row, ("最低",)))
-                volume_raw = _to_float_or_none(_pick_first(row, ("成交量", "总手", "总量")))
+                volume_raw = _to_float_or_none(
+                    _pick_first(row, ("成交量", "总手", "总量"))
+                )
                 amount_raw = _to_float_or_none(_pick_first(row, ("成交额", "金额")))
                 volume_v, amount_v, turnover_unit_ok = _normalize_spot_turnover(
                     close_v=close_v,
@@ -315,9 +318,7 @@ def _load_spot_snapshot_map(force_refresh: bool = False) -> dict[str, dict[str, 
         except FuturesTimeoutError:
             _debug_source_fail(
                 "spot_snapshot",
-                TimeoutError(
-                    f"timeout>{_SPOT_SNAPSHOT_TIMEOUT_SECONDS:.1f}s"
-                ),
+                TimeoutError(f"timeout>{_SPOT_SNAPSHOT_TIMEOUT_SECONDS:.1f}s"),
             )
             return _SPOT_SNAPSHOT_MAP
         except Exception as e:
@@ -475,7 +476,11 @@ def _fetch_stock_efinance(symbol: str, start: str, end: str) -> pd.DataFrame:
             return orig_mkdir(self, *args, **kwargs)
         except PermissionError:
             path_text = str(self)
-            if "site-packages" in path_text and "efinance" in path_text and "data" in path_text:
+            if (
+                "site-packages" in path_text
+                and "efinance" in path_text
+                and "data" in path_text
+            ):
                 return None
             raise
 
@@ -483,6 +488,7 @@ def _fetch_stock_efinance(symbol: str, start: str, end: str) -> pd.DataFrame:
     try:
         import efinance as ef
         import efinance.config as ef_cfg
+
         # 预触发内部检查，某些版本在此处会尝试读取 data 目录
         from efinance.common.sh_stock_check import is_sh_stock
     except (PermissionError, FileNotFoundError) as e:
@@ -497,7 +503,7 @@ def _fetch_stock_efinance(symbol: str, start: str, end: str) -> pd.DataFrame:
         pass
     ef_cfg.DATA_DIR = cache_dir
     ef_cfg.SEARCH_RESULT_CACHE_PATH = str(cache_dir / "search-cache.json")
-    
+
     # 额外抑制 efinance 内部对 site-packages 下 data 目录的硬编码访问尝试导致的 FileNotFoundError
     # 这种错误通常发生在 Python 3.13 + Streamlit Cloud 环境下
 
@@ -578,9 +584,10 @@ def _fetch_stock_tushare(
     adj_val = "qfq"
     # ts.pro_bar 绕过了 pro 对象，直接使用全局 token，需要显式限流
     from integrations.tushare_client import _wait_for_rate_limit
+
     _wait_for_rate_limit()
     df = ts.pro_bar(ts_code=ts_code, adj=adj_val, start_date=start, end_date=end)
-    
+
     if df is None or df.empty:
         # 诊断：尝试拉取不复权数据，看是否是权限问题（qfq 需要更高积分）
         try:
@@ -590,7 +597,7 @@ def _fetch_stock_tushare(
         except Exception:
             pass
         raise RuntimeError("tushare empty")
-    
+
     df = df.rename(
         columns={
             "trade_date": "日期",
@@ -607,6 +614,35 @@ def _fetch_stock_tushare(
     df["成交额"] = pd.to_numeric(df["成交额"], errors="coerce") * 1000  # 千元 -> 元
     df["换手率"] = pd.NA
     df["振幅"] = pd.NA
+
+    # 尽量补齐换手率（daily_basic），失败不影响主流程。
+    try:
+        _wait_for_rate_limit()
+        basic = pro.daily_basic(
+            ts_code=ts_code,
+            start_date=start,
+            end_date=end,
+            fields="trade_date,turnover_rate",
+        )
+        if basic is not None and not basic.empty and "trade_date" in basic.columns:
+            basic = basic.copy()
+            basic["trade_date"] = basic["trade_date"].astype(str)
+            basic["turnover_rate"] = pd.to_numeric(
+                basic.get("turnover_rate"), errors="coerce"
+            )
+            tr_map = dict(zip(basic["trade_date"], basic["turnover_rate"]))
+            df["换手率"] = df["日期"].astype(str).str.replace("-", "").map(tr_map)
+    except Exception:
+        pass
+
+    # tushare 结果缺少振幅时，按 (最高-最低)/昨收 近似补齐。
+    if "pre_close" in df.columns:
+        pre_close = pd.to_numeric(df.get("pre_close"), errors="coerce")
+        high = pd.to_numeric(df.get("最高"), errors="coerce")
+        low = pd.to_numeric(df.get("最低"), errors="coerce")
+        amp = (high - low) / pre_close.replace(0, pd.NA) * 100
+        df["振幅"] = pd.to_numeric(df.get("振幅"), errors="coerce").fillna(amp)
+
     df["日期"] = (
         df["日期"].astype(str).str[:4]
         + "-"
@@ -679,13 +715,17 @@ def fetch_stock_hist(
         "yes",
         "on",
     }
-    disable_baostock = os.getenv("DATA_SOURCE_DISABLE_BAOSTOCK", "").strip().lower() in {
+    disable_baostock = os.getenv(
+        "DATA_SOURCE_DISABLE_BAOSTOCK", ""
+    ).strip().lower() in {
         "1",
         "true",
         "yes",
         "on",
     }
-    disable_efinance = os.getenv("DATA_SOURCE_DISABLE_EFINANCE", "").strip().lower() in {
+    disable_efinance = os.getenv(
+        "DATA_SOURCE_DISABLE_EFINANCE", ""
+    ).strip().lower() in {
         "1",
         "true",
         "yes",
@@ -756,7 +796,9 @@ def fetch_stock_hist(
         failed_details.append("efinance=disabled_by_env")
     else:
         try:
-            return _tag_source(_fetch_stock_efinance(symbol, start_s, end_s), "efinance")
+            return _tag_source(
+                _fetch_stock_efinance(symbol, start_s, end_s), "efinance"
+            )
         except ModuleNotFoundError as e:
             _debug_source_fail("efinance", e)
             failed_sources.append(f"efinance(未安装: {e.name})")
@@ -767,9 +809,7 @@ def fetch_stock_hist(
             failed_details.append(f"efinance={_compact_error(e)}")
 
     detail_suffix = (
-        f" 失败详情：{'；'.join(failed_details[:4])}。"
-        if failed_details
-        else ""
+        f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""

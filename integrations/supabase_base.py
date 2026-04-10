@@ -6,13 +6,38 @@ Supabase 客户端工厂 — 不依赖 Streamlit，CLI / 脚本 / Web 通用。
 - 脚本/定时任务：使用 create_admin_client()（service_role key，绕过 RLS）
 - Web 端：使用 integrations.supabase_client.get_supabase_client()（内部调本模块 + 绑定用户 session）
 """
+
 from __future__ import annotations
 
 import os
+import warnings
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from supabase import Client
+
+
+# 第三方 SDK 已知告警：由上游参数弃用引发，当前版本 create_client 内部仍会触发。
+warnings.filterwarnings(
+    "ignore",
+    message=r"The 'timeout' parameter is deprecated.*",
+    category=DeprecationWarning,
+    module=r"supabase\._sync\.client",
+)
+warnings.filterwarnings(
+    "ignore",
+    message=r"The 'verify' parameter is deprecated.*",
+    category=DeprecationWarning,
+    module=r"supabase\._sync\.client",
+)
+
+
+@lru_cache(maxsize=8)
+def _create_cached_client(url: str, key: str) -> "Client":
+    from supabase import create_client
+
+    return create_client(url, key)
 
 
 def create_admin_client() -> "Client":
@@ -20,8 +45,6 @@ def create_admin_client() -> "Client":
 
     优先读 SUPABASE_SERVICE_ROLE_KEY，回退到 SUPABASE_KEY。
     """
-    from supabase import create_client
-
     url = os.getenv("SUPABASE_URL", "").strip()
     key = (
         os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
@@ -29,7 +52,7 @@ def create_admin_client() -> "Client":
     )
     if not url or not key:
         raise ValueError("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 未配置")
-    return create_client(url, key)
+    return _create_cached_client(url, key)
 
 
 def create_anon_client() -> "Client":
@@ -37,8 +60,6 @@ def create_anon_client() -> "Client":
 
     Web 端由 supabase_client.get_supabase_client() 在此基础上绑定用户 session。
     """
-    from supabase import create_client
-
     url = os.getenv("SUPABASE_URL", "").strip()
     key = os.getenv("SUPABASE_KEY", "").strip()
 
@@ -57,7 +78,7 @@ def create_anon_client() -> "Client":
             "Missing Supabase credentials. "
             "Please set SUPABASE_URL and SUPABASE_KEY in .env or st.secrets."
         )
-    return create_client(url, key)
+    return _create_cached_client(url, key)
 
 
 def is_admin_configured() -> bool:
