@@ -12,7 +12,7 @@ import requests
 
 DEFAULT_OWNER = "YoungCan-Wang"
 DEFAULT_REPO = "Wyckoff-Analysis"
-DEFAULT_REF = "feature/visible"
+DEFAULT_REF = "main"
 DEFAULT_WORKFLOW_FILE = "web_quant_jobs.yml"
 
 
@@ -20,6 +20,7 @@ def _optional_cache(ttl: int, **kwargs):
     """Return ``st.cache_data`` decorator when Streamlit is available, else a no-op."""
     try:
         import streamlit as st
+
         return st.cache_data(ttl=ttl, **kwargs)
     except Exception:
         return lambda fn: fn
@@ -27,7 +28,6 @@ def _optional_cache(ttl: int, **kwargs):
 
 @dataclass
 class WorkflowRun:
-
     run_id: int
     status: str
     conclusion: str | None
@@ -44,6 +44,7 @@ def _secrets_get(name: str, default: str = "") -> str:
         return val
     try:
         import streamlit as st
+
         if hasattr(st, "secrets") and name in st.secrets:
             return str(st.secrets.get(name) or "").strip()
     except Exception:
@@ -74,9 +75,7 @@ def background_jobs_allowed_for_user(user_id: str) -> bool:
     allow_raw = str(cfg.get("allow_user_ids", "") or "").strip()
     if not allow_raw:
         return True
-    allow_set = {
-        x.strip() for x in allow_raw.replace(";", ",").split(",") if x.strip()
-    }
+    allow_set = {x.strip() for x in allow_raw.replace(";", ",").split(",") if x.strip()}
     return str(user_id or "").strip() in allow_set
 
 
@@ -116,12 +115,21 @@ def trigger_web_job(job_kind: str, payload: dict[str, Any]) -> str:
         "inputs": {
             "job_kind": job_kind,
             "request_id": request_id,
-            "payload_json": json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
+            "payload_json": json.dumps(
+                payload, ensure_ascii=False, separators=(",", ":")
+            ),
         },
     }
     resp = requests.post(url, headers=_headers(), json=body, timeout=20)
     if resp.status_code not in {200, 201, 204}:
-        raise RuntimeError(f"触发 GitHub Actions 失败: HTTP {resp.status_code} {resp.text[:300]}")
+        if resp.status_code == 422 and "No ref found" in (resp.text or ""):
+            raise RuntimeError(
+                "触发 GitHub Actions 失败：目标分支不存在。"
+                f"当前 ref={cfg['ref']}，请在环境变量或 Streamlit secrets 中设置 GITHUB_ACTIONS_REF 为有效分支（如 main）。"
+            )
+        raise RuntimeError(
+            f"触发 GitHub Actions 失败: HTTP {resp.status_code} {resp.text[:300]}"
+        )
     clear_github_actions_caches()
     return request_id
 
@@ -130,7 +138,9 @@ def _parse_run(row: dict[str, Any]) -> WorkflowRun:
     return WorkflowRun(
         run_id=int(row.get("id") or 0),
         status=str(row.get("status", "") or ""),
-        conclusion=(str(row.get("conclusion")) if row.get("conclusion") is not None else None),
+        conclusion=(
+            str(row.get("conclusion")) if row.get("conclusion") is not None else None
+        ),
         html_url=str(row.get("html_url", "") or ""),
         display_title=str(row.get("display_title", "") or row.get("name", "") or ""),
         created_at=str(row.get("created_at", "") or ""),
@@ -140,7 +150,9 @@ def _parse_run(row: dict[str, Any]) -> WorkflowRun:
 
 
 @_optional_cache(ttl=8, show_spinner=False, max_entries=20)
-def find_run_by_request_id(request_id: str, *, per_page: int = 20) -> WorkflowRun | None:
+def find_run_by_request_id(
+    request_id: str, *, per_page: int = 20
+) -> WorkflowRun | None:
     cfg = _config()
     url = (
         f"{_base_api()}/actions/workflows/{cfg['workflow']}/runs"
@@ -217,7 +229,11 @@ def load_latest_result(
             continue
         if str(result.get("job_kind", "") or "") != job_kind:
             continue
-        if requested_by_user_id and str(result.get("requested_by_user_id", "") or "") != requested_by_user_id:
+        if (
+            requested_by_user_id
+            and str(result.get("requested_by_user_id", "") or "")
+            != requested_by_user_id
+        ):
             continue
         return (run, result)
     return (None, None)

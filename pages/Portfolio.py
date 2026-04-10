@@ -168,7 +168,10 @@ def _is_edit_blackout_now(now_dt: datetime | None = None) -> tuple[bool, str]:
         start_minutes = start_h * 60 + start_m
         end_minutes = end_h * 60 + end_m
         if start_minutes <= current_minutes <= end_minutes:
-            return True, f"{label}（北京时间 {start_h:02d}:{start_m:02d}-{end_h:02d}:{end_m:02d}）"
+            return (
+                True,
+                f"{label}（北京时间 {start_h:02d}:{start_m:02d}-{end_h:02d}:{end_m:02d}）",
+            )
     return False, ""
 
 
@@ -213,7 +216,9 @@ def _summarize_order_runs(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             item["cancelled_count"] += 1
         else:
             item["active_count"] += 1
-        if created_at is not None and (item["created_at"] is None or created_at > item["created_at"]):
+        if created_at is not None and (
+            item["created_at"] is None or created_at > item["created_at"]
+        ):
             item["created_at"] = created_at
     return sorted(
         runs.values(),
@@ -240,7 +245,8 @@ def _cancel_todays_orders(portfolio_id: str, trade_date: str) -> tuple[int, str]
         active_ids = [
             row.get("id")
             for row in rows
-            if str(row.get("status", "") or "").strip().upper() not in {"CANCELLED", "CANCELED"}
+            if str(row.get("status", "") or "").strip().upper()
+            not in {"CANCELLED", "CANCELED"}
             and row.get("id")
         ]
         if not active_ids:
@@ -272,6 +278,7 @@ def _render_notice(kind: str, text: str) -> None:
     if tone not in {"info", "success", "warning", "danger"}:
         tone = "info"
     import html as _html
+
     safe_text = _html.escape(str(text))
     st.markdown(
         f"""
@@ -283,45 +290,55 @@ def _render_notice(kind: str, text: str) -> None:
     )
 
 
+def _empty_portfolio(portfolio_id: str) -> dict[str, Any]:
+    return {
+        "portfolio_id": portfolio_id,
+        "name": "Real Portfolio",
+        "free_cash": 0.0,
+        "total_equity": None,
+        "updated_at": "",
+    }
+
+
 def _load_user_live(portfolio_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     supabase = get_supabase_client()
 
-    p_resp = (
-        supabase.table(TABLE_PORTFOLIOS)
-        .select("portfolio_id,name,free_cash,total_equity,updated_at")
-        .eq("portfolio_id", portfolio_id)
-        .limit(1)
-        .execute()
-    )
-    if not p_resp.data:
-        supabase.table(TABLE_PORTFOLIOS).upsert(
-            {
-                "portfolio_id": portfolio_id,
-                "name": "Real Portfolio",
-                "free_cash": 0.0,
-                "total_equity": None,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            },
-            on_conflict="portfolio_id",
-        ).execute()
-        portfolio = {
-            "portfolio_id": portfolio_id,
-            "name": "Real Portfolio",
-            "free_cash": 0.0,
-            "total_equity": None,
-            "updated_at": "",
-        }
-    else:
-        portfolio = p_resp.data[0]
+    portfolio = _empty_portfolio(portfolio_id)
+    positions: list[dict[str, Any]] = []
 
-    pos_resp = (
-        supabase.table(TABLE_POSITIONS)
-        .select("code,name,shares,cost_price,buy_dt,strategy,updated_at")
-        .eq("portfolio_id", portfolio_id)
-        .order("code")
-        .execute()
-    )
-    positions = pos_resp.data or []
+    try:
+        p_resp = (
+            supabase.table(TABLE_PORTFOLIOS)
+            .select("portfolio_id,name,free_cash,total_equity,updated_at")
+            .eq("portfolio_id", portfolio_id)
+            .limit(1)
+            .execute()
+        )
+        if not p_resp.data:
+            st.session_state["portfolio_flash_warning"] = (
+                "当前用户尚未创建持仓记录，页面将以空持仓展示；"
+                "如需保存，请在提交保存时再写入 Supabase。"
+            )
+        else:
+            portfolio = p_resp.data[0]
+
+        pos_resp = (
+            supabase.table(TABLE_POSITIONS)
+            .select("code,name,shares,cost_price,buy_dt,strategy,updated_at")
+            .eq("portfolio_id", portfolio_id)
+            .order("code")
+            .execute()
+        )
+        positions = pos_resp.data or []
+    except APIError as e:
+        st.session_state["portfolio_flash_warning"] = (
+            f"加载持仓失败，请检查 Supabase 表结构或 RLS：{e.code} - {e.message}"
+        )
+        return portfolio, positions
+    except Exception as e:
+        st.session_state["portfolio_flash_warning"] = f"加载持仓失败：{e}"
+        return portfolio, positions
+
     return portfolio, positions
 
 
@@ -573,7 +590,9 @@ with content_col:
     free_cash_initial = _to_float(portfolio.get("free_cash", 0.0), 0.0)
     positions_value_est = _estimate_positions_value(positions)
     display_total_equity = free_cash_initial + positions_value_est
-    holding_count = len([p for p in positions if int(_to_float(p.get("shares", 0), 0)) > 0])
+    holding_count = len(
+        [p for p in positions if int(_to_float(p.get("shares", 0), 0)) > 0]
+    )
 
     st.markdown(
         f"""
@@ -611,7 +630,9 @@ with content_col:
 
     order_runs = _summarize_order_runs(order_rows)
     latest_run = order_runs[0] if order_runs else None
-    latest_active_run = next((run for run in order_runs if int(run.get("active_count", 0)) > 0), None)
+    latest_active_run = next(
+        (run for run in order_runs if int(run.get("active_count", 0)) > 0), None
+    )
     latest_active_sig = (
         str(latest_active_run.get("state_signature", "") or "").strip().lower()
         if latest_active_run
@@ -619,7 +640,8 @@ with content_col:
     )
     latest_active_created = (
         latest_active_run.get("created_at")
-        if latest_active_run and isinstance(latest_active_run.get("created_at"), datetime)
+        if latest_active_run
+        and isinstance(latest_active_run.get("created_at"), datetime)
         else None
     )
     active_order_stale = False
@@ -630,7 +652,9 @@ with content_col:
             active_order_stale = state_updated_at > latest_active_created
 
     flash_notice = str(st.session_state.pop("portfolio_flash_notice", "") or "").strip()
-    flash_warning = str(st.session_state.pop("portfolio_flash_warning", "") or "").strip()
+    flash_warning = str(
+        st.session_state.pop("portfolio_flash_warning", "") or ""
+    ).strip()
     if flash_notice:
         _render_notice("success", flash_notice)
     if flash_warning:
@@ -639,13 +663,23 @@ with content_col:
     tab_edit, tab_orders = st.tabs(["📝 持仓编辑", "📋 AI 建议"])
 
     with tab_edit:
-        st.caption("当前页仅显示当前登录账号持仓。编辑过程中不会自动刷新，点击保存后才会提交并重载。")
+        st.caption(
+            "当前页仅显示当前登录账号持仓。编辑过程中不会自动刷新，点击保存后才会提交并重载。"
+        )
         if edit_locked:
-            _render_notice("warning", f"当前处于编辑禁区：{edit_locked_reason}。为避免与定时任务冲突，暂时禁止修改持仓。")
+            _render_notice(
+                "warning",
+                f"当前处于编辑禁区：{edit_locked_reason}。为避免与定时任务冲突，暂时禁止修改持仓。",
+            )
         elif latest_active_run and active_order_stale:
-            _render_notice("warning", "检测到当前持仓已与最新 AI 建议脱节。保存持仓后，系统会自动作废当日旧建议。")
+            _render_notice(
+                "warning",
+                "检测到当前持仓已与最新 AI 建议脱节。保存持仓后，系统会自动作废当日旧建议。",
+            )
         elif latest_active_run:
-            _render_notice("success", "当前 AI 建议与最新持仓状态一致，可在下方继续编辑。")
+            _render_notice(
+                "success", "当前 AI 建议与最新持仓状态一致，可在下方继续编辑。"
+            )
 
         with st.form("portfolio_edit_form", clear_on_submit=False):
             free_cash_input = st.text_input(
@@ -655,8 +689,13 @@ with content_col:
                 disabled=edit_locked,
             )
 
-            st.markdown('<div class="portfolio-section-title">持仓股</div>', unsafe_allow_html=True)
-            st.caption("每行一只股票。勾选“删除”或把数量改为 0，保存后会清仓。可直接新增行。")
+            st.markdown(
+                '<div class="portfolio-section-title">持仓股</div>',
+                unsafe_allow_html=True,
+            )
+            st.caption(
+                "每行一只股票。勾选“删除”或把数量改为 0，保存后会清仓。可直接新增行。"
+            )
 
             editor_df = st.data_editor(
                 _to_editor_df(positions),
@@ -716,7 +755,9 @@ with content_col:
                     signature_changed = next_signature != current_signature
                     should_cancel_orders = signature_changed or active_order_stale
 
-                    loader = show_page_loading(title="保存中...", subtitle="正在写入 Supabase")
+                    loader = show_page_loading(
+                        title="保存中...", subtitle="正在写入 Supabase"
+                    )
                     try:
                         ok, msg = _save_user_live(
                             portfolio_id=portfolio_id,
@@ -746,7 +787,9 @@ with content_col:
                         st.error(msg)
 
     with tab_orders:
-        st.caption("展示当前账号最近的 AI 订单建议。若持仓已变更而建议未刷新，这里会直接提示。")
+        st.caption(
+            "展示当前账号最近的 AI 订单建议。若持仓已变更而建议未刷新，这里会直接提示。"
+        )
         if order_error:
             _render_notice("warning", order_error)
         elif not order_rows:
@@ -776,7 +819,10 @@ with content_col:
             )
 
             if latest_active_run and active_order_stale:
-                _render_notice("warning", "最新有效 AI 建议基于旧持仓生成，当前已过时。保存持仓后旧建议会自动作废。")
+                _render_notice(
+                    "warning",
+                    "最新有效 AI 建议基于旧持仓生成，当前已过时。保存持仓后旧建议会自动作废。",
+                )
             elif latest_active_run:
                 _render_notice("success", "最新有效 AI 建议与当前持仓一致。")
             else:
@@ -795,8 +841,12 @@ with content_col:
             ref_rows = list(ref_run.get("rows", [])) if ref_run else list(order_rows)
             ref_df = pd.DataFrame(ref_rows).copy()
             if not ref_df.empty:
-                ref_df["持仓关联"] = ref_df["code"].astype(str).apply(
-                    lambda x: "当前持仓" if x in existing_codes else "已不在持仓"
+                ref_df["持仓关联"] = (
+                    ref_df["code"]
+                    .astype(str)
+                    .apply(
+                        lambda x: "当前持仓" if x in existing_codes else "已不在持仓"
+                    )
                 )
                 ref_df["生成时间"] = ref_df["created_at"].apply(
                     lambda x: _fmt_cn_dt_short(_parse_iso_ts(x))
