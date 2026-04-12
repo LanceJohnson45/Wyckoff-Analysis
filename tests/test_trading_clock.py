@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from utils.trading_clock import CN_TZ, resolve_end_calendar_day
+from utils.trading_clock import CN_TZ, US_TZ, resolve_end_calendar_day, resolve_end_calendar_day_for_market
 
 
 class TestResolveEndCalendarDay:
@@ -23,3 +23,19 @@ class TestResolveEndCalendarDay:
     def test_returns_date_type(self):
         result = resolve_end_calendar_day(datetime(2024, 6, 1, 20, 0, tzinfo=CN_TZ))
         assert isinstance(result, date)
+
+
+class TestResolveEndCalendarDayForMarket:
+    def test_us_before_switch_hour_returns_previous_day(self):
+        afternoon = datetime(2024, 3, 15, 15, 0, tzinfo=US_TZ)
+
+        result = resolve_end_calendar_day_for_market("us", afternoon)
+
+        assert result == date(2024, 3, 14)
+
+    def test_us_after_switch_hour_returns_today(self):
+        evening = datetime(2024, 3, 15, 17, 0, tzinfo=US_TZ)
+
+        result = resolve_end_calendar_day_for_market("us", evening)
+
+        assert result == date(2024, 3, 15)

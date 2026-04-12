@@ -225,6 +225,16 @@ def _resolve_trading_window(end_calendar_day: date, trading_days: int) -> Tradin
     return TradingWindow(start_trade_date=start_trade, end_trade_date=end_trade)
 
 
+def _resolve_us_window(end_calendar_day: date, trading_days: int) -> TradingWindow:
+    if trading_days <= 0:
+        raise ValueError("trading_days must be > 0")
+    # US 先用工作日近似窗口，后续可替换为严格交易日历。
+    bdays = pd.bdate_range(end=end_calendar_day, periods=trading_days).date.tolist()
+    if not bdays:
+        raise RuntimeError("failed to build us trading window")
+    return TradingWindow(start_trade_date=bdays[0], end_trade_date=bdays[-1])
+
+
 def _stock_name_from_code(symbol: str) -> str:
     info = ak.stock_info_a_code_name()
     row = info.loc[info["code"] == symbol, "name"]
@@ -370,6 +380,36 @@ def _fetch_hist(symbol: str, window: TradingWindow, adjust: str) -> pd.DataFrame
         start_date=window.start_trade_date,
         end_date=window.end_trade_date,
         adjust=adjust or "",
+        market="cn",
+        context=context,
+    )
+
+
+def _fetch_hist_with_market(
+    symbol: str,
+    window: TradingWindow,
+    adjust: str,
+    market: str,
+) -> pd.DataFrame:
+    from integrations.stock_hist_repository import get_stock_hist
+
+    context = "auto"
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+
+        if get_script_run_ctx() is None:
+            context = "background"
+        else:
+            context = "web"
+    except Exception:
+        context = "background"
+
+    return get_stock_hist(
+        symbol=symbol,
+        start_date=window.start_trade_date,
+        end_date=window.end_trade_date,
+        adjust=adjust or "",
+        market=str(market or "cn").strip().lower(),
         context=context,
     )
 
@@ -428,19 +468,40 @@ def _build_export(df: pd.DataFrame, sector: str) -> pd.DataFrame:
     return out
 
 
-def _normalize_symbols(symbols: list[str]) -> list[str]:
+def _normalize_symbols(symbols: list[str], *, market: str = "cn") -> list[str]:
     out: list[str] = []
     seen: set[str] = set()
+    market_norm = str(market or "cn").strip().lower()
     for raw in symbols:
         s = str(raw).strip()
         if not s:
             continue
-        if not re.fullmatch(r"\d{6}", s):
-            continue
+        if market_norm == "cn":
+            if not re.fullmatch(r"\d{6}", s):
+                continue
+        else:
+            s = s.upper()
+            if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", s):
+                continue
         if s in seen:
             continue
         seen.add(s)
         out.append(s)
+    return out
+
+
+def _extract_us_symbols_from_text(text: str) -> list[str]:
+    if not text:
+        return []
+    tokens = re.findall(r"[A-Za-z][A-Za-z0-9._-]{0,14}", str(text))
+    out: list[str] = []
+    seen: set[str] = set()
+    for tk in tokens:
+        sym = tk.upper().strip()
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        out.append(sym)
     return out
 
 
@@ -460,7 +521,7 @@ def _write_two_csv(
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="fetch_a_share_csv.py",
-        description="使用 akshare 拉取 A 股指定股票近 N 个交易日数据，并输出 hist_data 与 ohlcv 两个 CSV 文件。",
+        description="拉取指定股票近 N 个交易日数据，并输出 hist_data 与 ohlcv 两个 CSV 文件（支持 A 股/美股）。",
     )
     parser.add_argument("--symbol", help="单个股票代码，如 300364")
     parser.add_argument(
@@ -485,14 +546,23 @@ def main() -> int:
         choices=["", "qfq", "hfq"],
         help="复权类型：空字符串=不复权，qfq=前复权，hfq=后复权",
     )
+    parser.add_argument(
+        "--market",
+        default="cn",
+        choices=["cn", "us"],
+        help="市场：cn=A股，us=美股",
+    )
     parser.add_argument("--out-dir", default="data", help="输出目录，默认 data 目录")
     args = parser.parse_args()
 
-    info = ak.stock_info_a_code_name()
-    code_to_name: dict[str, str] = dict(
-        zip(info["code"].astype(str), info["name"].astype(str))
-    )
-    valid_codes = set(code_to_name.keys())
+    market = str(args.market or "cn").strip().lower()
+
+    code_to_name: dict[str, str] = {}
+    valid_codes: set[str] | None = None
+    if market == "cn":
+        info = ak.stock_info_a_code_name()
+        code_to_name = dict(zip(info["code"].astype(str), info["name"].astype(str)))
+        valid_codes = set(code_to_name.keys())
 
     candidates: list[str] = []
     if args.symbol:
@@ -500,32 +570,45 @@ def main() -> int:
     if args.symbols:
         candidates.extend(args.symbols)
     if args.symbols_text:
-        candidates.extend(
-            extract_symbols_from_text(args.symbols_text, valid_codes=valid_codes)
-        )
-    symbols = _normalize_symbols(candidates)
+        if market == "cn":
+            candidates.extend(
+                extract_symbols_from_text(args.symbols_text, valid_codes=valid_codes)
+            )
+        else:
+            candidates.extend(_extract_us_symbols_from_text(args.symbols_text))
+    symbols = _normalize_symbols(candidates, market=market)
     if not symbols:
         raise SystemExit("请提供股票代码：--symbol 或 --symbols 或 --symbols-text")
 
     end_calendar = date.today() - timedelta(days=int(args.end_offset_days))
-    window = _resolve_trading_window(
-        end_calendar_day=end_calendar, trading_days=int(args.trading_days)
-    )
+    if market == "cn":
+        window = _resolve_trading_window(
+            end_calendar_day=end_calendar, trading_days=int(args.trading_days)
+        )
+    else:
+        window = _resolve_us_window(
+            end_calendar_day=end_calendar, trading_days=int(args.trading_days)
+        )
 
     out_dir = os.path.abspath(args.out_dir)
     os.makedirs(out_dir, exist_ok=True)
 
     print(
-        f"trade_window={window.start_trade_date}..{window.end_trade_date} (trading_days={args.trading_days})"
+        f"market={market} trade_window={window.start_trade_date}..{window.end_trade_date} (trading_days={args.trading_days})"
     )
     failures: list[tuple[str, str]] = []
     for symbol in symbols:
         try:
-            name = code_to_name.get(symbol)
-            if not name:
+            name = code_to_name.get(symbol) if market == "cn" else symbol
+            if market == "cn" and not name:
                 raise RuntimeError(f"symbol not found in stock list: {symbol}")
-            df_hist = _fetch_hist(symbol=symbol, window=window, adjust=str(args.adjust))
-            sector = stock_sector_em(symbol)
+            df_hist = _fetch_hist_with_market(
+                symbol=symbol,
+                window=window,
+                adjust=str(args.adjust),
+                market=market,
+            )
+            sector = stock_sector_em(symbol) if market == "cn" else "US"
             hist_path, ohlcv_path = _write_two_csv(
                 symbol=symbol,
                 name=name,

@@ -17,6 +17,7 @@ from core.stock_cache import (
 from integrations.data_source import fetch_stock_hist as fetch_stock_hist_from_source
 
 AdjustType = Literal["", "qfq", "hfq"]
+MarketType = Literal["cn", "us"]
 
 
 def _load_from_md_tables(
@@ -40,7 +41,9 @@ def _date_str(d: date) -> str:
     return d.isoformat()
 
 
-def _slice_df_by_date(df: pd.DataFrame, start_date: date, end_date: date) -> pd.DataFrame:
+def _slice_df_by_date(
+    df: pd.DataFrame, start_date: date, end_date: date
+) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
     out = df.copy()
@@ -75,12 +78,19 @@ def _compute_gap_ranges(
     return [(s, e) for s, e in gaps if s <= e]
 
 
-def _fetch_gap(symbol: str, start_date: date, end_date: date, adjust: AdjustType) -> tuple[pd.DataFrame, str]:
+def _fetch_gap(
+    symbol: str,
+    start_date: date,
+    end_date: date,
+    adjust: AdjustType,
+    market: MarketType,
+) -> tuple[pd.DataFrame, str]:
     df = fetch_stock_hist_from_source(
         symbol=symbol,
         start=start_date,
         end=end_date,
         adjust=adjust,
+        market=market,
     )
     norm = normalize_hist_df(df)
     return norm, "cache"
@@ -91,6 +101,7 @@ def get_stock_hist(
     start_date: str | date,
     end_date: str | date,
     adjust: AdjustType = "qfq",
+    market: MarketType = "cn",
     *,
     context: str = "auto",
     cache_only: bool = False,
@@ -105,6 +116,11 @@ def get_stock_hist(
     end_d = _to_date(end_date)
     if start_d > end_d:
         raise ValueError("start_date 不能晚于 end_date")
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm not in {"cn", "us"}:
+        raise ValueError(f"unsupported market: {market}")
+
+    cache_symbol = symbol if market_norm == "cn" else f"US:{symbol}"
 
     md_df = _load_from_md_tables(symbol, start_d, end_d, adjust, context)
     if md_df is not None and not md_df.empty:
@@ -114,11 +130,11 @@ def get_stock_hist(
         return out_cn
 
     cache_adjust = adjust or "none"
-    meta = get_cache_meta(symbol, cache_adjust, context=context)
+    meta = get_cache_meta(cache_symbol, cache_adjust, context=context)
     cached_norm: pd.DataFrame | None = None
     if meta is not None:
         cached_norm = load_cached_history(
-            symbol=symbol,
+            symbol=cache_symbol,
             adjust=cache_adjust,
             source=meta.source,
             start_date=meta.start_date,
@@ -153,7 +169,7 @@ def get_stock_hist(
             f"[stock_repo] cache_miss symbol={symbol} adjust={cache_adjust} "
             f"range={gap_start}..{gap_end} context={context}"
         )
-        frame, _ = _fetch_gap(symbol, gap_start, gap_end, adjust)
+        frame, _ = _fetch_gap(symbol, gap_start, gap_end, adjust, market_norm)
         fetched_frames.append(frame)
 
     merged = _merge_norm_frames(
@@ -164,14 +180,14 @@ def get_stock_hist(
         # 缓存无可用数据且补拉失败时，按原行为抛错
         # （fetch_stock_hist_from_source 内部会提供详细数据源失败信息）
         did_fetch = True
-        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust)
+        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
         merged = frame
 
     result_norm = _slice_df_by_date(merged, start_d, end_d)
     if result_norm.empty:
         # 防御性兜底：强制拉取完整窗口
         did_fetch = True
-        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust)
+        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
         result_norm = _slice_df_by_date(frame, start_d, end_d)
         merged = _merge_norm_frames([merged, frame])
     chosen_source = "cache"
@@ -181,14 +197,14 @@ def get_stock_hist(
         new_start = min(start_d, meta.start_date) if meta else start_d
         new_end = max(end_d, meta.end_date) if meta else end_d
         upsert_cache_data(
-            symbol=symbol,
+            symbol=cache_symbol,
             adjust=cache_adjust,
             source=chosen_source,
             df=merged,
             context=context,
         )
         upsert_cache_meta(
-            symbol=symbol,
+            symbol=cache_symbol,
             adjust=cache_adjust,
             source=chosen_source,
             start_date=new_start,

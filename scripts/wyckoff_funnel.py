@@ -33,6 +33,7 @@ if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from integrations.fetch_a_share_csv import (
     _resolve_trading_window,
+    _fetch_hist_with_market,
     get_stocks_by_board,
     _normalize_symbols,
 )
@@ -188,14 +189,26 @@ def _normalize_hist(df: pd.DataFrame) -> pd.DataFrame:
     return normalize_hist_from_fetch(df)
 
 
-def _fetch_hist(symbol: str, window, adjust: str) -> pd.DataFrame:
-    from integrations.fetch_a_share_csv import _fetch_hist as _fh
+def _resolve_funnel_market() -> str:
+    market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
+    if market not in {"cn", "us"}:
+        return "cn"
+    return market
 
-    df = _fh(symbol=symbol, window=window, adjust=adjust)
+
+def _fetch_hist(symbol: str, window, adjust: str) -> pd.DataFrame:
+    df = _fetch_hist_with_market(
+        symbol=symbol,
+        window=window,
+        adjust=adjust,
+        market=_resolve_funnel_market(),
+    )
     return _normalize_hist(df)
 
 
-def _stock_name_map() -> dict[str, str]:
+def _stock_name_map(market: str = "cn") -> dict[str, str]:
+    if str(market or "cn").strip().lower() != "cn":
+        return {}
     try:
         from integrations.fetch_a_share_csv import get_all_stocks
 
@@ -280,14 +293,38 @@ def _job_end_calendar_day() -> date:
 
 
 def _resolve_symbol_pool_from_env() -> tuple[list[str], dict[str, str], dict[str, int | str]]:
+    market = _resolve_funnel_market()
     pool_mode = str(os.getenv("FUNNEL_POOL_MODE", "") or "").strip().lower()
     limit_count = max(_parse_int_env("FUNNEL_POOL_LIMIT_COUNT", 0), 0)
 
+    if market == "us":
+        manual_raw = str(os.getenv("FUNNEL_POOL_MANUAL_SYMBOLS", "") or "")
+        symbols = _normalize_symbols(
+            [x.strip() for x in manual_raw.replace(";", ",").replace("\n", ",").split(",")],
+            market="us",
+        )
+        if limit_count > 0:
+            symbols = symbols[:limit_count]
+        return (
+            symbols,
+            {code: code for code in symbols},
+            {
+                "pool_mode": "manual" if pool_mode == "manual" else "manual_only",
+                "pool_market": "us",
+                "pool_main": 0,
+                "pool_chinext": 0,
+                "pool_merged": len(symbols),
+                "pool_st_excluded": 0,
+                "pool_limit": limit_count,
+            },
+        )
+
     if pool_mode == "manual":
         manual_raw = str(os.getenv("FUNNEL_POOL_MANUAL_SYMBOLS", "") or "")
-        all_name_map = _stock_name_map()
+        all_name_map = _stock_name_map("cn")
         symbols = _normalize_symbols(
-            [x.strip() for x in manual_raw.replace(";", ",").replace("\n", ",").split(",")]
+            [x.strip() for x in manual_raw.replace(";", ",").replace("\n", ",").split(",")],
+            market="cn",
         )
         name_map = {code: all_name_map.get(code, "") for code in symbols}
         return (
@@ -1111,6 +1148,7 @@ def run_funnel_job(
     end_s = window.end_trade_date.strftime("%Y%m%d")
 
     all_symbols, pool_name_map, pool_stats = _resolve_symbol_pool_from_env()
+    market = _resolve_funnel_market()
     main_items = [None] * int(pool_stats.get("pool_main", 0) or 0)
     chinext_items = [None] * int(pool_stats.get("pool_chinext", 0) or 0)
     merged_symbols = list(pool_name_map.keys())
@@ -1120,22 +1158,29 @@ def run_funnel_job(
     )
     print(
         "[funnel] 股票池统计: "
-        f"mode={pool_stats.get('pool_mode')}, main={len(main_items)}, chinext={len(chinext_items)}, "
+        f"market={market}, mode={pool_stats.get('pool_mode')}, main={len(main_items)}, chinext={len(chinext_items)}, "
         f"merged={len(merged_symbols)}, st_excluded={len(st_symbols)}, "
         f"final={len(all_symbols)}, limit={pool_stats.get('pool_limit', 0)}, batches={total_batches} (batch_size={BATCH_SIZE})"
     )
 
     # 批量元数据
-    print(f"[funnel] 加载行业映射...")
-    sector_map = fetch_sector_map()
-    print(f"[funnel] 加载市值数据...")
-    market_cap_map = fetch_market_cap_map()
-    if not market_cap_map:
-        print(
-            "[funnel] ⚠️ 市值数据为空（TUSHARE_TOKEN 可能缺失/失效），Layer1 将跳过市值过滤"
-        )
+    sector_map: dict[str, str]
+    market_cap_map: dict[str, float]
+    if market == "cn":
+        print(f"[funnel] 加载行业映射...")
+        sector_map = fetch_sector_map()
+        print(f"[funnel] 加载市值数据...")
+        market_cap_map = fetch_market_cap_map()
+        if not market_cap_map:
+            print(
+                "[funnel] ⚠️ 市值数据为空（TUSHARE_TOKEN 可能缺失/失效），Layer1 将跳过市值过滤"
+            )
+    else:
+        sector_map = {}
+        market_cap_map = {}
+        print("[funnel] US 模式暂不加载行业与市值映射，按价格/量能结构筛选")
     print(f"[funnel] 加载股票名称...")
-    name_map = _stock_name_map()
+    name_map = _stock_name_map(market)
 
     # 大盘基准
     bench_df = None
@@ -1366,6 +1411,7 @@ def run_funnel_job(
         sector_rotation_map=(sector_rotation.get("state_map", {}) or {}),
     )
     metrics = {
+        "market": market,
         "total_symbols": len(all_symbols),
         "pool_mode": str(pool_stats.get("pool_mode", "") or ""),
         "pool_main": len(main_items),
@@ -1438,8 +1484,9 @@ def run(
     """
     triggers, metrics = run_funnel_job()
     benchmark_context = metrics.get("benchmark_context", {}) or {}
-    name_map = _stock_name_map()
-    sector_map = fetch_sector_map()
+    market = str(metrics.get("market", "cn") or "cn").strip().lower()
+    name_map = _stock_name_map(market)
+    sector_map = fetch_sector_map() if market == "cn" else {}
     latest_close_map = metrics.get("latest_close_map", {}) or {}
     if latest_close_map:
         benchmark_context["latest_close_map"] = latest_close_map
@@ -1593,6 +1640,7 @@ def run(
 
         symbols_for_report = [
             {
+                "market": market,
                 "code": c,
                 "name": name_map.get(c, c),
                 "tag": "、".join(code_to_reasons.get(c, [])),
@@ -1915,6 +1963,7 @@ def run(
 
     symbols_for_report = [
         {
+            "market": market,
             "code": c,
             "name": name_map.get(c, c),
             "tag": (

@@ -25,6 +25,32 @@ TABLE_TRADE_ORDERS = "trade_orders"
 TABLE_DAILY_NAV = "daily_nav"
 
 
+def _normalize_market(raw: Any, *, default: str = "cn") -> str:
+    market = str(raw or default or "cn").strip().lower()
+    return market if market in {"cn", "us"} else default
+
+
+def _infer_symbol_market(raw: Any, *, default: str = "cn") -> str:
+    text = str(raw or "").strip().upper()
+    if re.fullmatch(r"\d{6}", text):
+        return "cn"
+    if re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", text):
+        return "us"
+    return default
+
+
+def _normalize_portfolio_code(raw: Any, *, market: str) -> str:
+    market_norm = _normalize_market(market)
+    text = str(raw or "").strip()
+    if market_norm == "cn":
+        digits = "".join(ch for ch in text if ch.isdigit())
+        return digits[-6:].zfill(6) if digits else ""
+    symbol = text.upper()
+    if re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", symbol):
+        return symbol
+    return ""
+
+
 def load_user_settings_admin(user_id: str) -> dict[str, Any] | None:
     user_id = str(user_id or "").strip()
     if not user_id or not is_supabase_configured():
@@ -64,11 +90,13 @@ def compute_portfolio_state_signature(
 ) -> str:
     normalized_positions: list[dict[str, Any]] = []
     for row in positions or []:
-        code = str(row.get("code", "") or "").strip()
-        if not re.fullmatch(r"\d{6}", code):
+        market = _normalize_market(row.get("market"), default="cn")
+        code = _normalize_portfolio_code(row.get("code"), market=market)
+        if not code:
             continue
         normalized_positions.append(
             {
+                "market": market,
                 "code": code,
                 "shares": int(row.get("shares", 0) or 0),
                 "cost_price": round(float(row.get("cost_price", row.get("cost", 0.0)) or 0.0), 4),
@@ -121,8 +149,9 @@ def load_portfolio_state(portfolio_id: str = "USER_LIVE") -> dict[str, Any] | No
         p = p_resp.data[0]
         pos_resp = (
             client.table(TABLE_PORTFOLIO_POSITIONS)
-            .select("code,name,shares,cost_price,buy_dt,strategy,stop_loss,updated_at")
+            .select("market,code,name,shares,cost_price,buy_dt,strategy,stop_loss,updated_at")
             .eq("portfolio_id", portfolio_id)
+            .order("market")
             .order("code")
             .execute()
         )
@@ -134,6 +163,7 @@ def load_portfolio_state(portfolio_id: str = "USER_LIVE") -> dict[str, Any] | No
                 latest_updates.append(row_updated_at)
             positions.append(
                 {
+                    "market": _normalize_market(row.get("market"), default="cn"),
                     "code": str(row.get("code", "")).strip(),
                     "name": str(row.get("name", "")).strip(),
                     "cost": float(row.get("cost_price", 0.0) or 0.0),
@@ -304,6 +334,11 @@ def save_ai_trade_orders(
         client = _get_supabase_admin_client()
         payload: list[dict[str, Any]] = []
         for o in orders:
+            code = str(o.get("code", "")).strip()
+            market = _normalize_market(
+                o.get("market"),
+                default=_infer_symbol_market(code),
+            )
             payload.append(
                 {
                     "run_id": run_id,
@@ -311,7 +346,8 @@ def save_ai_trade_orders(
                     "trade_date": trade_date,
                     "model": model,
                     "market_view": market_view or "",
-                    "code": str(o.get("code", "")).strip(),
+                    "market": market,
+                    "code": code,
                     "name": str(o.get("name", "")).strip(),
                     "action": str(o.get("action", "")).strip(),
                     "status": str(o.get("status", "")).strip(),

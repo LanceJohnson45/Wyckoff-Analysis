@@ -666,11 +666,91 @@ def _fetch_stock_tushare(
     ].copy()
 
 
+def _fetch_stock_yfinance(
+    symbol: str,
+    start: str,
+    end: str,
+) -> pd.DataFrame:
+    try:
+        import yfinance as yf
+    except Exception as e:
+        raise RuntimeError(f"yfinance unavailable: {e}")
+
+    start_iso = f"{start[:4]}-{start[4:6]}-{start[6:8]}"
+    end_iso = f"{end[:4]}-{end[4:6]}-{end[6:8]}"
+    # yfinance 的 end 为开区间，+1 天可覆盖 end 当天。
+    end_ts = pd.to_datetime(end_iso, errors="coerce") + pd.Timedelta(days=1)
+    if pd.isna(end_ts):
+        raise RuntimeError("invalid end date")
+
+    df = yf.download(
+        str(symbol).strip(),
+        start=start_iso,
+        end=end_ts.strftime("%Y-%m-%d"),
+        interval="1d",
+        auto_adjust=True,
+        progress=False,
+    )
+    if df is None or df.empty:
+        raise RuntimeError("yfinance empty")
+
+    work = df.copy()
+    work.columns = [c[0] if isinstance(c, tuple) else c for c in work.columns]
+    work = work.reset_index()
+    date_col = (
+        "Date"
+        if "Date" in work.columns
+        else ("index" if "index" in work.columns else None)
+    )
+    if date_col is None:
+        raise RuntimeError("yfinance missing date column")
+
+    work = work.rename(
+        columns={
+            date_col: "日期",
+            "Open": "开盘",
+            "High": "最高",
+            "Low": "最低",
+            "Close": "收盘",
+            "Volume": "成交量",
+        }
+    )
+    required = ["日期", "开盘", "最高", "最低", "收盘", "成交量"]
+    for col in required:
+        if col not in work.columns:
+            raise RuntimeError(f"yfinance missing column {col}")
+    work["日期"] = pd.to_datetime(work["日期"], errors="coerce").dt.strftime("%Y-%m-%d")
+    for col in ["开盘", "最高", "最低", "收盘", "成交量"]:
+        work[col] = pd.to_numeric(work[col], errors="coerce")
+
+    work["成交额"] = work["收盘"] * work["成交量"]
+    work["涨跌幅"] = work["收盘"].pct_change() * 100.0
+    work["换手率"] = pd.NA
+    base = work["收盘"].shift(1)
+    work["振幅"] = (work["最高"] - work["最低"]) / base.replace(0, pd.NA) * 100.0
+
+    return work[
+        [
+            "日期",
+            "开盘",
+            "最高",
+            "最低",
+            "收盘",
+            "成交量",
+            "成交额",
+            "涨跌幅",
+            "换手率",
+            "振幅",
+        ]
+    ].copy()
+
+
 def fetch_stock_hist(
     symbol: str,
     start: str | date,
     end: str | date,
     adjust: Literal["", "qfq", "hfq"] = "qfq",
+    market: Literal["cn", "us"] = "cn",
 ) -> pd.DataFrame:
     """
     个股日线：tushare 优先（固定 qfq），失败时回退 akshare/baostock/efinance。
@@ -680,6 +760,10 @@ def fetch_stock_hist(
     - DATA_SOURCE_DISABLE_EFINANCE=1
     返回列：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
     """
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm not in {"cn", "us"}:
+        raise ValueError(f"unsupported market: {market}")
+
     start_s = (
         start.strftime("%Y%m%d")
         if isinstance(start, date)
@@ -688,6 +772,16 @@ def fetch_stock_hist(
     end_s = (
         end.strftime("%Y%m%d") if isinstance(end, date) else str(end).replace("-", "")
     )
+
+    if market_norm == "us":
+        try:
+            return _tag_source(
+                _fetch_stock_yfinance(symbol, start_s, end_s), "yfinance"
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"US stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]: {_compact_error(e)}"
+            ) from e
 
     failed_sources: list[str] = []
     failed_details: list[str] = []

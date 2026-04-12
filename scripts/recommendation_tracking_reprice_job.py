@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 推荐跟踪价格回填任务（独立定时）：
-- 从 recommendation_tracking 读取 code / recommend_date
-- 使用 Tushare 不复权日线（daily）计算：
+- 从 recommendation_tracking 读取 market/symbol/recommend_date
+- 使用统一历史行情入口计算：
   - initial_price: 推荐时间对应最近交易日收盘价
   - current_price: 当前系统时间对应最近交易日收盘价
   - change_pct
@@ -40,12 +40,17 @@ def _log(msg: str, logs_path: str | None = None) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="推荐跟踪价格回填任务（Tushare 不复权）")
     parser.add_argument("--logs", default="", help="日志文件路径（可选）")
+    parser.add_argument("--market", choices=["cn", "us", "all"], default="all", help="仅回填指定市场；默认 all")
     args = parser.parse_args()
     logs_path = str(args.logs or "").strip() or None
+    market = "" if args.market == "all" else str(args.market)
 
-    _log("开始执行 recommendation tracking 回填任务（Tushare 不复权）", logs_path)
+    _log(
+        f"开始执行 recommendation tracking 回填任务（统一历史行情口径，market={args.market}）",
+        logs_path,
+    )
     try:
-        summary = refresh_tracking_prices_with_tushare_unadjusted()
+        summary = refresh_tracking_prices_with_tushare_unadjusted(market=market)
     except Exception as e:
         _log(f"任务失败: {e}", logs_path)
         return 1
@@ -65,4 +70,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

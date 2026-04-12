@@ -7,6 +7,32 @@ from core.token_storage import restore_tokens_from_storage
 from integrations.supabase_market_signal import compose_market_banner, load_latest_market_signal_daily
 from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS
 
+
+def _normalize_market(raw, default: str = "cn") -> str:
+    market = str(raw or default or "cn").strip().lower()
+    return market if market in {"cn", "us"} else default
+
+
+def _resolve_market_signal_market() -> str:
+    direct = st.session_state.get("market_signal_market")
+    if direct:
+        return _normalize_market(direct)
+
+    for key in ("ai_find_gold_background_market",):
+        value = st.session_state.get(key)
+        if value:
+            return _normalize_market(value)
+
+    wyckoff_payload = st.session_state.get("wyckoff_payload")
+    if isinstance(wyckoff_payload, dict) and wyckoff_payload.get("market"):
+        return _normalize_market(wyckoff_payload.get("market"))
+
+    custom_export_payload = st.session_state.get("custom_export_payload")
+    if isinstance(custom_export_payload, dict) and custom_export_payload.get("market"):
+        return _normalize_market(custom_export_payload.get("market"))
+
+    return "cn"
+
 def _set_default(key: str, value) -> None:
     if key not in st.session_state or st.session_state.get(key) is None:
         st.session_state[key] = value
@@ -403,13 +429,14 @@ def _fmt_date_ymd(raw) -> str:
         return "--"
 
 
-@st.cache_data(ttl=60, show_spinner=False, max_entries=1)
-def _load_cached_market_signal() -> dict | None:
-    return load_latest_market_signal_daily()
+@st.cache_data(ttl=60, show_spinner=False, max_entries=4)
+def _load_cached_market_signal(market: str) -> dict | None:
+    return load_latest_market_signal_daily(market=_normalize_market(market))
 
 
 def _render_market_signal_banner() -> None:
-    row = _load_cached_market_signal()
+    market = _resolve_market_signal_market()
+    row = _load_cached_market_signal(market)
     if not isinstance(row, dict):
         return
 
@@ -445,6 +472,11 @@ def _render_market_signal_banner() -> None:
             return "--"
 
     chips = [
+        (
+            "市场",
+            market.upper(),
+            "neutral",
+        ),
         (
             f"大盘水温（上证 {benchmark_date}）",
             f"{regime} {_fmt_plain(main_close)}",

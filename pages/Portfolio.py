@@ -15,7 +15,7 @@ from integrations.supabase_portfolio import (
     compute_portfolio_state_signature,
     extract_state_signature_from_run_id,
 )
-from utils.trading_clock import CN_TZ, resolve_end_calendar_day
+from utils.trading_clock import CN_TZ, resolve_end_calendar_day_for_market
 
 PORTFOLIO_SCOPE = "USER_LIVE"
 TABLE_PORTFOLIOS = "portfolios"
@@ -66,6 +66,45 @@ def _format_buy_dt(v: Any) -> str:
     if not d:
         return ""
     return d.strftime("%Y%m%d")
+
+
+def _infer_symbol_market(code: Any) -> str:
+    text = str(code or "").strip().upper()
+    if re.fullmatch(r"\d{6}", text):
+        return "cn"
+    if re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", text):
+        return "us"
+    return "cn"
+
+
+def _normalize_portfolio_code(raw: Any, market: str) -> str:
+    market_norm = str(market or "cn").strip().lower()
+    text = str(raw or "").strip()
+    if market_norm == "cn":
+        digits = "".join(ch for ch in text if ch.isdigit())
+        return digits[-6:].zfill(6) if digits else ""
+    symbol = text.upper()
+    if re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", symbol):
+        return symbol
+    return ""
+
+
+def _infer_portfolio_market(
+    positions: list[dict[str, Any]],
+    order_rows: list[dict[str, Any]],
+) -> str:
+    codes: list[str] = []
+    for row in positions:
+        code = str(row.get("code", "") or "").strip()
+        if code:
+            codes.append(code)
+    for row in order_rows:
+        code = str(row.get("code", "") or "").strip()
+        if code:
+            codes.append(code)
+    if any(_infer_symbol_market(code) == "us" for code in codes):
+        return "us"
+    return "cn"
 
 
 def _format_money(v: float) -> str:
@@ -139,8 +178,9 @@ def _calc_state_updated_at(
 def _signature_positions_from_editor(editor_df: pd.DataFrame) -> list[dict[str, Any]]:
     items: list[dict[str, Any]] = []
     for row in editor_df.to_dict("records"):
-        code = str(row.get("代码", "")).strip()
-        if not re.fullmatch(r"\d{6}", code):
+        market = str(row.get("市场", "cn") or "cn").strip().lower()
+        code = _normalize_portfolio_code(row.get("代码", ""), market)
+        if market not in {"cn", "us"} or not code:
             continue
         if bool(row.get("删除", False)):
             continue
@@ -149,6 +189,7 @@ def _signature_positions_from_editor(editor_df: pd.DataFrame) -> list[dict[str, 
             continue
         items.append(
             {
+                "market": market,
                 "code": code,
                 "shares": shares,
                 "cost_price": _to_float(row.get("成本", 0.0), 0.0),
@@ -159,7 +200,13 @@ def _signature_positions_from_editor(editor_df: pd.DataFrame) -> list[dict[str, 
     return items
 
 
-def _is_edit_blackout_now(now_dt: datetime | None = None) -> tuple[bool, str]:
+def _is_edit_blackout_now(
+    now_dt: datetime | None = None,
+    *,
+    market: str = "cn",
+) -> tuple[bool, str]:
+    if str(market or "cn").strip().lower() != "cn":
+        return False, ""
     now_dt = now_dt or datetime.now(CN_TZ)
     if now_dt.weekday() >= 5:
         return False, ""
@@ -180,7 +227,7 @@ def _load_recent_orders(portfolio_id: str, limit: int = 200) -> list[dict[str, A
     resp = (
         supabase.table(TABLE_TRADE_ORDERS)
         .select(
-            "id,run_id,trade_date,model,market_view,code,name,action,status,shares,"
+            "id,run_id,trade_date,model,market,market_view,code,name,action,status,shares,"
             "price_hint,amount,stop_loss,reason,tape_condition,invalidate_condition,created_at"
         )
         .eq("portfolio_id", portfolio_id)
@@ -324,8 +371,9 @@ def _load_user_live(portfolio_id: str) -> tuple[dict[str, Any], list[dict[str, A
 
         pos_resp = (
             supabase.table(TABLE_POSITIONS)
-            .select("code,name,shares,cost_price,buy_dt,strategy,updated_at")
+            .select("market,code,name,shares,cost_price,buy_dt,strategy,updated_at")
             .eq("portfolio_id", portfolio_id)
+            .order("market")
             .order("code")
             .execute()
         )
@@ -347,6 +395,7 @@ def _to_editor_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     for row in rows:
         data.append(
             {
+                "市场": str(row.get("market", "cn") or "cn").strip().lower() or "cn",
                 "代码": str(row.get("code", "")).strip(),
                 "名称": str(row.get("name", "")).strip(),
                 "成本": _to_float(row.get("cost_price", 0.0)),
@@ -359,6 +408,7 @@ def _to_editor_df(rows: list[dict[str, Any]]) -> pd.DataFrame:
     if not data:
         data.append(
             {
+                "市场": "cn",
                 "代码": "",
                 "名称": "",
                 "成本": 0.0,
@@ -376,23 +426,31 @@ def _save_user_live(
     portfolio_id: str,
     free_cash: float,
     editor_df: pd.DataFrame,
-    existing_codes: set[str],
+    existing_codes: set[tuple[str, str]],
 ) -> tuple[bool, str]:
     supabase = get_supabase_client()
 
-    payload_by_code: dict[str, dict[str, Any]] = {}
-    deleted_codes: set[str] = set()
+    payload_by_code: dict[tuple[str, str], dict[str, Any]] = {}
+    deleted_codes: set[tuple[str, str]] = set()
     errors: list[str] = []
 
     for idx, row in enumerate(editor_df.to_dict("records"), start=1):
-        code = str(row.get("代码", "")).strip()
+        market = str(row.get("市场", "cn") or "cn").strip().lower()
+        if market not in {"cn", "us"}:
+            errors.append(f"第 {idx} 行市场非法（必须为 cn 或 us）")
+            continue
+        code = _normalize_portfolio_code(row.get("代码", ""), market)
         if not code:
             continue
-        if not re.fullmatch(r"\d{6}", code):
-            errors.append(f"第 {idx} 行代码非法（必须6位数字）")
+        key = (market, code)
+        if market == "cn" and not re.fullmatch(r"\d{6}", code):
+            errors.append(f"第 {idx} 行代码非法（A股必须6位数字）")
             continue
-        if code in payload_by_code:
-            errors.append(f"代码重复：{code}")
+        if market == "us" and not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", code):
+            errors.append(f"第 {idx} 行代码非法（US 代码需为字母开头）")
+            continue
+        if key in payload_by_code:
+            errors.append(f"代码重复：{market.upper()}:{code}")
             continue
 
         mark_delete = bool(row.get("删除", False))
@@ -408,11 +466,12 @@ def _save_user_live(
 
         # 删除勾选或数量<=0 都视为清仓
         if mark_delete or shares <= 0:
-            deleted_codes.add(code)
+            deleted_codes.add(key)
             continue
 
-        payload_by_code[code] = {
+        payload_by_code[key] = {
             "portfolio_id": portfolio_id,
+            "market": market,
             "code": code,
             "name": name,
             "shares": shares,
@@ -445,11 +504,12 @@ def _save_user_live(
             on_conflict="portfolio_id",
         ).execute()
 
-        for code in sorted(delete_codes):
+        for market, code in sorted(delete_codes):
             (
                 supabase.table(TABLE_POSITIONS)
                 .delete()
                 .eq("portfolio_id", portfolio_id)
+                .eq("market", market)
                 .eq("code", code)
                 .execute()
             )
@@ -457,7 +517,7 @@ def _save_user_live(
         if payload_by_code:
             supabase.table(TABLE_POSITIONS).upsert(
                 list(payload_by_code.values()),
-                on_conflict="portfolio_id,code",
+                on_conflict="portfolio_id,market,code",
             ).execute()
         return (
             True,
@@ -586,7 +646,13 @@ with content_col:
     finally:
         loading.empty()
 
-    existing_codes = {str(x.get("code", "")).strip() for x in positions}
+    existing_codes = {
+        (
+            str(x.get("market", "cn") or "cn").strip().lower() or "cn",
+            str(x.get("code", "")).strip(),
+        )
+        for x in positions
+    }
     free_cash_initial = _to_float(portfolio.get("free_cash", 0.0), 0.0)
     positions_value_est = _estimate_positions_value(positions)
     display_total_equity = free_cash_initial + positions_value_est
@@ -614,11 +680,6 @@ with content_col:
         unsafe_allow_html=True,
     )
 
-    current_signature = compute_portfolio_state_signature(free_cash_initial, positions)
-    state_updated_at = _calc_state_updated_at(portfolio, positions)
-    current_trade_date = resolve_end_calendar_day().strftime("%Y-%m-%d")
-    edit_locked, edit_locked_reason = _is_edit_blackout_now()
-
     order_rows: list[dict[str, Any]] = []
     order_error = ""
     try:
@@ -627,6 +688,14 @@ with content_col:
         order_error = f"AI 建议读取失败: {e.code} - {e.message}"
     except Exception as e:
         order_error = f"AI 建议读取失败: {e}"
+
+    portfolio_market = _infer_portfolio_market(positions, order_rows)
+    st.session_state["market_signal_market"] = portfolio_market
+
+    current_signature = compute_portfolio_state_signature(free_cash_initial, positions)
+    state_updated_at = _calc_state_updated_at(portfolio, positions)
+    current_trade_date = resolve_end_calendar_day_for_market(portfolio_market).strftime("%Y-%m-%d")
+    edit_locked, edit_locked_reason = _is_edit_blackout_now(market=portfolio_market)
 
     order_runs = _summarize_order_runs(order_rows)
     latest_run = order_runs[0] if order_runs else None
@@ -666,6 +735,11 @@ with content_col:
         st.caption(
             "当前页仅显示当前登录账号持仓。编辑过程中不会自动刷新，点击保存后才会提交并重载。"
         )
+        if portfolio_market == "us":
+            _render_notice(
+                "info",
+                "当前账号已按 US 口径推断 trade_date 与顶部市场信号；但本页编辑器仍主要按 A 股代码/字段设计，完整 US 持仓编辑仍需单独扩展。",
+            )
         if edit_locked:
             _render_notice(
                 "warning",
@@ -703,10 +777,16 @@ with content_col:
                 hide_index=True,
                 num_rows="dynamic",
                 column_config={
+                    "市场": st.column_config.SelectboxColumn(
+                        "市场",
+                        options=["cn", "us"],
+                        required=True,
+                        help="cn=A股，us=美股",
+                    ),
                     "代码": st.column_config.TextColumn(
                         "代码",
-                        help="A股6位代码，如 002273",
-                        max_chars=6,
+                        help="A股示例 002273；美股示例 AAPL",
+                        max_chars=15,
                         required=True,
                     ),
                     "名称": st.column_config.TextColumn("名称", max_chars=20),

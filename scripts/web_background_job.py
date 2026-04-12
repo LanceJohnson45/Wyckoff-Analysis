@@ -44,6 +44,10 @@ def _load_payload(raw: str) -> dict[str, Any]:
 
 
 def _apply_funnel_env(payload: dict[str, Any]) -> None:
+    market = str(payload.get("market", "") or "").strip().lower()
+    if market in {"cn", "us"}:
+        os.environ["FUNNEL_MARKET"] = market
+
     pool_mode = str(payload.get("pool_mode", "") or "").strip().lower()
     if pool_mode in {"manual", "board"}:
         os.environ["FUNNEL_POOL_MODE"] = pool_mode
@@ -79,6 +83,9 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
 
 def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     _apply_funnel_env(payload)
+    market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
+    if market not in {"cn", "us"}:
+        market = "cn"
     from core.funnel_pipeline import run_funnel
 
     ok, symbols_for_report, benchmark_context, details = run_funnel(
@@ -112,10 +119,12 @@ def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, An
     return {
         "request_id": request_id,
         "job_kind": "funnel_screen",
+        "market": market,
         "ok": bool(ok),
         "benchmark_context": benchmark_context,
         "metrics": metrics,
         "summary": {
+            "market": str(metrics.get("market", market) or market),
             "total_symbols": int(metrics.get("total_symbols", 0) or 0),
             "layer1": int(metrics.get("layer1", 0) or 0),
             "layer2": int(metrics.get("layer2", 0) or 0),
@@ -216,6 +225,9 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
     provider, api_key, model, base_url = _resolve_model_credentials(payload)
     webhook_url = str(payload.get("webhook_url", "") or "").strip()
     benchmark_context = payload.get("benchmark_context", {}) or {}
+    market = str(payload.get("market", "") or (benchmark_context.get("market") if isinstance(benchmark_context, dict) else "") or "cn").strip().lower()
+    if market not in {"cn", "us"}:
+        market = "cn"
 
     from core.batch_report import run_step3
 
@@ -228,10 +240,12 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
         notify=bool(webhook_url),
         provider=provider,
         llm_base_url=base_url,
+        market=market,
     )
     return {
         "request_id": request_id,
         "job_kind": "batch_ai_report",
+        "market": market,
         "ok": bool(ok),
         "reason": str(reason or ""),
         "provider": provider,

@@ -114,7 +114,23 @@ def _parse_hold_days_list(raw: str) -> list[int]:
     return dedup
 
 
-def _build_universe(board: str, sample_size: int) -> tuple[list[str], dict[str, str]]:
+def _build_universe(
+    board: str,
+    sample_size: int,
+    *,
+    market: str = "cn",
+    symbols_text: str = "",
+) -> tuple[list[str], dict[str, str]]:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "us":
+        manual_symbols = _normalize_symbols(
+            [x.strip() for x in str(symbols_text or "").replace(";", ",").split(",")],
+            market="us",
+        )
+        if sample_size > 0:
+            manual_symbols = manual_symbols[:sample_size]
+        return manual_symbols, {symbol: symbol for symbol in manual_symbols}
+
     if board == "main":
         items = get_stocks_by_board("main")
     elif board == "chinext":
@@ -137,7 +153,7 @@ def _build_universe(board: str, sample_size: int) -> tuple[list[str], dict[str, 
     # 过滤 ST 后采样（可复现）
     symbols = [
         s
-        for s in _normalize_symbols(list(name_map.keys()))
+        for s in _normalize_symbols(list(name_map.keys()), market="cn")
         if "ST" not in name_map.get(s, "").upper()
     ]
     symbols = sorted(set(symbols))
@@ -149,6 +165,8 @@ def _build_universe(board: str, sample_size: int) -> tuple[list[str], dict[str, 
 def _load_snapshot_hist_map(
     snapshot_dir: Path,
     symbols_filter: set[str] | None = None,
+    *,
+    market: str = "cn",
 ) -> tuple[dict[str, pd.DataFrame], int]:
     full_path = snapshot_dir / "hist_full.csv.gz"
     if not full_path.exists():
@@ -172,7 +190,11 @@ def _load_snapshot_hist_map(
 
     keep_cols = [c for c in ["symbol", "date", "open", "high", "low", "close", "volume", "amount", "pct_chg"] if c in df.columns]
     df = df[keep_cols].copy()
-    df["symbol"] = df["symbol"].astype(str).str.strip().str.zfill(6)
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "cn":
+        df["symbol"] = df["symbol"].astype(str).str.strip().str.zfill(6)
+    else:
+        df["symbol"] = df["symbol"].astype(str).str.strip().str.upper()
     df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
     df = df.dropna(subset=["symbol", "date"]).reset_index(drop=True)
     for c in ["open", "high", "low", "close", "volume", "amount", "pct_chg"]:
@@ -282,6 +304,7 @@ def _fetch_hist_norm(
     symbol: str,
     start_dt: date,
     end_dt: date,
+    market: str = "cn",
 ) -> tuple[str, pd.DataFrame | None, str | None]:
     try:
         # 优先走 Supabase 缓存（cache_only：只读缓存，不回 tushare 补缺口）
@@ -292,6 +315,7 @@ def _fetch_hist_norm(
                 start_date=start_dt,
                 end_date=end_dt,
                 adjust="qfq",
+                market=market,
                 context="background",
                 cache_only=True,
             )
@@ -299,7 +323,7 @@ def _fetch_hist_norm(
             raw = None
         # 仅当缓存完全无数据时 fallback 到直连数据源
         if raw is None or raw.empty:
-            raw = fetch_stock_hist(symbol, start_dt, end_dt, adjust="qfq")
+            raw = fetch_stock_hist(symbol, start_dt, end_dt, adjust="qfq", market=market)
         df = normalize_hist_from_fetch(raw)
         if df is None or df.empty:
             return symbol, None, "empty"
@@ -518,6 +542,8 @@ def run_backtest(
     trading_days: int,
     max_workers: int,
     snapshot_dir: Path | None = None,
+    market: str = "cn",
+    us_symbols: str = "",
     exit_mode: str = DEFAULT_EXIT_MODE,
     stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
     take_profit_pct: float = DEFAULT_TAKE_PROFIT_PCT,
@@ -530,6 +556,9 @@ def run_backtest(
 ) -> tuple[pd.DataFrame, dict]:
     if end_dt <= start_dt:
         raise ValueError("end 必须晚于 start")
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm not in {"cn", "us"}:
+        raise ValueError("market 必须是 cn 或 us")
     if hold_days < 1:
         raise ValueError("hold_days 必须 >= 1")
     if exit_mode not in {"close_only", "sltp"}:
@@ -558,13 +587,22 @@ def run_backtest(
         name_map = snapshot_name_map
         all_codes = sorted(name_map.keys())
         # ST 过滤 + 采样，与 _build_universe 保持同口径
-        symbols = [s for s in _normalize_symbols(all_codes) if "ST" not in name_map.get(s, "").upper()]
+        symbols = [
+            s
+            for s in _normalize_symbols(all_codes, market=market_norm)
+            if market_norm != "cn" or "ST" not in name_map.get(s, "").upper()
+        ]
         if sample_size > 0:
             symbols = symbols[:sample_size]
-        print(f"[backtest] 股票池={len(symbols)} (快照 name_map, board={board}, sample_size={sample_size})")
+        print(f"[backtest] 股票池={len(symbols)} (快照 name_map, market={market_norm}, board={board}, sample_size={sample_size})")
     else:
-        symbols, name_map = _build_universe(board=board, sample_size=sample_size)
-        print(f"[backtest] 股票池={len(symbols)} (网络拉取, board={board}, sample_size={sample_size})")
+        symbols, name_map = _build_universe(
+            board=board,
+            sample_size=sample_size,
+            market=market_norm,
+            symbols_text=us_symbols,
+        )
+        print(f"[backtest] 股票池={len(symbols)} (网络拉取, market={market_norm}, board={board}, sample_size={sample_size})")
     if not symbols:
         raise RuntimeError("股票池为空")
 
@@ -580,7 +618,7 @@ def run_backtest(
     if snapshot_dir is not None:
         print(f"[backtest] 使用本地快照: {snapshot_dir}")
         all_df_map, snapshot_rows_total = _load_snapshot_hist_map(
-            snapshot_dir, symbols_filter=set(symbols)
+            snapshot_dir, symbols_filter=set(symbols), market=market_norm
         )
         bench_df = _load_snapshot_benchmark(snapshot_dir)
         snapshot_used = True
@@ -593,7 +631,7 @@ def run_backtest(
         print(f"[backtest] 开始拉取历史日线: symbols={len(symbols)}, workers={max_workers}")
         with ThreadPoolExecutor(max_workers=max(int(max_workers), 1)) as ex:
             futures = {
-                ex.submit(_fetch_hist_norm, sym, prefetch_start, prefetch_end): sym for sym in symbols
+                ex.submit(_fetch_hist_norm, sym, prefetch_start, prefetch_end, market_norm): sym for sym in symbols
             }
             done = 0
             for ft in as_completed(futures):
@@ -609,15 +647,20 @@ def run_backtest(
         print(f"[backtest] 历史拉取完成: ok={len(all_df_map)}, fail={len(failures)}")
 
     if bench_df is None or bench_df.empty:
-        try:
-            bench_raw = fetch_index_hist("000001", prefetch_start, prefetch_end)
-        except Exception as exc:
-            raise RuntimeError(
-                "回测需要大盘交易日历与基准收益，请先配置可用的 TUSHARE_TOKEN。"
-            ) from exc
-        bench_df = normalize_hist_from_fetch(bench_raw).sort_values("date").copy()
-        bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce").dt.date
-        bench_df = bench_df.dropna(subset=["date"]).reset_index(drop=True)
+        if market_norm == "cn":
+            try:
+                bench_raw = fetch_index_hist("000001", prefetch_start, prefetch_end)
+            except Exception as exc:
+                raise RuntimeError(
+                    "回测需要大盘交易日历与基准收益，请先配置可用的 TUSHARE_TOKEN。"
+                ) from exc
+            bench_df = normalize_hist_from_fetch(bench_raw).sort_values("date").copy()
+            bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce").dt.date
+            bench_df = bench_df.dropna(subset=["date"]).reset_index(drop=True)
+        else:
+            bench_df = pd.DataFrame(
+                {"date": sorted({d for df in all_df_map.values() for d in df["date"].tolist()})}
+            )
 
     trade_dates = [d for d in bench_df["date"].tolist() if start_dt <= d <= end_dt]
     print(f"[backtest] DEBUG: start={start_dt}, end={end_dt}, bench_min={bench_df['date'].min()}, bench_max={bench_df['date'].max()}")
@@ -638,8 +681,12 @@ def run_backtest(
                 f"[backtest] 元数据从快照加载: sector_map={len(sector_map)}, market_cap_map={len(market_cap_map)}"
             )
         else:
-            market_cap_map = fetch_market_cap_map()
-            sector_map = fetch_sector_map()
+            if market_norm == "cn":
+                market_cap_map = fetch_market_cap_map()
+                sector_map = fetch_sector_map()
+            else:
+                market_cap_map = {}
+                sector_map = {}
             print(
                 "[backtest] ⚠️ 使用当前截面市值/行业映射（会引入 look-ahead bias）"
             )
@@ -871,6 +918,7 @@ def run_backtest(
         "ai_selection_mode": FUNNEL_AI_SELECTION_MODE,
         "ai_top_n_cap": None if int(top_n) <= 0 else int(top_n),
         "board": board,
+        "market": market_norm,
         "sample_size": sample_size,
         "trading_days": trading_days,
         "universe_ok": len(all_df_map),
@@ -1233,6 +1281,8 @@ def main() -> int:
         help="每日候选上限；0 表示不截断（回测全量 AI 输入，默认 0）",
     )
     parser.add_argument("--board", choices=["all", "main", "chinext"], default="all")
+    parser.add_argument("--market", choices=["cn", "us"], default="cn", help="市场：cn=A股，us=美股")
+    parser.add_argument("--us-symbols", default="", help="US 模式手动股票池，逗号分隔，例如 AAPL,MSFT,NVDA")
     parser.add_argument(
         "--sample-size",
         type=int,
@@ -1340,6 +1390,8 @@ def main() -> int:
                 trading_days=args.trading_days,
                 max_workers=args.workers,
                 snapshot_dir=Path(args.snapshot_dir).resolve() if str(args.snapshot_dir).strip() else None,
+                market=args.market,
+                us_symbols=args.us_symbols,
                 exit_mode=args.exit_mode,
                 stop_loss_pct=args.stop_loss,
                 take_profit_pct=args.take_profit,

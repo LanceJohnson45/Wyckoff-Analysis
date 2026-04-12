@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """AI 分析页：单股本地，批量后台。"""
 import os
+import re
 
 import pandas as pd
 import streamlit as st
@@ -120,8 +121,15 @@ setup_page(page_title="AI 分析", page_icon="🤖")
 STATE_KEY = "batch_ai_background_job"
 
 
-def _parse_manual_codes(text: str) -> list[dict]:
-    raw_codes = extract_symbols_from_text(str(text or ""))
+def _parse_manual_codes(text: str, *, market: str = "cn") -> list[dict]:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "us":
+        raw_codes = [
+            token.upper()
+            for token in re.findall(r"[A-Za-z][A-Za-z0-9._-]{0,14}", str(text or ""))
+        ]
+    else:
+        raw_codes = extract_symbols_from_text(str(text or ""))
     rows: list[dict] = []
     seen: set[str] = set()
     for code in raw_codes:
@@ -129,15 +137,18 @@ def _parse_manual_codes(text: str) -> list[dict]:
         if not code_s or code_s in seen:
             continue
         seen.add(code_s)
-        rows.append({"code": code_s, "name": code_s, "tag": ""})
+        rows.append({"market": market_norm, "code": code_s, "name": code_s, "tag": ""})
     return rows[:6]
 
 
-def _load_find_gold_source() -> tuple[list[dict], dict]:
+def _load_find_gold_source(*, market: str = "cn") -> tuple[list[dict], dict]:
+    market_norm = str(market or "cn").strip().lower()
     session_rows = st.session_state.get("ai_find_gold_background_symbols") or []
-    if isinstance(session_rows, list) and session_rows:
-        return (session_rows, {})
-    _, latest_result = load_latest_job_result("funnel_screen")
+    session_market = str(st.session_state.get("ai_find_gold_background_market") or "").strip().lower()
+    if isinstance(session_rows, list) and session_rows and session_market == market_norm:
+        benchmark_context = st.session_state.get("ai_find_gold_background_benchmark_context") or {}
+        return (session_rows, benchmark_context if isinstance(benchmark_context, dict) else {})
+    _, latest_result = load_latest_job_result("funnel_screen", market=market_norm)
     if latest_result:
         return (
             latest_result.get("symbols_for_report", []) or [],
@@ -247,6 +258,12 @@ with content_col:
         key="ai_provider_batch",
     )
     batch_api_key, batch_default_model, batch_base_url = _get_provider_credentials(batch_provider)
+    batch_market = st.selectbox(
+        "后台市场",
+        options=["cn", "us"],
+        format_func=lambda v: "A股 (CN)" if v == "cn" else "美股 (US)",
+        key="ai_batch_market",
+    )
     model_override = st.text_input(
         "后台模型覆盖（可留空）",
         value=batch_default_model or (GEMINI_MODELS[0] if batch_provider == "gemini" else ""),
@@ -274,11 +291,11 @@ with content_col:
     if analysis_type == "stock_list":
         stock_input = st.text_area(
             "股票代码（最多 6 个）",
-            placeholder="例如：000001；600519；300364",
+            placeholder="例如：AAPL, MSFT, NVDA" if batch_market == "us" else "例如：000001；600519；300364",
             height=110,
             key="ai_stock_list_input_bg",
         )
-        selected_symbols_info = _parse_manual_codes(stock_input)
+        selected_symbols_info = _parse_manual_codes(stock_input, market=batch_market)
         if not selected_symbols_info:
             st.caption("请至少输入 1 个股票代码。")
         else:
@@ -290,7 +307,7 @@ with content_col:
                 hide_index=True,
             )
     else:
-        source_rows, benchmark_context = _load_find_gold_source()
+        source_rows, benchmark_context = _load_find_gold_source(market=batch_market)
         if not source_rows:
             st.warning("当前没有可用的后台漏斗候选。")
             st.page_link("pages/WyckoffScreeners.py", label="前往后台漏斗页", icon="🔬")
@@ -336,6 +353,7 @@ with content_col:
     if run_btn and selected_symbols_info:
         effective_feishu_webhook = _resolve_ai_analysis_feishu_webhook()
         payload = {
+            "market": batch_market,
             "symbols_info": selected_symbols_info,
             "benchmark_context": benchmark_context,
             "provider": batch_provider,
@@ -354,7 +372,7 @@ with content_col:
         st.rerun()
 
     if not active_result:
-        latest_run, latest_result = load_latest_job_result("batch_ai_report")
+        latest_run, latest_result = load_latest_job_result("batch_ai_report", market=batch_market)
         if latest_result:
             st.divider()
             st.caption(

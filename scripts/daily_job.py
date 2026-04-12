@@ -94,10 +94,18 @@ def _run_with_stdout_tee(logs_path: str | None, fn, *args, **kwargs):
 
 
 def _latest_trade_date_str() -> str:
+    market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
     window = _resolve_trading_window(
         end_calendar_day=resolve_end_calendar_day(),
         trading_days=30,
     )
+    if market == "us":
+        from integrations.fetch_a_share_csv import _resolve_us_window
+
+        window = _resolve_us_window(
+            end_calendar_day=resolve_end_calendar_day(),
+            trading_days=30,
+        )
     return window.end_trade_date.isoformat()
 
 
@@ -105,6 +113,7 @@ def _persist_benchmark_context(benchmark_context: dict, logs_path: str | None = 
     if not benchmark_context:
         return
     trade_date = _latest_trade_date_str()
+    market = str(benchmark_context.get("market") or os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
     payload = {
         "benchmark_regime": str(benchmark_context.get("regime", "") or "").strip().upper() or None,
         "main_index_code": str(benchmark_context.get("main_code", "000001") or "000001").strip(),
@@ -123,9 +132,9 @@ def _persist_benchmark_context(benchmark_context: dict, logs_path: str | None = 
             }
         },
     }
-    ok = upsert_market_signal_daily(trade_date, payload)
+    ok = upsert_market_signal_daily(trade_date, payload, market=market)
     _log(
-        f"市场信号写库(benchmark): ok={ok}, trade_date={trade_date}, regime={payload.get('benchmark_regime')}",
+        f"市场信号写库(benchmark): ok={ok}, market={market}, trade_date={trade_date}, regime={payload.get('benchmark_regime')}",
         logs_path,
     )
 
@@ -174,6 +183,10 @@ def main() -> int:
     ).strip()
     step3_skip_llm = os.getenv("STEP3_SKIP_LLM", "").strip().lower() in {"1", "true", "yes", "on"}
     skip_step4 = os.getenv("DAILY_JOB_SKIP_STEP4", "").strip().lower() in {"1", "true", "yes", "on"}
+    market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
+    if market not in {"cn", "us"}:
+        market = "cn"
+    is_us_market = market == "us"
 
     logs_path = args.logs or os.path.join(
         os.getenv("LOGS_DIR", "logs"),
@@ -216,7 +229,7 @@ def main() -> int:
     step3_report_text = ""
     recommend_trade_date_int: int | None = None
 
-    _log("开始定时任务", logs_path)
+    _log(f"开始定时任务 market={market}", logs_path)
 
     # 阶段 1：Wyckoff Funnel
     t0 = datetime.now(TZ)
@@ -224,6 +237,8 @@ def main() -> int:
     step2_err = None
     try:
         step2_ok, symbols_info, benchmark_context = run_step2(webhook)
+        if benchmark_context:
+            benchmark_context["market"] = market
         step2_err = None if step2_ok else "飞书发送失败"
     except Exception as e:
         step2_err = str(e)
@@ -242,7 +257,7 @@ def main() -> int:
         _persist_benchmark_context(benchmark_context, logs_path)
 
     # 推荐跟踪写库（按 recommend_date=最近交易日）
-    if step2_ok and symbols_info:
+    if step2_ok and symbols_info and not is_us_market:
         try:
             recommend_trade_date_int = int(_latest_trade_date_str().replace("-", ""))
             rec_ok = upsert_recommendations(recommend_trade_date_int, symbols_info)
@@ -252,6 +267,8 @@ def main() -> int:
             )
         except Exception as e:
             _log(f"推荐记录入库失败: {e}", logs_path)
+    elif step2_ok and symbols_info and is_us_market:
+        _log("推荐记录入库: US 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
 
     # 阶段 2：批量研报（可降级：失败不影响 Funnel 成功）
     step3_ok = True
@@ -272,6 +289,7 @@ def main() -> int:
                 llm_base_url=llm_base_url,
                 wecom_webhook=wecom_webhook,
                 dingtalk_webhook=dingtalk_webhook,
+                market=market,
             )
             step3_err = None if step3_ok else STEP3_REASON_MAP.get(step3_reason, step3_reason)
         except Exception as e:
@@ -305,11 +323,12 @@ def main() -> int:
             f"阶段 2 批量研报: 起跳板代码={len(step3_springboard_codes)} ({preview_codes})",
             logs_path,
         )
-        if recommend_trade_date_int is not None:
+        if recommend_trade_date_int is not None and not is_us_market:
             try:
                 ai_mark_ok = mark_ai_recommendations(
                     recommend_date=recommend_trade_date_int,
                     ai_codes=step3_springboard_codes,
+                    market=market,
                 )
                 _log(
                     "推荐记录AI标记: "
@@ -318,12 +337,25 @@ def main() -> int:
                 )
             except Exception as e:
                 _log(f"推荐记录AI标记失败: {e}", logs_path)
+        elif is_us_market:
+            _log("推荐记录AI标记: US 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
     else:
         summary.append({"step": "批量研报", "ok": True, "err": None, "elapsed_s": 0, "output": "skipped (no symbols)"})
         _log("阶段 2 批量研报: 跳过（无筛选结果）", logs_path)
 
     # 阶段 3：私人账户再平衡（按 SUPABASE_USER_ID 唯一执行）
-    if skip_step4:
+    if is_us_market:
+        skip_step4 = True
+        summary.append({
+            "step": "私人再平衡",
+            "ok": True,
+            "err": None,
+            "elapsed_s": 0,
+            "output": "skipped (US mode not enabled for Step4 yet)",
+        })
+        _log("阶段 3 私人再平衡: 跳过（US 模式暂不启用 Step4）", logs_path)
+        step4_target = None
+    elif skip_step4:
         summary.append({
             "step": "私人再平衡",
             "ok": True,
@@ -335,7 +367,7 @@ def main() -> int:
         step4_target = None
     else:
         step4_target, step4_target_reason = _load_step4_target()
-    if not skip_step4 and not step4_target:
+    if not skip_step4 and not is_us_market and not step4_target:
         summary.append({
             "step": "私人再平衡",
             "ok": True,
@@ -344,7 +376,7 @@ def main() -> int:
             "output": f"skipped ({step4_target_reason})",
         })
         _log(f"阶段 3 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
-    elif not skip_step4:
+    elif not skip_step4 and not is_us_market:
         tg_bot_token = os.getenv("TG_BOT_TOKEN", "").strip()
         tg_chat_id = os.getenv("TG_CHAT_ID", "").strip()
         if not tg_bot_token or not tg_chat_id:

@@ -39,10 +39,14 @@ with content_col:
         st.error("推荐跟踪数据缺少 recommend_date 字段，请检查 recommendation_tracking 表结构或 RLS 权限。")
         st.caption("返回字段：" + ", ".join(str(c) for c in df.columns.tolist()))
         st.stop()
-    if "code" not in df.columns:
-        st.error("推荐跟踪数据缺少 code 字段，请检查 recommendation_tracking 表结构或 RLS 权限。")
+    if "code" not in df.columns and "symbol" not in df.columns:
+        st.error("推荐跟踪数据缺少 code/symbol 字段，请检查 recommendation_tracking 表结构或 RLS 权限。")
         st.caption("返回字段：" + ", ".join(str(c) for c in df.columns.tolist()))
         st.stop()
+    if "market" not in df.columns:
+        df["market"] = "cn"
+    if "symbol" not in df.columns:
+        df["symbol"] = df.get("code", "")
     if "name" not in df.columns:
         df["name"] = ""
     if "recommend_reason" not in df.columns:
@@ -64,6 +68,8 @@ with content_col:
         df["recommend_count"] = 1
     df["recommend_count"] = pd.to_numeric(df.get("recommend_count"), errors="coerce").fillna(1).astype(int)
     df["recommend_date"] = pd.to_numeric(df.get("recommend_date"), errors="coerce").fillna(0).astype(int)
+    df["market"] = df["market"].astype(str).str.strip().str.lower().replace("", "cn")
+    df["symbol"] = df["symbol"].astype(str).str.strip()
     
     # 格式化日期 (INT YYYYMMDD -> YYYY-MM-DD str)
     def _parse_date(v: int):
@@ -85,13 +91,29 @@ with content_col:
     df["recommend_date_dt"] = df["recommend_date"].apply(_parse_date)
     df['recommend_date_str'] = df['recommend_date'].apply(_format_date)
 
-    # 格式化代码 (INT -> 000001 str)
-    df["code"] = pd.to_numeric(df.get("code"), errors="coerce").fillna(0).astype(int)
-    df['display_code'] = df['code'].apply(lambda x: f"{int(x):06d}")
+    # 统一展示代码：CN 优先 symbol/code6；US 使用原 symbol
+    code_series = pd.to_numeric(df.get("code"), errors="coerce")
+    df["code"] = code_series
+    df["display_code"] = df.apply(
+        lambda row: (
+            row["symbol"]
+            if row.get("market") == "us"
+            else (
+                row["symbol"]
+                if str(row.get("symbol", "")).strip()
+                else (f"{int(row['code']):06d}" if pd.notna(row.get("code")) else "")
+            )
+        ),
+        axis=1,
+    )
+    df["market_label"] = df["market"].map(lambda v: "US" if v == "us" else "CN")
 
-    # ── 同一只股票去重：按 code 聚合，只保留最新一条，推荐次数取最大值 ──
+    # ── 同一只股票去重：按 market+symbol 聚合，只保留最新一条，推荐次数取最大值 ──
     df = df.sort_values("recommend_date", ascending=False)
     agg_map = {
+        "market": "first",
+        "market_label": "first",
+        "symbol": "first",
         "name": "first",
         "recommend_date": "first",
         "recommend_date_dt": "first",
@@ -107,7 +129,7 @@ with content_col:
     }
     # 只聚合存在的列
     agg_map = {k: v for k, v in agg_map.items() if k in df.columns}
-    df = df.groupby("code", as_index=False).agg(agg_map)
+    df = df.groupby(["market", "symbol"], as_index=False).agg(agg_map)
 
     df["days_since_recommend"] = df["recommend_date_dt"].apply(
         lambda d: (today - d).days if d is not None else pd.NA
@@ -133,10 +155,12 @@ with content_col:
     search_col, ai_col, sort_col, order_col = st.columns([2, 1, 1, 1])
     
     with search_col:
-        search_query = st.text_input("搜索代码或名字", placeholder="输入 000001 或 平安银行...", key="rec_search")
+        search_query = st.text_input("搜索代码或名字", placeholder="输入 000001 / AAPL / 平安银行...", key="rec_search")
 
     with ai_col:
-        only_ai = st.checkbox("只看AI推荐", value=False, key="rec_only_ai")
+        market_filter = st.selectbox("市场", options=["all", "cn", "us"], format_func=lambda v: {"all": "全部", "cn": "A股", "us": "美股"}.get(v, v), key="rec_market_filter")
+
+    only_ai = st.checkbox("只看AI推荐", value=False, key="rec_only_ai")
     
     with sort_col:
         sort_by = st.selectbox(
@@ -154,6 +178,8 @@ with content_col:
             (filtered_df["display_code"].str.contains(search_query, na=False))
             | (filtered_df["name"].astype(str).str.contains(search_query, na=False))
         ]
+    if market_filter != "all":
+        filtered_df = filtered_df[filtered_df["market"] == market_filter]
     if only_ai:
         filtered_df = filtered_df[filtered_df["is_ai_recommended"] == True]
 
@@ -187,6 +213,7 @@ with content_col:
     # 5. 结果展示
     # 构建最终展示的列表
     display_df = filtered_df[[
+        'market_label',
         'display_code',
         'name',
         'change_pct',
@@ -202,7 +229,7 @@ with content_col:
     display_df["is_ai_recommended"] = display_df["is_ai_recommended"].map(lambda x: "是" if bool(x) else "否")
 
     display_df.columns = [
-        "代码", "名称", "累计涨跌幅", "加入价", "当前价", "AI推荐", "推荐次数", "加入推荐天数", "推荐日期", "推荐原因", "推荐分值"
+        "市场", "代码", "名称", "累计涨跌幅", "加入价", "当前价", "AI推荐", "推荐次数", "加入推荐天数", "推荐日期", "推荐原因", "推荐分值"
     ]
 
     # 使用 dataframe 渲染，增加一些样式建议

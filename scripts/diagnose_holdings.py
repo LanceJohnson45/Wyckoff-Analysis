@@ -28,7 +28,7 @@ from datetime import date, datetime
 # Ensure project root is on sys.path for direct script invocation
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from integrations.fetch_a_share_csv import _fetch_hist, _resolve_trading_window
+from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window
 from integrations.data_source import fetch_index_hist
 from core.wyckoff_engine import normalize_hist_from_fetch, FunnelConfig
 from core.holding_diagnostic import (
@@ -42,14 +42,15 @@ TRADING_DAYS = 320
 
 
 def _fetch_stock_data(
-    code: str, window
+    code: str, window, *, market: str = "cn"
 ) -> tuple[str, "pd.DataFrame | None"]:
     """拉取单只股票 OHLCV 数据，返回 (code, df_or_None)。"""
     import pandas as pd
 
-    symbol = f"{code}.SH" if code.startswith("6") else f"{code}.SZ"
+    market_norm = str(market or "cn").strip().lower()
+    symbol = str(code).strip().upper() if market_norm == "us" else str(code).strip()
     try:
-        raw = _fetch_hist(symbol, window, adjust="qfq")
+        raw = _fetch_hist_with_market(symbol, window, adjust="qfq", market=market_norm)
         if raw is None or (hasattr(raw, "empty") and raw.empty):
             return code, None
         df = normalize_hist_from_fetch(raw).sort_values("date").reset_index(drop=True)
@@ -59,10 +60,13 @@ def _fetch_stock_data(
         return code, None
 
 
-def _fetch_benchmark(window) -> "pd.DataFrame | None":
-    """拉取上证指数作为基准。"""
+def _fetch_benchmark(window, *, market: str = "cn") -> "pd.DataFrame | None":
+    """拉取基准；US 先走降级路径。"""
     import pandas as pd
 
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm != "cn":
+        return None
     try:
         bench_raw = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date)
         if bench_raw is None or bench_raw.empty:
@@ -185,8 +189,13 @@ def main():
         "--output", "-o", type=str, default="",
         help="输出到文件（不指定则输出到终端）",
     )
+    parser.add_argument(
+        "--market", type=str, choices=["cn", "us"], default="cn",
+        help="市场：cn=A股，us=美股",
+    )
 
     args = parser.parse_args()
+    market = str(args.market or "cn").strip().lower()
 
     # ── 解析持仓来源 ──
     holdings: list[tuple[str, str, float]] = []
@@ -223,12 +232,15 @@ def main():
 
     # ── 准备数据窗口 ──
     end_day = resolve_end_calendar_day()
-    window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    if market == "us":
+        window = _resolve_us_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    else:
+        window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
     print(f"  数据窗口: {window.start_trade_date} → {window.end_trade_date}")
 
     # ── 拉取基准 ──
-    print("  拉取基准指数 (上证指数)...")
-    bench_df = _fetch_benchmark(window)
+    print("  拉取基准指数...")
+    bench_df = _fetch_benchmark(window, market=market)
 
     # ── 拉取个股数据 ──
     import pandas as pd
@@ -236,7 +248,7 @@ def main():
     df_map: dict[str, pd.DataFrame] = {}
     for code, name, cost in holdings:
         print(f"  拉取 {code} {name}...")
-        _, df = _fetch_stock_data(code, window)
+        _, df = _fetch_stock_data(code, window, market=market)
         if df is not None:
             df_map[code] = df
 

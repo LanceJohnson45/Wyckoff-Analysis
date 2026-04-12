@@ -51,7 +51,91 @@ def _parse_write_date(record: dict[str, Any]) -> date | None:
     return None
 
 
-def _resolve_initial_price_from_history(code_str: str, rec_date: date) -> float:
+def _normalize_market(raw_value: Any, *, default: str = "cn") -> str:
+    market = str(raw_value or default or "cn").strip().lower()
+    return market if market in {"cn", "us"} else default
+
+
+def _normalize_symbol(raw_value: Any, *, market: str = "cn") -> str:
+    market_norm = _normalize_market(market)
+    text = str(raw_value or "").strip()
+    if not text:
+        return ""
+    if market_norm == "cn":
+        digits = "".join(ch for ch in text if ch.isdigit())
+        if not digits:
+            return ""
+        return digits[-6:].zfill(6)
+    symbol = text.upper()
+    allowed = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    if not symbol or not symbol[0].isalpha():
+        return ""
+    if any(ch not in allowed for ch in symbol):
+        return ""
+    return symbol[:15]
+
+
+def _legacy_code_from_symbol(symbol: str, market: str) -> int | None:
+    if _normalize_market(market) != "cn":
+        return None
+    normalized = _normalize_symbol(symbol, market="cn")
+    if not normalized:
+        return None
+    try:
+        return int(normalized)
+    except Exception:
+        return None
+
+
+def _market_symbol_from_record(
+    record: dict[str, Any],
+    *,
+    default_market: str = "cn",
+) -> tuple[str, str]:
+    market = _normalize_market(record.get("market"), default=default_market)
+    symbol = _normalize_symbol(record.get("symbol"), market=market)
+    if symbol:
+        return market, symbol
+    code_value = record.get("code")
+    if code_value is not None and str(code_value).strip():
+        legacy_symbol = _normalize_symbol(code_value, market="cn")
+        if legacy_symbol:
+            return "cn", legacy_symbol
+    return market, ""
+
+
+def _supports_market_symbol_schema(client: Client) -> bool:
+    try:
+        client.table(TABLE_RECOMMENDATION_TRACKING).select("id,market,symbol").limit(1).execute()
+        return True
+    except Exception:
+        return False
+
+
+def _extract_close_map_from_hist(hist: pd.DataFrame) -> dict[str, float]:
+    if hist is None or hist.empty:
+        return {}
+    work = hist.copy()
+    if "日期" not in work.columns or "收盘" not in work.columns:
+        return {}
+    work["日期"] = pd.to_datetime(work["日期"], errors="coerce")
+    work["收盘"] = pd.to_numeric(work["收盘"], errors="coerce")
+    work = work.dropna(subset=["日期", "收盘"])
+    work = work[work["收盘"] > 0]
+    if work.empty:
+        return {}
+    return {
+        row["日期"].strftime("%Y%m%d"): float(row["收盘"])
+        for _, row in work.sort_values("日期").iterrows()
+    }
+
+
+def _resolve_initial_price_from_history(
+    symbol: str,
+    rec_date: date,
+    *,
+    market: str = "cn",
+) -> float:
     """
     用推荐日附近历史日线回填加入价：
     1) 优先 rec_date 当天
@@ -61,7 +145,8 @@ def _resolve_initial_price_from_history(code_str: str, rec_date: date) -> float:
         from integrations.data_source import fetch_stock_hist
 
         rec_s = rec_date.strftime("%Y-%m-%d")
-        hist = fetch_stock_hist(code_str, rec_s, rec_s, adjust="qfq")
+        market_norm = _normalize_market(market)
+        hist = fetch_stock_hist(symbol, rec_s, rec_s, adjust="qfq", market=market_norm)
         if hist is not None and not hist.empty:
             close_s = pd.to_numeric(hist.get("收盘"), errors="coerce").dropna()
             if not close_s.empty:
@@ -70,7 +155,7 @@ def _resolve_initial_price_from_history(code_str: str, rec_date: date) -> float:
                     return px
 
         start_s = (rec_date - timedelta(days=7)).strftime("%Y-%m-%d")
-        hist2 = fetch_stock_hist(code_str, start_s, rec_s, adjust="qfq")
+        hist2 = fetch_stock_hist(symbol, start_s, rec_s, adjust="qfq", market=market_norm)
         if hist2 is None or hist2.empty:
             return 0.0
         df = hist2.copy()
@@ -98,30 +183,38 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
         return False
     try:
         client = _get_supabase_admin_client()
+        schema_supports_market_symbol = _supports_market_symbol_schema(client)
 
-        # 预读已有记录（按 code 聚合），用于维护 recommend_count。
+        # 预读已有记录（按 market+symbol 聚合；旧表退化为 code 聚合），用于维护 recommend_count。
         # 规则：仅当 recommend_date 变化时才 +1，同日重跑不重复累计。
-        existing_counts: dict[int, int] = {}
-        existing_code_dates: dict[int, set[int]] = {}
+        existing_counts: dict[tuple[str, str], int] = {}
+        existing_code_dates: dict[tuple[str, str], set[int]] = {}
         try:
-            resp = (
-                client.table(TABLE_RECOMMENDATION_TRACKING)
-                .select("code,recommend_count,recommend_date")
-                .execute()
-            )
+            if schema_supports_market_symbol:
+                resp = (
+                    client.table(TABLE_RECOMMENDATION_TRACKING)
+                    .select("market,symbol,code,recommend_count,recommend_date")
+                    .execute()
+                )
+            else:
+                resp = (
+                    client.table(TABLE_RECOMMENDATION_TRACKING)
+                    .select("code,recommend_count,recommend_date")
+                    .execute()
+                )
             for row in resp.data or []:
-                try:
-                    code_int = int(row.get("code"))
-                except Exception:
+                market_key, symbol_key = _market_symbol_from_record(row)
+                if not symbol_key:
                     continue
                 try:
                     cnt = int(row.get("recommend_count") or 1)
                 except Exception:
                     cnt = 1
-                existing_counts[code_int] = max(existing_counts.get(code_int, 0), cnt)
+                key = (market_key, symbol_key)
+                existing_counts[key] = max(existing_counts.get(key, 0), cnt)
                 try:
                     d = int(row.get("recommend_date"))
-                    existing_code_dates.setdefault(code_int, set()).add(d)
+                    existing_code_dates.setdefault(key, set()).add(d)
                 except Exception:
                     pass
         except Exception:
@@ -130,11 +223,11 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
 
         payload = []
         for s in symbols_info:
-            raw_code = str(s.get("code", "")).strip()
-            # 提取纯数字部分 (比如 "000001.SZ" -> "000001")
-            code_str = "".join(filter(str.isdigit, raw_code))
-            if not code_str:
+            market = _normalize_market(s.get("market"), default="cn")
+            symbol = _normalize_symbol(s.get("symbol") or s.get("code"), market=market)
+            if not symbol:
                 continue
+            code_int = _legacy_code_from_symbol(symbol, market)
             
             # price 优先使用 step2 传入的 initial_price，并做多字段兜底
             price = 0.0
@@ -161,9 +254,9 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
                 except Exception:
                     continue
             
-            code_int = int(code_str)
-            old_cnt = existing_counts.get(code_int, 0)
-            seen_dates = existing_code_dates.get(code_int, set())
+            key = (market, symbol)
+            old_cnt = existing_counts.get(key, 0)
+            seen_dates = existing_code_dates.get(key, set())
             if old_cnt <= 0:
                 new_cnt = 1
             elif recommend_date in seen_dates:
@@ -172,7 +265,9 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
                 new_cnt = old_cnt + 1
 
             payload.append({
-                "code": code_int,  # 存为 INT，首位0会消失
+                "market": market,
+                "symbol": symbol,
+                "code": code_int,
                 "name": str(s.get("name", "")).strip(),
                 "recommend_reason": str(s.get("tag", "")).strip(),
                 "recommend_date": recommend_date,
@@ -186,36 +281,80 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
             })
         
         if payload:
-            # 使用 upsert，基于 (code, recommend_date) 唯一约束：
-            # - 同一只股票在同一天重跑会覆盖更新；
-            # - 跨天会新增一条记录；
-            # - recommend_count 按 code 维度累计。
-            try:
-                client.table(TABLE_RECOMMENDATION_TRACKING).upsert(
-                    payload, on_conflict="code,recommend_date"
-                ).execute()
-            except Exception as e:
-                msg = str(e).lower()
-                optional_cols = ("is_ai_recommended", "funnel_score", "recommend_count")
-                if any(col in msg for col in optional_cols):
-                    fallback_payload: list[dict[str, Any]] = []
-                    for row in payload:
-                        r = dict(row)
-                        for col in optional_cols:
-                            r.pop(col, None)
-                        fallback_payload.append(r)
+            optional_cols = ("is_ai_recommended", "funnel_score", "recommend_count")
+            if schema_supports_market_symbol:
+                try:
                     client.table(TABLE_RECOMMENDATION_TRACKING).upsert(
-                        fallback_payload, on_conflict="code,recommend_date"
+                        payload, on_conflict="market,symbol,recommend_date"
                     ).execute()
-                else:
-                    raise
+                except Exception as e:
+                    msg = str(e).lower()
+                    if any(col in msg for col in optional_cols):
+                        fallback_payload: list[dict[str, Any]] = []
+                        for row in payload:
+                            r = dict(row)
+                            for col in optional_cols:
+                                r.pop(col, None)
+                            fallback_payload.append(r)
+                        client.table(TABLE_RECOMMENDATION_TRACKING).upsert(
+                            fallback_payload, on_conflict="market,symbol,recommend_date"
+                        ).execute()
+                    else:
+                        raise
+            else:
+                legacy_payload: list[dict[str, Any]] = []
+                for row in payload:
+                    if row.get("market") != "cn" or row.get("code") is None:
+                        print(
+                            "[supabase_recommendation] upsert_recommendations skipped: "
+                            "table missing market/symbol columns; apply SQL migration before writing US rows"
+                        )
+                        return False
+                    legacy_payload.append(
+                        {
+                            "code": row.get("code"),
+                            "name": row.get("name"),
+                            "recommend_reason": row.get("recommend_reason"),
+                            "recommend_date": row.get("recommend_date"),
+                            "initial_price": row.get("initial_price"),
+                            "current_price": row.get("current_price"),
+                            "change_pct": row.get("change_pct"),
+                            "recommend_count": row.get("recommend_count"),
+                            "funnel_score": row.get("funnel_score"),
+                            "is_ai_recommended": row.get("is_ai_recommended"),
+                            "updated_at": row.get("updated_at"),
+                        }
+                    )
+                try:
+                    client.table(TABLE_RECOMMENDATION_TRACKING).upsert(
+                        legacy_payload, on_conflict="code,recommend_date"
+                    ).execute()
+                except Exception as e:
+                    msg = str(e).lower()
+                    if any(col in msg for col in optional_cols):
+                        fallback_payload: list[dict[str, Any]] = []
+                        for row in legacy_payload:
+                            r = dict(row)
+                            for col in optional_cols:
+                                r.pop(col, None)
+                            fallback_payload.append(r)
+                        client.table(TABLE_RECOMMENDATION_TRACKING).upsert(
+                            fallback_payload, on_conflict="code,recommend_date"
+                        ).execute()
+                    else:
+                        raise
         return True
     except Exception as e:
         print(f"[supabase_recommendation] upsert_recommendations failed: {e}")
         return False
 
 
-def mark_ai_recommendations(recommend_date: int, ai_codes: list[str]) -> bool:
+def mark_ai_recommendations(
+    recommend_date: int,
+    ai_codes: list[str],
+    *,
+    market: str = "cn",
+) -> bool:
     """
     将某个推荐日的记录标记为是否 AI 推荐（可操作池）。
     ai_codes 传入 6 位代码字符串列表。
@@ -224,26 +363,53 @@ def mark_ai_recommendations(recommend_date: int, ai_codes: list[str]) -> bool:
         return False
     try:
         client = _get_supabase_admin_client()
+        schema_supports_market_symbol = _supports_market_symbol_schema(client)
         now_iso = datetime.now(timezone.utc).isoformat()
+        market_norm = _normalize_market(market)
         # 先全量置 false，再对白名单置 true，避免前一次残留。
-        client.table(TABLE_RECOMMENDATION_TRACKING).update(
-            {"is_ai_recommended": False, "updated_at": now_iso}
-        ).eq("recommend_date", recommend_date).execute()
-
-        code_ints: list[int] = []
-        for code in ai_codes or []:
-            code_digits = "".join(ch for ch in str(code) if ch.isdigit())
-            if not code_digits:
-                continue
-            try:
-                code_ints.append(int(code_digits))
-            except Exception:
-                continue
-        code_ints = sorted(set(code_ints))
-        if code_ints:
+        if schema_supports_market_symbol:
             client.table(TABLE_RECOMMENDATION_TRACKING).update(
-                {"is_ai_recommended": True, "updated_at": now_iso}
-            ).eq("recommend_date", recommend_date).in_("code", code_ints).execute()
+                {"is_ai_recommended": False, "updated_at": now_iso}
+            ).eq("recommend_date", recommend_date).eq("market", market_norm).execute()
+
+            symbols = sorted(
+                {
+                    symbol
+                    for symbol in (
+                        _normalize_symbol(code, market=market_norm) for code in (ai_codes or [])
+                    )
+                    if symbol
+                }
+            )
+            if symbols:
+                client.table(TABLE_RECOMMENDATION_TRACKING).update(
+                    {"is_ai_recommended": True, "updated_at": now_iso}
+                ).eq("recommend_date", recommend_date).eq("market", market_norm).in_("symbol", symbols).execute()
+        else:
+            if market_norm != "cn":
+                print(
+                    "[supabase_recommendation] mark_ai_recommendations skipped: "
+                    "table missing market/symbol columns; apply SQL migration before marking US rows"
+                )
+                return False
+            client.table(TABLE_RECOMMENDATION_TRACKING).update(
+                {"is_ai_recommended": False, "updated_at": now_iso}
+            ).eq("recommend_date", recommend_date).execute()
+
+            code_ints: list[int] = []
+            for code in ai_codes or []:
+                normalized = _normalize_symbol(code, market="cn")
+                if not normalized:
+                    continue
+                try:
+                    code_ints.append(int(normalized))
+                except Exception:
+                    continue
+            code_ints = sorted(set(code_ints))
+            if code_ints:
+                client.table(TABLE_RECOMMENDATION_TRACKING).update(
+                    {"is_ai_recommended": True, "updated_at": now_iso}
+                ).eq("recommend_date", recommend_date).in_("code", code_ints).execute()
         return True
     except Exception as e:
         msg = str(e)
@@ -271,74 +437,99 @@ def sync_all_tracking_prices(
 
     try:
         client = _get_supabase_admin_client()
+        schema_supports_market_symbol = _supports_market_symbol_schema(client)
         allow_spot_fallback = (
             os.getenv("RECOMMENDATION_PRICE_ALLOW_SPOT_FALLBACK", "").strip().lower()
             in {"1", "true", "yes", "on"}
         )
 
-        # 获取需要跟踪的股票代码（去重）
-        resp = client.table(TABLE_RECOMMENDATION_TRACKING).select("code").execute()
+        resp = client.table(TABLE_RECOMMENDATION_TRACKING).select("*").execute()
         if not resp.data:
             print("[supabase_recommendation] sync_all_tracking_prices: 推荐表无记录，跳过")
             return 0
 
-        unique_codes = sorted(list(set(int(r["code"]) for r in resp.data)))
+        grouped_records: dict[tuple[str, str], list[dict[str, Any]]] = {}
+        for row in resp.data:
+            if not isinstance(row, dict):
+                continue
+            market, symbol = _market_symbol_from_record(row)
+            if not symbol:
+                continue
+            grouped_records.setdefault((market, symbol), []).append(row)
+        if not grouped_records:
+            print("[supabase_recommendation] sync_all_tracking_prices: 推荐表无有效 symbol，跳过")
+            return 0
 
         # 统一日线窗口（与 step2 同口径），避免实时快照不稳定导致脏数据。
-        hist_start_s: str | None = None
-        hist_end_s: str | None = None
-        hist_close_cache: dict[str, float] = {}
-        try:
-            from integrations.fetch_a_share_csv import _resolve_trading_window
-            from utils.trading_clock import resolve_end_calendar_day
+        hist_window_cache: dict[str, tuple[str, str]] = {}
+        hist_close_cache: dict[tuple[str, str], float] = {}
 
-            window = _resolve_trading_window(
-                end_calendar_day=resolve_end_calendar_day(),
-                trading_days=20,
-            )
-            hist_start_s = window.start_trade_date.strftime("%Y-%m-%d")
-            hist_end_s = window.end_trade_date.strftime("%Y-%m-%d")
-        except Exception:
-            hist_start_s = None
-            hist_end_s = None
+        def _resolve_hist_window(market: str) -> tuple[str | None, str | None]:
+            if market in hist_window_cache:
+                return hist_window_cache[market]
+            try:
+                from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window
+                from utils.trading_clock import resolve_end_calendar_day
 
-        def _price_from_history(code_str: str) -> float | None:
-            if code_str in hist_close_cache:
-                cached = hist_close_cache[code_str]
+                if market == "us":
+                    window = _resolve_us_window(
+                        end_calendar_day=resolve_end_calendar_day(),
+                        trading_days=20,
+                    )
+                else:
+                    window = _resolve_trading_window(
+                        end_calendar_day=resolve_end_calendar_day(),
+                        trading_days=20,
+                    )
+                value = (
+                    window.start_trade_date.strftime("%Y-%m-%d"),
+                    window.end_trade_date.strftime("%Y-%m-%d"),
+                )
+            except Exception:
+                value = (None, None)
+            hist_window_cache[market] = value
+            return value
+
+        def _price_from_history(symbol: str, market: str) -> float | None:
+            cache_key = (market, symbol)
+            if cache_key in hist_close_cache:
+                cached = hist_close_cache[cache_key]
                 return cached if cached > 0 else None
+            hist_start_s, hist_end_s = _resolve_hist_window(market)
             if not hist_start_s or not hist_end_s:
-                hist_close_cache[code_str] = 0.0
+                hist_close_cache[cache_key] = 0.0
                 return None
             try:
                 from integrations.data_source import fetch_stock_hist
 
                 hist = fetch_stock_hist(
-                    code_str,
+                    symbol,
                     hist_start_s,
                     hist_end_s,
                     adjust="qfq",
+                    market=market,
                 )
                 if hist is None or hist.empty or "收盘" not in hist.columns:
-                    hist_close_cache[code_str] = 0.0
+                    hist_close_cache[cache_key] = 0.0
                     return None
                 close_s = pd.to_numeric(hist.get("收盘"), errors="coerce").dropna()
                 if close_s.empty:
-                    hist_close_cache[code_str] = 0.0
+                    hist_close_cache[cache_key] = 0.0
                     return None
                 px = float(close_s.iloc[-1])
-                hist_close_cache[code_str] = px if px > 0 else 0.0
+                hist_close_cache[cache_key] = px if px > 0 else 0.0
                 return px if px > 0 else None
             except Exception:
-                hist_close_cache[code_str] = 0.0
+                hist_close_cache[cache_key] = 0.0
                 return None
 
-        def _price_from_spot(code_str: str) -> float | None:
-            if not allow_spot_fallback:
+        def _price_from_spot(symbol: str, market: str) -> float | None:
+            if not allow_spot_fallback or market != "cn":
                 return None
             try:
                 from integrations.data_source import fetch_stock_spot_snapshot
 
-                snap = fetch_stock_spot_snapshot(code_str, force_refresh=False)
+                snap = fetch_stock_spot_snapshot(symbol, force_refresh=False)
                 if not snap or snap.get("close") is None:
                     return None
                 px = float(snap["close"])
@@ -347,12 +538,13 @@ def sync_all_tracking_prices(
                 return None
 
         updated_count = 0
-        for code_int in unique_codes:
-            code_str = f"{code_int:06d}"
+        for (market, symbol), records in grouped_records.items():
             new_current_price: float | None = None
 
             if price_map:
-                raw_px = price_map.get(code_str)
+                raw_px = price_map.get(f"{market}:{symbol}")
+                if raw_px is None:
+                    raw_px = price_map.get(symbol)
                 try:
                     parsed_px = float(raw_px) if raw_px is not None else 0.0
                 except Exception:
@@ -361,15 +553,14 @@ def sync_all_tracking_prices(
                     new_current_price = parsed_px
 
             if new_current_price is None:
-                new_current_price = _price_from_history(code_str)
+                new_current_price = _price_from_history(symbol, market)
             if new_current_price is None:
-                new_current_price = _price_from_spot(code_str)
+                new_current_price = _price_from_spot(symbol, market)
             if new_current_price is None:
                 continue
             
             # 该股票可能有多条推荐记录（不同日期），逐条更新价格与涨跌幅
-            rec_resp = client.table(TABLE_RECOMMENDATION_TRACKING).select("*").eq("code", code_int).execute()
-            for record in rec_resp.data:
+            for record in records:
                 initial_price = float(record.get("initial_price") or 0.0)
                 rec_date = _parse_recommend_date(record.get("recommend_date"))
                 update_payload = {
@@ -381,7 +572,7 @@ def sync_all_tracking_prices(
                     update_payload["change_pct"] = round(change_pct, 2)
                 else:
                     backfill_price = (
-                        _resolve_initial_price_from_history(code_str, rec_date)
+                        _resolve_initial_price_from_history(symbol, rec_date, market=market)
                         if rec_date
                         else 0.0
                     )
@@ -399,10 +590,10 @@ def sync_all_tracking_prices(
                 client.table(TABLE_RECOMMENDATION_TRACKING).update(update_payload).eq("id", record["id"]).execute()
                 updated_count += 1
 
-        if unique_codes and updated_count == 0:
+        if grouped_records and updated_count == 0:
             print(
                 "[supabase_recommendation] sync_all_tracking_prices: 推荐表有 {} 只股票但 0 条更新，"
-                "可能是 price_map 为空且历史/实时行情均不可用".format(len(unique_codes))
+                "可能是 price_map 为空且历史/实时行情均不可用".format(len(grouped_records))
             )
         return updated_count
     except Exception as e:
@@ -425,22 +616,21 @@ def correct_tracking_initial_prices() -> int:
         resp = client.table(TABLE_RECOMMENDATION_TRACKING).select("*").execute()
         if not resp.data:
             return 0
-        cache: dict[tuple[str, date], float] = {}
+        cache: dict[tuple[str, str, date], float] = {}
         updated = 0
         for record in resp.data:
             write_date = _parse_write_date(record)
             if not write_date:
                 continue
-            code_int = record.get("code")
-            if code_int is None:
+            market, symbol = _market_symbol_from_record(record)
+            if not symbol:
                 continue
-            code_str = f"{int(code_int):06d}"
             current_price = float(record.get("current_price") or 0.0)
             if current_price <= 0:
                 continue
-            key = (code_str, write_date)
+            key = (market, symbol, write_date)
             if key not in cache:
-                cache[key] = _resolve_initial_price_from_history(code_str, write_date)
+                cache[key] = _resolve_initial_price_from_history(symbol, write_date, market=market)
             initial_from_hist = cache[key]
             if initial_from_hist <= 0:
                 continue
@@ -470,7 +660,22 @@ def load_recommendation_tracking(limit: int = 1000) -> list[dict[str, Any]]:
             .limit(limit)
             .execute()
         )
-        return resp.data or []
+        rows: list[dict[str, Any]] = []
+        for row in resp.data or []:
+            if not isinstance(row, dict):
+                continue
+            market, symbol = _market_symbol_from_record(row)
+            if not symbol:
+                continue
+            normalized = dict(row)
+            normalized["market"] = market
+            normalized["symbol"] = symbol
+            if normalized.get("code") is None:
+                legacy_code = _legacy_code_from_symbol(symbol, market)
+                if legacy_code is not None:
+                    normalized["code"] = legacy_code
+            rows.append(normalized)
+        return rows
     except Exception as e:
         print(f"[supabase_recommendation] load_recommendation_tracking failed: {e}")
         return []
@@ -500,26 +705,29 @@ def _pick_close_on_or_before(sorted_trade_dates: list[str], target_yyyymmdd: str
     return sorted_trade_dates[i]
 
 
-def refresh_tracking_prices_with_tushare_unadjusted() -> dict[str, Any]:
+def refresh_tracking_prices_with_tushare_unadjusted(
+    *,
+    market: str = "",
+) -> dict[str, Any]:
     """
     使用 Tushare（日线不复权）回填并刷新推荐跟踪价格：
     - initial_price: 推荐日（或之前最近交易日）收盘价
     - current_price: 当前系统时间对应最近交易日收盘价
     - change_pct: (current - initial) / initial * 100
     """
-    from integrations.tushare_client import get_pro
+    from integrations.data_source import fetch_stock_hist
 
     if not is_supabase_configured():
         raise ValueError("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY 未配置")
 
-    pro = get_pro()
-    if pro is None:
-        raise ValueError("TUSHARE_TOKEN 未配置或 tushare 不可用")
-
     client = _get_supabase_admin_client()
+    schema_supports_market_symbol = _supports_market_symbol_schema(client)
+    market_filter = str(market or "").strip().lower()
+    if market_filter not in {"", "cn", "us"}:
+        raise ValueError("market must be '', 'cn', or 'us'")
     resp = (
         client.table(TABLE_RECOMMENDATION_TRACKING)
-        .select("id,code,recommend_date")
+        .select("id,market,symbol,code,recommend_date")
         .execute()
     )
     records = resp.data or []
@@ -534,21 +742,22 @@ def refresh_tracking_prices_with_tushare_unadjusted() -> dict[str, Any]:
         }
 
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
-    end_date = today.strftime("%Y%m%d")
+    end_date = today.strftime("%Y-%m-%d")
 
-    grouped: dict[str, list[dict[str, Any]]] = {}
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in records:
-        code_digits = "".join(ch for ch in str(row.get("code", "")) if ch.isdigit())
-        if not code_digits:
+        market, symbol = _market_symbol_from_record(row)
+        if market_filter and market != market_filter:
             continue
-        code6 = code_digits[-6:].zfill(6)
-        grouped.setdefault(code6, []).append(row)
+        if not symbol:
+            continue
+        grouped.setdefault((market, symbol), []).append({**row, "market": market, "symbol": symbol})
 
     updates: list[dict[str, Any]] = []
     codes_no_data = 0
     latest_trade_date_global = ""
 
-    for code6, rows in grouped.items():
+    for (market, symbol), rows in grouped.items():
         rec_dates = [
             _recommend_date_to_yyyymmdd(r.get("recommend_date"))
             for r in rows
@@ -556,36 +765,28 @@ def refresh_tracking_prices_with_tushare_unadjusted() -> dict[str, Any]:
         rec_dates = [d for d in rec_dates if d]
         if not rec_dates:
             continue
-        start_date = min(rec_dates)
-        ts_code = _to_ts_code_recommendation(code6)
+        start_date = (
+            datetime.strptime(min(rec_dates), "%Y%m%d").date() - timedelta(days=7)
+        ).strftime("%Y-%m-%d")
 
         try:
-            df = pro.daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
+            hist = fetch_stock_hist(
+                symbol,
+                start_date,
+                end_date,
+                adjust="qfq",
+                market=market,
+            )
         except Exception as e:
-            print(f"[supabase_recommendation] tushare daily failed {ts_code}: {e}")
+            print(f"[supabase_recommendation] history refresh failed {market}:{symbol}: {e}")
             codes_no_data += 1
             continue
 
-        if df is None or df.empty:
+        close_map = _extract_close_map_from_hist(hist)
+        if not close_map:
             codes_no_data += 1
             continue
 
-        work = df.copy()
-        if "trade_date" not in work.columns or "close" not in work.columns:
-            codes_no_data += 1
-            continue
-        work["trade_date"] = work["trade_date"].astype(str).str.replace(r"\.0$", "", regex=True)
-        work["close"] = pd.to_numeric(work["close"], errors="coerce")
-        work = work.dropna(subset=["trade_date", "close"])
-        work = work[work["close"] > 0]
-        if work.empty:
-            codes_no_data += 1
-            continue
-
-        close_map = {
-            str(td): float(px)
-            for td, px in zip(work["trade_date"].tolist(), work["close"].tolist())
-        }
         trade_dates = sorted(close_map.keys())
         current_trade_date = trade_dates[-1]
         current_close = float(close_map[current_trade_date])
@@ -602,26 +803,38 @@ def refresh_tracking_prices_with_tushare_unadjusted() -> dict[str, Any]:
                 continue
             change_pct = round((current_close - initial_close) / initial_close * 100.0, 2)
             row_id = row.get("id")
+            update_payload = {
+                "id": row_id,
+                "initial_price": round(initial_close, 4),
+                "current_price": round(current_close, 4),
+                "change_pct": change_pct,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            if schema_supports_market_symbol:
+                update_payload["market"] = market
+                update_payload["symbol"] = symbol
+            else:
+                legacy_code = _legacy_code_from_symbol(symbol, market)
+                if legacy_code is None:
+                    continue
+                update_payload["code"] = legacy_code
+                update_payload["recommend_date"] = int(rec_date) if rec_date.isdigit() else None
             updates.append(
-                {
-                    "id": row_id,
-                    "code": int(code6),
-                    "recommend_date": int(rec_date) if rec_date.isdigit() else None,
-                    "initial_price": round(initial_close, 4),
-                    "current_price": round(current_close, 4),
-                    "change_pct": change_pct,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
-                }
+                update_payload
             )
 
     if updates:
         for item in updates:
             row_id = item.pop("id", None)
+            market_val = item.pop("market", None)
+            symbol_val = item.pop("symbol", None)
             code_val = item.pop("code", None)
             rec_date_val = item.pop("recommend_date", None)
             q = client.table(TABLE_RECOMMENDATION_TRACKING).update(item)
             if row_id is not None:
                 q = q.eq("id", row_id)
+            elif schema_supports_market_symbol and market_val and symbol_val and rec_date_val is not None:
+                q = q.eq("market", market_val).eq("symbol", symbol_val).eq("recommend_date", rec_date_val)
             elif code_val is not None and rec_date_val is not None:
                 q = q.eq("code", code_val).eq("recommend_date", rec_date_val)
             else:
@@ -629,9 +842,9 @@ def refresh_tracking_prices_with_tushare_unadjusted() -> dict[str, Any]:
             q.execute()
 
     updated_keys = {
-        f"{x.get('code', '')}:{x.get('recommend_date', '')}"
+        f"{x.get('market', '')}:{x.get('symbol', x.get('code', ''))}:{x.get('recommend_date', '')}"
         for x in updates
-        if x.get("code") is not None and x.get("recommend_date") is not None
+        if x.get("recommend_date") is not None
     }
     return {
         "rows_total": len(records),

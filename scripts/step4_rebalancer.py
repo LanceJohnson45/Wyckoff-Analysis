@@ -27,10 +27,11 @@ if __name__ == "__main__" or not __package__:
 from core.wyckoff_engine import normalize_hist_from_fetch, FunnelConfig
 from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_for_llm
 from core.prompts import PRIVATE_PM_DECISION_JSON_PROMPT
-from integrations.fetch_a_share_csv import _fetch_hist, _resolve_trading_window
+from integrations.fetch_a_share_csv import _fetch_hist, _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window
 from integrations.llm_client import call_llm
 from integrations.data_source import fetch_stock_spot_snapshot
 from integrations.supabase_market_signal import compose_market_banner, load_market_signal_daily
+from integrations.supabase_recommendation import _normalize_market
 from integrations.supabase_portfolio import (
     cancel_trade_orders,
     check_daily_run_exists,
@@ -41,7 +42,7 @@ from integrations.supabase_portfolio import (
     upsert_daily_nav,
 )
 from core.batch_report import generate_stock_payload
-from utils.trading_clock import CN_TZ, resolve_end_calendar_day
+from utils.trading_clock import CN_TZ, US_TZ, resolve_end_calendar_day_for_market
 
 TRADING_DAYS = 320
 TELEGRAM_MAX_LEN = 3900
@@ -126,6 +127,7 @@ class PositionItem:
     shares: int
     strategy: str
     stop_loss: float | None = None
+    market: str = "cn"
 
 
 @dataclass
@@ -198,6 +200,7 @@ class CandidateMeta:
     exit_price: float | None = None
     exit_reason: str = ""
     source_type: str = ""
+    market: str = "cn"
 
 
 def _clean_text(raw: object) -> str:
@@ -240,11 +243,17 @@ def _resolve_effective_market_regime(benchmark_regime: object, premarket_regime:
     return EFFECTIVE_REGIME_BY_SEVERITY.get(severity, benchmark_norm)
 
 
-def _load_market_signal_for_trade_date(trade_date: str) -> dict[str, object] | None:
+def _market_now(market: str, now: datetime | None = None) -> datetime:
+    market_norm = _normalize_market(market, default="cn")
+    tz = US_TZ if market_norm == "us" else CN_TZ
+    return now.astimezone(tz) if now else datetime.now(tz)
+
+
+def _load_market_signal_for_trade_date(trade_date: str, market: str) -> dict[str, object] | None:
     try:
-        return load_market_signal_daily(trade_date)
+        return load_market_signal_daily(trade_date, market=market)
     except Exception as e:
-        print(f"[step4] 读取 market_signal_daily 失败: trade_date={trade_date}, err={e}")
+        print(f"[step4] 读取 market_signal_daily 失败: market={market}, trade_date={trade_date}, err={e}")
         return None
 
 
@@ -953,10 +962,16 @@ def _build_portfolio_from_dict(data: dict) -> PortfolioState:
         if not isinstance(item, dict):
             print(f"[step4] 跳过非法持仓#{idx}: 非对象")
             continue
+        market = _normalize_market(item.get("market"), "cn")
         code = str(item.get("code", "")).strip()
-        if not re.fullmatch(r"\d{6}", code):
+        if market == "cn" and not re.fullmatch(r"\d{6}", code):
             print(f"[step4] 跳过非法持仓#{idx}: code 非6位")
             continue
+        if market == "us":
+            code = code.upper()
+            if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", code):
+                print(f"[step4] 跳过非法持仓#{idx}: US code 非法")
+                continue
         positions.append(
             PositionItem(
                 code=code,
@@ -966,6 +981,7 @@ def _build_portfolio_from_dict(data: dict) -> PortfolioState:
                 shares=int(item.get("shares", 0) or 0),
                 strategy=str(item.get("strategy", "")).strip(),
                 stop_loss=float(item.get("stop_loss")) if item.get("stop_loss") is not None else None,
+                market=market,
             )
         )
     return PortfolioState(free_cash=free_cash, total_equity=total_equity, positions=positions)
@@ -989,6 +1005,7 @@ def _portfolio_state_signature_from_state(portfolio: PortfolioState) -> str:
         portfolio.free_cash,
         [
             {
+                "market": p.market,
                 "code": p.code,
                 "shares": p.shares,
                 "cost_price": p.cost,
@@ -1023,8 +1040,8 @@ def load_portfolio_from_supabase(portfolio_id: str) -> tuple[PortfolioState, str
         raise ValueError(f"Supabase {portfolio_id} 未就绪，且 env 持仓不可用: {e}") from e
 
 
-def _job_end_calendar_day() -> date:
-    return resolve_end_calendar_day()
+def _job_end_calendar_day(market: str = "cn", now: datetime | None = None) -> date:
+    return resolve_end_calendar_day_for_market(market, now=now)
 
 
 def _latest_trade_date_from_hist(df: pd.DataFrame) -> date | None:
@@ -1066,6 +1083,8 @@ def _append_spot_bar_if_needed(
     code: str,
     df: pd.DataFrame,
     target_trade_date: date,
+    *,
+    market: str = "cn",
 ) -> tuple[pd.DataFrame, bool]:
     """
     当日线落后于 target_trade_date 时，尝试用实时快照补一根当日 bar。
@@ -1073,10 +1092,12 @@ def _append_spot_bar_if_needed(
     """
     if not STEP4_ENABLE_SPOT_PATCH or df is None or df.empty:
         return (df, False)
+    if _normalize_market(market) != "cn":
+        return (df, False)
     latest_trade_date = _latest_trade_date_from_hist(df)
     if latest_trade_date is None or latest_trade_date >= target_trade_date:
         return (df, False)
-    if target_trade_date != datetime.now(CN_TZ).date():
+    if target_trade_date != _market_now(market).date():
         return (df, False)
 
     df_s = df.sort_values("date").reset_index(drop=True)
@@ -1129,14 +1150,14 @@ def _append_spot_bar_if_needed(
     return (df, False)
 
 
-def _fetch_latest_real_close(code: str, window) -> float | None:
+def _fetch_latest_real_close(code: str, window, *, market: str = "cn") -> float | None:
     # 优先不复权；若交易日未对齐或拉取异常，再回退到前复权，避免误判“无最新价”。
     for adjust, label in [("", "不复权"), ("qfq", "前复权")]:
         try:
-            raw = _fetch_hist(code, window, adjust)
+            raw = _fetch_hist_with_market(code, window, adjust, _normalize_market(market))
             df = normalize_hist_from_fetch(raw).sort_values("date").reset_index(drop=True)
             if ENFORCE_TARGET_TRADE_DATE:
-                df, patched = _append_spot_bar_if_needed(code, df, window.end_trade_date)
+                df, patched = _append_spot_bar_if_needed(code, df, window.end_trade_date, market=market)
                 if patched:
                     print(f"[step4] {code} 实时快照补偿成功（{label}）")
                 latest_trade_date = _latest_trade_date_from_hist(df)
@@ -1199,13 +1220,14 @@ def _process_one_position(
     用于并行化。
     """
     try:
-        raw_qfq = _fetch_hist(pos.code, window, "qfq")
+        raw_qfq = _fetch_hist_with_market(pos.code, window, "qfq", pos.market)
         df_qfq = normalize_hist_from_fetch(raw_qfq).sort_values("date").reset_index(drop=True)
         if ENFORCE_TARGET_TRADE_DATE:
             df_qfq, patched = _append_spot_bar_if_needed(
                 pos.code,
                 df_qfq,
                 window.end_trade_date,
+                market=pos.market,
             )
             if patched:
                 print(f"[step4] {pos.code} 持仓数据已用实时快照补偿")
@@ -1216,7 +1238,7 @@ def _process_one_position(
                 )
         atr14 = _calc_atr(df_qfq, STEP4_ATR_PERIOD)
 
-        latest_close = _fetch_latest_real_close(pos.code, window)
+        latest_close = _fetch_latest_real_close(pos.code, window, market=pos.market)
         failure_msg = ""
         if latest_close is None:
             latest_close = float(df_qfq.iloc[-1]["close"])
@@ -1232,6 +1254,7 @@ def _process_one_position(
 
         meta = (
             f"### 持仓 {pos.code} {pos.name}\n"
+            f"- 市场: {pos.market.upper()}\n"
             f"- 成本价: {pos.cost:.2f}\n"
             f"- 最新收盘(不复权优先): {latest_close:.2f}\n"
             f"- 浮盈亏: {pnl_pct:+.2f}%\n"
@@ -1271,11 +1294,12 @@ def _process_one_position(
             )
         return (meta + diag_text + "\n" + payload, failure_msg, live_val, latest_close, atr14, hold_trade_days)
     except Exception as e:
-        latest_close = _fetch_latest_real_close(pos.code, window)
+        latest_close = _fetch_latest_real_close(pos.code, window, market=pos.market)
         if latest_close is not None:
             live_val = latest_close * max(pos.shares, 0)
             fallback_meta = (
                 f"### 持仓 {pos.code} {pos.name}\n"
+                f"- 市场: {pos.market.upper()}\n"
                 f"- 成本价: {pos.cost:.2f}\n"
                 f"- 最新收盘(快照补偿): {latest_close:.2f}\n"
                 f"- 持仓股数: {pos.shares}\n"
@@ -1326,14 +1350,16 @@ def _process_one_candidate(
 ) -> tuple[str, str, float | None, float | None]:
     code = _clean_text(item.get("code"))
     name = _clean_text(item.get("name")) or code
+    market = _normalize_market(item.get("market"), "cn")
     try:
-        raw_qfq = _fetch_hist(code, window, "qfq")
+        raw_qfq = _fetch_hist_with_market(code, window, "qfq", market)
         df_qfq = normalize_hist_from_fetch(raw_qfq).sort_values("date").reset_index(drop=True)
         if ENFORCE_TARGET_TRADE_DATE:
             df_qfq, patched = _append_spot_bar_if_needed(
                 code,
                 df_qfq,
                 window.end_trade_date,
+                market=market,
             )
             if patched:
                 print(f"[step4] {code} 候选切片已用实时快照补偿")
@@ -1344,7 +1370,7 @@ def _process_one_candidate(
                 )
 
         atr14 = _calc_atr(df_qfq, STEP4_ATR_PERIOD)
-        latest_close = _fetch_latest_real_close(code, window)
+        latest_close = _fetch_latest_real_close(code, window, market=market)
         if latest_close is None:
             latest_close = float(df_qfq.iloc[-1]["close"])
 
@@ -1808,15 +1834,23 @@ def run(
         print("[step4] tg_bot_token/tg_chat_id 未配置，跳过 Step4 推送")
         return (True, "skipped_telegram_unconfigured")
 
-    trade_date = _job_end_calendar_day().strftime("%Y-%m-%d")
+    portfolio_market = "cn"
+    if portfolio.positions:
+        markets = {_normalize_market(p.market, "cn") for p in portfolio.positions}
+        if len(markets) == 1:
+            portfolio_market = next(iter(markets))
+    trade_date = _job_end_calendar_day(portfolio_market).strftime("%Y-%m-%d")
     if check_daily_run_exists(portfolio_id, trade_date, state_signature=state_signature):
         print(
             f"[step4] 幂等性检查: {portfolio_id} {trade_date} 当前持仓快照已运行过，跳过。"
         )
         return (True, "skipped_idempotency")
 
-    end_day = _job_end_calendar_day()
-    window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    end_day = _job_end_calendar_day(portfolio_market)
+    if portfolio_market == "us":
+        window = _resolve_us_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    else:
+        window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
     (
         positions_payload,
         position_failures,
@@ -1847,13 +1881,21 @@ def run(
         if not isinstance(item, dict):
             continue
         code = _clean_text(item.get("code"))
-        if not re.fullmatch(r"\d{6}", code):
+        item_market = _normalize_market(item.get("market"), portfolio_market)
+        if item_market == "cn" and not re.fullmatch(r"\d{6}", code):
             continue
+        if item_market == "us":
+            code = code.upper()
+            if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", code):
+                continue
+        item = dict(item)
+        item["code"] = code
+        item["market"] = item_market
         if code in position_code_set or code in seen_candidate_codes:
             continue
         seen_candidate_codes.add(code)
         candidate_codes.append(code)
-        candidate_items.append(dict(item))
+        candidate_items.append(item)
     for code in _extract_stock_codes(external_report):
         if code in position_code_set or code in seen_candidate_codes:
             continue
@@ -1875,15 +1917,15 @@ def run(
     if candidate_atr_map:
         atr_map.update(candidate_atr_map)
 
-    market_signal_row = _load_market_signal_for_trade_date(trade_date)
+    market_signal_row = _load_market_signal_for_trade_date(trade_date, portfolio_market)
     if market_signal_row:
         print(
-            f"[step4] 读取全局风控: trade_date={trade_date}, "
+            f"[step4] 读取全局风控: market={portfolio_market}, trade_date={trade_date}, "
             f"benchmark={market_signal_row.get('benchmark_regime') or '-'}, "
             f"premarket={market_signal_row.get('premarket_regime') or '-'}"
         )
     else:
-        print(f"[step4] 未读取到当日全局风控: trade_date={trade_date}")
+        print(f"[step4] 未读取到当日全局风控: market={portfolio_market}, trade_date={trade_date}")
     market_regime, benchmark_text, system_market_view = _build_market_guardrail(
         trade_date=trade_date,
         benchmark_context=benchmark_context,
@@ -1986,17 +2028,26 @@ def run(
     )
 
     # 补齐候选最新价
+    code_market_map = {
+        p.code: _normalize_market(p.market, portfolio_market)
+        for p in portfolio.positions
+    }
+    for code, meta in candidate_meta_map.items():
+        code_market_map[code] = _normalize_market(meta.market, portfolio_market)
+
     def _fetch_candidate_data(d_code):
+        d_market = _normalize_market(code_market_map.get(d_code), portfolio_market)
         atr_v = None
         px = None
         try:
-            raw_qfq = _fetch_hist(d_code, window, "qfq")
+            raw_qfq = _fetch_hist_with_market(d_code, window, "qfq", d_market)
             df_qfq = normalize_hist_from_fetch(raw_qfq).sort_values("date").reset_index(drop=True)
             if ENFORCE_TARGET_TRADE_DATE:
                 df_qfq, patched = _append_spot_bar_if_needed(
                     d_code,
                     df_qfq,
                     window.end_trade_date,
+                    market=d_market,
                 )
                 if patched:
                     print(f"[step4] {d_code} 候选数据已用实时快照补偿")
@@ -2007,7 +2058,7 @@ def run(
                 atr_v = _calc_atr(df_qfq, STEP4_ATR_PERIOD)
         except Exception as e:
             print(f"[step4] {d_code} ATR 计算异常: {e}")
-        px = _fetch_latest_real_close(d_code, window)
+        px = _fetch_latest_real_close(d_code, window, market=d_market)
         return (d_code, atr_v, px)
 
     missing_codes = [d.code for d in decisions if d.code not in latest_price_map]
@@ -2043,7 +2094,7 @@ def run(
         else:
             print(f"[step4] 持仓止损价更新失败 | portfolio_id={portfolio_id}")
 
-    run_id = datetime.now(CN_TZ).strftime("%Y%m%d_%H%M%S") + "_" + str(uuid4())[:8]
+    run_id = _market_now(portfolio_market).strftime("%Y%m%d_%H%M%S") + "_" + str(uuid4())[:8]
     if state_signature:
         run_id += f"_sig{state_signature.lower()}"
     ticket_rows = [

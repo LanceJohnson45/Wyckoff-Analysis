@@ -11,8 +11,9 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import platform
 import os
+import yfinance as yf
 
-from integrations.fetch_a_share_csv import _fetch_hist, _resolve_trading_window, _stock_name_from_code
+from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window, _stock_name_from_code
 from utils import extract_symbols_from_text, stock_sector_em
 from integrations.llm_client import call_llm
 from core.prompts import WYCKOFF_SINGLE_SYSTEM_PROMPT
@@ -33,6 +34,37 @@ ALLOW_LLM_PLOT_EXEC = os.getenv("ALLOW_LLM_PLOT_EXEC", "").strip().lower() in {
     "on",
 }
 BEIJING_TZ = ZoneInfo("Asia/Shanghai")
+
+
+def _extract_us_symbols_from_text(text: str) -> list[str]:
+    if not text:
+        return []
+    tokens = re.findall(r"[A-Za-z][A-Za-z0-9._-]{0,14}", str(text or ""))
+    out: list[str] = []
+    seen: set[str] = set()
+    for tk in tokens:
+        sym = tk.upper().strip()
+        if not sym or sym in seen:
+            continue
+        seen.add(sym)
+        out.append(sym)
+    return out
+
+
+def _resolve_single_stock_name(symbol: str, market: str) -> str:
+    if market == "cn":
+        try:
+            return _stock_name_from_code(symbol)
+        except Exception:
+            return symbol
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.fast_info or {}
+        short_name = getattr(ticker, "info", {}) if hasattr(ticker, "info") else {}
+        name = str((short_name or {}).get("shortName") or (short_name or {}).get("longName") or info.get("shortName") or "").strip()
+        return name or symbol
+    except Exception:
+        return symbol
 
 SAFE_EXEC_BUILTINS = {
     "abs": abs,
@@ -392,10 +424,16 @@ def render_single_stock_page(
 
     col1, col2 = st.columns([1, 1])
     with col1:
+        market = st.selectbox(
+            "市场",
+            options=["cn", "us"],
+            format_func=lambda v: "A股 (CN)" if v == "cn" else "美股 (US)",
+            key="single_stock_market",
+        )
         stock_input = st.text_input(
             "股票代码",
-            placeholder="例如：600519",
-            help="请输入单个 A 股代码",
+            placeholder="例如：600519" if market == "cn" else "例如：AAPL",
+            help="请输入单个股票代码",
             key="single_stock_code"
         )
     with col2:
@@ -409,7 +447,11 @@ def render_single_stock_page(
     # 提取代码
     symbol = ""
     if stock_input:
-        candidates = extract_symbols_from_text(stock_input)
+        candidates = (
+            extract_symbols_from_text(stock_input)
+            if market == "cn"
+            else _extract_us_symbols_from_text(stock_input)
+        )
         if candidates:
             symbol = candidates[0]
 
@@ -418,6 +460,7 @@ def render_single_stock_page(
     if run_btn and symbol:
         _run_analysis(
             symbol,
+            market,
             uploaded_file,
             provider,
             model,
@@ -428,6 +471,7 @@ def render_single_stock_page(
 
 def _run_analysis(
     symbol,
+    market,
     image_file,
     provider,
     model,
@@ -438,8 +482,12 @@ def _run_analysis(
 ):
     """执行分析流程"""
     end_calendar = date.today() - timedelta(days=1)
+    market_norm = str(market or "cn").strip().lower()
     try:
-        window = _resolve_trading_window(end_calendar, TRADING_DAYS_OHLCV)
+        if market_norm == "us":
+            window = _resolve_us_window(end_calendar, TRADING_DAYS_OHLCV)
+        else:
+            window = _resolve_trading_window(end_calendar, TRADING_DAYS_OHLCV)
     except Exception as e:
         st.error(f"无法解析交易日窗口：{e}")
         return
@@ -454,20 +502,20 @@ def _run_analysis(
         df_hist = _run_with_timeout(
             "历史行情拉取",
             SINGLE_STOCK_FETCH_TIMEOUT_S,
-            lambda: _fetch_hist(symbol, window, ADJUST),
+            lambda: _fetch_hist_with_market(symbol, window, ADJUST, market_norm),
         )
         try:
-            sector = _run_with_timeout(
-                "行业信息获取",
-                SINGLE_STOCK_SECTOR_TIMEOUT_S,
-                lambda: stock_sector_em(symbol, timeout=SINGLE_STOCK_SECTOR_TIMEOUT_S),
-            )
+            if market_norm == "cn":
+                sector = _run_with_timeout(
+                    "行业信息获取",
+                    SINGLE_STOCK_SECTOR_TIMEOUT_S,
+                    lambda: stock_sector_em(symbol, timeout=SINGLE_STOCK_SECTOR_TIMEOUT_S),
+                )
+            else:
+                sector = "US"
         except Exception:
             sector = "未知行业"
-        try:
-            name = _stock_name_from_code(symbol)
-        except Exception:
-            name = symbol
+        name = _resolve_single_stock_name(symbol, market_norm)
 
         # 计算该股票的威科夫阶段信息
         from core.wyckoff_engine import (
@@ -522,6 +570,7 @@ def _run_analysis(
 
         user_msg = (
             f"当前北京时间（系统注入，UTC+8）：{current_time}\n"
+            f"分析市场：{market_norm.upper()}\n"
             f"分析标的：{symbol} {name} ({sector})\n"
             f"数据长度：{len(df_hist)} 交易日\n\n"
             f"{stage_info}"

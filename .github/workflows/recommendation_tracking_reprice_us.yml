@@ -1,0 +1,53 @@
+name: Recommendation Tracking Reprice US
+
+on:
+  schedule:
+    - cron: "0 15 * * 0-4"
+  workflow_dispatch:
+
+concurrency:
+  group: recommendation-reprice-us-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+      TZ: Asia/Shanghai
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Prepare logs dir
+        run: mkdir -p logs
+
+      - name: Run recommendation reprice job (US)
+        run: |
+          python -u scripts/recommendation_tracking_reprice_job.py --market us --logs ${{ github.workspace }}/logs/recommendation_reprice_us.log \
+            2>&1 | tee -a ${{ github.workspace }}/logs/recommendation_reprice_us.console.log
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recommendation-reprice-us-logs-${{ github.run_number }}
+          path: logs/recommendation_reprice_us*.log
+          retention-days: 7
+          if-no-files-found: warn

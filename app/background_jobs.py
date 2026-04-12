@@ -62,9 +62,19 @@ def sync_background_job_state(*, state_key: str) -> dict[str, Any] | None:
     return state
 
 
-def load_latest_job_result(job_kind: str, *, per_page: int = 10) -> tuple[Any, dict[str, Any] | None]:
+def load_latest_job_result(
+    job_kind: str,
+    *,
+    market: str = "",
+    per_page: int = 10,
+) -> tuple[Any, dict[str, Any] | None]:
     user_id = current_user_id()
-    return load_latest_result(job_kind, requested_by_user_id=user_id, per_page=per_page)
+    return load_latest_result(
+        job_kind,
+        requested_by_user_id=user_id,
+        market=market,
+        per_page=per_page,
+    )
 
 
 def refresh_background_job_data() -> None:

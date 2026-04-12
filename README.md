@@ -501,6 +501,12 @@ tushare → akshare → baostock → efinance
 | ETF 历史 | 510300 / 159707 等 | ✅ |
 | 宏观 CPI | 月度 CPI 指标 | ❌ |
 
+美股单股导出
+python -m integrations.fetch_a_share_csv --market us --symbol AAPL --trading-days 320
+
+美股多股导出
+python -m integrations.fetch_a_share_csv --market us --symbols AAPL MSFT NVDA
+
 ### Fork 与部署
 
 1. Fork 本仓库，克隆到本地

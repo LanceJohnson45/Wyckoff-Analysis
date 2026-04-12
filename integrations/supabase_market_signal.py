@@ -19,6 +19,11 @@ from integrations.supabase_base import create_admin_client as _get_supabase_admi
 from integrations.supabase_base import is_admin_configured as is_supabase_admin_configured
 
 
+def _normalize_market(raw: Any, default: str = "cn") -> str:
+    market = str(raw or default or "cn").strip().lower()
+    return market if market in {"cn", "us"} else default
+
+
 def _normalize_trade_date(raw: Any) -> str:
     if isinstance(raw, date):
         return raw.isoformat()
@@ -371,20 +376,42 @@ def _normalize_row_for_upsert(row: dict[str, Any]) -> dict[str, Any]:
         out["premarket_reasons"] = []
     if "source_jobs" in out and not isinstance(out.get("source_jobs"), dict):
         out["source_jobs"] = {}
+    if "market" in out or out.get("market") is not None:
+        out["market"] = _normalize_market(out.get("market"), default="cn")
     return out
 
 
-def _load_market_signal_by_trade_date(client: Client, trade_date: str) -> dict[str, Any] | None:
+def _market_matches_row(row: dict[str, Any], market: str) -> bool:
+    row_market = str(row.get("market") or "").strip().lower()
+    if row_market:
+        return row_market == market
+    return market == "cn"
+
+
+def _select_market_signal_row(rows: list[dict[str, Any]], market: str) -> dict[str, Any] | None:
+    normalized_market = _normalize_market(market)
+    for row in rows:
+        if _market_matches_row(row, normalized_market):
+            return row
+    return None
+
+
+def _load_market_signal_by_trade_date(client: Client, trade_date: str, market: str = "cn") -> dict[str, Any] | None:
     resp = (
         client.table(TABLE_MARKET_SIGNAL_DAILY)
         .select("*")
         .eq("trade_date", trade_date)
-        .limit(1)
+        .order("updated_at", desc=True)
+        .limit(20)
         .execute()
     )
     if not resp.data:
         return None
-    return dict(resp.data[0])
+    rows = [dict(item) for item in resp.data if isinstance(item, dict)]
+    picked = _select_market_signal_row(rows, market)
+    if picked is None:
+        return None
+    return dict(picked)
 
 
 def _iter_market_signal_clients(client: Client | None = None) -> list[Client]:
@@ -408,16 +435,18 @@ def _iter_market_signal_clients(client: Client | None = None) -> list[Client]:
     return clients
 
 
-def upsert_market_signal_daily(trade_date: date | str, patch: dict[str, Any]) -> bool:
+def upsert_market_signal_daily(trade_date: date | str, patch: dict[str, Any], *, market: str = "cn") -> bool:
     if not is_supabase_admin_configured():
         return False
     try:
         client = _get_supabase_admin_client()
         trade_date_text = _normalize_trade_date(trade_date)
-        existing = _load_market_signal_by_trade_date(client, trade_date_text) or {}
+        market_norm = _normalize_market(market)
+        existing = _load_market_signal_by_trade_date(client, trade_date_text, market=market_norm) or {}
         merged = dict(existing)
         merged.update(_normalize_row_for_upsert(dict(patch or {})))
         merged["trade_date"] = trade_date_text
+        merged["market"] = market_norm
         merged["source_jobs"] = _deep_merge_source_jobs(
             existing.get("source_jobs"),
             patch.get("source_jobs") if isinstance(patch, dict) else None,
@@ -427,9 +456,11 @@ def upsert_market_signal_daily(trade_date: date | str, patch: dict[str, Any]) ->
         try:
             client.table(TABLE_MARKET_SIGNAL_DAILY).upsert(
                 _normalize_row_for_upsert(merged),
-                on_conflict="trade_date",
+                on_conflict="trade_date,market",
             ).execute()
         except Exception:
+            if market_norm != "cn":
+                raise
             fallback = {k: v for k, v in merged.items() if k not in STRUCTURED_MARKET_SIGNAL_FIELDS}
             client.table(TABLE_MARKET_SIGNAL_DAILY).upsert(
                 _normalize_row_for_upsert(fallback),
@@ -440,11 +471,17 @@ def upsert_market_signal_daily(trade_date: date | str, patch: dict[str, Any]) ->
         return False
 
 
-def load_market_signal_daily(trade_date: date | str, client: Client | None = None) -> dict[str, Any] | None:
+def load_market_signal_daily(
+    trade_date: date | str,
+    client: Client | None = None,
+    *,
+    market: str = "cn",
+) -> dict[str, Any] | None:
     trade_date_text = _normalize_trade_date(trade_date)
+    market_norm = _normalize_market(market)
     for sb in _iter_market_signal_clients(client):
         try:
-            row = _load_market_signal_by_trade_date(sb, trade_date_text)
+            row = _load_market_signal_by_trade_date(sb, trade_date_text, market=market_norm)
             if row:
                 return row
         except Exception:
@@ -452,7 +489,11 @@ def load_market_signal_daily(trade_date: date | str, client: Client | None = Non
     return None
 
 
-def load_latest_market_signal_daily(client: Client | None = None) -> dict[str, Any] | None:
+def load_latest_market_signal_daily(
+    client: Client | None = None,
+    *,
+    market: str = "cn",
+) -> dict[str, Any] | None:
     def _is_non_empty(value: Any) -> bool:
         if value is None:
             return False
@@ -465,6 +506,7 @@ def load_latest_market_signal_daily(client: Client | None = None) -> dict[str, A
                 return r
         return None
 
+    market_norm = _normalize_market(market)
     for sb in _iter_market_signal_clients(client):
         try:
             if sb is None:
@@ -478,6 +520,7 @@ def load_latest_market_signal_daily(client: Client | None = None) -> dict[str, A
                 .execute()
             )
             rows = [dict(x) for x in (resp.data or []) if isinstance(x, dict)]
+            rows = [row for row in rows if _market_matches_row(row, market_norm)]
             if not rows:
                 continue
 

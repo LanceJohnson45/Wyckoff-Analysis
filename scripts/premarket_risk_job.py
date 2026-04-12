@@ -121,6 +121,30 @@ def _premarket_session_trade_date_str() -> str:
     return datetime.now(TZ).date().isoformat()
 
 
+def _next_us_weekday(d: date) -> date:
+    candidate = d
+    while candidate.weekday() >= 5:
+        candidate += timedelta(days=1)
+    return candidate
+
+
+def _premarket_session_trade_date_str_for_market(
+    market: str,
+    now: datetime | None = None,
+) -> str:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "us":
+        dt_us = now.astimezone(US_TZ) if now else datetime.now(US_TZ)
+        candidate = dt_us.date()
+        if dt_us.weekday() >= 5:
+            return _next_us_weekday(candidate).isoformat()
+        if dt_us.hour >= 16:
+            candidate += timedelta(days=1)
+        return _next_us_weekday(candidate).isoformat()
+    dt_cn = now.astimezone(TZ) if now else datetime.now(TZ)
+    return dt_cn.date().isoformat()
+
+
 def _parse_trade_date(raw: object) -> date | None:
     text = str(raw or "").strip()
     if not text:
@@ -475,11 +499,41 @@ def _judge_regime(a50: dict, vix: dict) -> tuple[str, list[str]]:
     return regime, reasons
 
 
+def _judge_us_regime(vix: dict) -> tuple[str, list[str]]:
+    reasons: list[str] = []
+    regime = "NORMAL"
+    vix_close = _safe_float(vix.get("close"))
+    vix_pct = _safe_float(vix.get("pct_chg"))
+
+    if vix_pct is not None and vix_pct >= RISK_VIX_CRASH_PCT:
+        if vix_close is not None and vix_close >= RISK_VIX_CRASH_CLOSE:
+            regime = "BLACK_SWAN"
+            reasons.append(
+                f"VIX绝对值 {vix_close:.2f} >= {RISK_VIX_CRASH_CLOSE:.2f} 且涨幅 {vix_pct:.2f}% >= {RISK_VIX_CRASH_PCT:.2f}%"
+            )
+        else:
+            regime = "CAUTION"
+            reasons.append(
+                f"VIX涨幅 {vix_pct:.2f}% >= {RISK_VIX_CRASH_PCT:.2f}% 但绝对值未达到黑天鹅阈值，按 CAUTION 处理"
+            )
+    elif vix_pct is not None and vix_pct >= RISK_VIX_OFF_PCT:
+        regime = "RISK_OFF"
+        reasons.append(f"VIX涨幅 {vix_pct:.2f}% >= {RISK_VIX_OFF_PCT:.2f}%")
+
+    if not reasons:
+        reasons.append("US 口径当前以 VIX 为主，未触发风险阈值")
+    return regime, reasons
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="盘前风控：A50 + VIX")
+    parser = argparse.ArgumentParser(description="盘前风控：按 market 生成盘前风险结论")
     parser.add_argument("--logs", default=None, help="日志文件路径")
     parser.add_argument("--dry-run", action="store_true", help="仅打印结果，不发飞书")
+    parser.add_argument("--market", default=os.getenv("FUNNEL_MARKET", "cn"), help="cn 或 us")
     args = parser.parse_args()
+    market = str(args.market or "cn").strip().lower()
+    if market not in {"cn", "us"}:
+        market = "cn"
 
     logs_path = args.logs or os.path.join(
         os.getenv("LOGS_DIR", "logs"),
@@ -487,10 +541,17 @@ def main() -> int:
     )
     webhook = os.getenv("FEISHU_WEBHOOK_URL", "").strip()
 
-    _log("盘前风控任务开始", logs_path)
-    a50 = _fetch_a50()
+    _log(f"盘前风控任务开始 market={market}", logs_path)
+    a50 = _fetch_a50() if market == "cn" else {
+        "ok": False,
+        "source": "disabled_for_us",
+        "date": None,
+        "close": None,
+        "pct_chg": None,
+        "error": None,
+    }
     vix = _fetch_vix_until_ready(logs_path)
-    regime, reasons = _judge_regime(a50, vix)
+    regime, reasons = _judge_regime(a50, vix) if market == "cn" else _judge_us_regime(vix)
 
     _log(f"A50: {json.dumps(a50, ensure_ascii=False)}", logs_path)
     _log(f"VIX: {json.dumps(vix, ensure_ascii=False)}", logs_path)
@@ -499,21 +560,27 @@ def main() -> int:
     _log("盘前动作开关: " + " | ".join(action_lines[1:]), logs_path)
 
     content_parts = [
+        f"**运行市场**: `{market.upper()}`",
         f"**当前北京时间**: {_now()}",
         f"**结论**: `{regime}`",
         f"**触发原因**: {'；'.join(reasons)}",
         "",
-        f"**A50** ({a50.get('source')}): "
-        f"date={a50.get('date')}, close={a50.get('close')}, pct={a50.get('pct_chg')}",
-        f"**VIX** ({vix.get('source')}): "
-        f"date={vix.get('date')}, close={vix.get('close')}, pct={vix.get('pct_chg')}",
-        "",
     ]
-    if not a50.get("ok") and a50.get("error"):
+    if market == "cn":
+        content_parts.append(
+            f"**A50** ({a50.get('source')}): date={a50.get('date')}, close={a50.get('close')}, pct={a50.get('pct_chg')}"
+        )
+    else:
+        content_parts.append("**US 口径说明**: 当前盘前风控以 VIX 为主，不再复用 A50 语义。")
+    content_parts.append(
+        f"**VIX** ({vix.get('source')}): date={vix.get('date')}, close={vix.get('close')}, pct={vix.get('pct_chg')}"
+    )
+    content_parts.append("")
+    if market == "cn" and (not a50.get("ok") and a50.get("error")):
         content_parts.append(f"**A50注意**: {a50.get('error')}")
     if not vix.get("ok") and vix.get("error"):
         content_parts.append(f"**VIX注意**: {vix.get('error')}")
-    if (not a50.get("ok") and a50.get("error")) or (not vix.get("ok") and vix.get("error")):
+    if ((market == "cn" and (not a50.get("ok") and a50.get("error"))) or (not vix.get("ok") and vix.get("error"))):
         content_parts.append("")
     content_parts.extend(action_lines)
     content_parts.extend(
@@ -528,7 +595,7 @@ def main() -> int:
         _log("--dry-run: 不发送飞书", logs_path)
         return 0
 
-    trade_date = _premarket_session_trade_date_str()
+    trade_date = _premarket_session_trade_date_str_for_market(market)
     db_ok = upsert_market_signal_daily(
         trade_date,
         {
@@ -549,15 +616,16 @@ def main() -> int:
                 }
             },
         },
+        market=market,
     )
-    _log(f"市场信号写库(premarket): ok={db_ok}, trade_date={trade_date}, regime={regime}", logs_path)
+    _log(f"市场信号写库(premarket): ok={db_ok}, market={market}, trade_date={trade_date}, regime={regime}", logs_path)
 
     if not webhook:
         _log("FEISHU_WEBHOOK_URL 未配置，跳过飞书发送", logs_path)
         return 0
 
     ok = send_feishu_notification(
-        webhook, f"⏰ 盘前风控 {datetime.now(TZ).strftime('%Y-%m-%d')}", content
+        webhook, f"⏰ 盘前风控[{market.upper()}] {datetime.now(TZ).strftime('%Y-%m-%d')}", content
     )
     if not ok:
         _log("飞书发送失败", logs_path)

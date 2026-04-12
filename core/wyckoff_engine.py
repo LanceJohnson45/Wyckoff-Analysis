@@ -24,6 +24,15 @@ import pandas as pd
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
     col_map = {
+        "Date": "date",
+        "Open": "open",
+        "High": "high",
+        "Low": "low",
+        "Close": "close",
+        "Volume": "volume",
+        "Amount": "amount",
+        "PctChange": "pct_chg",
+        "TurnoverRate": "turnover",
         "日期": "date",
         "开盘": "open",
         "最高": "high",
@@ -33,18 +42,37 @@ def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
         "成交额": "amount",
         "涨跌幅": "pct_chg",
         "换手率": "turnover",  # <--- 新增这行，捕获换手率
-        "换手": "turnover"     # <--- 兼容不同数据源的命名
+        "换手": "turnover",  # <--- 兼容不同数据源的命名
     }
     out = df.rename(columns=col_map)
     keep = [
         c
-        for c in ["date", "open", "high", "low", "close", "volume", "amount", "pct_chg", "turnover"]
+        for c in [
+            "date",
+            "open",
+            "high",
+            "low",
+            "close",
+            "volume",
+            "amount",
+            "pct_chg",
+            "turnover",
+        ]
         if c in out.columns
     ]
     out = out[keep].copy()
     if "pct_chg" not in out.columns and "close" in out.columns:
         out["pct_chg"] = out["close"].astype(float).pct_change() * 100
-    for col in ["open", "high", "low", "close", "volume", "amount", "pct_chg", "turnover"]:
+    for col in [
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "amount",
+        "pct_chg",
+        "turnover",
+    ]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
     return out
@@ -70,8 +98,6 @@ def _latest_trade_date(df: pd.DataFrame) -> object | None:
     return s.iloc[-1].date()
 
 
-
-
 # Config
 
 
@@ -92,7 +118,7 @@ class FunnelConfig:
     bench_drop_threshold: float = -2.0
     rs_window_long: int = 10
     rs_window_short: int = 3
-    rs_min_long: float = 2.0   # 10 日 RS 至少跑赢大盘 2%（原 0.0 形同虚设）
+    rs_min_long: float = 2.0  # 10 日 RS 至少跑赢大盘 2%（原 0.0 形同虚设）
     rs_min_short: float = 1.0  # 3 日 RS 至少跑赢大盘 1%
     enable_rs_filter: bool = True
     enable_rps_filter: bool = True
@@ -118,30 +144,30 @@ class FunnelConfig:
     # 触发条件：低位区间 + 横盘振幅小 + 量能萎缩 + 均线胶着（尚未多头排列）。
     # 这类股票应与 L4 Spring/LPS 配合使用，单独出现时仅进观察池。
     enable_accumulation_channel: bool = True
-    accum_lookback_days: int = 250          # 年内低点计算窗口（交易日）
+    accum_lookback_days: int = 250  # 年内低点计算窗口（交易日）
     accum_price_from_low_max: float = 0.35  # 现价不超过年内低点 +35%
-    accum_range_window: int = 60            # 横盘振幅计算窗口（交易日）
-    accum_range_max_pct: float = 30.0       # 窗口内 (high_max-low_min)/low_min 不超过 30%
-    accum_vol_dry_window: int = 20          # 量能萎缩统计近 N 日
-    accum_vol_dry_ref_window: int = 120     # 量能萎缩对比参考窗口
-    accum_vol_dry_ratio: float = 0.65       # 近 N 日均量 / 参考均量 < 此值（量能萎缩）
-    accum_ma_gap_max: float = 0.06          # |MA50 - MA200| / MA200 < 此值（均线胶着）
+    accum_range_window: int = 60  # 横盘振幅计算窗口（交易日）
+    accum_range_max_pct: float = 30.0  # 窗口内 (high_max-low_min)/low_min 不超过 30%
+    accum_vol_dry_window: int = 20  # 量能萎缩统计近 N 日
+    accum_vol_dry_ref_window: int = 120  # 量能萎缩对比参考窗口
+    accum_vol_dry_ratio: float = 0.65  # 近 N 日均量 / 参考均量 < 此值（量能萎缩）
+    accum_ma_gap_max: float = 0.06  # |MA50 - MA200| / MA200 < 此值（均线胶着）
 
     # Layer 2 地量蓄势通道（Dry Volume Channel）
     # 低位区间内，近期某日出现了年内最低级别的单日成交量，说明卖压完全枯竭。
     enable_dry_vol_channel: bool = True
-    dry_vol_lookback: int = 10              # 在最近 N 日内寻找地量
-    dry_vol_ref_window: int = 250           # 地量参考窗口（年维度）
-    dry_vol_quantile: float = 0.05          # 地量标准：低于年内成交量的 5% 分位数
+    dry_vol_lookback: int = 10  # 在最近 N 日内寻找地量
+    dry_vol_ref_window: int = 250  # 地量参考窗口（年维度）
+    dry_vol_quantile: float = 0.05  # 地量标准：低于年内成交量的 5% 分位数
     dry_vol_price_from_low_max: float = 0.35  # 位阶保护：现价 <= 年内低点 +35%
 
     # Layer 2 暗中护盘通道（RS Divergence Channel）
     # 大盘近期创新低，但该股拒绝创新低，形成 Higher Low，说明有资金托底。
     enable_rs_divergence_channel: bool = True
-    rs_div_bench_window: int = 20           # 大盘近 N 日内需出现新低
-    rs_div_stock_window: int = 20           # 个股同期窗口
-    rs_div_bench_ref_window: int = 60       # 大盘新低对比的参考窗口（近 60 日）
-    rs_div_price_from_low_max: float = 0.50 # 位阶保护：现价 <= 年内低点 +50%
+    rs_div_bench_window: int = 20  # 大盘近 N 日内需出现新低
+    rs_div_stock_window: int = 20  # 个股同期窗口
+    rs_div_bench_ref_window: int = 60  # 大盘新低对比的参考窗口（近 60 日）
+    rs_div_price_from_low_max: float = 0.50  # 位阶保护：现价 <= 年内低点 +50%
 
     # Layer 3
     # 行业共振过滤：按”行业样本数分位阈值 + 最小样本数”动态过滤，避免固定 TopN 误杀。
@@ -156,15 +182,21 @@ class FunnelConfig:
     spring_tr_max_range_pct: float = 30.0
     spring_tr_max_drift_pct: float = 12.0
     # Spring 动态振幅
-    spring_tr_atr_window: int = 20           # 计算 ATR 的历史窗口
-    spring_tr_atr_max_multiple: float = 4.0  # 区间最大允许振幅为 ATR_pct 的 N 倍(替代固定的30%)
-    spring_vol_expand_ratio: float = 1.15    # 收回时的成交量 / 下探时的成交量 > 此值（原 1.3 过严）
+    spring_tr_atr_window: int = 20  # 计算 ATR 的历史窗口
+    spring_tr_atr_max_multiple: float = (
+        4.0  # 区间最大允许振幅为 ATR_pct 的 N 倍(替代固定的30%)
+    )
+    spring_vol_expand_ratio: float = (
+        1.15  # 收回时的成交量 / 下探时的成交量 > 此值（原 1.3 过严）
+    )
 
     # Layer 4 - LPS
     lps_lookback: int = 3
     lps_ma: int = 20
     lps_ma_tolerance: float = 0.02
-    lps_vol_dry_ratio: float = 0.48  # A/B 验证：0.48 夏普 2.325 >> 0.55 夏普 0.831 ⚠️ 样内优化，需 OOS 验证
+    lps_vol_dry_ratio: float = (
+        0.48  # A/B 验证：0.48 夏普 2.325 >> 0.55 夏普 0.831 ⚠️ 样内优化，需 OOS 验证
+    )
     lps_vol_ref_window: int = 60
 
     # Layer 4 - Effort vs Result
@@ -186,13 +218,15 @@ class FunnelConfig:
     sos_breakout_tolerance: float = 0.01  # 改为 0.01：突破容差 1%（从 2% 改为 1%）
     sos_max_bias_200: float = 20.0  # 收紧离 200 日线的距离（防止在高空放量诱多）
     # SOS 动态极值爆量
-    sos_vol_quantile_window: int = 60        # 计算量能分位数的滚动窗口
-    sos_vol_quantile: float = 0.95           # 要求当日量能突破历史 N 日的 95% 分位数
+    sos_vol_quantile_window: int = 60  # 计算量能分位数的滚动窗口
+    sos_vol_quantile: float = 0.95  # 要求当日量能突破历史 N 日的 95% 分位数
 
     # Markup 阶段识别（Layer 2.5）
     enable_markup_detection: bool = True
     markup_ma_crossover_confirm_days: int = 5  # MA50 穿过 MA200 后，需要连续 N 日在上方
-    markup_ma_angle_min: float = 2.0  # MA50 的角度（% per 5 days），用于确认上升趋势强度
+    markup_ma_angle_min: float = (
+        2.0  # MA50 的角度（% per 5 days），用于确认上升趋势强度
+    )
     markup_rs_positive_min: float = 0.5  # RS_short 需要保持正值且持续增强
 
     # Accumulation ABC 细化（Layer 2 增强）
@@ -202,9 +236,13 @@ class FunnelConfig:
 
     # Exit 策略（Layer 5）
     enable_exit_signals: bool = True
-    exit_stop_loss_pct: float = -7.0          # 网格优化最佳：-7%/+18%（夏普2.493），-6%偏紧，-8%偏松
-    exit_trailing_active_pct: float = 15.0    # 利润激活线：从底部上涨超过此比例，激活移动跟踪止损
-    exit_trailing_drawdown_pct: float = -10.0 # 利润保护线：高位跟踪回撤止损幅度（%）
+    exit_stop_loss_pct: float = (
+        -7.0
+    )  # 网格优化最佳：-7%/+18%（夏普2.493），-6%偏紧，-8%偏松
+    exit_trailing_active_pct: float = (
+        15.0  # 利润激活线：从底部上涨超过此比例，激活移动跟踪止损
+    )
+    exit_trailing_drawdown_pct: float = -10.0  # 利润保护线：高位跟踪回撤止损幅度（%）
 
     # Distribution 识别：高位缩量警告
     dist_high_threshold_pct: float = 30.0  # 相对 MA200 的高度（%）
@@ -219,9 +257,13 @@ class FunnelResult(NamedTuple):
     top_sectors: list[str]
     triggers: dict[str, list[tuple[str, float]]]
     # 威科夫阶段细节
-    stage_map: dict[str, str]  # code -> stage_name（如 "Accumulation A"、"Markup"、"Distribution"）
+    stage_map: dict[
+        str, str
+    ]  # code -> stage_name（如 "Accumulation A"、"Markup"、"Distribution"）
     markup_symbols: list[str]  # 已进入 Markup 的股票
-    exit_signals: dict[str, dict]  # code -> {"signal": "stop_loss|distribution_warning", "price": xxx, "reason": xxx}
+    exit_signals: dict[
+        str, dict
+    ]  # code -> {"signal": "stop_loss|distribution_warning", "price": xxx, "reason": xxx}
     channel_map: dict[str, str]
 
 
@@ -321,8 +363,6 @@ def resolve_ai_candidate_policy(
     }
 
 
-
-
 # Layer 1: 剥离垃圾
 
 
@@ -365,8 +405,6 @@ def layer1_filter(
                 continue
         passed.append(sym)
     return passed
-
-
 
 
 # Layer 2: 强弱甄别
@@ -467,12 +505,8 @@ def layer2_strength_detailed(
                 rps_df["ret_slow"].rank(pct=True, ascending=True, method="average")
                 * 100.0
             )
-            rps_fast_map = (
-                rps_df.set_index("sym")["rps_fast"].astype(float).to_dict()
-            )
-            rps_slow_map = (
-                rps_df.set_index("sym")["rps_slow"].astype(float).to_dict()
-            )
+            rps_fast_map = rps_df.set_index("sym")["rps_fast"].astype(float).to_dict()
+            rps_slow_map = rps_df.set_index("sym")["rps_slow"].astype(float).to_dict()
             rps_filter_active = True
 
     passed: list[str] = []
@@ -530,30 +564,37 @@ def layer2_strength_detailed(
         rps_slow = rps_slow_map.get(sym)
         momentum_rps_ok = True
         ambush_rps_ok = True
-        
+
         # 计算 RPS 斜率：判断 RPS 是否还在上升
         rps_slope_ok = True
-        if cfg.enable_rps_filter and rps_filter_active and len(df_sorted) >= cfg.rps_slope_window:
+        if (
+            cfg.enable_rps_filter
+            and rps_filter_active
+            and len(df_sorted) >= cfg.rps_slope_window
+        ):
             close_series = pd.to_numeric(df_sorted["close"], errors="coerce")
             rps_window = max(int(cfg.rps_slope_window), 2)
-            
+
             # 修正：计算最近 N 日的累计收益率曲线（相对起点），而不是单日收益率
             recent_closes = []
             for i in range(-rps_window, 0):
                 if len(close_series) + i >= 0:
                     recent_closes.append(float(close_series.iloc[i]))
-            
+
             # 线性回归斜率：判断累计涨幅曲线是否在爬升
             if len(recent_closes) >= 2:
                 import numpy as np
+
                 base_price = recent_closes[0]
                 if base_price > 0:
-                    cum_returns = [(p - base_price) / base_price * 100.0 for p in recent_closes]
+                    cum_returns = [
+                        (p - base_price) / base_price * 100.0 for p in recent_closes
+                    ]
                     x = np.arange(len(cum_returns))
                     y = np.array(cum_returns)
                     slope = np.polyfit(x, y, 1)[0]
                     rps_slope_ok = slope >= cfg.rps_slope_min
-        
+
         if cfg.enable_rps_filter and rps_filter_active:
             momentum_rps_ok = (
                 rps_fast is not None
@@ -574,7 +615,12 @@ def layer2_strength_detailed(
             bias_200 = (float(last_close) - float(last_ma_long)) / float(last_ma_long)
             momentum_bias_ok = bias_200 <= getattr(cfg, "momentum_bias_200_max", 0.25)
 
-        momentum_ok = (bullish_alignment or holding_ma20) and momentum_rs_ok and momentum_rps_ok and momentum_bias_ok
+        momentum_ok = (
+            (bullish_alignment or holding_ma20)
+            and momentum_rs_ok
+            and momentum_rps_ok
+            and momentum_bias_ok
+        )
 
         ambush_shape_ok = False
         if (
@@ -608,9 +654,8 @@ def layer2_strength_detailed(
             # 条件 1：低位区——现价在年内低点 +X% 以内
             lookback_w = max(int(cfg.accum_lookback_days), 2)
             period_low = float(_c.tail(lookback_w).min())
-            accum_low_ok = (
-                period_low > 0
-                and float(last_close) <= period_low * (1.0 + cfg.accum_price_from_low_max)
+            accum_low_ok = period_low > 0 and float(last_close) <= period_low * (
+                1.0 + cfg.accum_price_from_low_max
             )
 
             # 条件 2：横盘振幅——近 N 日 high/low 振幅不超过阈值
@@ -634,13 +679,17 @@ def layer2_strength_detailed(
                 dw = max(int(cfg.accum_vol_dry_window), 2)
                 rfw = max(int(cfg.accum_vol_dry_ref_window), dw + 1)
                 recent_vol_mean = float(vol.tail(dw).mean()) if len(vol) >= dw else None
-                ref_vol_mean = float(vol.tail(rfw).iloc[:-dw].mean()) if len(vol) >= rfw else None
+                ref_vol_mean = (
+                    float(vol.tail(rfw).iloc[:-dw].mean()) if len(vol) >= rfw else None
+                )
                 if (
                     recent_vol_mean is not None
                     and ref_vol_mean is not None
                     and ref_vol_mean > 0
                 ):
-                    accum_vol_ok = (recent_vol_mean / ref_vol_mean) < cfg.accum_vol_dry_ratio
+                    accum_vol_ok = (
+                        recent_vol_mean / ref_vol_mean
+                    ) < cfg.accum_vol_dry_ratio
 
             # 条件 4：均线即将穿越——MA50 即将穿过或刚穿过 MA200（吸筹完成信号）
             accum_ma_ok = False
@@ -652,8 +701,14 @@ def layer2_strength_detailed(
                 ):
                     # MA50 与 MA200 的差距百分比：允许在 ±accum_ma_gap_max 之间
                     # 即 MA50 可以在 MA200 下方 N% 以内（即将穿），或在上方 N% 以内（刚穿）
-                    ma_gap_pct = (float(last_ma_short) - float(last_ma_long)) / float(last_ma_long) * 100.0
-                    ma_gap_limit = cfg.accum_ma_gap_max * 100.0  # 配置值为小数（如 0.06 → 6%）
+                    ma_gap_pct = (
+                        (float(last_ma_short) - float(last_ma_long))
+                        / float(last_ma_long)
+                        * 100.0
+                    )
+                    ma_gap_limit = (
+                        cfg.accum_ma_gap_max * 100.0
+                    )  # 配置值为小数（如 0.06 → 6%）
                     accum_ma_ok = -ma_gap_limit <= ma_gap_pct <= ma_gap_limit
 
             accum_ok = accum_low_ok and accum_range_ok and accum_vol_ok and accum_ma_ok
@@ -666,15 +721,14 @@ def layer2_strength_detailed(
             _c_dv = close
             lookback_dv = max(int(cfg.dry_vol_ref_window), 2)
             period_low_dv = float(_c_dv.tail(lookback_dv).min())
-            if (
-                period_low_dv > 0
-                and float(last_close) <= period_low_dv * (1.0 + cfg.dry_vol_price_from_low_max)
+            if period_low_dv > 0 and float(last_close) <= period_low_dv * (
+                1.0 + cfg.dry_vol_price_from_low_max
             ):
                 ref_vol = vol.tail(lookback_dv)
                 if len(ref_vol.dropna()) >= 50:
-                    vol_threshold = float(np.quantile(
-                        ref_vol.dropna().values, cfg.dry_vol_quantile
-                    ))
+                    vol_threshold = float(
+                        np.quantile(ref_vol.dropna().values, cfg.dry_vol_quantile)
+                    )
                     recent_vol = vol.tail(cfg.dry_vol_lookback)
                     if float(recent_vol.min()) <= vol_threshold:
                         dry_vol_ok = True
@@ -695,13 +749,14 @@ def layer2_strength_detailed(
                 _c_rd = close
                 lookback_rd = max(int(cfg.dry_vol_ref_window), 250)
                 period_low_rd = float(_c_rd.tail(min(lookback_rd, len(_c_rd))).min())
-                if (
-                    period_low_rd > 0
-                    and float(last_close) <= period_low_rd * (1.0 + cfg.rs_div_price_from_low_max)
+                if period_low_rd > 0 and float(last_close) <= period_low_rd * (
+                    1.0 + cfg.rs_div_price_from_low_max
                 ):
                     # 大盘：近 N 日的最低收盘价 < 前 ref_window 日的最低收盘价（创新低）
                     bench_recent = bench_close.tail(cfg.rs_div_bench_window)
-                    bench_ref = bench_close.tail(cfg.rs_div_bench_ref_window).iloc[:-cfg.rs_div_bench_window]
+                    bench_ref = bench_close.tail(cfg.rs_div_bench_ref_window).iloc[
+                        : -cfg.rs_div_bench_window
+                    ]
                     if not bench_ref.dropna().empty and not bench_recent.dropna().empty:
                         bench_recent_low = float(bench_recent.min())
                         bench_ref_low = float(bench_ref.min())
@@ -709,30 +764,59 @@ def layer2_strength_detailed(
 
                         if bench_made_lower_low:
                             # 个股：近 N 日的最低收盘价 >= 前 ref_window 日的最低收盘价（Higher Low）
-                            stock_low_col = pd.to_numeric(df_sorted.get("low"), errors="coerce")
+                            stock_low_col = pd.to_numeric(
+                                df_sorted.get("low"), errors="coerce"
+                            )
                             stock_recent = stock_low_col.tail(cfg.rs_div_stock_window)
-                            stock_ref = stock_low_col.tail(cfg.rs_div_bench_ref_window).iloc[:-cfg.rs_div_stock_window]
-                            if not stock_ref.dropna().empty and not stock_recent.dropna().empty:
+                            stock_ref = stock_low_col.tail(
+                                cfg.rs_div_bench_ref_window
+                            ).iloc[: -cfg.rs_div_stock_window]
+                            if (
+                                not stock_ref.dropna().empty
+                                and not stock_recent.dropna().empty
+                            ):
                                 stock_recent_low = float(stock_recent.min())
                                 stock_ref_low = float(stock_ref.min())
                                 if stock_recent_low >= stock_ref_low:
                                     # 加入成交量确认
-                                    bench_vol = pd.to_numeric(bench_sorted.get("volume"), errors="coerce")
-                                    stock_vol = pd.to_numeric(df_sorted.get("volume"), errors="coerce")
-                                    
+                                    bench_vol = pd.to_numeric(
+                                        bench_sorted.get("volume"), errors="coerce"
+                                    )
+                                    stock_vol = pd.to_numeric(
+                                        df_sorted.get("volume"), errors="coerce"
+                                    )
+
                                     vol_confirm_ok = True
                                     if not bench_vol.empty and not stock_vol.empty:
-                                        bench_recent_vol = bench_vol.tail(cfg.rs_div_bench_window).mean()
-                                        bench_ref_vol = bench_vol.tail(cfg.rs_div_bench_ref_window).iloc[:-cfg.rs_div_bench_window].mean()
-                                        stock_recent_vol = stock_vol.tail(cfg.rs_div_stock_window).mean()
-                                        stock_ref_vol = stock_vol.tail(cfg.rs_div_bench_ref_window).iloc[:-cfg.rs_div_stock_window].mean()
-                                        
+                                        bench_recent_vol = bench_vol.tail(
+                                            cfg.rs_div_bench_window
+                                        ).mean()
+                                        bench_ref_vol = (
+                                            bench_vol.tail(cfg.rs_div_bench_ref_window)
+                                            .iloc[: -cfg.rs_div_bench_window]
+                                            .mean()
+                                        )
+                                        stock_recent_vol = stock_vol.tail(
+                                            cfg.rs_div_stock_window
+                                        ).mean()
+                                        stock_ref_vol = (
+                                            stock_vol.tail(cfg.rs_div_bench_ref_window)
+                                            .iloc[: -cfg.rs_div_stock_window]
+                                            .mean()
+                                        )
+
                                         if bench_ref_vol > 0 and stock_ref_vol > 0:
                                             # 大盘创新低时成交量放大，个股拒绝创新低时成交量缩小
-                                            bench_vol_expand = bench_recent_vol > bench_ref_vol * 1.2
-                                            stock_vol_shrink = stock_recent_vol < stock_ref_vol * 0.8
-                                            vol_confirm_ok = bench_vol_expand and stock_vol_shrink
-                                    
+                                            bench_vol_expand = (
+                                                bench_recent_vol > bench_ref_vol * 1.2
+                                            )
+                                            stock_vol_shrink = (
+                                                stock_recent_vol < stock_ref_vol * 0.8
+                                            )
+                                            vol_confirm_ok = (
+                                                bench_vol_expand and stock_vol_shrink
+                                            )
+
                                     if vol_confirm_ok:
                                         rs_div_ok = True
 
@@ -766,7 +850,6 @@ def layer2_strength_detailed(
     return passed, channel_map
 
 
-
 def layer2_strength(
     symbols: list[str],
     df_map: dict[str, pd.DataFrame],
@@ -775,8 +858,6 @@ def layer2_strength(
 ) -> list[str]:
     passed, _ = layer2_strength_detailed(symbols, df_map, bench_df, cfg)
     return passed
-
-
 
 
 # Layer 3: 板块共振
@@ -828,16 +909,36 @@ def layer3_sector_resonance(
             close = pd.to_numeric(s.get("close"), errors="coerce").dropna()
             if len(close) <= 20:
                 continue
-            ret20 = (float(close.iloc[-1]) - float(close.iloc[-21])) / float(close.iloc[-21]) * 100.0
-            ret5 = (float(close.iloc[-1]) - float(close.iloc[-6])) / float(close.iloc[-6]) * 100.0 if len(close) > 5 else ret20
-            ret3 = (float(close.iloc[-1]) - float(close.iloc[-4])) / float(close.iloc[-4]) * 100.0 if len(close) > 3 else ret5
+            ret20 = (
+                (float(close.iloc[-1]) - float(close.iloc[-21]))
+                / float(close.iloc[-21])
+                * 100.0
+            )
+            ret5 = (
+                (float(close.iloc[-1]) - float(close.iloc[-6]))
+                / float(close.iloc[-6])
+                * 100.0
+                if len(close) > 5
+                else ret20
+            )
+            ret3 = (
+                (float(close.iloc[-1]) - float(close.iloc[-4]))
+                / float(close.iloc[-4])
+                * 100.0
+                if len(close) > 3
+                else ret5
+            )
             rows.append((sym, ret20, ret5, ret3))
         if rows:
             st_df = pd.DataFrame(rows, columns=["sym", "ret20", "ret5", "ret3"])
-            st_df["q20"] = st_df["ret20"].rank(pct=True, ascending=True, method="average")
+            st_df["q20"] = st_df["ret20"].rank(
+                pct=True, ascending=True, method="average"
+            )
             st_df["q5"] = st_df["ret5"].rank(pct=True, ascending=True, method="average")
             st_df["q3"] = st_df["ret3"].rank(pct=True, ascending=True, method="average")
-            st_df["strength"] = 0.4 * st_df["q20"] + 0.3 * st_df["q5"] + 0.3 * st_df["q3"]
+            st_df["strength"] = (
+                0.4 * st_df["q20"] + 0.3 * st_df["q5"] + 0.3 * st_df["q3"]
+            )
             strength_map = st_df.set_index("sym")["strength"].astype(float).to_dict()
 
     ranked = sorted(counts.items(), key=lambda x: -x[1])
@@ -856,16 +957,28 @@ def layer3_sector_resonance(
         ratio = float(cnt) / float(base_cnt)
         pass_ratio_map[sec] = ratio
         pass_ratios.append(ratio)
-    pass_threshold = float(np.quantile(np.array(pass_ratios, dtype=float), q)) if pass_ratios else 0.0
+    pass_threshold = (
+        float(np.quantile(np.array(pass_ratios, dtype=float), q))
+        if pass_ratios
+        else 0.0
+    )
 
     # 行业强度阈值（动态）：行业内强度中位数分位阈值
     sector_strength_map: dict[str, float] = {}
     for sec, _ in ranked:
-        vals = [strength_map.get(sym) for sym in symbols if sector_map.get(sym, "") == sec and sym in strength_map]
+        vals = [
+            strength_map.get(sym)
+            for sym in symbols
+            if sector_map.get(sym, "") == sec and sym in strength_map
+        ]
         vals = [float(v) for v in vals if v is not None]
         sector_strength_map[sec] = float(np.median(vals)) if vals else 0.0
     strength_vals = list(sector_strength_map.values())
-    strength_threshold = float(np.quantile(np.array(strength_vals, dtype=float), q)) if strength_vals else 0.0
+    strength_threshold = (
+        float(np.quantile(np.array(strength_vals, dtype=float), q))
+        if strength_vals
+        else 0.0
+    )
 
     # 小而强板块免死阈值：强度进 Top X% 时放宽数量门槛，防止概念主线被大行业吞没。
     super_q = float(getattr(cfg, "sector_super_strength_quantile", 0.90))
@@ -885,7 +998,7 @@ def layer3_sector_resonance(
             and pass_r >= pass_threshold
             and str_val >= strength_threshold
         )
-        super_pass = (c >= min_count and str_val >= super_strength_threshold)
+        super_pass = c >= min_count and str_val >= super_strength_threshold
         if normal_pass or super_pass:
             keep_sectors.append(s)
     if not keep_sectors:
@@ -904,9 +1017,7 @@ def layer3_sector_resonance(
         ),
     )
     top_n = max(int(cfg.top_n_sectors), 0)
-    top_sectors = (
-        keep_sectors_sorted[:top_n] if top_n > 0 else keep_sectors_sorted
-    )
+    top_sectors = keep_sectors_sorted[:top_n] if top_n > 0 else keep_sectors_sorted
 
     # L3 板块共振过滤：保留 Top 行业内的股票 + 强势个股通配。
     # 三级放行机制：核心热门板块直通 → 次优板块需个股强度 ≥60% → 强势个股(Top20%)无视板块。
@@ -934,12 +1045,12 @@ def layer3_sector_resonance(
     return filtered, top_sectors
 
 
-
-
 # Layer 4: 威科夫狙击
 
 
-def _is_trading_range_context(zone: pd.DataFrame, cfg: FunnelConfig, df_full: pd.DataFrame = None) -> bool:
+def _is_trading_range_context(
+    zone: pd.DataFrame, cfg: FunnelConfig, df_full: pd.DataFrame = None
+) -> bool:
     """
     Spring 必须先发生在可接受的交易区间（TR）内。
     使用 ATR_pct 动态计算可接受的合理振幅。
@@ -977,9 +1088,13 @@ def _is_trading_range_context(zone: pd.DataFrame, cfg: FunnelConfig, df_full: pd
         last_c = float(c.iloc[-1])
         if pd.notna(last_atr) and pd.notna(last_c) and last_c > 0:
             atr_pct = (last_atr / last_c) * 100.0
-            max_allowed_range_pct = atr_pct * getattr(cfg, "spring_tr_atr_max_multiple", 4.0)
+            max_allowed_range_pct = atr_pct * getattr(
+                cfg, "spring_tr_atr_max_multiple", 4.0
+            )
             # 放松动态振幅：不再死板卡 15~45，而是最低保底为原始配置（通常是30%），最高可达 60%，给大蓝筹和大盘股透气
-            max_allowed_range_pct = min(max(max_allowed_range_pct, float(cfg.spring_tr_max_range_pct)), 60.0)
+            max_allowed_range_pct = min(
+                max(max_allowed_range_pct, float(cfg.spring_tr_max_range_pct)), 60.0
+            )
 
     if range_pct > max_allowed_range_pct:
         return False
@@ -1019,13 +1134,13 @@ def _detect_spring(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     vol_avg = df_s["volume"].tail(5).iloc[:-1].mean()
     if vol_avg <= 0 or last["volume"] < vol_avg * cfg.spring_vol_ratio:
         return None
-    
+
     # 加入放量确认：收回时的成交量 > 下探时的成交量
     prev_vol = float(prev["volume"]) if pd.notna(prev["volume"]) else 0
     last_vol = float(last["volume"]) if pd.notna(last["volume"]) else 0
     if prev_vol > 0 and last_vol / prev_vol < cfg.spring_vol_expand_ratio:
         return None
-    
+
     recovery = (last["close"] - support_level) / support_level * 100
     return float(recovery)
 
@@ -1055,7 +1170,9 @@ def _detect_lps(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
 
     recent_max_vol = recent["volume"].max()
     # 修正：参考期应剥离当前考察期（recent）
-    ref_window_df = df_s.tail(cfg.lps_vol_ref_window + cfg.lps_lookback).iloc[:-cfg.lps_lookback]
+    ref_window_df = df_s.tail(cfg.lps_vol_ref_window + cfg.lps_lookback).iloc[
+        : -cfg.lps_lookback
+    ]
     ref_max_vol = ref_window_df["volume"].max() if not ref_window_df.empty else 0
     if ref_max_vol <= 0:
         return None
@@ -1080,7 +1197,12 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     low = pd.to_numeric(df_s["low"], errors="coerce")
     volume = pd.to_numeric(df_s["volume"], errors="coerce")
     pct_chg = pd.to_numeric(df_s["pct_chg"], errors="coerce")
-    if close.isna().all() or low.isna().all() or volume.isna().all() or pct_chg.isna().all():
+    if (
+        close.isna().all()
+        or low.isna().all()
+        or volume.isna().all()
+        or pct_chg.isna().all()
+    ):
         return None
 
     # 位阶保护：高位放量优先按派发处理，避免 EVR 误判
@@ -1119,7 +1241,9 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
         if "turnover" in df_s.columns and float(cfg.evr_min_turnover) > 0:
             turnover_series = pd.to_numeric(df_s["turnover"], errors="coerce")
             day_turnover = turnover_series.iloc[idx]
-            if pd.notna(day_turnover) and float(day_turnover) < float(cfg.evr_min_turnover):
+            if pd.notna(day_turnover) and float(day_turnover) < float(
+                cfg.evr_min_turnover
+            ):
                 continue
 
         # 结构约束：最新收盘不能明显弱于三天前（防止下跌中继）
@@ -1180,7 +1304,9 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
         ma200 = close.rolling(200).mean()
         ma200_last = ma200.iloc[-1]
         if pd.notna(ma200_last) and pd.notna(close_last) and float(ma200_last) > 0:
-            bias_200 = (float(close_last) - float(ma200_last)) / float(ma200_last) * 100.0
+            bias_200 = (
+                (float(close_last) - float(ma200_last)) / float(ma200_last) * 100.0
+            )
             if bias_200 > float(cfg.sos_max_bias_200):
                 return None
 
@@ -1213,7 +1339,9 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     ma50_last = ma50.iloc[-1] if not ma50.empty else None
 
     recent_highs = high.tail(cfg.sos_breakout_window + 1).iloc[:-1]
-    max_recent_high = float(recent_highs.max()) if not recent_highs.empty else float("inf")
+    max_recent_high = (
+        float(recent_highs.max()) if not recent_highs.empty else float("inf")
+    )
 
     # 改为 1% 容差（从 2% 改为 1%）
     breakout_tolerance = getattr(cfg, "sos_breakout_tolerance", 0.01)
@@ -1221,7 +1349,12 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
 
     is_ma_crossover = False
     ma50_prev = ma50.iloc[-2] if len(ma50) >= 2 else None
-    if ma50_last is not None and pd.notna(ma50_last) and ma50_prev is not None and pd.notna(ma50_prev):
+    if (
+        ma50_last is not None
+        and pd.notna(ma50_last)
+        and ma50_prev is not None
+        and pd.notna(ma50_prev)
+    ):
         prev_close = float(close.iloc[-2])
         # 修正：Lookahead 问题，昨天的收盘价比昨天的 MA50，今天收盘价比今天的 MA50
         if prev_close <= float(ma50_prev) and float(close_last) > float(ma50_last):
@@ -1251,7 +1384,7 @@ def layer4_triggers(
     }
     if channel_map is None:
         channel_map = {}
-    
+
     for sym in symbols:
         df = df_map.get(sym)
         if df is None or df.empty:
@@ -1266,14 +1399,12 @@ def layer4_triggers(
             score = _detect_evr(df, cfg)
             if score is not None:
                 results["evr"].append((sym, score))
-        
+
         # 修正：Layer 2 虽然可以去重，但由于下游高度依赖 results["sos"]，所以必须每次都计算或填充
         score = _detect_sos(df, cfg)
         if score is not None:
             results["sos"].append((sym, score))
     return results
-
-
 
 
 # Layer 2.5: Markup 阶段识别
@@ -1293,7 +1424,8 @@ def _detect_markup_entry(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     ma_long = close.rolling(cfg.ma_long).mean()
 
     if (
-        pd.isna(ma_short.iloc[-1]) or pd.isna(ma_long.iloc[-1])
+        pd.isna(ma_short.iloc[-1])
+        or pd.isna(ma_long.iloc[-1])
         or ma_short.iloc[-1] <= ma_long.iloc[-1]
     ):
         return None
@@ -1322,8 +1454,7 @@ def _detect_markup_entry(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     # 确认最近 N 日持续在 MA200 上方
     confirm_days = max(int(cfg.markup_ma_crossover_confirm_days), 1)
     recent_above = sum(
-        1 for j in range(-confirm_days, 0)
-        if ma_short.iloc[j] > ma_long.iloc[j]
+        1 for j in range(-confirm_days, 0) if ma_short.iloc[j] > ma_long.iloc[j]
     )
 
     if recent_above < confirm_days:
@@ -1364,8 +1495,6 @@ def detect_markup_stage(
     return markup
 
 
-
-
 # Layer 2 增强: Accumulation ABC 细化
 
 
@@ -1394,7 +1523,9 @@ def _analyze_accum_stage(df: pd.DataFrame, cfg: FunnelConfig) -> str | None:
     # 条件 1: 低位区——现价在年内低点 +35% 以内
     lookback_w = max(int(cfg.accum_lookback_days), 2)
     period_low = float(low.tail(lookback_w).min())
-    if period_low <= 0 or last_close > period_low * (1.0 + cfg.accum_price_from_low_max):
+    if period_low <= 0 or last_close > period_low * (
+        1.0 + cfg.accum_price_from_low_max
+    ):
         return None
 
     accum_base_low = period_low
@@ -1405,14 +1536,12 @@ def _analyze_accum_stage(df: pd.DataFrame, cfg: FunnelConfig) -> str | None:
     last_ma_short = ma_short.iloc[-1]
     last_ma_long = ma_long.iloc[-1]
 
-    if (
-        pd.isna(last_ma_short)
-        or pd.isna(last_ma_long)
-        or float(last_ma_long) <= 0
-    ):
+    if pd.isna(last_ma_short) or pd.isna(last_ma_long) or float(last_ma_long) <= 0:
         return None
 
-    ma_gap_pct = (float(last_ma_short) - float(last_ma_long)) / float(last_ma_long) * 100.0
+    ma_gap_pct = (
+        (float(last_ma_short) - float(last_ma_long)) / float(last_ma_long) * 100.0
+    )
     ma_gap_limit = cfg.accum_ma_gap_max * 100.0  # 配置值为小数（如 0.06 → 6%）
     if not (-ma_gap_limit <= ma_gap_pct <= ma_gap_limit):
         return None
@@ -1421,7 +1550,9 @@ def _analyze_accum_stage(df: pd.DataFrame, cfg: FunnelConfig) -> str | None:
     dw = max(int(cfg.accum_vol_dry_window), 2)
     rfw = max(int(cfg.accum_vol_dry_ref_window), dw + 1)
     recent_vol_mean = float(volume.tail(dw).mean()) if len(volume) >= dw else 0.0
-    ref_vol_mean = float(volume.tail(rfw).iloc[:-dw].mean()) if len(volume) >= rfw else 0.0
+    ref_vol_mean = (
+        float(volume.tail(rfw).iloc[:-dw].mean()) if len(volume) >= rfw else 0.0
+    )
 
     if ref_vol_mean <= 0 or recent_vol_mean / ref_vol_mean >= cfg.accum_vol_dry_ratio:
         return None
@@ -1438,9 +1569,7 @@ def _analyze_accum_stage(df: pd.DataFrame, cfg: FunnelConfig) -> str | None:
 
     # 分割测试：最近 N 日内，有多少天的低点接近底部（±5%）
     test_count = sum(
-        1
-        for l in zone_low.dropna()
-        if abs(l - accum_base_low) / accum_base_low <= 0.05
+        1 for l in zone_low.dropna() if abs(l - accum_base_low) / accum_base_low <= 0.05
     )
 
     if test_count >= cfg.accum_b_test_count:
@@ -1451,9 +1580,7 @@ def _analyze_accum_stage(df: pd.DataFrame, cfg: FunnelConfig) -> str | None:
     recent = df_s.tail(recent_lookback)
     recent_low = pd.to_numeric(recent.get("low"), errors="coerce").min()
 
-    c_stage_ok = (
-        recent_low >= accum_base_low * (1.0 - cfg.accum_c_max_drop_ratio)
-    )
+    c_stage_ok = recent_low >= accum_base_low * (1.0 - cfg.accum_c_max_drop_ratio)
 
     if c_stage_ok and recent_vol_mean < ref_vol_mean * cfg.accum_vol_dry_ratio:
         return "Accum_C"
@@ -1482,8 +1609,6 @@ def detect_accum_stage(
             result[sym] = stage
 
     return result
-
-
 
 
 # Layer 5: Exit 策略
@@ -1557,14 +1682,18 @@ def layer5_exit_signals(
             continue
 
         last_close = float(close.iloc[-1])
-        stage = accum_stage_map.get(sym, "Markup") # 默认按主升处理
+        stage = accum_stage_map.get(sym, "Markup")  # 默认按主升处理
 
         stop_loss_price = None
         stop_reason = ""
 
         # 获取 MA50 作为动态生命线
         ma_short_series = close.rolling(cfg.ma_short).mean()
-        ma_short = float(ma_short_series.iloc[-1]) if not ma_short_series.isna().all() else None
+        ma_short = (
+            float(ma_short_series.iloc[-1])
+            if not ma_short_series.isna().all()
+            else None
+        )
         # 获取近期 60 日最高点
         recent_high = float(high.tail(60).max())
 
@@ -1580,7 +1709,9 @@ def layer5_exit_signals(
                 drawdown_pct = getattr(cfg, "exit_trailing_drawdown_pct", -10.0) / 100.0
                 trailing_price = recent_high * (1.0 + drawdown_pct)
                 if ma_short is not None:
-                    stop_loss_price = max(trailing_price, float(ma_short) * 0.98) # MA50 容差2%
+                    stop_loss_price = max(
+                        trailing_price, float(ma_short) * 0.98
+                    )  # MA50 容差2%
                 else:
                     stop_loss_price = trailing_price
                 stop_reason = "已脱离底部，触发利润保护(动态跟踪止损)"
@@ -1618,8 +1749,6 @@ def layer5_exit_signals(
     return signals
 
 
-
-
 # run_funnel: 串联 4 层
 
 
@@ -1644,7 +1773,10 @@ def run_funnel(
 
     l1 = layer1_filter(all_symbols, name_map, market_cap_map, prepared_df_map, cfg)
     l2, channel_map = layer2_strength_detailed(
-        l1, prepared_df_map, bench_df, cfg,
+        l1,
+        prepared_df_map,
+        bench_df,
+        cfg,
         rps_universe=list(prepared_df_map.keys()),
     )
     l3, top_sectors = layer3_sector_resonance(
@@ -1749,7 +1881,9 @@ def allocate_ai_candidates(
         if code in result.markup_symbols:
             score += 100.0
         if stage_name == "Accum_C":
-            score += 15.0 if not is_trend_side else 5.0   # 回测显示 Accum 胜率仅 31.8%，降权
+            score += (
+                15.0 if not is_trend_side else 5.0
+            )  # 回测显示 Accum 胜率仅 31.8%，降权
         elif stage_name == "Accum_B":
             score += 8.0 if not is_trend_side else 3.0
         elif stage_name == "Accum_A":
@@ -1777,24 +1911,38 @@ def allocate_ai_candidates(
     trend_candidates_with_score: list[tuple[str, float, bool]] = []
     accum_candidates_with_score: list[tuple[str, float, bool]] = []
 
-    markup_trend_candidates = [c for c in result.markup_symbols if _is_trend_track(c) or c in sos_hit_set]
+    markup_trend_candidates = [
+        c for c in result.markup_symbols if _is_trend_track(c) or c in sos_hit_set
+    ]
     for code in _dedup_order(markup_trend_candidates):
-        trend_candidates_with_score.append((code, _calc_priority_score(code, True), False))
+        trend_candidates_with_score.append(
+            (code, _calc_priority_score(code, True), False)
+        )
 
     sos_hit_codes = [
         str(c).strip()
-        for c, _ in sorted(result.triggers.get("sos", []), key=lambda x: -float(x[1] if x[1] is not None else 0.0))
+        for c, _ in sorted(
+            result.triggers.get("sos", []),
+            key=lambda x: -float(x[1] if x[1] is not None else 0.0),
+        )
         if str(c).strip()
     ]
     for code in _dedup_order(sos_hit_codes):
         if code not in [c[0] for c in trend_candidates_with_score]:
-            trend_candidates_with_score.append((code, _calc_priority_score(code, True), False))
+            trend_candidates_with_score.append(
+                (code, _calc_priority_score(code, True), False)
+            )
 
     # Compute `sorted_codes` implicitly from triggers like funnel does
     all_triggers = []
     for k, v in result.triggers.items():
         all_triggers.extend(v)
-    sorted_codes = [c for c, _ in sorted(all_triggers, key=lambda x: -float(x[1] if x[1] is not None else 0.0))]
+    sorted_codes = [
+        c
+        for c, _ in sorted(
+            all_triggers, key=lambda x: -float(x[1] if x[1] is not None else 0.0)
+        )
+    ]
     sorted_codes = _dedup_order(sorted_codes)
 
     for code in sorted_codes + l3_ranked_symbols:
@@ -1803,16 +1951,24 @@ def allocate_ai_candidates(
         if code in [c[0] for c in trend_candidates_with_score]:
             continue
         if code in result.markup_symbols or code in sos_hit_set:
-            trend_candidates_with_score.append((code, _calc_priority_score(code, True), False))
+            trend_candidates_with_score.append(
+                (code, _calc_priority_score(code, True), False)
+            )
             continue
         # 移除 L3 filler 逻辑: 宁缺毋滥，如果只有几个好标的，就只送这几个给 AI
 
-    accum_hit_candidates = result.triggers.get("spring", []) + result.triggers.get("lps", [])
-    for code, _ in sorted(accum_hit_candidates, key=lambda x: -float(x[1] if x[1] is not None else 0.0)):
+    accum_hit_candidates = result.triggers.get("spring", []) + result.triggers.get(
+        "lps", []
+    )
+    for code, _ in sorted(
+        accum_hit_candidates, key=lambda x: -float(x[1] if x[1] is not None else 0.0)
+    ):
         code = str(code).strip()
         if _is_blocked_exit(code):
             continue
-        accum_candidates_with_score.append((code, _calc_priority_score(code, False), False))
+        accum_candidates_with_score.append(
+            (code, _calc_priority_score(code, False), False)
+        )
 
     for code in _dedup_order(l3_ranked_symbols):
         if not _is_accum_track(code) or _is_blocked_exit(code):
@@ -1820,7 +1976,9 @@ def allocate_ai_candidates(
         if code in [c[0] for c in accum_candidates_with_score]:
             continue
         if _stage_name(code) == "Accum_C":
-            accum_candidates_with_score.append((code, _calc_priority_score(code, False), False))
+            accum_candidates_with_score.append(
+                (code, _calc_priority_score(code, False), False)
+            )
             continue
         # 移除 L3 filler 逻辑: 宁缺毋滥
 
@@ -1849,7 +2007,7 @@ def allocate_ai_candidates(
     accum_l3_fill_used = 0
     trend_fill_map = {code: is_fill for code, _, is_fill in trend_candidates_with_score}
     accum_fill_map = {code: is_fill for code, _, is_fill in accum_candidates_with_score}
-    
+
     sector_counts: dict[str, int] = {}
 
     def _add_to_selected(code: str, track_name: str) -> bool:
@@ -1858,7 +2016,7 @@ def allocate_ai_candidates(
             return False
         if code in selected_seen:
             return False
-        
+
         sector = ""
         if sector_map and max_per_sector > 0:
             sector = sector_map.get(code, "").strip()
@@ -1866,7 +2024,10 @@ def allocate_ai_candidates(
                 return False
 
         if track_name == "Trend":
-            if trend_fill_map.get(code, False) and trend_l3_fill_used >= max_trend_l3_fill:
+            if (
+                trend_fill_map.get(code, False)
+                and trend_l3_fill_used >= max_trend_l3_fill
+            ):
                 return False
             if len(trend_selected) >= trend_quota:
                 return False
@@ -1874,14 +2035,17 @@ def allocate_ai_candidates(
             if trend_fill_map.get(code, False):
                 trend_l3_fill_used += 1
         else:
-            if accum_fill_map.get(code, False) and accum_l3_fill_used >= max_accum_l3_fill:
+            if (
+                accum_fill_map.get(code, False)
+                and accum_l3_fill_used >= max_accum_l3_fill
+            ):
                 return False
             if len(accum_selected) >= accum_quota:
                 return False
             accum_selected.append(code)
             if accum_fill_map.get(code, False):
                 accum_l3_fill_used += 1
-                
+
         if sector:
             sector_counts[sector] = sector_counts.get(sector, 0) + 1
         selected_seen.add(code)

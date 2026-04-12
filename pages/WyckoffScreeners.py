@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Wyckoff Funnel 后台筛选页。"""
 
+import re
+
 import pandas as pd
 import streamlit as st
 
@@ -26,8 +28,15 @@ TRIGGER_LABELS = {
 STATE_KEY = "funnel_background_job"
 
 
-def _parse_symbols(text: str) -> str:
-    codes = extract_symbols_from_text(str(text or ""), valid_codes=None)
+def _parse_symbols(text: str, market: str = "cn") -> str:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "us":
+        codes = [
+            token.upper()
+            for token in re.findall(r"[A-Za-z][A-Za-z0-9._-]{0,14}", str(text or ""))
+        ]
+    else:
+        codes = extract_symbols_from_text(str(text or ""), valid_codes=None)
     deduped: list[str] = []
     seen: set[str] = set()
     for code in codes:
@@ -73,8 +82,11 @@ def _render_funnel_result(result: dict) -> None:
     metrics = result.get("metrics", {}) or {}
     trigger_groups = result.get("trigger_groups", {}) or {}
     symbols_for_report = result.get("symbols_for_report", []) or []
+    benchmark_context = result.get("benchmark_context", {}) or {}
 
     st.subheader("漏斗结果")
+    market = str(summary.get("market") or result.get("market") or "cn").strip().lower()
+    st.caption(f"市场: {market.upper()}")
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("股票池", int(summary.get("total_symbols", 0) or 0))
     col2.metric("L1", int(summary.get("layer1", 0) or 0))
@@ -93,6 +105,8 @@ def _render_funnel_result(result: dict) -> None:
     st.markdown("### AI 候选池")
     if symbols_for_report:
         st.session_state["ai_find_gold_background_symbols"] = symbols_for_report
+        st.session_state["ai_find_gold_background_market"] = market
+        st.session_state["ai_find_gold_background_benchmark_context"] = benchmark_context
         rows = []
         for item in symbols_for_report:
             rows.append(
@@ -130,7 +144,6 @@ def _render_funnel_result(result: dict) -> None:
         ]
         st.dataframe(pd.DataFrame(table_rows), use_container_width=True, hide_index=True)
 
-    benchmark_context = result.get("benchmark_context", {}) or {}
     if benchmark_context:
         with st.expander("市场上下文"):
             st.json(benchmark_context)
@@ -169,11 +182,22 @@ with content_col:
         limit_count = int(st.number_input("股票数量上限", min_value=0, max_value=5000, value=500, step=100))
 
     st.subheader("股票池")
-    pool_mode = st.radio("来源", options=["板块", "手动输入"], horizontal=True)
+    market = st.selectbox(
+        "市场",
+        options=["cn", "us"],
+        format_func=lambda v: "A股 (CN)" if v == "cn" else "美股 (US)",
+    )
+
+    if market == "us":
+        pool_mode = "手动输入"
+        st.info("US 模式当前仅支持手动输入股票代码（示例：AAPL,MSFT,NVDA）。")
+    else:
+        pool_mode = st.radio("来源", options=["板块", "手动输入"], horizontal=True)
     board = "all"
     manual_symbols = ""
     if pool_mode == "手动输入":
-        manual_symbols = st.text_area("股票代码", placeholder="例如: 600519, 000001", height=120)
+        placeholder = "例如: AAPL, MSFT, NVDA" if market == "us" else "例如: 600519, 000001"
+        manual_symbols = st.text_area("股票代码", placeholder=placeholder, height=120)
     else:
         board = st.selectbox(
             "选择板块",
@@ -189,10 +213,15 @@ with content_col:
         if not ready:
             st.error(msg)
             st.stop()
+        parsed_manual_symbols = _parse_symbols(manual_symbols, market=market)
+        if market == "us" and not parsed_manual_symbols:
+            st.error("US 模式请至少输入 1 个美股代码。")
+            st.stop()
         payload = {
+            "market": market,
             "pool_mode": "manual" if pool_mode == "手动输入" else "board",
             "board": board,
-            "manual_symbols": _parse_symbols(manual_symbols),
+            "manual_symbols": parsed_manual_symbols,
             "limit_count": limit_count,
             "trading_days": int(trading_days),
             "max_workers": int(max_workers),
@@ -217,7 +246,7 @@ with content_col:
         st.rerun()
 
     if not active_result:
-        latest_run, latest_result = load_latest_job_result("funnel_screen")
+        latest_run, latest_result = load_latest_job_result("funnel_screen", market=market)
         if latest_result:
             st.divider()
             st.caption(

@@ -19,7 +19,7 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.prompts import WYCKOFF_FUNNEL_SYSTEM_PROMPT
-from integrations.fetch_a_share_csv import _resolve_trading_window, _fetch_hist
+from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window
 from integrations.llm_client import call_llm
 from integrations.rag_veto import (
     get_rag_veto_runtime_status,
@@ -1174,6 +1174,7 @@ def run(
     llm_base_url: str = "",
     wecom_webhook: str = "",
     dingtalk_webhook: str = "",
+    market: str = "cn",
 ) -> tuple[bool, str, str]:
     """
     拉取 OHLCV → 第五步特征工程 → AI 研报 → 飞书/企微/钉钉发送。
@@ -1187,24 +1188,34 @@ def run(
     items: list[dict] = []
     for s in symbols_info:
         if isinstance(s, str):
-            items.append({"code": s, "name": s, "tag": ""})
+            items.append({"market": market, "code": s, "name": s, "tag": ""})
         else:
             items.append(s)
 
     print(f"[step3] AI 输入股票数={len(items)}（全量命中输入）")
 
+    market_norm = str(market or "").strip().lower()
+    if market_norm not in {"cn", "us"}:
+        market_norm = str((benchmark_context or {}).get("market") or "cn").strip().lower()
+    if market_norm not in {"cn", "us"}:
+        market_norm = "cn"
+
     end_day = _job_end_calendar_day()
-    window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    if market_norm == "us":
+        window = _resolve_us_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    else:
+        window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
 
     regime = (benchmark_context or {}).get("regime", "NEUTRAL")
     sector_rotation_ctx = (benchmark_context or {}).get("sector_rotation", {}) or {}
     sector_rotation_map = sector_rotation_ctx.get("state_map", {}) or {}
-    sector_map = fetch_sector_map()
-    market_cap_map = fetch_market_cap_map()
+    sector_map = fetch_sector_map() if market_norm == "cn" else {}
+    market_cap_map = fetch_market_cap_map() if market_norm == "cn" else {}
     benchmark_ret_10: float | None = None
     try:
-        bench_df = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date)
-        benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
+        if market_norm == "cn":
+            bench_df = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date)
+            benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
     except Exception:
         benchmark_ret_10 = None
 
@@ -1229,7 +1240,10 @@ def run(
         ).strip()
         sector_note = str(item.get("sector_note") or rotation_info.get("note", "") or "").strip()
         try:
-            df_raw = _fetch_hist(code, window, "qfq")
+            item_market = str(item.get("market") or market_norm or "cn").strip().lower()
+            if item_market not in {"cn", "us"}:
+                item_market = market_norm
+            df_raw = _fetch_hist_with_market(code, window, "qfq", item_market)
             df = normalize_hist_from_fetch(df_raw)
             if ENFORCE_TARGET_TRADE_DATE:
                 latest_trade_date = _latest_trade_date_from_hist(df)

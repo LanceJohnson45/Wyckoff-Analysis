@@ -219,8 +219,10 @@ def load_latest_result(
     job_kind: str,
     *,
     requested_by_user_id: str = "",
+    market: str = "",
     per_page: int = 10,
 ) -> tuple[WorkflowRun | None, dict[str, Any] | None]:
+    market_norm = str(market or "").strip().lower()
     for run in list_recent_runs(per_page=per_page):
         if run.status != "completed" or run.conclusion not in ("success", "failure"):
             continue
@@ -234,6 +236,9 @@ def load_latest_result(
             and str(result.get("requested_by_user_id", "") or "")
             != requested_by_user_id
         ):
+            continue
+        result_market = str(result.get("market", "") or "").strip().lower()
+        if market_norm and result_market != market_norm:
             continue
         return (run, result)
     return (None, None)
