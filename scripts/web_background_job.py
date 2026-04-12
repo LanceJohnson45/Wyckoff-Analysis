@@ -143,7 +143,11 @@ def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, An
 
 
 def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, str]:
-    from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS, SUPPORTED_PROVIDERS
+    from integrations.llm_client import (
+        DEFAULT_GEMINI_MODEL,
+        OPENAI_COMPATIBLE_BASE_URLS,
+        SUPPORTED_PROVIDERS,
+    )
 
     user_id = str(payload.get("user_id", "") or "").strip()
     provider = str(payload.get("provider", "") or "gemini").strip().lower()
@@ -182,9 +186,7 @@ def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, 
         if isinstance(provider_entry, dict):
             if not api_key:
                 api_key = str(
-                    provider_entry.get("apikey")
-                    or provider_entry.get("api_key")
-                    or ""
+                    provider_entry.get("apikey") or provider_entry.get("api_key") or ""
                 ).strip()
             if not model:
                 model = str(provider_entry.get("model") or "").strip()
@@ -209,7 +211,9 @@ def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, 
     if not api_key:
         raise ValueError(f"未找到可用的 {provider} API Key（用户配置与环境变量均为空）")
     if not model:
-        raise ValueError(f"未找到可用的 {provider} 模型名（payload / 用户配置 / 环境变量均为空）")
+        raise ValueError(
+            f"未找到可用的 {provider} 模型名（payload / 用户配置 / 环境变量均为空）"
+        )
     return provider, api_key, model, base_url
 
 
@@ -225,7 +229,19 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
     provider, api_key, model, base_url = _resolve_model_credentials(payload)
     webhook_url = str(payload.get("webhook_url", "") or "").strip()
     benchmark_context = payload.get("benchmark_context", {}) or {}
-    market = str(payload.get("market", "") or (benchmark_context.get("market") if isinstance(benchmark_context, dict) else "") or "cn").strip().lower()
+    market = (
+        str(
+            payload.get("market", "")
+            or (
+                benchmark_context.get("market")
+                if isinstance(benchmark_context, dict)
+                else ""
+            )
+            or "cn"
+        )
+        .strip()
+        .lower()
+    )
     if market not in {"cn", "us"}:
         market = "cn"
 
@@ -270,11 +286,12 @@ def main() -> int:
 
     payload = _load_payload(args.payload_json)
     requested_by_user_id = str(payload.get("user_id", "") or "").strip()
-    
+
     # 注入用户配置的环境变量（Tushare Token 等）
     if requested_by_user_id:
         try:
             from integrations.supabase_portfolio import load_user_settings_admin
+
             user_settings = load_user_settings_admin(requested_by_user_id)
             if user_settings:
                 ts_token = str(user_settings.get("tushare_token") or "").strip()
