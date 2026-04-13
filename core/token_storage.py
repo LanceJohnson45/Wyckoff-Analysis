@@ -2,10 +2,13 @@
 """
 Token 持久化 — Cookie（主） + localStorage（兼容）双通道。
 
-写入时：同时写 Cookie 和 localStorage（登录时页面已加载，JS 无时序问题）。
+写入时：同时写 Cookie 和 localStorage。
 读取时：优先用 st.context.cookies 同步读 Cookie（无 iframe 依赖），
         fallback 到 st_javascript 读 localStorage（兼容旧 token）。
 清除时：同时清两者。
+
+重要：st_javascript 内部将代码包装成 (async () => {return <code>})()，
+因此多条语句必须用逗号表达式或 IIFE 包裹，否则 return 只作用于第一条。
 """
 from __future__ import annotations
 
@@ -43,6 +46,8 @@ def _restore_from_localstorage() -> tuple[str | None, str | None]:
     try:
         from streamlit_javascript import st_javascript
 
+        # st_javascript 包装为 (async () => {return <code>})()
+        # 所以这里只能有一条表达式
         js = (
             "JSON.stringify({"
             f'access_token: localStorage.getItem("{_STORAGE_KEY_ACCESS}") || "", '
@@ -75,7 +80,11 @@ def restore_tokens_from_storage() -> tuple[str | None, str | None]:
 # ---------------------------------------------------------------------------
 
 def persist_tokens_to_storage(access_token: str, refresh_token: str) -> bool:
-    """将 token 写入 Cookie + localStorage，成功返回 True。"""
+    """将 token 写入 Cookie + localStorage，成功返回 True。
+
+    st_javascript 将代码包装成 (async () => {return <code>})()，
+    所以用 IIFE 包裹多条语句，确保全部执行后再 return。
+    """
     if not access_token or not refresh_token:
         return False
     try:
@@ -84,20 +93,20 @@ def persist_tokens_to_storage(access_token: str, refresh_token: str) -> bool:
         a = json.dumps(access_token)
         r = json.dumps(refresh_token)
 
-        # URL-encode token values for safe cookie storage
         a_cookie = urllib.parse.quote(access_token, safe="")
         r_cookie = urllib.parse.quote(refresh_token, safe="")
 
+        # 用 (() => { ... })() 包裹，确保所有语句都执行
         js = (
-            # localStorage
-            f'localStorage.setItem("{_STORAGE_KEY_ACCESS}", {a}); '
-            f'localStorage.setItem("{_STORAGE_KEY_REFRESH}", {r}); '
-            # Cookie
+            "(() => {"
+            f'localStorage.setItem("{_STORAGE_KEY_ACCESS}", {a});'
+            f'localStorage.setItem("{_STORAGE_KEY_REFRESH}", {r});'
             f'document.cookie = "{_COOKIE_KEY_ACCESS}={a_cookie}'
-            f";path=/;max-age={_COOKIE_MAX_AGE};SameSite=Lax\"; "
+            f";path=/;max-age={_COOKIE_MAX_AGE};SameSite=Lax\";"
             f'document.cookie = "{_COOKIE_KEY_REFRESH}={r_cookie}'
-            f";path=/;max-age={_COOKIE_MAX_AGE};SameSite=Lax\"; "
+            f";path=/;max-age={_COOKIE_MAX_AGE};SameSite=Lax\";"
             'return "ok";'
+            "})()"
         )
         st_javascript(js)
         return True
@@ -115,13 +124,13 @@ def clear_tokens_from_storage() -> bool:
         from streamlit_javascript import st_javascript
 
         js = (
-            # localStorage
-            f'localStorage.removeItem("{_STORAGE_KEY_ACCESS}"); '
-            f'localStorage.removeItem("{_STORAGE_KEY_REFRESH}"); '
-            # Cookie — max-age=0 立即过期
-            f'document.cookie = "{_COOKIE_KEY_ACCESS}=;path=/;max-age=0;SameSite=Lax"; '
-            f'document.cookie = "{_COOKIE_KEY_REFRESH}=;path=/;max-age=0;SameSite=Lax"; '
+            "(() => {"
+            f'localStorage.removeItem("{_STORAGE_KEY_ACCESS}");'
+            f'localStorage.removeItem("{_STORAGE_KEY_REFRESH}");'
+            f'document.cookie = "{_COOKIE_KEY_ACCESS}=;path=/;max-age=0;SameSite=Lax";'
+            f'document.cookie = "{_COOKIE_KEY_REFRESH}=;path=/;max-age=0;SameSite=Lax";'
             'return "ok";'
+            "})()"
         )
         st_javascript(js)
         return True
