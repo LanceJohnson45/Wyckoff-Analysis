@@ -62,6 +62,7 @@ from integrations.data_source import (
     fetch_market_cap_map,
     fetch_stock_spot_snapshot,
 )
+from integrations.us_sp500_universe import get_sp500_constituents
 from utils.feishu import send_feishu_notification
 from utils.trading_clock import CN_TZ, resolve_end_calendar_day
 
@@ -102,6 +103,8 @@ BREADTH_CLIFF_DROP_PCT = float(os.getenv("FUNNEL_BREADTH_CLIFF_DROP_PCT", "-10.0
 SMALLCAP_BENCH_CODE = (
     os.getenv("FUNNEL_SMALLCAP_BENCH_CODE", "399006").strip() or "399006"
 )
+US_MAIN_BENCH_CODE = os.getenv("FUNNEL_US_MAIN_BENCH_CODE", "SPY").strip() or "SPY"
+US_SMALLCAP_BENCH_CODE = os.getenv("FUNNEL_US_SMALLCAP_BENCH_CODE", "IWM").strip() or "IWM"
 CRASH_MAIN_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_MAIN_DAY_DROP_PCT", "-1.3"))
 CRASH_SMALL_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_SMALL_DAY_DROP_PCT", "-2.5"))
 CRASH_BREADTH_RATIO_PCT = float(os.getenv("FUNNEL_CRASH_BREADTH_RATIO_PCT", "15.0"))
@@ -309,6 +312,24 @@ def _resolve_symbol_pool_from_env() -> tuple[
     limit_count = max(_parse_int_env("FUNNEL_POOL_LIMIT_COUNT", 0), 0)
 
     if market == "us":
+        if pool_mode in {"sp500", "sp500_active", "sp500_snapshot"}:
+            snapshot = get_sp500_constituents(prefer_snapshot=True)
+            symbols = list(snapshot.symbols)
+            if limit_count > 0:
+                symbols = symbols[:limit_count]
+            return (
+                symbols,
+                {code: code for code in symbols},
+                {
+                    "pool_mode": "sp500",
+                    "pool_market": "us",
+                    "pool_main": 0,
+                    "pool_chinext": 0,
+                    "pool_merged": len(symbols),
+                    "pool_st_excluded": 0,
+                    "pool_limit": limit_count,
+                },
+            )
         manual_raw = str(os.getenv("FUNNEL_POOL_MANUAL_SYMBOLS", "") or "")
         symbols = _normalize_symbols(
             [
@@ -1264,15 +1285,18 @@ def run_funnel_job(
     bench_df = None
     smallcap_df = None
     try:
-        bench_df = fetch_index_hist("000001", start_s, end_s)
+        bench_code = US_MAIN_BENCH_CODE if market == "us" else "000001"
+        bench_df = fetch_index_hist(bench_code, start_s, end_s, market=market)
         print(f"[funnel] 大盘基准加载成功")
     except Exception as e:
         print(f"[funnel] 大盘基准加载失败: {e}")
     try:
-        smallcap_df = fetch_index_hist(SMALLCAP_BENCH_CODE, start_s, end_s)
-        print(f"[funnel] 小盘基准加载成功: {SMALLCAP_BENCH_CODE}")
+        smallcap_code = US_SMALLCAP_BENCH_CODE if market == "us" else SMALLCAP_BENCH_CODE
+        smallcap_df = fetch_index_hist(smallcap_code, start_s, end_s, market=market)
+        print(f"[funnel] 小盘基准加载成功: {smallcap_code}")
     except Exception as e:
-        print(f"[funnel] 小盘基准加载失败 {SMALLCAP_BENCH_CODE}: {e}")
+        smallcap_code = US_SMALLCAP_BENCH_CODE if market == "us" else SMALLCAP_BENCH_CODE
+        print(f"[funnel] 小盘基准加载失败 {smallcap_code}: {e}")
     # 并发拉取日线（只负责取数，不负责计算）
     all_df_map: dict[str, pd.DataFrame] = {}
     fetch_ok = 0

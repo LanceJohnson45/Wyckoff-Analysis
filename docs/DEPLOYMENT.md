@@ -192,6 +192,32 @@ services:
 - 如果需要查看执行结果，挂载或持久化 `logs/` 目录
 - 定时任务保持时区为 `Asia/Shanghai`
 
+### US S&P500 数据链路（GitHub Actions）
+
+如果要启用美股 Wyckoff Funnel，当前推荐直接复用仓库内置的 4 条 workflow：
+
+- `us_sp500_bootstrap.yml`：首次初始化，回填约 360 个交易日历史数据
+- `us_sp500_constituent_sync.yml`：每月同步成分股并为新增股票补历史
+- `us_daily_bar_refresh.yml`：每日补最新完整日 bar
+- `wyckoff_funnel_us.yml`：同步/预热后执行 US funnel
+
+US 这条链路当前不依赖 `US_FUNNEL_SYMBOLS` secret，而是自动维护 S&P500 成分股 snapshot。snapshot 文件为 `data/us_sp500_constituents.json`，并通过 GitHub Actions cache 在多次运行间恢复。
+
+建议把下面这些参数保留为 workflow env，便于线上限流时直接调优：
+
+- `US_SP500_BATCH_SIZE`
+- `US_SP500_SLEEP_SECONDS`
+- `US_SP500_BOOTSTRAP_DAYS`
+- `US_SP500_SYNC_BOOTSTRAP_DAYS`
+- `US_REFRESH_TRADING_DAYS`
+- `FUNNEL_PREWARM_DAYS`
+
+经验上，如果 `yfinance` 返回空数据或出现明显抖动：
+
+1. 先把 `US_SP500_BATCH_SIZE` 从 `40` 下调到 `20`
+2. 再把 `US_SP500_SLEEP_SECONDS` 从 `0.5/1.0` 提高到 `1.5~2.0`
+3. 仍不稳定时，再考虑把 bootstrap / sync / refresh 拆得更稀疏
+
 ## 4. Web 站点部署
 
 ### Web 站点是什么
@@ -282,6 +308,10 @@ Before going live:
 ### Scheduled backend jobs
 
 - File: `.github/workflows/wyckoff_funnel.yml`
+- File: `.github/workflows/wyckoff_funnel_us.yml`
+- File: `.github/workflows/us_sp500_bootstrap.yml`
+- File: `.github/workflows/us_sp500_constituent_sync.yml`
+- File: `.github/workflows/us_daily_bar_refresh.yml`
 - File: `.github/workflows/web_quant_jobs.yml`
 - Main CLI: `scripts/daily_job.py`
 - New CLI: `scripts/run_pipeline.py`

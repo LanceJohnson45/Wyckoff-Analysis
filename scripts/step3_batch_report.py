@@ -1214,7 +1214,10 @@ def run(
     benchmark_ret_10: float | None = None
     try:
         if market_norm == "cn":
-            bench_df = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date)
+            bench_df = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date, market="cn")
+            benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
+        else:
+            bench_df = fetch_index_hist("SPY", window.start_trade_date, window.end_trade_date, market="us")
             benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
     except Exception:
         benchmark_ret_10 = None

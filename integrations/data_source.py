@@ -745,6 +745,23 @@ def _fetch_stock_yfinance(
     ].copy()
 
 
+def _fetch_index_yfinance(code: str, start: str, end: str) -> pd.DataFrame:
+    frame = _fetch_stock_yfinance(code, start, end)
+    if frame is None or frame.empty:
+        raise RuntimeError("yfinance index empty")
+    return frame.rename(
+        columns={
+            "日期": "date",
+            "开盘": "open",
+            "最高": "high",
+            "最低": "low",
+            "收盘": "close",
+            "成交量": "volume",
+            "涨跌幅": "pct_chg",
+        }
+    )[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
+
+
 def fetch_stock_hist(
     symbol: str,
     start: str | date,
@@ -970,7 +987,13 @@ def _fetch_index_akshare(code: str, start: str, end: str) -> pd.DataFrame:
     return df[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
 
 
-def fetch_index_hist(code: str, start: str | date, end: str | date) -> pd.DataFrame:
+def fetch_index_hist(
+    code: str,
+    start: str | date,
+    end: str | date,
+    *,
+    market: Literal["cn", "us"] = "cn",
+) -> pd.DataFrame:
     """
     大盘指数日线：tushare 优先，失败时 fallback 到 akshare。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
@@ -983,6 +1006,14 @@ def fetch_index_hist(code: str, start: str | date, end: str | date) -> pd.DataFr
     end_s = (
         end.strftime("%Y%m%d") if isinstance(end, date) else str(end).replace("-", "")
     )
+
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "us":
+        try:
+            return _fetch_index_yfinance(str(code).strip(), start_s, end_s)
+        except Exception as e:
+            _debug_source_fail("yfinance(index)", e)
+            raise RuntimeError(f"US index {code} fetch failed via yfinance: {_compact_error(e)}") from e
 
     # 1) tushare 优先
     try:

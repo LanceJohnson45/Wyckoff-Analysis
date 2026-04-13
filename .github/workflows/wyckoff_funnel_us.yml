@@ -25,13 +25,26 @@ jobs:
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
       FUNNEL_MARKET: "us"
-      FUNNEL_POOL_MODE: "manual"
-      FUNNEL_POOL_MANUAL_SYMBOLS: ${{ secrets.US_FUNNEL_SYMBOLS }}
+      FUNNEL_POOL_MODE: "sp500"
       DAILY_JOB_SKIP_STEP4: "1"
+      FUNNEL_PREWARM_DAYS: "320"
+      US_SP500_SYNC_BOOTSTRAP_DAYS: "360"
+      US_SP500_BATCH_SIZE: "40"
+      US_SP500_SLEEP_SECONDS: "0.5"
+      SP500_SNAPSHOT_CACHE_KEY: us-sp500-snapshot-${{ github.ref_name }}-${{ github.run_id }}
       TZ: Asia/Shanghai
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Restore S&P500 snapshot cache
+        id: restore-sp500-snapshot
+        uses: actions/cache/restore@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
+          restore-keys: |
+            us-sp500-snapshot-${{ github.ref_name }}-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -48,12 +61,15 @@ jobs:
       - name: Prepare logs dir
         run: mkdir -p logs
 
-      - name: Validate US symbol universe
+      - name: Sync S&P500 constituents
         run: |
-          if [ -z "${FUNNEL_POOL_MANUAL_SYMBOLS}" ]; then
-            echo "US_FUNNEL_SYMBOLS secret is empty; please configure comma-separated US symbols."
-            exit 1
-          fi
+          python -u scripts/us_sp500_maintenance.py sync --bootstrap-new --bootstrap-trading-days ${US_SP500_SYNC_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
+            2>&1 | tee -a ${{ github.workspace }}/logs/us_sp500_sync.console.log
+
+      - name: Prewarm funnel cache
+        run: |
+          python -u scripts/funnel_prewarm.py --market us --trading-days ${FUNNEL_PREWARM_DAYS} \
+            2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_us.console.log
 
       - name: Run US daily job
         run: |
@@ -68,6 +84,13 @@ jobs:
           path: logs/*.log
           retention-days: 7
           if-no-files-found: warn
+
+      - name: Save S&P500 snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
 
       - name: Notify on failure
         if: failure()

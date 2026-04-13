@@ -34,6 +34,7 @@ jobs:
       STEP4_BUY_STOP_MODE: "floor"
       STEP4_PROBE_BUDGET_LIMIT: "0.10"
       STEP4_ATTACK_BUDGET_LIMIT: "0.20"
+      FUNNEL_PREWARM_DAYS: "320"
       TZ: Asia/Shanghai
 
     steps:
@@ -53,6 +54,11 @@ jobs:
 
       - name: Prepare logs dir
         run: mkdir -p logs
+
+      - name: Prewarm funnel cache
+        run: |
+          python -u scripts/funnel_prewarm.py --market cn --trading-days ${FUNNEL_PREWARM_DAYS} \
+            2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_cn.console.log
 
       - name: Run daily job
         run: |

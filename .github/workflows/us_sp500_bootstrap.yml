@@ -1,0 +1,67 @@
+name: US S&P500 Bootstrap
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: us-sp500-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      US_SP500_BOOTSTRAP_DAYS: "360"
+      US_SP500_BATCH_SIZE: "40"
+      US_SP500_SLEEP_SECONDS: "1.0"
+      SP500_SNAPSHOT_CACHE_KEY: us-sp500-snapshot-${{ github.ref_name }}-${{ github.run_id }}
+      TZ: Asia/Shanghai
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore S&P500 snapshot cache
+        id: restore-sp500-snapshot
+        uses: actions/cache/restore@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
+          restore-keys: |
+            us-sp500-snapshot-${{ github.ref_name }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Bootstrap S&P500 cache
+        run: |
+          python -u scripts/us_sp500_maintenance.py bootstrap --trading-days ${US_SP500_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
+            2>&1 | tee us_sp500_bootstrap.log
+
+      - name: Upload bootstrap log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: us-sp500-bootstrap-${{ github.run_number }}
+          path: us_sp500_bootstrap.log
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Save S&P500 snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
