@@ -90,6 +90,7 @@ def _normalize_batch_download(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
         work["成交量"], errors="coerce"
     )
     work["涨跌幅"] = pd.to_numeric(work["收盘"], errors="coerce").pct_change() * 100.0
+    work["涨跌幅"].iloc[0] = 0.0
     work["换手率"] = pd.NA
     base = pd.to_numeric(work["收盘"], errors="coerce").shift(1)
     work["振幅"] = (
@@ -99,6 +100,9 @@ def _normalize_batch_download(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
         )
         / base.replace(0, pd.NA)
         * 100.0
+    )
+    work["振幅"].iloc[0] = (
+        (work["最高"].iloc[0] - work["最低"].iloc[0]) / work["开盘"].iloc[0] * 100.0
     )
     return work[
         [
