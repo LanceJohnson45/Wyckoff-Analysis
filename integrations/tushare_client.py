@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Tushare Pro 客户端封装（含全局限流）
+Tushare Pro 客户端封装（含分级限流）
 
 从环境变量 TUSHARE_TOKEN 读取 token，提供 pro_api 实例。
-所有通过 get_pro() 拿到的 pro 实例调用 API 时都会自动限流（默认 400 次/分钟），
-避免触发 tushare 的 500 次/分钟上限。
+所有通过 get_pro() 拿到的 pro 实例调用 API 时都会自动限流。
+对 `stock_basic / daily_basic / index_daily` 等低频元数据接口使用更保守的单独限流，
+避免触发 50 次/分钟类接口的权限上限。
 
 用法:
     from integrations.tushare_client import get_pro
@@ -21,22 +22,34 @@ import warnings
 from threading import Lock
 
 
-# ── 全局滑动窗口限流器（进程级单例，线程安全） ──
-_RATE_LIMIT = int(os.getenv("TUSHARE_RATE_LIMIT", "400"))  # 次/分钟
+# ── 滑动窗口限流器（进程级单例，线程安全） ──
+_RATE_LIMIT = int(os.getenv("TUSHARE_RATE_LIMIT", "45"))  # 普通接口，次/分钟
+_LOW_FREQ_RATE_LIMIT = int(
+    os.getenv("TUSHARE_LOW_FREQ_RATE_LIMIT", "40")
+)  # 元数据接口，次/分钟
+_LOW_FREQ_METHODS = {"stock_basic", "daily_basic", "index_daily"}
+
 _call_times: list[float] = []
 _call_lock = Lock()
+_low_freq_call_times: list[float] = []
+_low_freq_call_lock = Lock()
 
 
-def _wait_for_rate_limit() -> None:
-    """滑动窗口限流：确保过去 60 秒内调用不超过 _RATE_LIMIT 次。"""
+def _wait_for_rate_limit(method_name: str | None = None) -> None:
+    """滑动窗口限流：低频元数据接口走独立更严格的限流桶。"""
+    method_norm = str(method_name or "").strip().lower()
+    is_low_freq = method_norm in _LOW_FREQ_METHODS
+    rate_limit = _LOW_FREQ_RATE_LIMIT if is_low_freq else _RATE_LIMIT
+    call_times = _low_freq_call_times if is_low_freq else _call_times
+    call_lock = _low_freq_call_lock if is_low_freq else _call_lock
     while True:
-        with _call_lock:
+        with call_lock:
             now = time.monotonic()
-            _call_times[:] = [t for t in _call_times if now - t < 60]
-            if len(_call_times) < _RATE_LIMIT:
-                _call_times.append(now)
+            call_times[:] = [t for t in call_times if now - t < 60]
+            if len(call_times) < rate_limit:
+                call_times.append(now)
                 return
-            sleep_for = 60 - (now - _call_times[0]) + 0.1
+            sleep_for = 60 - (now - call_times[0]) + 0.1
         time.sleep(max(0.05, sleep_for))
 
 
@@ -50,7 +63,7 @@ class _RateLimitedPro:
         attr = getattr(object.__getattribute__(self, "_pro"), name)
         if callable(attr):
             def wrapper(*args, **kwargs):
-                _wait_for_rate_limit()
+                _wait_for_rate_limit(name)
                 return attr(*args, **kwargs)
             wrapper.__name__ = name
             return wrapper

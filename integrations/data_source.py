@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：个股日线 tushare 优先（qfq）→ akshare→baostock→efinance；大盘 tushare 直连
+统一数据源：个股日线 akshare→baostock→efinance→tushare(qfq)；大盘 tushare 直连
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
 """
@@ -585,7 +585,7 @@ def _fetch_stock_tushare(
     # ts.pro_bar 绕过了 pro 对象，直接使用全局 token，需要显式限流
     from integrations.tushare_client import _wait_for_rate_limit
 
-    _wait_for_rate_limit()
+    _wait_for_rate_limit("pro_bar")
     df = ts.pro_bar(ts_code=ts_code, adj=adj_val, start_date=start, end_date=end)
 
     if df is None or df.empty:
@@ -617,7 +617,7 @@ def _fetch_stock_tushare(
 
     # 尽量补齐换手率（daily_basic），失败不影响主流程。
     try:
-        _wait_for_rate_limit()
+        _wait_for_rate_limit("daily_basic")
         basic = pro.daily_basic(
             ts_code=ts_code,
             start_date=start,
@@ -770,7 +770,7 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：tushare 优先（固定 qfq），失败时回退 akshare/baostock/efinance。
+    个股日线：akshare/baostock/efinance 优先，Tushare(qfq) 作为最后兜底。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_AKSHARE=1
     - DATA_SOURCE_DISABLE_BAOSTOCK=1
@@ -802,23 +802,6 @@ def fetch_stock_hist(
 
     failed_sources: list[str] = []
     failed_details: list[str] = []
-    from integrations.tushare_client import get_pro
-
-    pro = get_pro()
-
-    # 1) tushare 优先（固定 qfq）
-    if pro is not None:
-        try:
-            return _tag_source(
-                _fetch_stock_tushare(symbol, start_s, end_s, "qfq"), "tushare"
-            )
-        except Exception as e:
-            _debug_source_fail("tushare", e)
-            failed_sources.append("tushare")
-            failed_details.append(f"tushare={_compact_error(e)}")
-    else:
-        failed_sources.append("tushare(unconfigured)")
-        failed_details.append("tushare=token_missing")
 
     disable_akshare = os.getenv("DATA_SOURCE_DISABLE_AKSHARE", "").strip().lower() in {
         "1",
@@ -843,7 +826,7 @@ def fetch_stock_hist(
         "on",
     }
 
-    # 2. akshare
+    # 1. akshare
     if disable_akshare:
         failed_sources.append("akshare(disabled)")
         failed_details.append("akshare=disabled_by_env")
@@ -870,7 +853,7 @@ def fetch_stock_hist(
                 failed_details.append(f"akshare={_compact_error(e)}")
                 break
 
-    # 3. baostock (仅前复权)
+    # 2. baostock (仅前复权)
     baostock_circuit_open, baostock_circuit_note = _baostock_circuit_state()
     if disable_baostock:
         failed_sources.append("baostock(disabled)")
@@ -901,7 +884,7 @@ def fetch_stock_hist(
             failed_sources.append("baostock")
             failed_details.append(f"baostock={_compact_error(e)}")
 
-    # 4. efinance (仅前复权)
+    # 3. efinance (仅前复权)
     if disable_efinance:
         failed_sources.append("efinance(disabled)")
         failed_details.append("efinance=disabled_by_env")
@@ -919,13 +902,30 @@ def fetch_stock_hist(
             failed_sources.append("efinance")
             failed_details.append(f"efinance={_compact_error(e)}")
 
+    # 4) tushare 兜底（固定 qfq）
+    from integrations.tushare_client import get_pro
+
+    pro = get_pro()
+    if pro is not None:
+        try:
+            return _tag_source(
+                _fetch_stock_tushare(symbol, start_s, end_s, "qfq"), "tushare"
+            )
+        except Exception as e:
+            _debug_source_fail("tushare", e)
+            failed_sources.append("tushare")
+            failed_details.append(f"tushare={_compact_error(e)}")
+    else:
+        failed_sources.append("tushare(unconfigured)")
+        failed_details.append("tushare=token_missing")
+
     detail_suffix = (
         f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 tushare→akshare→baostock→efinance，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance→tushare，"
         f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
     )
 
@@ -1037,7 +1037,10 @@ def fetch_index_hist(
 _DATA_CACHE_DIR = Path(__file__).resolve().parent.parent / "data"
 _SECTOR_CACHE = _DATA_CACHE_DIR / "sector_map_cache.json"
 _MARKET_CAP_CACHE = _DATA_CACHE_DIR / "market_cap_cache.json"
-_CACHE_TTL = 24 * 60 * 60
+_SECTOR_CACHE_TTL = int(os.getenv("SECTOR_CACHE_TTL_SECONDS", str(7 * 24 * 60 * 60)))
+_MARKET_CAP_CACHE_TTL = int(
+    os.getenv("MARKET_CAP_CACHE_TTL_SECONDS", str(24 * 60 * 60))
+)
 
 
 def _atomic_write_json(path: Path, payload: object) -> None:
@@ -1078,7 +1081,7 @@ def fetch_sector_map() -> dict[str, str]:
     try:
         if (
             _SECTOR_CACHE.exists()
-            and (time.time() - _SECTOR_CACHE.stat().st_mtime) < _CACHE_TTL
+            and (time.time() - _SECTOR_CACHE.stat().st_mtime) < _SECTOR_CACHE_TTL
         ):
             with open(_SECTOR_CACHE, "r", encoding="utf-8") as f:
                 return json.load(f)
@@ -1123,7 +1126,8 @@ def fetch_market_cap_map() -> dict[str, float]:
     try:
         if (
             _MARKET_CAP_CACHE.exists()
-            and (time.time() - _MARKET_CAP_CACHE.stat().st_mtime) < _CACHE_TTL
+            and (time.time() - _MARKET_CAP_CACHE.stat().st_mtime)
+            < _MARKET_CAP_CACHE_TTL
         ):
             with open(_MARKET_CAP_CACHE, "r", encoding="utf-8") as f:
                 return {k: float(v) for k, v in json.load(f).items()}
