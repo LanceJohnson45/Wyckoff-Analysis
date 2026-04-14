@@ -3,7 +3,7 @@ name: Wyckoff Funnel US
 on:
   schedule:
     # Reuse the existing cadence first; market-specific timing can be optimized later.
-    - cron: '25 10 * * 0-4'
+    - cron: "25 10 * * 0-4"
   workflow_dispatch:
 
 concurrency:
