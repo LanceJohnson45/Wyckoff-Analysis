@@ -33,7 +33,9 @@ from utils.trading_clock import resolve_end_calendar_day
 DEFAULT_BATCH_SIZE = max(int(os.getenv("US_SP500_BATCH_SIZE", "40")), 1)
 DEFAULT_MAX_WORKERS = max(int(os.getenv("US_SP500_MAX_WORKERS", "4")), 1)
 DEFAULT_REFRESH_TRADING_DAYS = max(int(os.getenv("US_REFRESH_TRADING_DAYS", "7")), 1)
-DEFAULT_BOOTSTRAP_TRADING_DAYS = max(int(os.getenv("US_BOOTSTRAP_TRADING_DAYS", "360")), 30)
+DEFAULT_BOOTSTRAP_TRADING_DAYS = max(
+    int(os.getenv("US_BOOTSTRAP_TRADING_DAYS", "360")), 30
+)
 
 
 def _log(msg: str) -> None:
@@ -58,7 +60,11 @@ def _normalize_batch_download(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
         else:
             return pd.DataFrame()
     work = work.reset_index()
-    date_col = "Date" if "Date" in work.columns else ("index" if "index" in work.columns else None)
+    date_col = (
+        "Date"
+        if "Date" in work.columns
+        else ("index" if "index" in work.columns else None)
+    )
     if date_col is None:
         return pd.DataFrame()
     work = work.rename(
@@ -80,21 +86,39 @@ def _normalize_batch_download(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
     work = work.dropna(subset=["日期", "收盘"]).copy()
     if work.empty:
         return pd.DataFrame()
-    work["成交额"] = pd.to_numeric(work["收盘"], errors="coerce") * pd.to_numeric(work["成交量"], errors="coerce")
+    work["成交额"] = pd.to_numeric(work["收盘"], errors="coerce") * pd.to_numeric(
+        work["成交量"], errors="coerce"
+    )
     work["涨跌幅"] = pd.to_numeric(work["收盘"], errors="coerce").pct_change() * 100.0
     work["换手率"] = pd.NA
     base = pd.to_numeric(work["收盘"], errors="coerce").shift(1)
     work["振幅"] = (
-        (pd.to_numeric(work["最高"], errors="coerce") - pd.to_numeric(work["最低"], errors="coerce"))
+        (
+            pd.to_numeric(work["最高"], errors="coerce")
+            - pd.to_numeric(work["最低"], errors="coerce")
+        )
         / base.replace(0, pd.NA)
         * 100.0
     )
     return work[
-        ["日期", "开盘", "最高", "最低", "收盘", "成交量", "成交额", "涨跌幅", "换手率", "振幅"]
+        [
+            "日期",
+            "开盘",
+            "最高",
+            "最低",
+            "收盘",
+            "成交量",
+            "成交额",
+            "涨跌幅",
+            "换手率",
+            "振幅",
+        ]
     ].copy()
 
 
-def _download_batch(symbols: list[str], start_day: date, end_day: date) -> dict[str, pd.DataFrame]:
+def _download_batch(
+    symbols: list[str], start_day: date, end_day: date
+) -> dict[str, pd.DataFrame]:
     if not symbols:
         return {}
     try:
@@ -121,7 +145,9 @@ def _download_batch(symbols: list[str], start_day: date, end_day: date) -> dict[
         frame = _normalize_batch_download(data, symbol)
         if frame.empty:
             try:
-                frame = _fetch_stock_yfinance(symbol, start_day.strftime("%Y%m%d"), end_day.strftime("%Y%m%d"))
+                frame = _fetch_stock_yfinance(
+                    symbol, start_day.strftime("%Y%m%d"), end_day.strftime("%Y%m%d")
+                )
             except Exception:
                 frame = pd.DataFrame()
         if not frame.empty:
@@ -129,7 +155,9 @@ def _download_batch(symbols: list[str], start_day: date, end_day: date) -> dict[
     return out
 
 
-def _upsert_us_history(symbol: str, df: pd.DataFrame, *, context: str = "background") -> int:
+def _upsert_us_history(
+    symbol: str, df: pd.DataFrame, *, context: str = "background"
+) -> int:
     if df is None or df.empty:
         return 0
     norm = normalize_hist_df(df)
@@ -145,8 +173,11 @@ def _upsert_us_history(symbol: str, df: pd.DataFrame, *, context: str = "backgro
         df=norm,
         context=context,
     )
+    if not ok:
+        return 0
+    time.sleep(20)
     meta = get_cache_meta(f"US:{symbol}", "qfq", context=context)
-    if not ok or meta is None or meta.end_date < latest_date.date():
+    if meta is None or meta.end_date < latest_date.date():
         return 0
     return int(len(norm))
 
@@ -156,9 +187,13 @@ def _latest_cached_date(symbol: str) -> date | None:
     return meta.end_date if meta else None
 
 
-def _filter_symbols_needing_backfill(symbols: list[str], *, min_trading_days: int) -> tuple[list[str], list[str]]:
+def _filter_symbols_needing_backfill(
+    symbols: list[str], *, min_trading_days: int
+) -> tuple[list[str], list[str]]:
     end_day = resolve_end_calendar_day()
-    target_window = _resolve_us_window(end_calendar_day=end_day, trading_days=min_trading_days)
+    target_window = _resolve_us_window(
+        end_calendar_day=end_day, trading_days=min_trading_days
+    )
     needs: list[str] = []
     covered: list[str] = []
     for symbol in symbols:
@@ -170,7 +205,14 @@ def _filter_symbols_needing_backfill(symbols: list[str], *, min_trading_days: in
     return needs, covered
 
 
-def _run_batches(symbols: list[str], *, start_day: date, end_day: date, batch_size: int, sleep_seconds: float) -> dict[str, int]:
+def _run_batches(
+    symbols: list[str],
+    *,
+    start_day: date,
+    end_day: date,
+    batch_size: int,
+    sleep_seconds: float,
+) -> dict[str, int]:
     stats = {"symbols": 0, "rows": 0, "failed": 0, "write_fail": 0}
     for idx, chunk in enumerate(_chunked(symbols, batch_size), start=1):
         _log(f"batch {idx}: downloading {len(chunk)} symbols {start_day}..{end_day}")
@@ -200,7 +242,13 @@ def _run_batches(symbols: list[str], *, start_day: date, end_day: date, batch_si
     return stats
 
 
-def sync_constituents(*, bootstrap_new: bool, bootstrap_trading_days: int, batch_size: int, sleep_seconds: float) -> int:
+def sync_constituents(
+    *,
+    bootstrap_new: bool,
+    bootstrap_trading_days: int,
+    batch_size: int,
+    sleep_seconds: float,
+) -> int:
     previous = load_sp500_snapshot()
     current = fetch_sp500_constituents()
     added, removed = diff_symbols(previous.symbols if previous else [], current.symbols)
@@ -214,7 +262,9 @@ def sync_constituents(*, bootstrap_new: bool, bootstrap_trading_days: int, batch
         _log(f"removed: {', '.join(removed[:20])}{'...' if len(removed) > 20 else ''}")
     if bootstrap_new and added:
         end_day = resolve_end_calendar_day()
-        window = _resolve_us_window(end_calendar_day=end_day, trading_days=bootstrap_trading_days)
+        window = _resolve_us_window(
+            end_calendar_day=end_day, trading_days=bootstrap_trading_days
+        )
         stats = _run_batches(
             added,
             start_day=window.start_trade_date,
@@ -228,7 +278,9 @@ def sync_constituents(*, bootstrap_new: bool, bootstrap_trading_days: int, batch
     return 0
 
 
-def bootstrap_constituents(*, trading_days: int, batch_size: int, sleep_seconds: float) -> int:
+def bootstrap_constituents(
+    *, trading_days: int, batch_size: int, sleep_seconds: float
+) -> int:
     snapshot = get_sp500_constituents(prefer_snapshot=False)
     save_sp500_snapshot(snapshot.symbols, source=snapshot.source)
     end_day = resolve_end_calendar_day()
@@ -244,7 +296,9 @@ def bootstrap_constituents(*, trading_days: int, batch_size: int, sleep_seconds:
     return 0 if stats["symbols"] > 0 else 1
 
 
-def refresh_constituents(*, trading_days: int, batch_size: int, sleep_seconds: float) -> int:
+def refresh_constituents(
+    *, trading_days: int, batch_size: int, sleep_seconds: float
+) -> int:
     snapshot = get_sp500_constituents(prefer_snapshot=False)
     save_sp500_snapshot(snapshot.symbols, source=snapshot.source)
     end_day = resolve_end_calendar_day()
@@ -260,10 +314,16 @@ def refresh_constituents(*, trading_days: int, batch_size: int, sleep_seconds: f
     return 0 if stats["failed"] < len(snapshot.symbols) else 1
 
 
-def prewarm_constituents(*, trading_days: int, batch_size: int, sleep_seconds: float) -> int:
+def prewarm_constituents(
+    *, trading_days: int, batch_size: int, sleep_seconds: float
+) -> int:
     snapshot = get_sp500_constituents(prefer_snapshot=True)
-    needs, covered = _filter_symbols_needing_backfill(snapshot.symbols, min_trading_days=trading_days)
-    _log(f"prewarm symbols_total={len(snapshot.symbols)} cache_ready={len(covered)} needs_fill={len(needs)}")
+    needs, covered = _filter_symbols_needing_backfill(
+        snapshot.symbols, min_trading_days=trading_days
+    )
+    _log(
+        f"prewarm symbols_total={len(snapshot.symbols)} cache_ready={len(covered)} needs_fill={len(needs)}"
+    )
     if not needs:
         return 0
     end_day = resolve_end_calendar_day()
@@ -280,27 +340,47 @@ def prewarm_constituents(*, trading_days: int, batch_size: int, sleep_seconds: f
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="US S&P500 universe and history maintenance")
+    parser = argparse.ArgumentParser(
+        description="US S&P500 universe and history maintenance"
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sync_parser = sub.add_parser("sync", help="Sync S&P500 constituents and optionally bootstrap new members")
+    sync_parser = sub.add_parser(
+        "sync", help="Sync S&P500 constituents and optionally bootstrap new members"
+    )
     sync_parser.add_argument("--bootstrap-new", action="store_true")
-    sync_parser.add_argument("--bootstrap-trading-days", type=int, default=DEFAULT_BOOTSTRAP_TRADING_DAYS)
+    sync_parser.add_argument(
+        "--bootstrap-trading-days", type=int, default=DEFAULT_BOOTSTRAP_TRADING_DAYS
+    )
     sync_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     sync_parser.add_argument("--sleep-seconds", type=float, default=1.0)
 
-    bootstrap_parser = sub.add_parser("bootstrap", help="Bootstrap full S&P500 history into stock_hist_cache")
-    bootstrap_parser.add_argument("--trading-days", type=int, default=DEFAULT_BOOTSTRAP_TRADING_DAYS)
+    bootstrap_parser = sub.add_parser(
+        "bootstrap", help="Bootstrap full S&P500 history into stock_hist_cache"
+    )
+    bootstrap_parser.add_argument(
+        "--trading-days", type=int, default=DEFAULT_BOOTSTRAP_TRADING_DAYS
+    )
     bootstrap_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     bootstrap_parser.add_argument("--sleep-seconds", type=float, default=1.0)
 
-    refresh_parser = sub.add_parser("refresh", help="Refresh active S&P500 symbols with a short trailing window")
-    refresh_parser.add_argument("--trading-days", type=int, default=DEFAULT_REFRESH_TRADING_DAYS)
+    refresh_parser = sub.add_parser(
+        "refresh", help="Refresh active S&P500 symbols with a short trailing window"
+    )
+    refresh_parser.add_argument(
+        "--trading-days", type=int, default=DEFAULT_REFRESH_TRADING_DAYS
+    )
     refresh_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     refresh_parser.add_argument("--sleep-seconds", type=float, default=0.5)
 
-    prewarm_parser = sub.add_parser("prewarm", help="Ensure active S&P500 symbols have the funnel window cached")
-    prewarm_parser.add_argument("--trading-days", type=int, default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30))
+    prewarm_parser = sub.add_parser(
+        "prewarm", help="Ensure active S&P500 symbols have the funnel window cached"
+    )
+    prewarm_parser.add_argument(
+        "--trading-days",
+        type=int,
+        default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30),
+    )
     prewarm_parser.add_argument("--batch-size", type=int, default=DEFAULT_BATCH_SIZE)
     prewarm_parser.add_argument("--sleep-seconds", type=float, default=0.5)
 
