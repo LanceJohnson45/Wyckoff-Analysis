@@ -62,6 +62,9 @@ jobs:
       - name: Diagnostic - Test Supabase connection
         run: python test_supabase_diagnostic.py
 
+      - name: Diagnostic - Test US write/verify
+        run: python test_us_write_verify.py
+
       - name: Bootstrap S&P500 cache
         run: |
           python -u scripts/us_sp500_maintenance.py bootstrap --trading-days ${US_SP500_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
