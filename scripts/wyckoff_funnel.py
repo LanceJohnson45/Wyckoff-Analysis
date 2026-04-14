@@ -32,7 +32,9 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from integrations.fetch_a_share_csv import (
+    _resolve_hk_window,
     _resolve_trading_window,
+    _resolve_us_window,
     _fetch_hist_with_market,
     get_stocks_by_board,
     _normalize_symbols,
@@ -1290,8 +1292,13 @@ def run_funnel_job(
     cfg = FunnelConfig(trading_days=TRADING_DAYS)
     _apply_funnel_cfg_overrides(cfg)
     market = _resolve_funnel_market()
-    if market in {"us", "hk"}:
+    if market == "us":
         window = _resolve_us_window(
+            end_calendar_day=_job_end_calendar_day(),
+            trading_days=TRADING_DAYS,
+        )
+    elif market == "hk":
+        window = _resolve_hk_window(
             end_calendar_day=_job_end_calendar_day(),
             trading_days=TRADING_DAYS,
         )
