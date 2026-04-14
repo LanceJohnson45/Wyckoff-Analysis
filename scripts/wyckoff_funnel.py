@@ -407,6 +407,37 @@ def _sample_rejections(
     return samples
 
 
+def _summarize_trigger_extremes(
+    triggers: dict[str, list[tuple[str, float]]],
+    *,
+    limit: int = 8,
+    alert_threshold: float = 30.0,
+) -> tuple[list[str], list[str]]:
+    all_rows: list[tuple[str, str, float]] = []
+    for key, rows in (triggers or {}).items():
+        for code, score in rows or []:
+            if score is None:
+                continue
+            try:
+                score_f = float(score)
+            except Exception:
+                continue
+            all_rows.append((str(code).strip(), str(key).strip(), score_f))
+    if not all_rows:
+        return ([], [])
+    all_rows.sort(key=lambda x: -x[2])
+    top_lines = [
+        f"{code}:{trigger}={score:.2f}"
+        for code, trigger, score in all_rows[: max(int(limit), 1)]
+    ]
+    alerts = [
+        f"{code}:{trigger}={score:.2f}"
+        for code, trigger, score in all_rows
+        if score >= float(alert_threshold)
+    ][: max(int(limit), 1)]
+    return (top_lines, alerts)
+
+
 def _resolve_symbol_pool_from_env() -> tuple[
     list[str], dict[str, str], dict[str, int | str]
 ]:
@@ -757,6 +788,8 @@ def _analyze_benchmark_and_tune_cfg(
             "sample_size": 0,
             "ma_window": BREADTH_MA_WINDOW,
         },
+        "has_main_benchmark": False,
+        "has_smallcap_benchmark": False,
     }
     close = None
     ma50 = None
@@ -1061,6 +1094,15 @@ def _analyze_benchmark_and_tune_cfg(
                 "sample_size": breadth_sample,
                 "ma_window": BREADTH_MA_WINDOW,
             },
+            "has_main_benchmark": bool(
+                close is not None
+                and ma50 is not None
+                and ma200 is not None
+                and recent3_cum is not None
+            ),
+            "has_smallcap_benchmark": bool(
+                small_close is not None and small_recent3_cum is not None
+            ),
         }
     )
     return context
@@ -1427,11 +1469,17 @@ def run_funnel_job(
     if market == "cn":
         print(f"[funnel] 加载行业映射...")
         sector_map = fetch_sector_map()
+        print(f"[funnel] 行业映射加载结果: {len(sector_map)}")
         print(f"[funnel] 加载市值数据...")
         market_cap_map = fetch_market_cap_map()
+        print(f"[funnel] 市值映射加载结果: {len(market_cap_map)}")
         if not market_cap_map:
             print(
                 "[funnel] ⚠️ 市值数据为空（TUSHARE_TOKEN 可能缺失/失效），Layer1 将跳过市值过滤"
+            )
+        if not sector_map:
+            print(
+                "[funnel] ⚠️ 行业映射为空（TUSHARE_TOKEN 可能缺失/失效），Top行业/板块轮动将不可用"
             )
     else:
         sector_map = {}
@@ -1703,6 +1751,11 @@ def run_funnel_job(
     # Layer 4 (Wyckoff Triggers)
     # L4 需要 l2_df_map，这里直接用 all_df_map 即可，因为 key 都在里面
     triggers = layer4_triggers(l3_passed, all_df_map, cfg)
+    trigger_score_top, trigger_score_alerts = _summarize_trigger_extremes(triggers)
+    if trigger_score_top:
+        print(f"[funnel] 触发分值Top: {', '.join(trigger_score_top)}")
+    if trigger_score_alerts:
+        print(f"[funnel] ⚠️ 异常高分触发(>=30): {', '.join(trigger_score_alerts)}")
 
     # Markup 阶段、Accumulation ABC 细化、Exit 信号
     markup_symbols = detect_markup_stage(l3_passed, all_df_map, cfg)
@@ -1770,6 +1823,8 @@ def run_funnel_job(
         "layer3_score_map": l3_score_map,
         "total_hits": total_hits,
         "by_trigger": {k: len(v) for k, v in triggers.items()},
+        "trigger_score_top": trigger_score_top,
+        "trigger_score_alerts": trigger_score_alerts,
         "benchmark_context": benchmark_context,
         "latest_close_map": latest_close_map,
         # 阶段识别和退出信号
@@ -1926,16 +1981,22 @@ def run(
         bench_line = "未知"
         pv_line = "暂无大盘量价推演"
         if benchmark_context:
-            bench_line = (
-                f"{benchmark_context.get('regime')} | close={benchmark_context.get('close')} "
-                f"ma50={benchmark_context.get('ma50')} ma200={benchmark_context.get('ma200')} "
-                f"3d={benchmark_context.get('recent3_pct')} cum3={benchmark_context.get('recent3_cum_pct')}"
-            )
-            pv_line = str(
-                benchmark_context.get("market_pv_outlook")
-                or benchmark_context.get("market_pv_summary")
-                or pv_line
-            )
+            if benchmark_context.get("has_main_benchmark"):
+                bench_line = (
+                    f"{benchmark_context.get('regime')} | close={benchmark_context.get('close')} "
+                    f"ma50={benchmark_context.get('ma50')} ma200={benchmark_context.get('ma200')} "
+                    f"3d={benchmark_context.get('recent3_pct')} cum3={benchmark_context.get('recent3_cum_pct')}"
+                )
+                pv_line = str(
+                    benchmark_context.get("market_pv_outlook")
+                    or benchmark_context.get("market_pv_summary")
+                    or pv_line
+                )
+            else:
+                bench_line = (
+                    f"{benchmark_context.get('regime')} | 基准指数数据不可用"
+                )
+                pv_line = "大盘量价推演已跳过：基准指数数据不可用"
 
         lines = [
             (
@@ -1948,7 +2009,7 @@ def run(
             f"**大盘水温**: {bench_line}",
             f"**大盘量价推演**: {pv_line}",
             f"**候选分层**: 命中股票{unique_hit_count} -> AI输入全量{len(selected_for_ai)}",
-            f"**Top 行业**: {', '.join(metrics['top_sectors']) if metrics['top_sectors'] else '无'}",
+            f"**Top 行业**: {', '.join(metrics['top_sectors']) if metrics['top_sectors'] else ('不可用（行业映射缺失）' if market == 'cn' and not sector_map else '无')}",
             "",
             "**命中列表（按优先级）代码 名称 | 筛选理由 | 分值**",
             "",
@@ -2152,44 +2213,54 @@ def run(
     bench_line = "未知"
     pv_line = "暂无大盘量价推演"
     if benchmark_context:
-        bench_market = str(benchmark_context.get("market") or market or "cn").strip().lower()
-        main_label = _benchmark_label(benchmark_context.get("main_code"), bench_market)
-        smallcap_label = _benchmark_label(
-            benchmark_context.get("smallcap_code"),
-            bench_market,
-            smallcap=True,
-        )
-        breadth = benchmark_context.get("breadth", {}) or {}
-        breadth_text = (
-            f"，上涨家数占比 {breadth.get('ratio_pct'):.1f}%"
-            f"（前日 {breadth.get('prev_ratio_pct'):.1f}%，变化 {breadth.get('delta_pct'):+.1f}%，样本 {breadth.get('sample_size')} 只）"
-            if breadth
-            else ""
-        )
-        repair_text = (
-            f"，修复原因：{benchmark_context.get('repair_reasons')}"
-            if benchmark_context.get("repair_triggered")
-            else ""
-        )
-        smallcap_close = benchmark_context.get("smallcap_close")
-        smallcap_cum3 = benchmark_context.get("smallcap_recent3_cum_pct")
-        smallcap_text = (
-            f" | {smallcap_label} {smallcap_close:.2f}，近3日 {smallcap_cum3:+.2f}%"
-            if smallcap_close is not None and smallcap_cum3 is not None
-            else ""
-        )
-        bench_line = (
-            f"{benchmark_context.get('regime')} | {main_label} {benchmark_context.get('close'):.2f}"
-            f"（MA50={benchmark_context.get('ma50'):.1f} MA200={benchmark_context.get('ma200'):.1f}）"
-            f"，近3日 {benchmark_context.get('recent3_cum_pct'):+.2f}%"
-            f"{smallcap_text}"
-            f"{breadth_text}{repair_text}"
-        )
-        pv_line = str(
-            benchmark_context.get("market_pv_outlook")
-            or benchmark_context.get("market_pv_summary")
-            or pv_line
-        )
+        if benchmark_context.get("has_main_benchmark"):
+            bench_market = str(benchmark_context.get("market") or market or "cn").strip().lower()
+            main_label = _benchmark_label(benchmark_context.get("main_code"), bench_market)
+            smallcap_label = _benchmark_label(
+                benchmark_context.get("smallcap_code"),
+                bench_market,
+                smallcap=True,
+            )
+            breadth = benchmark_context.get("breadth", {}) or {}
+            breadth_text = (
+                f"，上涨家数占比 {breadth.get('ratio_pct'):.1f}%"
+                f"（前日 {breadth.get('prev_ratio_pct'):.1f}%，变化 {breadth.get('delta_pct'):+.1f}%，样本 {breadth.get('sample_size')} 只）"
+                if breadth
+                else ""
+            )
+            repair_text = (
+                f"，修复原因：{benchmark_context.get('repair_reasons')}"
+                if benchmark_context.get("repair_triggered")
+                else ""
+            )
+            smallcap_close = benchmark_context.get("smallcap_close")
+            smallcap_cum3 = benchmark_context.get("smallcap_recent3_cum_pct")
+            smallcap_text = (
+                f" | {smallcap_label} {smallcap_close:.2f}，近3日 {smallcap_cum3:+.2f}%"
+                if smallcap_close is not None and smallcap_cum3 is not None
+                else ""
+            )
+            bench_line = (
+                f"{benchmark_context.get('regime')} | {main_label} {benchmark_context.get('close'):.2f}"
+                f"（MA50={benchmark_context.get('ma50'):.1f} MA200={benchmark_context.get('ma200'):.1f}）"
+                f"，近3日 {benchmark_context.get('recent3_cum_pct'):+.2f}%"
+                f"{smallcap_text}"
+                f"{breadth_text}{repair_text}"
+            )
+            pv_line = str(
+                benchmark_context.get("market_pv_outlook")
+                or benchmark_context.get("market_pv_summary")
+                or pv_line
+            )
+        else:
+            breadth = benchmark_context.get("breadth", {}) or {}
+            breadth_text = (
+                f"；广度 {breadth.get('ratio_pct'):.1f}%"
+                if breadth and breadth.get("ratio_pct") is not None
+                else ""
+            )
+            bench_line = f"{benchmark_context.get('regime')} | 基准指数数据不可用{breadth_text}"
+            pv_line = "大盘量价推演已跳过：基准指数数据不可用"
 
     data_quality_line = (
         f"成功拉取 {metrics['fetch_ok']} 只"
@@ -2253,9 +2324,14 @@ def run(
         ),
         f"- **大盘水温**：{bench_line}",
         f"- **大盘量价推演**：{pv_line}",
-        f"- **Top 行业**：{', '.join(metrics['top_sectors']) if metrics['top_sectors'] else '无'}",
+        f"- **Top 行业**：{', '.join(metrics['top_sectors']) if metrics['top_sectors'] else ('不可用（行业映射缺失）' if market == 'cn' and not sector_map else '无')}",
         f"- **板块轮动温度计**：{sector_rotation.get('headline', '无')}",
         f"- **数据质量**：{data_quality_line}",
+        (
+            f"- **触发高分预警**：{', '.join((metrics.get('trigger_score_alerts', []) or [])[:5])}"
+            if metrics.get("trigger_score_alerts")
+            else "- **触发高分预警**：无"
+        ),
         "",
         "## 漏斗进度",
         f"- **L1 通过**：{metrics['layer1']} / {metrics['total_symbols']}（剔除 {metrics['total_symbols'] - metrics['layer1']}）",
