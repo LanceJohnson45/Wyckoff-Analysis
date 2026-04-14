@@ -3,10 +3,12 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
+from io import StringIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import pandas as pd
+import requests
 
 from integrations.fetch_a_share_csv import _normalize_symbols
 
@@ -14,6 +16,7 @@ from integrations.fetch_a_share_csv import _normalize_symbols
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _SNAPSHOT_PATH = _DATA_DIR / "us_sp500_constituents.json"
 _WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+_WIKI_API_URL = "https://en.wikipedia.org/w/api.php?action=parse&page=List_of_S%26P_500_companies&prop=text&formatversion=2&format=json"
 
 
 @dataclass(frozen=True)
@@ -110,7 +113,13 @@ def save_sp500_snapshot(symbols: list[str], *, source: str) -> UniverseSnapshot:
 
 def fetch_sp500_constituents() -> UniverseSnapshot:
     try:
-        tables = pd.read_html(_WIKI_URL)
+        resp = requests.get(_WIKI_API_URL, headers={"User-Agent": "Mozilla/5.0 (compatible; Wyckoff-Analysis/1.0)"}, timeout=30)
+        resp.raise_for_status()
+        payload = resp.json()
+        html = str((payload.get("parse") or {}).get("text") or "")
+        if not html:
+            raise RuntimeError("MediaWiki parse API returned empty HTML")
+        tables = pd.read_html(StringIO(html))
     except Exception as e:
         raise RuntimeError(f"failed to fetch S&P 500 constituents: {e}") from e
     if not tables:

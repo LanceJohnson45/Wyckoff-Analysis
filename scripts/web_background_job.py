@@ -45,11 +45,11 @@ def _load_payload(raw: str) -> dict[str, Any]:
 
 def _apply_funnel_env(payload: dict[str, Any]) -> None:
     market = str(payload.get("market", "") or "").strip().lower()
-    if market in {"cn", "us"}:
+    if market in {"cn", "us", "hk"}:
         os.environ["FUNNEL_MARKET"] = market
 
     pool_mode = str(payload.get("pool_mode", "") or "").strip().lower()
-    if pool_mode in {"manual", "board"}:
+    if pool_mode in {"manual", "board", "sp500", "hsi_hstech", "hsi_hstech_union"}:
         os.environ["FUNNEL_POOL_MODE"] = pool_mode
     board = str(payload.get("board", "") or "").strip().lower()
     if board:
@@ -84,7 +84,7 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
 def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     _apply_funnel_env(payload)
     market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
-    if market not in {"cn", "us"}:
+    if market not in {"cn", "us", "hk"}:
         market = "cn"
     from core.funnel_pipeline import run_funnel
 
@@ -242,7 +242,7 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
         .strip()
         .lower()
     )
-    if market not in {"cn", "us"}:
+    if market not in {"cn", "us", "hk"}:
         market = "cn"
 
     from core.batch_report import run_step3

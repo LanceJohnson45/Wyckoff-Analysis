@@ -12,6 +12,7 @@ from datetime import datetime
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from core.stock_cache import get_cache_meta
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window
 from integrations.stock_hist_repository import get_stock_hist
 from scripts.wyckoff_funnel import _job_end_calendar_day, _normalize_symbols, _resolve_funnel_market, _resolve_symbol_pool_from_env
@@ -25,7 +26,7 @@ def _prefetch_one(symbol: str, market: str, trading_days: int) -> tuple[str, int
     end_day = _job_end_calendar_day()
     window = (
         _resolve_us_window(end_calendar_day=end_day, trading_days=trading_days)
-        if market == "us"
+        if market in {"us", "hk"}
         else _resolve_trading_window(end_calendar_day=end_day, trading_days=trading_days)
     )
     frame = get_stock_hist(
@@ -36,12 +37,20 @@ def _prefetch_one(symbol: str, market: str, trading_days: int) -> tuple[str, int
         market=market,
         context="background",
     )
+    if market == "us":
+        meta = get_cache_meta(f"US:{symbol}", "qfq", context="background")
+    elif market == "hk":
+        meta = get_cache_meta(f"HK:{symbol}", "qfq", context="background")
+    else:
+        meta = get_cache_meta(symbol, "qfq", context="background")
+    if meta is None or meta.end_date < window.end_trade_date:
+        raise RuntimeError(f"cache verification failed end_date={getattr(meta, 'end_date', None)} target={window.end_trade_date}")
     return symbol, int(len(frame.index))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Warm funnel cache for the current symbol pool")
-    parser.add_argument("--market", choices=["cn", "us"], default=None)
+    parser.add_argument("--market", choices=["cn", "us", "hk"], default=None)
     parser.add_argument("--trading-days", type=int, default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30))
     parser.add_argument("--max-workers", type=int, default=max(int(os.getenv("FUNNEL_PREWARM_MAX_WORKERS", "8")), 1))
     parser.add_argument("--limit", type=int, default=0)

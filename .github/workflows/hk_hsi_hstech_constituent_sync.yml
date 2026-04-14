@@ -1,0 +1,62 @@
+name: HK HSI HSTECH Constituent Sync
+
+on:
+  schedule:
+    - cron: "0 12 1 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: hk-hsi-hstech-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      HK_SYNC_BOOTSTRAP_DAYS: "360"
+      HK_POOL_BATCH_SIZE: "30"
+      HK_POOL_SLEEP_SECONDS: "1.0"
+      HK_SNAPSHOT_CACHE_KEY: hk-hsi-hstech-snapshot-${{ github.ref_name }}-${{ github.run_id }}
+      TZ: Asia/Shanghai
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore HK snapshot cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/hk_hsi_hstech_constituents.json
+          key: ${{ env.HK_SNAPSHOT_CACHE_KEY }}
+          restore-keys: |
+            hk-hsi-hstech-snapshot-${{ github.ref_name }}-
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Sync HK pool and bootstrap new names
+        run: |
+          python -u scripts/hk_index_maintenance.py sync --bootstrap-new --bootstrap-trading-days ${HK_SYNC_BOOTSTRAP_DAYS} --batch-size ${HK_POOL_BATCH_SIZE} --sleep-seconds ${HK_POOL_SLEEP_SECONDS} \
+            2>&1 | tee hk_hsi_hstech_sync.log
+      - name: Upload sync log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hk-hsi-hstech-sync-${{ github.run_number }}
+          path: hk_hsi_hstech_sync.log
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Save HK snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/hk_hsi_hstech_constituents.json
+          key: ${{ env.HK_SNAPSHOT_CACHE_KEY }}

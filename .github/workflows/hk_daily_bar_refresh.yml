@@ -1,0 +1,62 @@
+name: HK Daily Bar Refresh
+
+on:
+  schedule:
+    - cron: "55 9 * * 0-4"
+  workflow_dispatch:
+
+concurrency:
+  group: hk-daily-bar-refresh-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: "1"
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      HK_REFRESH_TRADING_DAYS: "7"
+      HK_POOL_BATCH_SIZE: "30"
+      HK_POOL_SLEEP_SECONDS: "0.5"
+      HK_SNAPSHOT_CACHE_KEY: hk-hsi-hstech-snapshot-${{ github.ref_name }}-${{ github.run_id }}
+      TZ: Asia/Shanghai
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore HK snapshot cache
+        uses: actions/cache/restore@v4
+        with:
+          path: data/hk_hsi_hstech_constituents.json
+          key: ${{ env.HK_SNAPSHOT_CACHE_KEY }}
+          restore-keys: |
+            hk-hsi-hstech-snapshot-${{ github.ref_name }}-
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+      - name: Refresh HK pool bars
+        run: |
+          python -u scripts/hk_index_maintenance.py refresh --trading-days ${HK_REFRESH_TRADING_DAYS} --batch-size ${HK_POOL_BATCH_SIZE} --sleep-seconds ${HK_POOL_SLEEP_SECONDS} \
+            2>&1 | tee hk_daily_bar_refresh.log
+      - name: Upload refresh log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hk-daily-bar-refresh-${{ github.run_number }}
+          path: hk_daily_bar_refresh.log
+          retention-days: 7
+          if-no-files-found: warn
+      - name: Save HK snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/hk_hsi_hstech_constituents.json
+          key: ${{ env.HK_SNAPSHOT_CACHE_KEY }}

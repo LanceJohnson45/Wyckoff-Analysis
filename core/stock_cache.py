@@ -213,12 +213,12 @@ def upsert_cache_data(
     df: pd.DataFrame,
     *,
     context: str = "auto",
-) -> None:
+) -> bool:
     if df is None or df.empty:
-        return
+        return False
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
-        return
+        return False
 
     payload = df.copy()
     payload["date"] = payload["date"].astype(str)
@@ -235,11 +235,11 @@ def upsert_cache_data(
             adjust=adjust,
             retention_days=_STOCK_HIST_RETENTION_DAYS,
         )
-        return
+        return True
     except APIError:
-        return
+        return False
     except Exception:
-        return
+        return False
 
 
 def _trim_symbol_history_window(

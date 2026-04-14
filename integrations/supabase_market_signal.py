@@ -21,7 +21,7 @@ from integrations.supabase_base import is_admin_configured as is_supabase_admin_
 
 def _normalize_market(raw: Any, default: str = "cn") -> str:
     market = str(raw or default or "cn").strip().lower()
-    return market if market in {"cn", "us"} else default
+    return market if market in {"cn", "us", "hk"} else default
 
 
 def _normalize_trade_date(raw: Any) -> str:

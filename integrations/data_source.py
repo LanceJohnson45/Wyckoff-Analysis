@@ -767,7 +767,7 @@ def fetch_stock_hist(
     start: str | date,
     end: str | date,
     adjust: Literal["", "qfq", "hfq"] = "qfq",
-    market: Literal["cn", "us"] = "cn",
+    market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
     个股日线：tushare 优先（固定 qfq），失败时回退 akshare/baostock/efinance。
@@ -778,7 +778,7 @@ def fetch_stock_hist(
     返回列：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
     """
     market_norm = str(market or "cn").strip().lower()
-    if market_norm not in {"cn", "us"}:
+    if market_norm not in {"cn", "us", "hk"}:
         raise ValueError(f"unsupported market: {market}")
 
     start_s = (
@@ -790,14 +790,14 @@ def fetch_stock_hist(
         end.strftime("%Y%m%d") if isinstance(end, date) else str(end).replace("-", "")
     )
 
-    if market_norm == "us":
+    if market_norm in {"us", "hk"}:
         try:
             return _tag_source(
                 _fetch_stock_yfinance(symbol, start_s, end_s), "yfinance"
             )
         except Exception as e:
             raise RuntimeError(
-                f"US stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]: {_compact_error(e)}"
+                f"{market_norm.upper()} stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]: {_compact_error(e)}"
             ) from e
 
     failed_sources: list[str] = []
@@ -992,7 +992,7 @@ def fetch_index_hist(
     start: str | date,
     end: str | date,
     *,
-    market: Literal["cn", "us"] = "cn",
+    market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
     大盘指数日线：tushare 优先，失败时 fallback 到 akshare。
@@ -1008,12 +1008,12 @@ def fetch_index_hist(
     )
 
     market_norm = str(market or "cn").strip().lower()
-    if market_norm == "us":
+    if market_norm in {"us", "hk"}:
         try:
             return _fetch_index_yfinance(str(code).strip(), start_s, end_s)
         except Exception as e:
             _debug_source_fail("yfinance(index)", e)
-            raise RuntimeError(f"US index {code} fetch failed via yfinance: {_compact_error(e)}") from e
+            raise RuntimeError(f"{market_norm.upper()} index {code} fetch failed via yfinance: {_compact_error(e)}") from e
 
     # 1) tushare 优先
     try:

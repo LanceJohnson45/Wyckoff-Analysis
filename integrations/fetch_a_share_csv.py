@@ -235,6 +235,10 @@ def _resolve_us_window(end_calendar_day: date, trading_days: int) -> TradingWind
     return TradingWindow(start_trade_date=bdays[0], end_trade_date=bdays[-1])
 
 
+def _resolve_hk_window(end_calendar_day: date, trading_days: int) -> TradingWindow:
+    return _resolve_us_window(end_calendar_day=end_calendar_day, trading_days=trading_days)
+
+
 def _stock_name_from_code(symbol: str) -> str:
     info = ak.stock_info_a_code_name()
     row = info.loc[info["code"] == symbol, "name"]
@@ -479,6 +483,14 @@ def _normalize_symbols(symbols: list[str], *, market: str = "cn") -> list[str]:
         if market_norm == "cn":
             if not re.fullmatch(r"\d{6}", s):
                 continue
+        elif market_norm == "hk":
+            s = s.upper()
+            if s.endswith(".HK"):
+                s = s[:-3]
+            digits = "".join(ch for ch in s if ch.isdigit())
+            if not digits:
+                continue
+            s = f"{digits[-4:].zfill(4)}.HK"
         else:
             s = s.upper()
             if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", s):
@@ -505,6 +517,13 @@ def _extract_us_symbols_from_text(text: str) -> list[str]:
     return out
 
 
+def _extract_hk_symbols_from_text(text: str) -> list[str]:
+    if not text:
+        return []
+    raw_tokens = re.findall(r"(?:\d{1,5}(?:\.HK)?)", str(text), flags=re.IGNORECASE)
+    return _normalize_symbols(raw_tokens, market="hk")
+
+
 def _write_two_csv(
     symbol: str, name: str, df_hist: pd.DataFrame, out_dir: str, sector: str
 ) -> tuple[str, str]:
@@ -521,7 +540,7 @@ def _write_two_csv(
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="fetch_a_share_csv.py",
-        description="拉取指定股票近 N 个交易日数据，并输出 hist_data 与 ohlcv 两个 CSV 文件（支持 A 股/美股）。",
+        description="拉取指定股票近 N 个交易日数据，并输出 hist_data 与 ohlcv 两个 CSV 文件（支持 A 股/美股/港股）。",
     )
     parser.add_argument("--symbol", help="单个股票代码，如 300364")
     parser.add_argument(
@@ -549,8 +568,8 @@ def main() -> int:
     parser.add_argument(
         "--market",
         default="cn",
-        choices=["cn", "us"],
-        help="市场：cn=A股，us=美股",
+        choices=["cn", "us", "hk"],
+        help="市场：cn=A股，us=美股，hk=港股",
     )
     parser.add_argument("--out-dir", default="data", help="输出目录，默认 data 目录")
     args = parser.parse_args()
@@ -574,6 +593,8 @@ def main() -> int:
             candidates.extend(
                 extract_symbols_from_text(args.symbols_text, valid_codes=valid_codes)
             )
+        elif market == "hk":
+            candidates.extend(_extract_hk_symbols_from_text(args.symbols_text))
         else:
             candidates.extend(_extract_us_symbols_from_text(args.symbols_text))
     symbols = _normalize_symbols(candidates, market=market)
@@ -585,8 +606,12 @@ def main() -> int:
         window = _resolve_trading_window(
             end_calendar_day=end_calendar, trading_days=int(args.trading_days)
         )
-    else:
+    elif market == "us":
         window = _resolve_us_window(
+            end_calendar_day=end_calendar, trading_days=int(args.trading_days)
+        )
+    else:
+        window = _resolve_hk_window(
             end_calendar_day=end_calendar, trading_days=int(args.trading_days)
         )
 
@@ -608,7 +633,7 @@ def main() -> int:
                 adjust=str(args.adjust),
                 market=market,
             )
-            sector = stock_sector_em(symbol) if market == "cn" else "US"
+            sector = stock_sector_em(symbol) if market == "cn" else ("US" if market == "us" else "HK")
             hist_path, ohlcv_path = _write_two_csv(
                 symbol=symbol,
                 name=name,

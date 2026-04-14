@@ -17,7 +17,7 @@ from core.stock_cache import (
 from integrations.data_source import fetch_stock_hist as fetch_stock_hist_from_source
 
 AdjustType = Literal["", "qfq", "hfq"]
-MarketType = Literal["cn", "us"]
+MarketType = Literal["cn", "us", "hk"]
 
 
 def _load_from_md_tables(
@@ -117,10 +117,15 @@ def get_stock_hist(
     if start_d > end_d:
         raise ValueError("start_date 不能晚于 end_date")
     market_norm = str(market or "cn").strip().lower()
-    if market_norm not in {"cn", "us"}:
+    if market_norm not in {"cn", "us", "hk"}:
         raise ValueError(f"unsupported market: {market}")
 
-    cache_symbol = symbol if market_norm == "cn" else f"US:{symbol}"
+    if market_norm == "cn":
+        cache_symbol = symbol
+    elif market_norm == "us":
+        cache_symbol = f"US:{symbol}"
+    else:
+        cache_symbol = f"HK:{symbol}"
 
     md_df = _load_from_md_tables(symbol, start_d, end_d, adjust, context)
     if md_df is not None and not md_df.empty:

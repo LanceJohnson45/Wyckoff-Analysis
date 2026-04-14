@@ -14,3 +14,5 @@
 - Added new workflows for US bootstrap, monthly constituent sync, and daily bar refresh; updated CN/US funnel workflows to run a prewarm step.
 - Added GitHub Actions cache restore/save wiring for `data/us_sp500_constituents.json` in all US maintenance/funnel workflows, so fresh runners can recover the latest known constituent snapshot before falling back to a live fetch.
 - Added workflow-level env knobs for US batch size / sleep / history windows and documented the full US S&P500 pipeline plus tuning guidance in `README.md` and `docs/DEPLOYMENT.md`.
+- Tightened US maintenance correctness: switched S&P500 source fetch to the MediaWiki API, fixed multi-ticker yfinance parsing, and made cache writes verifiable instead of counting prepared rows as success.
+- Added HK market pipeline support for scheduled jobs: `hk` market surface, HSI+HSTECH constituent snapshot parsing, HK bootstrap/monthly-sync/daily-refresh workflows, and HK funnel prewarm/funnel workflows.

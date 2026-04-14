@@ -62,6 +62,7 @@ from integrations.data_source import (
     fetch_market_cap_map,
     fetch_stock_spot_snapshot,
 )
+from integrations.hk_index_universe import get_hk_index_union
 from integrations.us_sp500_universe import get_sp500_constituents
 from utils.feishu import send_feishu_notification
 from utils.trading_clock import CN_TZ, resolve_end_calendar_day
@@ -105,6 +106,8 @@ SMALLCAP_BENCH_CODE = (
 )
 US_MAIN_BENCH_CODE = os.getenv("FUNNEL_US_MAIN_BENCH_CODE", "SPY").strip() or "SPY"
 US_SMALLCAP_BENCH_CODE = os.getenv("FUNNEL_US_SMALLCAP_BENCH_CODE", "IWM").strip() or "IWM"
+HK_MAIN_BENCH_CODE = os.getenv("FUNNEL_HK_MAIN_BENCH_CODE", "^HSI").strip() or "^HSI"
+HK_SMALLCAP_BENCH_CODE = os.getenv("FUNNEL_HK_SMALLCAP_BENCH_CODE", "HSTECH.HK").strip() or "HSTECH.HK"
 CRASH_MAIN_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_MAIN_DAY_DROP_PCT", "-1.3"))
 CRASH_SMALL_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_SMALL_DAY_DROP_PCT", "-2.5"))
 CRASH_BREADTH_RATIO_PCT = float(os.getenv("FUNNEL_CRASH_BREADTH_RATIO_PCT", "15.0"))
@@ -203,7 +206,7 @@ def _normalize_hist(df: pd.DataFrame) -> pd.DataFrame:
 
 def _resolve_funnel_market() -> str:
     market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
-    if market not in {"cn", "us"}:
+    if market not in {"cn", "us", "hk"}:
         return "cn"
     return market
 
@@ -219,7 +222,11 @@ def _fetch_hist(symbol: str, window, adjust: str) -> pd.DataFrame:
 
 
 def _stock_name_map(market: str = "cn") -> dict[str, str]:
-    if str(market or "cn").strip().lower() != "cn":
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "hk":
+        snapshot = get_hk_index_union(prefer_snapshot=True)
+        return {code: code for code in snapshot.symbols}
+    if market_norm != "cn":
         return {}
     try:
         from integrations.fetch_a_share_csv import get_all_stocks
@@ -346,6 +353,49 @@ def _resolve_symbol_pool_from_env() -> tuple[
             {
                 "pool_mode": "manual" if pool_mode == "manual" else "manual_only",
                 "pool_market": "us",
+                "pool_main": 0,
+                "pool_chinext": 0,
+                "pool_merged": len(symbols),
+                "pool_st_excluded": 0,
+                "pool_limit": limit_count,
+            },
+        )
+
+    if market == "hk":
+        if pool_mode in {"hsi_hstech", "hsi_hstech_union", "hk_index_union"}:
+            snapshot = get_hk_index_union(prefer_snapshot=True)
+            symbols = list(snapshot.symbols)
+            if limit_count > 0:
+                symbols = symbols[:limit_count]
+            return (
+                symbols,
+                {code: code for code in symbols},
+                {
+                    "pool_mode": "hsi_hstech",
+                    "pool_market": "hk",
+                    "pool_main": len(snapshot.hsi_symbols),
+                    "pool_chinext": len(snapshot.hstech_symbols),
+                    "pool_merged": len(symbols),
+                    "pool_st_excluded": 0,
+                    "pool_limit": limit_count,
+                },
+            )
+        manual_raw = str(os.getenv("FUNNEL_POOL_MANUAL_SYMBOLS", "") or "")
+        symbols = _normalize_symbols(
+            [
+                x.strip()
+                for x in manual_raw.replace(";", ",").replace("\n", ",").split(",")
+            ],
+            market="hk",
+        )
+        if limit_count > 0:
+            symbols = symbols[:limit_count]
+        return (
+            symbols,
+            {code: code for code in symbols},
+            {
+                "pool_mode": "manual" if pool_mode == "manual" else "manual_only",
+                "pool_market": "hk",
                 "pool_main": 0,
                 "pool_chinext": 0,
                 "pool_merged": len(symbols),
@@ -581,14 +631,14 @@ def _analyze_benchmark_and_tune_cfg(
     """
     context = {
         "regime": "UNKNOWN",
-        "main_code": "000001",
+        "main_code": HK_MAIN_BENCH_CODE if _resolve_funnel_market() == "hk" else US_MAIN_BENCH_CODE if _resolve_funnel_market() == "us" else "000001",
         "close": None,
         "ma50": None,
         "ma200": None,
         "ma50_slope_5d": None,
         "recent3_pct": [],
         "recent3_cum_pct": None,
-        "smallcap_code": SMALLCAP_BENCH_CODE,
+        "smallcap_code": HK_SMALLCAP_BENCH_CODE if _resolve_funnel_market() == "hk" else US_SMALLCAP_BENCH_CODE if _resolve_funnel_market() == "us" else SMALLCAP_BENCH_CODE,
         "smallcap_close": None,
         "smallcap_recent3_pct": [],
         "smallcap_recent3_cum_pct": None,
@@ -1239,15 +1289,21 @@ def run_funnel_job(
     """执行 Wyckoff Funnel，返回 (triggers, metrics)。"""
     cfg = FunnelConfig(trading_days=TRADING_DAYS)
     _apply_funnel_cfg_overrides(cfg)
-    window = _resolve_trading_window(
-        end_calendar_day=_job_end_calendar_day(),
-        trading_days=TRADING_DAYS,
-    )
+    market = _resolve_funnel_market()
+    if market in {"us", "hk"}:
+        window = _resolve_us_window(
+            end_calendar_day=_job_end_calendar_day(),
+            trading_days=TRADING_DAYS,
+        )
+    else:
+        window = _resolve_trading_window(
+            end_calendar_day=_job_end_calendar_day(),
+            trading_days=TRADING_DAYS,
+        )
     start_s = window.start_trade_date.strftime("%Y%m%d")
     end_s = window.end_trade_date.strftime("%Y%m%d")
 
     all_symbols, pool_name_map, pool_stats = _resolve_symbol_pool_from_env()
-    market = _resolve_funnel_market()
     main_items = [None] * int(pool_stats.get("pool_main", 0) or 0)
     chinext_items = [None] * int(pool_stats.get("pool_chinext", 0) or 0)
     merged_symbols = list(pool_name_map.keys())
@@ -1285,17 +1341,32 @@ def run_funnel_job(
     bench_df = None
     smallcap_df = None
     try:
-        bench_code = US_MAIN_BENCH_CODE if market == "us" else "000001"
+        if market == "us":
+            bench_code = US_MAIN_BENCH_CODE
+        elif market == "hk":
+            bench_code = HK_MAIN_BENCH_CODE
+        else:
+            bench_code = "000001"
         bench_df = fetch_index_hist(bench_code, start_s, end_s, market=market)
         print(f"[funnel] 大盘基准加载成功")
     except Exception as e:
         print(f"[funnel] 大盘基准加载失败: {e}")
     try:
-        smallcap_code = US_SMALLCAP_BENCH_CODE if market == "us" else SMALLCAP_BENCH_CODE
+        if market == "us":
+            smallcap_code = US_SMALLCAP_BENCH_CODE
+        elif market == "hk":
+            smallcap_code = HK_SMALLCAP_BENCH_CODE
+        else:
+            smallcap_code = SMALLCAP_BENCH_CODE
         smallcap_df = fetch_index_hist(smallcap_code, start_s, end_s, market=market)
         print(f"[funnel] 小盘基准加载成功: {smallcap_code}")
     except Exception as e:
-        smallcap_code = US_SMALLCAP_BENCH_CODE if market == "us" else SMALLCAP_BENCH_CODE
+        if market == "us":
+            smallcap_code = US_SMALLCAP_BENCH_CODE
+        elif market == "hk":
+            smallcap_code = HK_SMALLCAP_BENCH_CODE
+        else:
+            smallcap_code = SMALLCAP_BENCH_CODE
         print(f"[funnel] 小盘基准加载失败 {smallcap_code}: {e}")
     # 并发拉取日线（只负责取数，不负责计算）
     all_df_map: dict[str, pd.DataFrame] = {}

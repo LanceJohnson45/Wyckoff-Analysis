@@ -99,10 +99,11 @@ def _latest_trade_date_str() -> str:
         end_calendar_day=resolve_end_calendar_day(),
         trading_days=30,
     )
-    if market == "us":
-        from integrations.fetch_a_share_csv import _resolve_us_window
+    if market in {"us", "hk"}:
+        from integrations.fetch_a_share_csv import _resolve_hk_window, _resolve_us_window
 
-        window = _resolve_us_window(
+        resolver = _resolve_us_window if market == "us" else _resolve_hk_window
+        window = resolver(
             end_calendar_day=resolve_end_calendar_day(),
             trading_days=30,
         )
@@ -184,9 +185,9 @@ def main() -> int:
     step3_skip_llm = os.getenv("STEP3_SKIP_LLM", "").strip().lower() in {"1", "true", "yes", "on"}
     skip_step4 = os.getenv("DAILY_JOB_SKIP_STEP4", "").strip().lower() in {"1", "true", "yes", "on"}
     market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
-    if market not in {"cn", "us"}:
+    if market not in {"cn", "us", "hk"}:
         market = "cn"
-    is_us_market = market == "us"
+    is_non_cn_market = market in {"us", "hk"}
 
     logs_path = args.logs or os.path.join(
         os.getenv("LOGS_DIR", "logs"),
@@ -257,7 +258,7 @@ def main() -> int:
         _persist_benchmark_context(benchmark_context, logs_path)
 
     # 推荐跟踪写库（按 recommend_date=最近交易日）
-    if step2_ok and symbols_info and not is_us_market:
+    if step2_ok and symbols_info and not is_non_cn_market:
         try:
             recommend_trade_date_int = int(_latest_trade_date_str().replace("-", ""))
             rec_ok = upsert_recommendations(recommend_trade_date_int, symbols_info)
@@ -267,8 +268,8 @@ def main() -> int:
             )
         except Exception as e:
             _log(f"推荐记录入库失败: {e}", logs_path)
-    elif step2_ok and symbols_info and is_us_market:
-        _log("推荐记录入库: US 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
+    elif step2_ok and symbols_info and is_non_cn_market:
+        _log(f"推荐记录入库: {market.upper()} 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
 
     # 阶段 2：批量研报（可降级：失败不影响 Funnel 成功）
     step3_ok = True
@@ -323,7 +324,7 @@ def main() -> int:
             f"阶段 2 批量研报: 起跳板代码={len(step3_springboard_codes)} ({preview_codes})",
             logs_path,
         )
-        if recommend_trade_date_int is not None and not is_us_market:
+        if recommend_trade_date_int is not None and not is_non_cn_market:
             try:
                 ai_mark_ok = mark_ai_recommendations(
                     recommend_date=recommend_trade_date_int,
@@ -337,23 +338,23 @@ def main() -> int:
                 )
             except Exception as e:
                 _log(f"推荐记录AI标记失败: {e}", logs_path)
-        elif is_us_market:
-            _log("推荐记录AI标记: US 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
+        elif is_non_cn_market:
+            _log(f"推荐记录AI标记: {market.upper()} 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
     else:
         summary.append({"step": "批量研报", "ok": True, "err": None, "elapsed_s": 0, "output": "skipped (no symbols)"})
         _log("阶段 2 批量研报: 跳过（无筛选结果）", logs_path)
 
     # 阶段 3：私人账户再平衡（按 SUPABASE_USER_ID 唯一执行）
-    if is_us_market:
+    if is_non_cn_market:
         skip_step4 = True
         summary.append({
             "step": "私人再平衡",
             "ok": True,
             "err": None,
             "elapsed_s": 0,
-            "output": "skipped (US mode not enabled for Step4 yet)",
+            "output": f"skipped ({market.upper()} mode not enabled for Step4 yet)",
         })
-        _log("阶段 3 私人再平衡: 跳过（US 模式暂不启用 Step4）", logs_path)
+        _log(f"阶段 3 私人再平衡: 跳过（{market.upper()} 模式暂不启用 Step4）", logs_path)
         step4_target = None
     elif skip_step4:
         summary.append({
@@ -367,7 +368,7 @@ def main() -> int:
         step4_target = None
     else:
         step4_target, step4_target_reason = _load_step4_target()
-    if not skip_step4 and not is_us_market and not step4_target:
+    if not skip_step4 and not is_non_cn_market and not step4_target:
         summary.append({
             "step": "私人再平衡",
             "ok": True,
@@ -376,7 +377,7 @@ def main() -> int:
             "output": f"skipped ({step4_target_reason})",
         })
         _log(f"阶段 3 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
-    elif not skip_step4 and not is_us_market:
+    elif not skip_step4 and not is_non_cn_market:
         tg_bot_token = os.getenv("TG_BOT_TOKEN", "").strip()
         tg_chat_id = os.getenv("TG_CHAT_ID", "").strip()
         if not tg_bot_token or not tg_chat_id:

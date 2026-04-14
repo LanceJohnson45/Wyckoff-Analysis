@@ -19,7 +19,7 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.prompts import WYCKOFF_FUNNEL_SYSTEM_PROMPT
-from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window
+from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_hk_window, _resolve_trading_window, _resolve_us_window
 from integrations.llm_client import call_llm
 from integrations.rag_veto import (
     get_rag_veto_runtime_status,
@@ -1195,14 +1195,16 @@ def run(
     print(f"[step3] AI 输入股票数={len(items)}（全量命中输入）")
 
     market_norm = str(market or "").strip().lower()
-    if market_norm not in {"cn", "us"}:
+    if market_norm not in {"cn", "us", "hk"}:
         market_norm = str((benchmark_context or {}).get("market") or "cn").strip().lower()
-    if market_norm not in {"cn", "us"}:
+    if market_norm not in {"cn", "us", "hk"}:
         market_norm = "cn"
 
     end_day = _job_end_calendar_day()
     if market_norm == "us":
         window = _resolve_us_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
+    elif market_norm == "hk":
+        window = _resolve_hk_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
     else:
         window = _resolve_trading_window(end_calendar_day=end_day, trading_days=TRADING_DAYS)
 
@@ -1215,6 +1217,9 @@ def run(
     try:
         if market_norm == "cn":
             bench_df = fetch_index_hist("000001", window.start_trade_date, window.end_trade_date, market="cn")
+            benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
+        elif market_norm == "hk":
+            bench_df = fetch_index_hist("^HSI", window.start_trade_date, window.end_trade_date, market="hk")
             benchmark_ret_10 = _safe_return(bench_df["close"], lookback=10)
         else:
             bench_df = fetch_index_hist("SPY", window.start_trade_date, window.end_trade_date, market="us")
@@ -1244,7 +1249,7 @@ def run(
         sector_note = str(item.get("sector_note") or rotation_info.get("note", "") or "").strip()
         try:
             item_market = str(item.get("market") or market_norm or "cn").strip().lower()
-            if item_market not in {"cn", "us"}:
+            if item_market not in {"cn", "us", "hk"}:
                 item_market = market_norm
             df_raw = _fetch_hist_with_market(code, window, "qfq", item_market)
             df = normalize_hist_from_fetch(df_raw)
