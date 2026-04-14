@@ -6,10 +6,14 @@ import pandas as pd
 import pytest
 
 from core.wyckoff_engine import (
+    DataIntegrityPolicy,
     FunnelConfig,
     _latest_trade_date,
     _sorted_if_needed,
+    assess_hist_integrity,
     layer1_filter,
+    layer2_strength_detailed,
+    run_funnel,
 )
 
 
@@ -92,3 +96,83 @@ class TestLayer1Filter:
             market="us",
         )
         assert result == ["AAPL"]
+
+    def test_returns_rejection_reasons_when_requested(self):
+        cfg = FunnelConfig()
+        dates = pd.date_range("2024-01-01", periods=40, freq="B")
+        closes = [10 + i * 0.05 for i in range(40)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["amount"] = 1_000.0
+
+        passed, rejected = layer1_filter(
+            ["000001"],
+            {"000001": "平安银行"},
+            {"000001": 100.0},
+            {"000001": df},
+            cfg,
+            return_rejections=True,
+        )
+        assert passed == []
+        assert rejected["000001"]["reason"] == "avg_amount_below_threshold"
+
+
+class TestConfigDefaults:
+    def test_market_defaults_apply_for_us(self):
+        cfg = FunnelConfig.for_market("us")
+        assert cfg.evr_min_turnover == 0.0
+        assert cfg.min_avg_amount_wan == 3000.0
+
+
+class TestIntegrityPolicy:
+    def test_integrity_rejects_recent_missing_days(self):
+        dates = pd.date_range("2024-01-01", periods=30, freq="B")
+        df = _make_df(dates[:-1].strftime("%Y-%m-%d").tolist(), [10 + i * 0.1 for i in range(29)])
+        ok, stats = assess_hist_integrity(
+            df,
+            list(dates.date),
+            policy=DataIntegrityPolicy(min_coverage_200=0.9, min_coverage_20=0.9, strict_recent_days=3),
+        )
+        assert ok is False
+        assert stats["missing_recent"] == 1
+
+
+class TestRunFunnelDiagnostics:
+    def test_result_contains_rejection_maps(self):
+        cfg = FunnelConfig()
+        dates = pd.date_range("2024-01-01", periods=40, freq="B")
+        weak_df = _make_df(dates.strftime("%Y-%m-%d").tolist(), [10 + i * 0.02 for i in range(40)])
+        weak_df["amount"] = 1_000.0
+        bench_df = _make_df(dates.strftime("%Y-%m-%d").tolist(), [100 + i * 0.1 for i in range(40)])
+        bench_df["pct_chg"] = pd.Series(bench_df["close"]).pct_change() * 100.0
+
+        result = run_funnel(
+            all_symbols=["000001"],
+            df_map={"000001": weak_df},
+            bench_df=bench_df,
+            name_map={"000001": "平安银行"},
+            market_cap_map={"000001": 100.0},
+            sector_map={"000001": "银行"},
+            cfg=cfg,
+        )
+
+        assert result.layer1_rejections is not None
+        assert result.layer1_rejections["000001"]["reason"] == "avg_amount_below_threshold"
+        assert result.layer2_rejections == {}
+
+    def test_layer2_returns_rejection_reasons_when_requested(self):
+        cfg = FunnelConfig()
+        dates = pd.date_range("2024-01-01", periods=60, freq="B")
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), [10 + i * 0.02 for i in range(60)])
+        bench_df = _make_df(dates.strftime("%Y-%m-%d").tolist(), [100 + i * 0.1 for i in range(60)])
+        bench_df["pct_chg"] = pd.Series(bench_df["close"]).pct_change() * 100.0
+
+        passed, _channel_map, rejected = layer2_strength_detailed(
+            ["000001"],
+            {"000001": df},
+            bench_df,
+            cfg,
+            return_rejections=True,
+        )
+
+        assert passed == []
+        assert rejected["000001"]["reason"] == "insufficient_history"

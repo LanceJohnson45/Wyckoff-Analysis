@@ -21,6 +21,73 @@ import numpy as np
 import pandas as pd
 
 
+@dataclass(frozen=True)
+class DataIntegrityPolicy:
+    min_coverage_200: float = 0.98
+    min_coverage_20: float = 0.95
+    strict_recent_days: int = 3
+
+
+@dataclass(frozen=True)
+class LiquidityFilterConfig:
+    min_market_cap_yi: float
+    min_avg_amount_wan: float
+    amount_avg_window: int
+
+
+@dataclass(frozen=True)
+class TrendFilterConfig:
+    ma_short: int
+    ma_long: int
+    ma_hold: int
+    bench_drop_days: int
+    bench_drop_threshold: float
+    rs_window_long: int
+    rs_window_short: int
+    rs_min_long: float
+    rs_min_short: float
+    rps_window_fast: int
+    rps_window_slow: int
+    rps_fast_min: float
+    rps_slow_min: float
+
+
+@dataclass(frozen=True)
+class TriggerConfig:
+    spring_support_window: int
+    lps_vol_ref_window: int
+    sos_vol_window: int
+    sos_breakout_window: int
+    evr_vol_window: int
+    evr_min_turnover: float
+
+
+@dataclass(frozen=True)
+class ExitSignalConfig:
+    enable_exit_signals: bool
+    exit_stop_loss_pct: float
+    exit_trailing_active_pct: float
+    exit_trailing_drawdown_pct: float
+    dist_high_threshold_pct: float
+    dist_vol_dry_ratio: float
+    dist_confirm_days: int
+
+
+@dataclass(frozen=True)
+class SymbolFeatureBundle:
+    df: pd.DataFrame
+    close: pd.Series
+    high: pd.Series
+    low: pd.Series
+    volume: pd.Series
+    amount: pd.Series
+    pct_chg: pd.Series
+    turnover: pd.Series
+    ma_short: pd.Series
+    ma_long: pd.Series
+    ma_hold: pd.Series
+
+
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
     col_map = {
@@ -96,6 +163,120 @@ def _latest_trade_date(df: pd.DataFrame) -> object | None:
     if s.empty:
         return None
     return s.iloc[-1].date()
+
+
+def build_symbol_feature_bundle(
+    df: pd.DataFrame,
+    cfg: FunnelConfig,
+) -> SymbolFeatureBundle:
+    df_sorted = _sorted_if_needed(df)
+    close = pd.to_numeric(df_sorted.get("close"), errors="coerce")
+    high = pd.to_numeric(df_sorted.get("high"), errors="coerce")
+    low = pd.to_numeric(df_sorted.get("low"), errors="coerce")
+    volume = pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+    amount = pd.to_numeric(df_sorted.get("amount"), errors="coerce")
+    pct_chg = pd.to_numeric(df_sorted.get("pct_chg"), errors="coerce")
+    turnover = pd.to_numeric(df_sorted.get("turnover"), errors="coerce")
+    return SymbolFeatureBundle(
+        df=df_sorted,
+        close=close,
+        high=high,
+        low=low,
+        volume=volume,
+        amount=amount,
+        pct_chg=pct_chg,
+        turnover=turnover,
+        ma_short=close.rolling(cfg.ma_short).mean(),
+        ma_long=close.rolling(cfg.ma_long).mean(),
+        ma_hold=close.rolling(cfg.ma_hold).mean(),
+    )
+
+
+def build_feature_map(
+    df_map: dict[str, pd.DataFrame],
+    cfg: FunnelConfig,
+) -> dict[str, SymbolFeatureBundle]:
+    return {
+        sym: build_symbol_feature_bundle(df, cfg)
+        for sym, df in df_map.items()
+        if df is not None and not df.empty
+    }
+
+
+def assess_hist_integrity(
+    df: pd.DataFrame,
+    expected_dates: list[object],
+    policy: DataIntegrityPolicy | None = None,
+) -> tuple[bool, dict[str, float | int]]:
+    policy = policy or DataIntegrityPolicy()
+    if df is None or df.empty or "date" not in df.columns or not expected_dates:
+        strict_recent = max(int(policy.strict_recent_days), 0)
+        return (
+            False,
+            {
+                "coverage_200": 0.0,
+                "coverage_20": 0.0,
+                "missing_recent": strict_recent,
+            },
+        )
+
+    actual_dates = set(pd.to_datetime(df["date"], errors="coerce").dropna().dt.date.tolist())
+    normalized_expected = [
+        pd.to_datetime(x, errors="coerce").date()
+        for x in expected_dates
+        if pd.notna(pd.to_datetime(x, errors="coerce"))
+    ]
+    if not normalized_expected:
+        return (
+            False,
+            {"coverage_200": 0.0, "coverage_20": 0.0, "missing_recent": 0},
+        )
+
+    overall_200 = normalized_expected[-min(len(normalized_expected), 200) :]
+    recent_20 = normalized_expected[-min(len(normalized_expected), 20) :]
+    strict_recent = normalized_expected[
+        -min(len(normalized_expected), max(int(policy.strict_recent_days), 0)) :
+    ]
+    coverage_200 = (
+        sum(1 for d in overall_200 if d in actual_dates) / len(overall_200)
+        if overall_200
+        else 0.0
+    )
+    coverage_20 = (
+        sum(1 for d in recent_20 if d in actual_dates) / len(recent_20)
+        if recent_20
+        else 0.0
+    )
+    missing_recent = sum(1 for d in strict_recent if d not in actual_dates)
+    ok = (
+        coverage_200 >= float(policy.min_coverage_200)
+        and coverage_20 >= float(policy.min_coverage_20)
+        and missing_recent == 0
+    )
+    return (
+        ok,
+        {
+            "coverage_200": round(float(coverage_200), 4),
+            "coverage_20": round(float(coverage_20), 4),
+            "missing_recent": int(missing_recent),
+        },
+    )
+
+
+def filter_symbols_by_integrity(
+    df_map: dict[str, pd.DataFrame],
+    expected_dates: list[object],
+    policy: DataIntegrityPolicy | None = None,
+) -> tuple[dict[str, pd.DataFrame], dict[str, dict[str, float | int]]]:
+    passed: dict[str, pd.DataFrame] = {}
+    rejected: dict[str, dict[str, float | int]] = {}
+    for sym, df in df_map.items():
+        ok, stats = assess_hist_integrity(df, expected_dates, policy=policy)
+        if ok:
+            passed[sym] = df
+        else:
+            rejected[sym] = stats
+    return passed, rejected
 
 
 # Config
@@ -249,6 +430,79 @@ class FunnelConfig:
     dist_vol_dry_ratio: float = 0.5  # 高位缩量比
     dist_confirm_days: int = 3  # 需要连续确认 N 日
 
+    @classmethod
+    def for_market(cls, market: str) -> "FunnelConfig":
+        cfg = cls()
+        market_norm = str(market or "cn").strip().lower()
+        overrides = _MARKET_CONFIG_OVERRIDES.get(market_norm, {})
+        for key, value in overrides.items():
+            setattr(cfg, key, value)
+        return cfg
+
+    @property
+    def liquidity(self) -> LiquidityFilterConfig:
+        return LiquidityFilterConfig(
+            min_market_cap_yi=float(self.min_market_cap_yi),
+            min_avg_amount_wan=float(self.min_avg_amount_wan),
+            amount_avg_window=int(self.amount_avg_window),
+        )
+
+    @property
+    def trend(self) -> TrendFilterConfig:
+        return TrendFilterConfig(
+            ma_short=int(self.ma_short),
+            ma_long=int(self.ma_long),
+            ma_hold=int(self.ma_hold),
+            bench_drop_days=int(self.bench_drop_days),
+            bench_drop_threshold=float(self.bench_drop_threshold),
+            rs_window_long=int(self.rs_window_long),
+            rs_window_short=int(self.rs_window_short),
+            rs_min_long=float(self.rs_min_long),
+            rs_min_short=float(self.rs_min_short),
+            rps_window_fast=int(self.rps_window_fast),
+            rps_window_slow=int(self.rps_window_slow),
+            rps_fast_min=float(self.rps_fast_min),
+            rps_slow_min=float(self.rps_slow_min),
+        )
+
+    @property
+    def triggers(self) -> TriggerConfig:
+        return TriggerConfig(
+            spring_support_window=int(self.spring_support_window),
+            lps_vol_ref_window=int(self.lps_vol_ref_window),
+            sos_vol_window=int(self.sos_vol_window),
+            sos_breakout_window=int(self.sos_breakout_window),
+            evr_vol_window=int(self.evr_vol_window),
+            evr_min_turnover=float(self.evr_min_turnover),
+        )
+
+    @property
+    def exit(self) -> ExitSignalConfig:
+        return ExitSignalConfig(
+            enable_exit_signals=bool(self.enable_exit_signals),
+            exit_stop_loss_pct=float(self.exit_stop_loss_pct),
+            exit_trailing_active_pct=float(self.exit_trailing_active_pct),
+            exit_trailing_drawdown_pct=float(self.exit_trailing_drawdown_pct),
+            dist_high_threshold_pct=float(self.dist_high_threshold_pct),
+            dist_vol_dry_ratio=float(self.dist_vol_dry_ratio),
+            dist_confirm_days=int(self.dist_confirm_days),
+        )
+
+
+_MARKET_CONFIG_OVERRIDES: dict[str, dict[str, float | int | bool]] = {
+    "cn": {},
+    "us": {
+        "evr_min_turnover": 0.0,
+        "min_avg_amount_wan": 3000.0,
+        "sector_min_count": 1,
+    },
+    "hk": {
+        "evr_min_turnover": 0.0,
+        "min_avg_amount_wan": 2500.0,
+        "sector_min_count": 1,
+    },
+}
+
 
 class FunnelResult(NamedTuple):
     layer1_symbols: list[str]
@@ -265,6 +519,9 @@ class FunnelResult(NamedTuple):
         str, dict
     ]  # code -> {"signal": "stop_loss|distribution_warning", "price": xxx, "reason": xxx}
     channel_map: dict[str, str]
+    explanations: dict[str, dict] | None = None
+    layer1_rejections: dict[str, dict] | None = None
+    layer2_rejections: dict[str, dict] | None = None
 
 
 def fit_ai_candidate_quotas(
@@ -380,7 +637,9 @@ def layer1_filter(
     cfg: FunnelConfig,
     *,
     market: str = "cn",
-) -> list[str]:
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
+    return_rejections: bool = False,
+) -> list[str] | tuple[list[str], dict[str, dict[str, float | str | bool | None]]]:
     """
     硬过滤：剔除 ST、北交所/科创板、市值<阈值、近期均成交额<阈值。
     market_cap_map 单位：亿元。若 market_cap_map 为空则跳过市值过滤。
@@ -388,25 +647,45 @@ def layer1_filter(
     cap_available = bool(market_cap_map)
     market_norm = str(market or "cn").strip().lower()
     passed: list[str] = []
+    rejected: dict[str, dict[str, float | str | bool | None]] = {}
     for sym in symbols:
         if market_norm == "cn" and not _is_main_or_chinext(sym):
+            rejected[sym] = {"reason": "unsupported_cn_board"}
             continue
         name = name_map.get(sym, "")
         if market_norm == "cn" and "ST" in name.upper():
+            rejected[sym] = {"reason": "st_flagged", "name": name}
             continue
         if cap_available:
             cap = market_cap_map.get(sym, 0.0)
             if cap < cfg.min_market_cap_yi:
+                rejected[sym] = {
+                    "reason": "market_cap_below_threshold",
+                    "market_cap_yi": float(cap),
+                    "min_market_cap_yi": float(cfg.min_market_cap_yi),
+                }
                 continue
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or df.empty:
+            rejected[sym] = {"reason": "missing_hist"}
             continue
-        df_sorted = _sorted_if_needed(df)
-        if "amount" in df_sorted.columns:
-            avg_amt = df_sorted["amount"].tail(cfg.amount_avg_window).mean()
+        amount_series = bundle.amount if bundle is not None else pd.to_numeric(
+            _sorted_if_needed(df).get("amount"), errors="coerce"
+        )
+        if isinstance(amount_series, pd.Series):
+            avg_amt = amount_series.tail(cfg.amount_avg_window).mean()
             if pd.notna(avg_amt) and avg_amt < cfg.min_avg_amount_wan * 10000:
+                rejected[sym] = {
+                    "reason": "avg_amount_below_threshold",
+                    "avg_amount_wan": round(float(avg_amt) / 10000.0, 2),
+                    "min_avg_amount_wan": float(cfg.min_avg_amount_wan),
+                    "window": int(cfg.amount_avg_window),
+                }
                 continue
         passed.append(sym)
+    if return_rejections:
+        return passed, rejected
     return passed
 
 
@@ -420,7 +699,13 @@ def layer2_strength_detailed(
     cfg: FunnelConfig,
     *,
     rps_universe: list[str] | None = None,
-) -> tuple[list[str], dict[str, str]]:
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
+    return_rejections: bool = False,
+) -> tuple[list[str], dict[str, str]] | tuple[
+    list[str],
+    dict[str, str],
+    dict[str, dict[str, float | str | bool | None]],
+]:
     """
     Layer2 双通道：
     1) 主升通道：MA50>MA200（或大盘连跌时守住MA20）+ RS/RPS 强势过滤
@@ -488,11 +773,15 @@ def layer2_strength_detailed(
     if cfg.enable_rps_filter and _rps_pool:
         rows: list[tuple[str, float, float]] = []
         for sym in _rps_pool:
-            df = df_map.get(sym)
+            bundle = feature_map.get(sym) if feature_map else None
+            df = bundle.df if bundle is not None else df_map.get(sym)
             if df is None or df.empty:
                 continue
-            df_sorted = _sorted_if_needed(df)
-            close = pd.to_numeric(df_sorted.get("close"), errors="coerce")
+            close = (
+                bundle.close
+                if bundle is not None
+                else pd.to_numeric(_sorted_if_needed(df).get("close"), errors="coerce")
+            )
             ret_fast = _close_return_pct(close, cfg.rps_window_fast)
             ret_slow = _close_return_pct(close, cfg.rps_window_slow)
             if ret_fast is None or ret_slow is None:
@@ -514,20 +803,40 @@ def layer2_strength_detailed(
 
     passed: list[str] = []
     channel_map: dict[str, str] = {}
+    rejected: dict[str, dict[str, float | str | bool | None]] = {}
     for sym in symbols:
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or len(df) < cfg.ma_long:
+            rejected[sym] = {
+                "reason": "insufficient_history",
+                "rows": int(len(df)) if df is not None else 0,
+                "min_rows": int(cfg.ma_long),
+            }
             continue
-        df_sorted = _sorted_if_needed(df)
+        df_sorted = bundle.df if bundle is not None else _sorted_if_needed(df)
         if (
             cfg.require_bench_latest_alignment
             and bench_latest_date is not None
             and _latest_trade_date(df_sorted) != bench_latest_date
         ):
+            rejected[sym] = {
+                "reason": "bench_latest_misaligned",
+                "stock_latest_date": str(_latest_trade_date(df_sorted)),
+                "bench_latest_date": str(bench_latest_date),
+            }
             continue
-        close = df_sorted["close"].astype(float)
-        ma_short = close.rolling(cfg.ma_short).mean()
-        ma_long = close.rolling(cfg.ma_long).mean()
+        close = bundle.close if bundle is not None else df_sorted["close"].astype(float)
+        ma_short = (
+            bundle.ma_short
+            if bundle is not None
+            else close.rolling(cfg.ma_short).mean()
+        )
+        ma_long = (
+            bundle.ma_long
+            if bundle is not None
+            else close.rolling(cfg.ma_long).mean()
+        )
         last_ma_short = ma_short.iloc[-1]
         last_ma_long = ma_long.iloc[-1]
         last_close = close.iloc[-1]
@@ -540,7 +849,11 @@ def layer2_strength_detailed(
 
         holding_ma20 = False
         if bench_dropping:
-            ma_hold = close.rolling(cfg.ma_hold).mean()
+            ma_hold = (
+                bundle.ma_hold
+                if bundle is not None
+                else close.rolling(cfg.ma_hold).mean()
+            )
             last_ma_hold = ma_hold.iloc[-1]
             if pd.notna(last_ma_hold) and last_close >= last_ma_hold:
                 holding_ma20 = True
@@ -678,7 +991,11 @@ def layer2_strength_detailed(
             # 条件 3：量能萎缩——近 N 日均量 / 参考均量 < 阈值
             accum_vol_ok = False
             if accum_range_ok:
-                vol = pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+                vol = (
+                    bundle.volume
+                    if bundle is not None
+                    else pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+                )
                 dw = max(int(cfg.accum_vol_dry_window), 2)
                 rfw = max(int(cfg.accum_vol_dry_ref_window), dw + 1)
                 recent_vol_mean = float(vol.tail(dw).mean()) if len(vol) >= dw else None
@@ -720,7 +1037,11 @@ def layer2_strength_detailed(
         # 低位区 + 近 N 日内出现了年内最低级别的单日成交量 → 卖压完全枯竭
         dry_vol_ok = False
         if cfg.enable_dry_vol_channel and len(df_sorted) >= cfg.dry_vol_ref_window:
-            vol = pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+            vol = (
+                bundle.volume
+                if bundle is not None
+                else pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+            )
             _c_dv = close
             lookback_dv = max(int(cfg.dry_vol_ref_window), 2)
             period_low_dv = float(_c_dv.tail(lookback_dv).min())
@@ -785,8 +1106,12 @@ def layer2_strength_detailed(
                                     bench_vol = pd.to_numeric(
                                         bench_sorted.get("volume"), errors="coerce"
                                     )
-                                    stock_vol = pd.to_numeric(
-                                        df_sorted.get("volume"), errors="coerce"
+                                    stock_vol = (
+                                        bundle.volume
+                                        if bundle is not None
+                                        else pd.to_numeric(
+                                            df_sorted.get("volume"), errors="coerce"
+                                        )
                                     )
 
                                     vol_confirm_ok = True
@@ -850,6 +1175,46 @@ def layer2_strength_detailed(
             if not labels:
                 labels.append("点火破局")
             channel_map[sym] = "+".join(labels)
+        else:
+            rejection_reason = "no_channel_triggered"
+            if not bullish_alignment and not holding_ma20:
+                rejection_reason = "trend_alignment_failed"
+            elif cfg.enable_rs_filter and not momentum_rs_ok and not ambush_rs_ok:
+                rejection_reason = "rs_filter_failed"
+            elif cfg.enable_rps_filter and rps_filter_active and not momentum_rps_ok and not ambush_rps_ok:
+                rejection_reason = "rps_filter_failed"
+            elif not momentum_bias_ok:
+                rejection_reason = "momentum_bias_too_high"
+
+            rejected[sym] = {
+                "reason": rejection_reason,
+                "bullish_alignment": bool(bullish_alignment),
+                "holding_ma20": bool(holding_ma20),
+                "momentum_rs_ok": bool(momentum_rs_ok),
+                "ambush_rs_ok": bool(ambush_rs_ok),
+                "momentum_rps_ok": bool(momentum_rps_ok),
+                "ambush_rps_ok": bool(ambush_rps_ok),
+                "momentum_bias_ok": bool(momentum_bias_ok),
+                "rps_filter_active": bool(rps_filter_active),
+                "bench_dropping": bool(bench_dropping),
+                "rps_fast": round(float(rps_fast), 2) if rps_fast is not None else None,
+                "rps_slow": round(float(rps_slow), 2) if rps_slow is not None else None,
+                "rs_long": round(float(rs_long), 2) if rs_long is not None else None,
+                "rs_short": round(float(rs_short), 2) if rs_short is not None else None,
+                "last_close": round(float(last_close), 4) if pd.notna(last_close) else None,
+                "last_ma_short": round(float(last_ma_short), 4) if pd.notna(last_ma_short) else None,
+                "last_ma_long": round(float(last_ma_long), 4) if pd.notna(last_ma_long) else None,
+                "candidate_channels": {
+                    "momentum": bool(momentum_ok),
+                    "ambush": bool(ambush_ok),
+                    "accum": bool(accum_ok),
+                    "dry_vol": bool(dry_vol_ok),
+                    "rs_div": bool(rs_div_ok),
+                    "sos": bool(sos_ok),
+                },
+            }
+    if return_rejections:
+        return passed, channel_map, rejected
     return passed, channel_map
 
 
@@ -1112,14 +1477,19 @@ def _is_trading_range_context(
     return True
 
 
-def _detect_spring(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
+def _detect_spring(
+    df: pd.DataFrame,
+    cfg: FunnelConfig,
+    *,
+    bundle: SymbolFeatureBundle | None = None,
+) -> float | None:
     """
     Spring（终极震仓）：允许“前一日或当日盘中”跌破近 N 日支撑位，且当日收盘收回并放量。
     返回 score（收回幅度%）或 None。
     """
     if len(df) < cfg.spring_support_window + 2:
         return None
-    df_s = _sorted_if_needed(df)
+    df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
     # 修正：支撑位不能包含正在进行跌破测试的前一日（prev）
     support_zone = df_s.iloc[-(cfg.spring_support_window + 2) : -2]
     # 调用时把历史前序 df_full 传进去计算 ATR
@@ -1148,16 +1518,25 @@ def _detect_spring(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     return float(recovery)
 
 
-def _detect_lps(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
+def _detect_lps(
+    df: pd.DataFrame,
+    cfg: FunnelConfig,
+    *,
+    bundle: SymbolFeatureBundle | None = None,
+) -> float | None:
     """
     LPS（最后支撑点缩量）：近 N 日回踩 MA20 且缩量。
     返回 score（缩量比）或 None。
     """
     if len(df) < max(cfg.lps_vol_ref_window, cfg.lps_ma) + cfg.lps_lookback:
         return None
-    df_s = _sorted_if_needed(df)
-    close = df_s["close"].astype(float)
-    ma = close.rolling(cfg.lps_ma).mean()
+    df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
+    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
+    ma = (
+        bundle.ma_hold
+        if bundle is not None and int(cfg.lps_ma) == int(cfg.ma_hold)
+        else close.rolling(cfg.lps_ma).mean()
+    )
     last_ma = ma.iloc[-1]
     if pd.isna(last_ma) or last_ma <= 0:
         return None
@@ -1185,7 +1564,12 @@ def _detect_lps(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     return float(vol_ratio)
 
 
-def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
+def _detect_evr(
+    df: pd.DataFrame,
+    cfg: FunnelConfig,
+    *,
+    bundle: SymbolFeatureBundle | None = None,
+) -> float | None:
     """
     Effort vs Result（努力无结果）：
     仅识别“相对低位的巨量滞涨/抗跌”，排除高位派发。
@@ -1194,12 +1578,12 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     min_required = cfg.evr_vol_window + 2 + max(int(cfg.evr_confirm_days), 0)
     if len(df) < min_required:
         return None
-    df_s = _sorted_if_needed(df)
+    df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
 
-    close = pd.to_numeric(df_s["close"], errors="coerce")
-    low = pd.to_numeric(df_s["low"], errors="coerce")
-    volume = pd.to_numeric(df_s["volume"], errors="coerce")
-    pct_chg = pd.to_numeric(df_s["pct_chg"], errors="coerce")
+    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
+    low = bundle.low if bundle is not None else pd.to_numeric(df_s["low"], errors="coerce")
+    volume = bundle.volume if bundle is not None else pd.to_numeric(df_s["volume"], errors="coerce")
+    pct_chg = bundle.pct_chg if bundle is not None else pd.to_numeric(df_s["pct_chg"], errors="coerce")
     if (
         close.isna().all()
         or low.isna().all()
@@ -1209,7 +1593,7 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
         return None
 
     # 位阶保护：高位放量优先按派发处理，避免 EVR 误判
-    ma200 = close.rolling(200).mean()
+    ma200 = bundle.ma_long if bundle is not None and int(cfg.ma_long) == 200 else close.rolling(200).mean()
     ma200_last = ma200.iloc[-1]
     close_last = close.iloc[-1]
     if pd.notna(ma200_last) and pd.notna(close_last) and float(ma200_last) > 0:
@@ -1242,7 +1626,11 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
 
         # 换手率过滤：剔除全天死水里的相对放量假象，但阈值保持保守。
         if "turnover" in df_s.columns and float(cfg.evr_min_turnover) > 0:
-            turnover_series = pd.to_numeric(df_s["turnover"], errors="coerce")
+            turnover_series = (
+                bundle.turnover
+                if bundle is not None
+                else pd.to_numeric(df_s["turnover"], errors="coerce")
+            )
             day_turnover = turnover_series.iloc[idx]
             if pd.notna(day_turnover) and float(day_turnover) < float(
                 cfg.evr_min_turnover
@@ -1277,7 +1665,12 @@ def _detect_evr(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     return None
 
 
-def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
+def _detect_sos(
+    df: pd.DataFrame,
+    cfg: FunnelConfig,
+    *,
+    bundle: SymbolFeatureBundle | None = None,
+) -> float | None:
     """
     Sign of Strength (SOS) / Jump Across the Creek (JAC):
     点火标志。特征为低位脱盘、放量大阳线，破除重要阻力或近期高点。
@@ -1291,12 +1684,12 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     if len(df) < max(cfg.sos_vol_window, cfg.sos_breakout_window) + 2:
         return None
 
-    df_s = _sorted_if_needed(df)
+    df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
 
-    close = pd.to_numeric(df_s["close"], errors="coerce")
-    volume = pd.to_numeric(df_s["volume"], errors="coerce")
-    pct_chg = pd.to_numeric(df_s["pct_chg"], errors="coerce")
-    high = pd.to_numeric(df_s["high"], errors="coerce")
+    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
+    volume = bundle.volume if bundle is not None else pd.to_numeric(df_s["volume"], errors="coerce")
+    pct_chg = bundle.pct_chg if bundle is not None else pd.to_numeric(df_s["pct_chg"], errors="coerce")
+    high = bundle.high if bundle is not None else pd.to_numeric(df_s["high"], errors="coerce")
 
     if close.isna().all() or volume.isna().all() or pct_chg.isna().all():
         return None
@@ -1304,7 +1697,7 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
     # 位阶保护：高位爆量很大可能是 Buying Climax（派发），排除极大乖离
     close_last = close.iloc[-1]
     if len(close) >= 200:
-        ma200 = close.rolling(200).mean()
+        ma200 = bundle.ma_long if bundle is not None and int(cfg.ma_long) == 200 else close.rolling(200).mean()
         ma200_last = ma200.iloc[-1]
         if pd.notna(ma200_last) and pd.notna(close_last) and float(ma200_last) > 0:
             bias_200 = (
@@ -1338,7 +1731,7 @@ def _detect_sos(df: pd.DataFrame, cfg: FunnelConfig) -> float | None:
         return None
 
     # 结构突破要求：创N日新高，或强势穿透季线/半年线
-    ma50 = close.rolling(50).mean()
+    ma50 = bundle.ma_short if bundle is not None and int(cfg.ma_short) == 50 else close.rolling(50).mean()
     ma50_last = ma50.iloc[-1] if not ma50.empty else None
 
     recent_highs = high.tail(cfg.sos_breakout_window + 1).iloc[:-1]
@@ -1374,6 +1767,8 @@ def layer4_triggers(
     df_map: dict[str, pd.DataFrame],
     cfg: FunnelConfig,
     channel_map: dict[str, str] | None = None,
+    *,
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
 ) -> dict[str, list[tuple[str, float]]]:
     """
     在最终候选集上运行 Spring / LPS / EffortVsResult 检测。
@@ -1389,22 +1784,23 @@ def layer4_triggers(
         channel_map = {}
 
     for sym in symbols:
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or df.empty:
             continue
-        score = _detect_spring(df, cfg)
+        score = _detect_spring(df, cfg, bundle=bundle)
         if score is not None:
             results["spring"].append((sym, score))
-        score = _detect_lps(df, cfg)
+        score = _detect_lps(df, cfg, bundle=bundle)
         if score is not None:
             results["lps"].append((sym, score))
         if getattr(cfg, "enable_evr_trigger", False):
-            score = _detect_evr(df, cfg)
+            score = _detect_evr(df, cfg, bundle=bundle)
             if score is not None:
                 results["evr"].append((sym, score))
 
         # 修正：Layer 2 虽然可以去重，但由于下游高度依赖 results["sos"]，所以必须每次都计算或填充
-        score = _detect_sos(df, cfg)
+        score = _detect_sos(df, cfg, bundle=bundle)
         if score is not None:
             results["sos"].append((sym, score))
     return results
@@ -1479,6 +1875,8 @@ def detect_markup_stage(
     symbols: list[str],
     df_map: dict[str, pd.DataFrame],
     cfg: FunnelConfig,
+    *,
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
 ) -> list[str]:
     """
     返回已进入 Markup 阶段的股票。
@@ -1488,7 +1886,8 @@ def detect_markup_stage(
 
     markup: list[str] = []
     for sym in symbols:
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or df.empty:
             continue
         score = _detect_markup_entry(df, cfg)
@@ -1595,6 +1994,8 @@ def detect_accum_stage(
     symbols: list[str],
     df_map: dict[str, pd.DataFrame],
     cfg: FunnelConfig,
+    *,
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
 ) -> dict[str, str]:
     """
     返回 symbol -> stage 的映射。
@@ -1604,7 +2005,8 @@ def detect_accum_stage(
 
     result: dict[str, str] = {}
     for sym in symbols:
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or df.empty:
             continue
         stage = _analyze_accum_stage(df, cfg)
@@ -1660,6 +2062,8 @@ def layer5_exit_signals(
     df_map: dict[str, pd.DataFrame],
     accum_stage_map: dict[str, str],
     cfg: FunnelConfig,
+    *,
+    feature_map: dict[str, SymbolFeatureBundle] | None = None,
 ) -> dict[str, dict]:
     """
     为 Accumulation 和 Markup 阶段股票生成静态参考 Exit 信号（实际实盘止损在 OMS 中独立维护）。
@@ -1672,14 +2076,15 @@ def layer5_exit_signals(
     signals: dict[str, dict] = {}
 
     for sym in symbols:
-        df = df_map.get(sym)
+        bundle = feature_map.get(sym) if feature_map else None
+        df = bundle.df if bundle is not None else df_map.get(sym)
         if df is None or df.empty:
             continue
 
-        df_s = _sorted_if_needed(df)
-        close = pd.to_numeric(df_s["close"], errors="coerce")
-        low = pd.to_numeric(df_s["low"], errors="coerce")
-        high = pd.to_numeric(df_s["high"], errors="coerce")
+        df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
+        close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
+        low = bundle.low if bundle is not None else pd.to_numeric(df_s["low"], errors="coerce")
+        high = bundle.high if bundle is not None else pd.to_numeric(df_s["high"], errors="coerce")
 
         if close.empty or low.empty or high.empty:
             continue
@@ -1691,7 +2096,11 @@ def layer5_exit_signals(
         stop_reason = ""
 
         # 获取 MA50 作为动态生命线
-        ma_short_series = close.rolling(cfg.ma_short).mean()
+        ma_short_series = (
+            bundle.ma_short
+            if bundle is not None
+            else close.rolling(cfg.ma_short).mean()
+        )
         ma_short = (
             float(ma_short_series.iloc[-1])
             if not ma_short_series.isna().all()
@@ -1773,20 +2182,25 @@ def run_funnel(
         for sym, df in df_map.items()
         if df is not None and not df.empty
     }
+    feature_map = build_feature_map(prepared_df_map, cfg)
 
-    l1 = layer1_filter(
+    l1, l1_rejections = layer1_filter(
         all_symbols,
         name_map,
         market_cap_map,
         prepared_df_map,
         cfg,
+        feature_map=feature_map,
+        return_rejections=True,
     )
-    l2, channel_map = layer2_strength_detailed(
+    l2, channel_map, l2_rejections = layer2_strength_detailed(
         l1,
         prepared_df_map,
         bench_df,
         cfg,
         rps_universe=list(prepared_df_map.keys()),
+        feature_map=feature_map,
+        return_rejections=True,
     )
     l3, top_sectors = layer3_sector_resonance(
         l2,
@@ -1795,11 +2209,21 @@ def run_funnel(
         base_symbols=l1,
         df_map=prepared_df_map,
     )
-    triggers = layer4_triggers(l3, prepared_df_map, cfg, channel_map=channel_map)
+    triggers = layer4_triggers(
+        l3,
+        prepared_df_map,
+        cfg,
+        channel_map=channel_map,
+        feature_map=feature_map,
+    )
 
     # 阶段识别和退出信号
-    markup_symbols = detect_markup_stage(l3, prepared_df_map, cfg)
-    accum_stage_map = detect_accum_stage(l2, prepared_df_map, cfg)  # 对 L2 做细化分析
+    markup_symbols = detect_markup_stage(
+        l3, prepared_df_map, cfg, feature_map=feature_map
+    )
+    accum_stage_map = detect_accum_stage(
+        l2, prepared_df_map, cfg, feature_map=feature_map
+    )  # 对 L2 做细化分析
 
     # 构建完整的 stage_map（包括 Markup）
     stage_map: dict[str, str] = accum_stage_map.copy()
@@ -1808,8 +2232,41 @@ def run_funnel(
 
     # 退出信号针对 L2 和 Markup 股票
     exit_signals = layer5_exit_signals(
-        l2 + markup_symbols, prepared_df_map, accum_stage_map, cfg
+        l2 + markup_symbols,
+        prepared_df_map,
+        accum_stage_map,
+        cfg,
+        feature_map=feature_map,
     )
+
+    trigger_by_symbol: dict[str, list[str]] = {}
+    for trigger_name, rows in triggers.items():
+        for sym, _score in rows:
+            trigger_by_symbol.setdefault(str(sym), []).append(str(trigger_name))
+
+    explanations: dict[str, dict] = {}
+    focus_symbols = list(dict.fromkeys(l1 + l2 + l3 + markup_symbols))
+    for sym in focus_symbols:
+        bundle = feature_map.get(sym)
+        avg_amount = None
+        if bundle is not None:
+            avg_amt = bundle.amount.tail(cfg.amount_avg_window).mean()
+            avg_amount = float(avg_amt) if pd.notna(avg_amt) else None
+        explanations[sym] = {
+            "passed_layers": {
+                "layer1": sym in l1,
+                "layer2": sym in l2,
+                "layer3": sym in l3,
+                "markup": sym in markup_symbols,
+            },
+            "layer1_rejection": l1_rejections.get(sym),
+            "layer2_rejection": l2_rejections.get(sym),
+            "channel": str(channel_map.get(sym, "") or ""),
+            "stage": str(stage_map.get(sym, "") or ""),
+            "triggers": trigger_by_symbol.get(sym, []),
+            "exit_signal": (exit_signals.get(sym, {}) or {}).get("signal"),
+            "avg_amount_20": avg_amount,
+        }
 
     return FunnelResult(
         layer1_symbols=l1,
@@ -1821,6 +2278,9 @@ def run_funnel(
         markup_symbols=markup_symbols,
         exit_signals=exit_signals,
         channel_map=channel_map,
+        explanations=explanations,
+        layer1_rejections=l1_rejections,
+        layer2_rejections=l2_rejections,
     )
 
 

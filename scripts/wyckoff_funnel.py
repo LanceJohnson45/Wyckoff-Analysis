@@ -10,6 +10,7 @@ Layer 1: 剥离垃圾 → Layer 2: 强弱甄别 → Layer 3: 板块共振 → La
 """
 
 from __future__ import annotations
+from collections import Counter
 from dataclasses import fields as dataclass_fields
 import json
 import os
@@ -41,7 +42,9 @@ from integrations.fetch_a_share_csv import (
     _normalize_symbols,
 )
 from core.wyckoff_engine import (
+    DataIntegrityPolicy,
     FunnelConfig,
+    filter_symbols_by_integrity,
     layer1_filter,
     layer2_strength_detailed,
     layer3_sector_resonance,
@@ -347,50 +350,61 @@ def _expected_trade_dates(window, market: str) -> list[date]:
     ).date.tolist()
 
 
-def _assess_hist_integrity(
-    df: pd.DataFrame,
-    expected_dates: list[date],
-) -> tuple[bool, dict[str, float | int]]:
-    if df is None or df.empty or not expected_dates or "date" not in df.columns:
-        return (
-            False,
-            {
-                "coverage_200": 0.0,
-                "coverage_20": 0.0,
-                "missing_recent": len(expected_dates[-INTEGRITY_STRICT_RECENT_DAYS :]),
-            },
-        )
+def _summarize_rejections(
+    rejected_map: dict[str, dict],
+    *,
+    limit: int = 5,
+) -> tuple[list[dict], str]:
+    if not rejected_map:
+        return ([], "无")
+    counter = Counter(
+        str((payload or {}).get("reason", "unknown") or "unknown")
+        for payload in rejected_map.values()
+    )
+    top_rows = [
+        {"reason": reason, "count": int(count)}
+        for reason, count in counter.most_common(max(int(limit), 1))
+    ]
+    summary = ", ".join(f"{item['reason']}={item['count']}" for item in top_rows)
+    return (top_rows, summary or "无")
 
-    actual_dates = set(pd.to_datetime(df["date"], errors="coerce").dropna().dt.date.tolist())
-    overall_200 = expected_dates[-min(len(expected_dates), 200) :]
-    recent_20 = expected_dates[-min(len(expected_dates), 20) :]
-    recent_n = expected_dates[-min(len(expected_dates), INTEGRITY_STRICT_RECENT_DAYS) :]
 
-    coverage_200 = (
-        sum(1 for d in overall_200 if d in actual_dates) / len(overall_200)
-        if overall_200
-        else 0.0
-    )
-    coverage_20 = (
-        sum(1 for d in recent_20 if d in actual_dates) / len(recent_20)
-        if recent_20
-        else 0.0
-    )
-    missing_recent = sum(1 for d in recent_n if d not in actual_dates)
-
-    ok = (
-        coverage_200 >= INTEGRITY_MIN_COVERAGE_200
-        and coverage_20 >= INTEGRITY_MIN_COVERAGE_20
-        and missing_recent == 0
-    )
-    return (
-        ok,
-        {
-            "coverage_200": round(float(coverage_200), 4),
-            "coverage_20": round(float(coverage_20), 4),
-            "missing_recent": int(missing_recent),
-        },
-    )
+def _sample_rejections(
+    rejected_map: dict[str, dict],
+    *,
+    limit: int = 5,
+) -> list[str]:
+    samples: list[str] = []
+    for sym, payload in rejected_map.items():
+        reason = str((payload or {}).get("reason", "unknown") or "unknown")
+        if reason == "avg_amount_below_threshold":
+            detail = (
+                f"avg={payload.get('avg_amount_wan')}<min={payload.get('min_avg_amount_wan')}"
+            )
+        elif reason == "market_cap_below_threshold":
+            detail = (
+                f"cap={payload.get('market_cap_yi')}<min={payload.get('min_market_cap_yi')}"
+            )
+        elif reason == "insufficient_history":
+            detail = f"rows={payload.get('rows')}<min={payload.get('min_rows')}"
+        elif reason == "rps_filter_failed":
+            detail = (
+                f"rps_fast={payload.get('rps_fast')}, rps_slow={payload.get('rps_slow')}"
+            )
+        elif reason == "rs_filter_failed":
+            detail = (
+                f"rs_long={payload.get('rs_long')}, rs_short={payload.get('rs_short')}"
+            )
+        elif reason == "trend_alignment_failed":
+            detail = (
+                f"ma_short={payload.get('last_ma_short')}, ma_long={payload.get('last_ma_long')}, close={payload.get('last_close')}"
+            )
+        else:
+            detail = ""
+        samples.append(f"{sym}({reason}{', ' + detail if detail else ''})")
+        if len(samples) >= max(int(limit), 1):
+            break
+    return samples
 
 
 def _resolve_symbol_pool_from_env() -> tuple[
@@ -1370,9 +1384,10 @@ def run_funnel_job(
     include_debug_context: bool = False,
 ) -> tuple[dict[str, list[tuple[str, float]]], dict]:
     """执行 Wyckoff Funnel，返回 (triggers, metrics)。"""
-    cfg = FunnelConfig(trading_days=TRADING_DAYS)
-    _apply_funnel_cfg_overrides(cfg)
     market = _resolve_funnel_market()
+    cfg = FunnelConfig.for_market(market)
+    cfg.trading_days = TRADING_DAYS
+    _apply_funnel_cfg_overrides(cfg)
     if market == "us":
         window = _resolve_us_window(
             end_calendar_day=_job_end_calendar_day(),
@@ -1568,15 +1583,19 @@ def run_funnel_job(
             f"spot_patched={fetch_spot_patched}, target_trade_date={window.end_trade_date}"
         )
     expected_dates = _expected_trade_dates(window, market)
-    integrity_fail = 0
+    integrity_policy = DataIntegrityPolicy(
+        min_coverage_200=INTEGRITY_MIN_COVERAGE_200,
+        min_coverage_20=INTEGRITY_MIN_COVERAGE_20,
+        strict_recent_days=INTEGRITY_STRICT_RECENT_DAYS,
+    )
+    qualified_df_map, rejected_integrity = filter_symbols_by_integrity(
+        all_df_map,
+        expected_dates,
+        policy=integrity_policy,
+    )
+    integrity_fail = len(rejected_integrity)
     integrity_examples: list[str] = []
-    qualified_df_map: dict[str, pd.DataFrame] = {}
-    for sym, df in all_df_map.items():
-        ok, stats = _assess_hist_integrity(df, expected_dates)
-        if ok:
-            qualified_df_map[sym] = df
-            continue
-        integrity_fail += 1
+    for sym, stats in rejected_integrity.items():
         if len(integrity_examples) < 10:
             integrity_examples.append(
                 f"{sym}(cov200={stats['coverage_200']:.2%}, cov20={stats['coverage_20']:.2%}, miss_recent={stats['missing_recent']})"
@@ -1633,23 +1652,29 @@ def run_funnel_job(
 
     # Layer 1
     l1_input = list(all_df_map.keys())
-    l1_passed = layer1_filter(
+    l1_passed, l1_rejections = layer1_filter(
         l1_input,
         name_map,
         market_cap_map,
         all_df_map,
         cfg,
         market=market,
+        return_rejections=True,
     )
+    l1_rejection_top, l1_rejection_summary = _summarize_rejections(l1_rejections)
+    l1_rejection_samples = _sample_rejections(l1_rejections)
 
     # Layer 2
-    l2_passed, l2_channel_map = layer2_strength_detailed(
+    l2_passed, l2_channel_map, l2_rejections = layer2_strength_detailed(
         l1_passed,
         all_df_map,
         bench_df,
         cfg,
         rps_universe=l1_input,
+        return_rejections=True,
     )
+    l2_rejection_top, l2_rejection_summary = _summarize_rejections(l2_rejections)
+    l2_rejection_samples = _sample_rejections(l2_rejections)
     # 通道标签现在是多标签用 + 拼接，因此用 in 判断包含关系
     l2_momentum = sum(1 for v in l2_channel_map.values() if "主升通道" in v)
     l2_ambush = sum(1 for v in l2_channel_map.values() if "潜伏通道" in v)
@@ -1724,6 +1749,9 @@ def run_funnel_job(
         "integrity_fail": integrity_fail,
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
+        "layer1_rejections": l1_rejections,
+        "layer1_rejection_top": l1_rejection_top,
+        "layer1_rejection_samples": l1_rejection_samples,
         "layer2": len(l2_passed),
         "layer2_momentum": l2_momentum,
         "layer2_ambush": l2_ambush,
@@ -1732,6 +1760,9 @@ def run_funnel_job(
         "layer2_rs_div": l2_rs_div,
         "layer2_sos": l2_sos,
         "layer2_channel_map": l2_channel_map,
+        "layer2_rejections": l2_rejections,
+        "layer2_rejection_top": l2_rejection_top,
+        "layer2_rejection_samples": l2_rejection_samples,
         "layer3": len(l3_passed),
         "top_sectors": top_sectors,
         "sector_rotation": sector_rotation,
@@ -1766,6 +1797,12 @@ def run_funnel_job(
         f"L3={metrics['layer3']}, 命中={total_hits}, "
         f"Top行业={top_sectors}, 各触发={metrics['by_trigger']}"
     )
+    print(f"[funnel] L1拒绝Top: {l1_rejection_summary}")
+    if l1_rejection_samples:
+        print(f"[funnel] L1拒绝样例: {', '.join(l1_rejection_samples)}")
+    print(f"[funnel] L2拒绝Top: {l2_rejection_summary}")
+    if l2_rejection_samples:
+        print(f"[funnel] L2拒绝样例: {', '.join(l2_rejection_samples)}")
 
     return triggers, metrics
 
@@ -1878,6 +1915,14 @@ def run(
         selected_for_ai = trend_selected + accum_selected
 
     if use_legacy_card and use_legacy_selection:
+        l1_rejection_summary = ", ".join(
+            f"{item.get('reason')}={item.get('count')}"
+            for item in (metrics.get("layer1_rejection_top", []) or [])
+        ) or "无"
+        l2_rejection_summary = ", ".join(
+            f"{item.get('reason')}={item.get('count')}"
+            for item in (metrics.get("layer2_rejection_top", []) or [])
+        ) or "无"
         bench_line = "未知"
         pv_line = "暂无大盘量价推演"
         if benchmark_context:
@@ -1899,6 +1944,7 @@ def run(
                 f"= {metrics['total_symbols']} (共{metrics['pool_batches']}批)"
             ),
             f"**漏斗概览**: {metrics['total_symbols']}只 → L1:{metrics['layer1']} → L2:{metrics['layer2']} → L3:{metrics['layer3']} → 命中:{metrics['total_hits']}",
+            f"**筛选卡点**: L1[{l1_rejection_summary}] | L2[{l2_rejection_summary}]",
             f"**大盘水温**: {bench_line}",
             f"**大盘量价推演**: {pv_line}",
             f"**候选分层**: 命中股票{unique_hit_count} -> AI输入全量{len(selected_for_ai)}",
@@ -2189,6 +2235,14 @@ def run(
         for c in selected_for_ai
         if c in markup_symbols or c in sos_hit_set or c in spring_hit_set
     )
+    l1_rejection_summary = ", ".join(
+        f"{item.get('reason')}={item.get('count')}"
+        for item in (metrics.get("layer1_rejection_top", []) or [])
+    ) or "无"
+    l2_rejection_summary = ", ".join(
+        f"{item.get('reason')}={item.get('count')}"
+        for item in (metrics.get("layer2_rejection_top", []) or [])
+    ) or "无"
 
     lines = [
         "## 一览",
@@ -2209,6 +2263,8 @@ def run(
         f"- **L3 保留**：{metrics['layer3']} / {metrics['layer2']}（当前仅做行业标记，不做硬剔除）",
         f"- **L4 命中股票**：{unique_hit_count} 只（命中事件 {metrics['total_hits']} 次）",
         f"- **L4 未命中**：{l4_non_hit_count} 只（仍留在 L3 观察池）",
+        f"- **L1 主要卡点**：{l1_rejection_summary}",
+        f"- **L2 主要卡点**：{l2_rejection_summary}",
         "",
         "## L2 通道与阶段",
         f"- **L2 通道分布**：主升{l2_momentum} | 潜伏{l2_ambush} | 吸筹{l2_accum} | 地量{l2_dry_vol} | 护盘{l2_rs_div} | 点火{l2_sos}",
@@ -2400,6 +2456,25 @@ def run(
         for idx, c in enumerate(selected_for_ai)
     ]
     if return_details:
+        explanation_map = {
+            item["code"]: {
+                "track": item.get("track", ""),
+                "stage": item.get("stage", ""),
+                "selection_source": item.get("selection_source", ""),
+                "selection_is_fill": item.get("selection_is_fill", False),
+                "tag": item.get("tag", ""),
+                "exit_signal": item.get("exit_signal", ""),
+                "exit_reason": item.get("exit_reason", ""),
+                "layer1_rejection": (metrics.get("layer1_rejections", {}) or {}).get(
+                    item["code"]
+                ),
+                "layer2_rejection": (metrics.get("layer2_rejections", {}) or {}).get(
+                    item["code"]
+                ),
+            }
+            for item in symbols_for_report
+            if isinstance(item, dict)
+        }
         details = {
             "metrics": metrics,
             "triggers": triggers,
@@ -2412,6 +2487,9 @@ def run(
             "priority_score_map": score_map,
             "name_map": name_map,
             "sector_map": sector_map,
+            "explanation_map": explanation_map,
+            "layer1_rejections": result.layer1_rejections or {},
+            "layer2_rejections": result.layer2_rejections or {},
         }
         return (ok, symbols_for_report, benchmark_context, details)
     return (ok, symbols_for_report, benchmark_context)
