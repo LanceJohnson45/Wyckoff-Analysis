@@ -71,3 +71,24 @@ class TestLayer1Filter:
 
         result = layer1_filter(["000001", "000002"], name_map, mcap, df_map, cfg)
         assert "000002" not in result  # ST 被剔除
+
+    def test_us_symbols_are_not_blocked_by_cn_code_rules(self):
+        """US 模式不应套用 A 股代码前缀过滤。"""
+        cfg = FunnelConfig()
+        dates = pd.date_range("2024-01-01", periods=100, freq="B")
+        closes = [100 + i * 0.2 for i in range(100)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["amount"] = 1_000_000_000.0
+
+        name_map = {"AAPL": "Apple Inc."}
+        df_map = {"AAPL": df}
+
+        result = layer1_filter(
+            ["AAPL"],
+            name_map,
+            {},
+            df_map,
+            cfg,
+            market="us",
+        )
+        assert result == ["AAPL"]

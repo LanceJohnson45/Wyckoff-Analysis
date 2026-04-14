@@ -378,18 +378,21 @@ def layer1_filter(
     market_cap_map: dict[str, float],
     df_map: dict[str, pd.DataFrame],
     cfg: FunnelConfig,
+    *,
+    market: str = "cn",
 ) -> list[str]:
     """
     硬过滤：剔除 ST、北交所/科创板、市值<阈值、近期均成交额<阈值。
     market_cap_map 单位：亿元。若 market_cap_map 为空则跳过市值过滤。
     """
     cap_available = bool(market_cap_map)
+    market_norm = str(market or "cn").strip().lower()
     passed: list[str] = []
     for sym in symbols:
-        if not _is_main_or_chinext(sym):
+        if market_norm == "cn" and not _is_main_or_chinext(sym):
             continue
         name = name_map.get(sym, "")
-        if "ST" in name.upper():
+        if market_norm == "cn" and "ST" in name.upper():
             continue
         if cap_available:
             cap = market_cap_map.get(sym, 0.0)
@@ -1771,7 +1774,13 @@ def run_funnel(
         if df is not None and not df.empty
     }
 
-    l1 = layer1_filter(all_symbols, name_map, market_cap_map, prepared_df_map, cfg)
+    l1 = layer1_filter(
+        all_symbols,
+        name_map,
+        market_cap_map,
+        prepared_df_map,
+        cfg,
+    )
     l2, channel_map = layer2_strength_detailed(
         l1,
         prepared_df_map,
