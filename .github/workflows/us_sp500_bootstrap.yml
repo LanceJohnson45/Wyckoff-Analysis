@@ -58,6 +58,8 @@ jobs:
           fi
           echo "✓ SUPABASE_URL: ${SUPABASE_URL:0:20}..."
           echo "✓ SUPABASE_SERVICE_ROLE_KEY: (length=${#SUPABASE_SERVICE_ROLE_KEY})"
+          echo "  Key prefix: ${SUPABASE_SERVICE_ROLE_KEY:0:10}..."
+          echo "  Key suffix: ...${SUPABASE_SERVICE_ROLE_KEY: -10}"
 
       - name: Diagnostic - Test Supabase connection
         run: python test_supabase_diagnostic.py
