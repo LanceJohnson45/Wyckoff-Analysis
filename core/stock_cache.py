@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
+import json
 import os
 from typing import Optional
 
+import numpy as np
 import pandas as pd
 from postgrest.exceptions import APIError
 from supabase import Client
@@ -76,6 +78,33 @@ def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
     if "date" in out.columns:
         out["date"] = out["date"].astype(str)
     return out
+
+
+def _sanitize_payload_dataframe(payload: pd.DataFrame) -> pd.DataFrame:
+    cleaned = payload.copy()
+
+    float_cols = cleaned.select_dtypes(include=["floating"]).columns
+    if len(float_cols) > 0:
+        cleaned.loc[:, float_cols] = cleaned.loc[:, float_cols].replace(
+            [np.inf, -np.inf], np.nan
+        )
+
+    cleaned = cleaned.astype(object)
+    cleaned = cleaned.where(pd.notna(cleaned), None)
+
+    return cleaned
+
+
+def _collect_invalid_numeric_samples(payload: pd.DataFrame) -> dict[str, list[int]]:
+    issues: dict[str, list[int]] = {}
+    numeric_cols = payload.select_dtypes(include=["number"]).columns
+    for col in numeric_cols:
+        series = pd.to_numeric(payload[col], errors="coerce")
+        invalid_mask = series.isna() | np.isinf(series.to_numpy(dtype=float, na_value=np.nan))
+        invalid_rows = payload.index[invalid_mask].tolist()
+        if invalid_rows:
+            issues[col] = invalid_rows[:10]
+    return issues
 
 
 def denormalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
@@ -228,15 +257,12 @@ def upsert_cache_data(
     payload["symbol"] = symbol
     payload["adjust"] = adjust
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
-    
-    for col in payload.columns:
-        if payload[col].dtype in ['float64', 'float32']:
-            payload[col] = payload[col].replace([float('inf'), float('-inf')], None)
-            payload[col] = payload[col].where(pd.notna(payload[col]), None)
-    
+    invalid_before_clean = _collect_invalid_numeric_samples(payload)
+    payload = _sanitize_payload_dataframe(payload)
     records = payload.to_dict(orient="records")
 
     try:
+        json.dumps(records, allow_nan=False)
         supabase.table(TABLE_STOCK_HIST_CACHE).upsert(records).execute()
         _trim_symbol_history_window(
             supabase=supabase,
@@ -245,9 +271,38 @@ def upsert_cache_data(
             retention_days=_STOCK_HIST_RETENTION_DAYS,
         )
         return True
-    except APIError:
+    except APIError as e:
+        print(
+            f"[upsert_cache_data] APIError: symbol={symbol}, adjust={adjust}, "
+            f"source={source}, rows={len(records)}, error={e}",
+            flush=True,
+        )
+        if invalid_before_clean:
+            print(
+                f"[upsert_cache_data] Invalid numeric values before clean: {invalid_before_clean}",
+                flush=True,
+            )
         return False
-    except Exception:
+    except Exception as e:
+        print(
+            f"[upsert_cache_data] Exception: symbol={symbol}, adjust={adjust}, "
+            f"source={source}, rows={len(records)}, error={type(e).__name__}: {e}",
+            flush=True,
+        )
+        if invalid_before_clean:
+            print(
+                f"[upsert_cache_data] Invalid numeric values before clean: {invalid_before_clean}",
+                flush=True,
+            )
+        for idx, record in enumerate(records[:5]):
+            try:
+                json.dumps(record, allow_nan=False)
+            except Exception as record_error:
+                print(
+                    f"[upsert_cache_data] Bad record[{idx}] JSON serialization failed: "
+                    f"{record_error}; record={record}",
+                    flush=True,
+                )
         return False
 
 

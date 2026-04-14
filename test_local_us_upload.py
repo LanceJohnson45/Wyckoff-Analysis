@@ -45,8 +45,13 @@ def generate_mock_us_data(symbol: str, days: int = 30) -> pd.DataFrame:
     
     df['成交额'] = df['收盘'] * df['成交量']
     df['涨跌幅'] = df['收盘'].pct_change() * 100.0
+    if not df.empty:
+        df.loc[df.index[0], '涨跌幅'] = 0.0
     df['换手率'] = pd.NA
-    df['振幅'] = ((df['最高'] - df['最低']) / df['收盘'].shift(1) * 100.0)
+    prev_close = df['收盘'].shift(1)
+    if not df.empty:
+        prev_close.iloc[0] = df.loc[df.index[0], '开盘']
+    df['振幅'] = ((df['最高'] - df['最低']) / prev_close * 100.0)
     
     return df
 
