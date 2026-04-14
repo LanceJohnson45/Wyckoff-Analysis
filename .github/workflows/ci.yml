@@ -33,23 +33,35 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "::group::Install packages"
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          echo "::endgroup::"
 
       - name: Sanity check (import)
         run: |
+          echo "::group::Sanity check"
           python -c "import streamlit; import akshare; import pandas; print('OK')"
+          echo "::endgroup::"
 
       - name: Py compile all modules
         run: |
+          echo "::group::Compile Python files"
           python -m py_compile $(find app core integrations pages scripts utils -name "*.py")
+          echo "::endgroup::"
 
       - name: Run tests
-        run: python -m pytest tests/ -x -q
+        run: |
+          echo "::group::Run Pytest"
+          python -m pytest tests/ -x -q
+          echo "::endgroup::"
 
       - name: Daily job dry-run
-        run: python scripts/daily_job.py --dry-run
+        run: |
+          echo "::group::Dry-run daily job"
+          python scripts/daily_job.py --dry-run
+          echo "::endgroup::"
         env:
           FEISHU_WEBHOOK_URL: "https://example.com"
           GEMINI_API_KEY: "fake-key-for-dry-run"

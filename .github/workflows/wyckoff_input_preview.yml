@@ -38,17 +38,21 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "::group::Install packages"
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          echo "::endgroup::"
 
       - name: Prepare logs dir
         run: mkdir -p logs
 
       - name: Run input preview job
         run: |
+          echo "::group::Run preview script"
           python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/input_preview.log \
             2>&1 | tee -a ${{ github.workspace }}/logs/input_preview.console.log
+          echo "::endgroup::"
 
       - name: Upload artifacts
         if: always()

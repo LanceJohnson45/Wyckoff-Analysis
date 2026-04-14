@@ -54,27 +54,35 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "::group::Install packages"
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          echo "::endgroup::"
 
       - name: Prepare logs dir
         run: mkdir -p logs
 
       - name: Sync S&P500 constituents
         run: |
+          echo "::group::Sync S&P 500 Constituents"
           python -u scripts/us_sp500_maintenance.py sync --bootstrap-new --bootstrap-trading-days ${US_SP500_SYNC_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/us_sp500_sync.console.log
+          echo "::endgroup::"
 
       - name: Prewarm funnel cache
         run: |
+          echo "::group::Prewarm cache (US)"
           python -u scripts/funnel_prewarm.py --market us --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_us.console.log
+          echo "::endgroup::"
 
       - name: Run US daily job
         run: |
+          echo "::group::Run daily job script (US)"
           python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job_us.log \
             2>&1 | tee -a ${{ github.workspace }}/logs/daily_job_us.console.log
+          echo "::endgroup::"
 
       - name: Upload artifacts
         if: always()

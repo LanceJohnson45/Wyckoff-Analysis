@@ -50,9 +50,11 @@ jobs:
 
       - name: Install dependencies
         run: |
+          echo "::group::Install packages"
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
+          echo "::endgroup::"
 
       - name: Prepare logs dir
         run: mkdir -p logs
@@ -63,12 +65,14 @@ jobs:
           WEB_REQUEST_ID: ${{ inputs.request_id }}
           WEB_PAYLOAD_JSON: ${{ inputs.payload_json }}
         run: |
+          echo "::group::Run Web background job: $WEB_JOB_KIND"
           python -u scripts/web_background_job.py \
             --job-kind "$WEB_JOB_KIND" \
             --request-id "$WEB_REQUEST_ID" \
             --payload-json "$WEB_PAYLOAD_JSON" \
             --output "${{ github.workspace }}/logs/web_job_result.json" \
             2>&1 | tee -a "${{ github.workspace }}/logs/web_job.console.log"
+          echo "::endgroup::"
 
       - name: Upload result artifact
         if: always()
