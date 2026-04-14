@@ -11,6 +11,7 @@ def test_normalize_hk_symbol_zero_pads_and_suffixes():
     assert _normalize_hk_symbol("700") == "0700.HK"
     assert _normalize_hk_symbol("0700.HK") == "0700.HK"
     assert _normalize_hk_symbol("9988") == "9988.HK"
+    assert _normalize_hk_symbol("0000") == ""
 
 
 def test_extract_symbol_map_from_html_reads_embedded_json():

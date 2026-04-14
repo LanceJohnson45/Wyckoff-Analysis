@@ -46,6 +46,9 @@ _HK_NAME_ALIASES = {
     "XIAOMI": "1810.HK",
     "XPENG": "9868.HK",
 }
+_HK_EXCLUDE_SYMBOLS = {
+    "0000.HK",
+}
 
 
 @dataclass(frozen=True)
@@ -94,7 +97,10 @@ def _normalize_hk_symbol(raw: object) -> str:
     digits = "".join(ch for ch in text if ch.isdigit())
     if not digits:
         return ""
-    return f"{digits[-4:].zfill(4)}.HK"
+    symbol = f"{digits[-4:].zfill(4)}.HK"
+    if symbol in _HK_EXCLUDE_SYMBOLS:
+        return ""
+    return symbol
 
 
 def _load_tables(url: str) -> tuple[str, list[pd.DataFrame]]:
@@ -154,7 +160,7 @@ def _parse_components(url: str) -> list[str]:
         if not symbol:
             symbol = symbol_map.get(_normalize_name(name), "")
         if not symbol:
-            symbol = _resolve_yahoo_hk_symbol(str(name or ""))
+            symbol = _HK_NAME_ALIASES.get(_normalize_name(name), "")
         if not symbol or symbol in seen:
             continue
         seen.add(symbol)

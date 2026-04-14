@@ -32,6 +32,7 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from integrations.fetch_a_share_csv import (
+    _trade_dates_cached,
     _resolve_hk_window,
     _resolve_trading_window,
     _resolve_us_window,
@@ -99,6 +100,16 @@ FUNNEL_ENABLE_SPOT_PATCH = os.getenv(
 FUNNEL_SPOT_PATCH_RETRIES = int(os.getenv("FUNNEL_SPOT_PATCH_RETRIES", "2"))
 FUNNEL_SPOT_PATCH_SLEEP = float(os.getenv("FUNNEL_SPOT_PATCH_SLEEP", "0.2"))
 BREADTH_MA_WINDOW = int(os.getenv("FUNNEL_BREADTH_MA_WINDOW", "20"))
+INTEGRITY_MIN_COVERAGE_200 = float(
+    os.getenv("FUNNEL_MIN_COVERAGE_200", "0.98")
+)
+INTEGRITY_MIN_COVERAGE_20 = float(
+    os.getenv("FUNNEL_MIN_COVERAGE_20", "0.95")
+)
+INTEGRITY_STRICT_RECENT_DAYS = max(
+    int(os.getenv("FUNNEL_STRICT_RECENT_DAYS", "3")),
+    0,
+)
 BREADTH_RISK_OFF_THRESHOLD = float(os.getenv("FUNNEL_BREADTH_RISK_OFF_PCT", "20.0"))
 BREADTH_RISK_ON_THRESHOLD = float(os.getenv("FUNNEL_BREADTH_RISK_ON_PCT", "60.0"))
 BREADTH_RISK_ON_MIN_DELTA = float(os.getenv("FUNNEL_BREADTH_RISK_ON_DELTA", "0.0"))
@@ -321,6 +332,65 @@ def _run_with_timeout(sym: str, window, timeout_s: int) -> pd.DataFrame:
 def _job_end_calendar_day() -> date:
     market = _resolve_funnel_market()
     return resolve_end_calendar_day_for_market(market)
+
+
+def _expected_trade_dates(window, market: str) -> list[date]:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "cn":
+        all_dates = list(_trade_dates_cached())
+        return [
+            d for d in all_dates if window.start_trade_date <= d <= window.end_trade_date
+        ]
+    return pd.bdate_range(
+        start=window.start_trade_date,
+        end=window.end_trade_date,
+    ).date.tolist()
+
+
+def _assess_hist_integrity(
+    df: pd.DataFrame,
+    expected_dates: list[date],
+) -> tuple[bool, dict[str, float | int]]:
+    if df is None or df.empty or not expected_dates or "date" not in df.columns:
+        return (
+            False,
+            {
+                "coverage_200": 0.0,
+                "coverage_20": 0.0,
+                "missing_recent": len(expected_dates[-INTEGRITY_STRICT_RECENT_DAYS :]),
+            },
+        )
+
+    actual_dates = set(pd.to_datetime(df["date"], errors="coerce").dropna().dt.date.tolist())
+    overall_200 = expected_dates[-min(len(expected_dates), 200) :]
+    recent_20 = expected_dates[-min(len(expected_dates), 20) :]
+    recent_n = expected_dates[-min(len(expected_dates), INTEGRITY_STRICT_RECENT_DAYS) :]
+
+    coverage_200 = (
+        sum(1 for d in overall_200 if d in actual_dates) / len(overall_200)
+        if overall_200
+        else 0.0
+    )
+    coverage_20 = (
+        sum(1 for d in recent_20 if d in actual_dates) / len(recent_20)
+        if recent_20
+        else 0.0
+    )
+    missing_recent = sum(1 for d in recent_n if d not in actual_dates)
+
+    ok = (
+        coverage_200 >= INTEGRITY_MIN_COVERAGE_200
+        and coverage_20 >= INTEGRITY_MIN_COVERAGE_20
+        and missing_recent == 0
+    )
+    return (
+        ok,
+        {
+            "coverage_200": round(float(coverage_200), 4),
+            "coverage_20": round(float(coverage_20), 4),
+            "missing_recent": int(missing_recent),
+        },
+    )
 
 
 def _resolve_symbol_pool_from_env() -> tuple[
@@ -1497,6 +1567,28 @@ def run_funnel_job(
             f"[funnel] 交易日对齐检查: mismatch={fetch_date_mismatch}, "
             f"spot_patched={fetch_spot_patched}, target_trade_date={window.end_trade_date}"
         )
+    expected_dates = _expected_trade_dates(window, market)
+    integrity_fail = 0
+    integrity_examples: list[str] = []
+    qualified_df_map: dict[str, pd.DataFrame] = {}
+    for sym, df in all_df_map.items():
+        ok, stats = _assess_hist_integrity(df, expected_dates)
+        if ok:
+            qualified_df_map[sym] = df
+            continue
+        integrity_fail += 1
+        if len(integrity_examples) < 10:
+            integrity_examples.append(
+                f"{sym}(cov200={stats['coverage_200']:.2%}, cov20={stats['coverage_20']:.2%}, miss_recent={stats['missing_recent']})"
+            )
+    all_df_map = qualified_df_map
+    print(
+        f"[funnel] 数据完整性检查: 通过={len(all_df_map)}, 跳过={integrity_fail}, "
+        f"阈值[cov200>={INTEGRITY_MIN_COVERAGE_200:.0%}, cov20>={INTEGRITY_MIN_COVERAGE_20:.0%}, recent{INTEGRITY_STRICT_RECENT_DAYS}=full]"
+    )
+    if integrity_examples:
+        suffix = "..." if integrity_fail > len(integrity_examples) else ""
+        print(f"[funnel] 数据完整性跳过样例: {', '.join(integrity_examples)}{suffix}")
     snapshot_dir = _dump_full_fetch_snapshot(
         df_map=all_df_map,
         all_symbols=all_symbols,
@@ -1506,6 +1598,8 @@ def run_funnel_job(
             "fetch_fail": fetch_fail,
             "fetch_date_mismatch": fetch_date_mismatch,
             "fetch_spot_patched": fetch_spot_patched,
+            "integrity_pass": len(all_df_map),
+            "integrity_fail": integrity_fail,
             "fetch_elapsed_s": round(total_fetch_elapsed, 2),
             "fetch_qps": round(overall_qps, 3),
         },
@@ -1626,6 +1720,8 @@ def run_funnel_job(
         "fetch_fail": fetch_fail,
         "fetch_date_mismatch": fetch_date_mismatch,
         "fetch_spot_patched": fetch_spot_patched,
+        "integrity_pass": len(all_df_map),
+        "integrity_fail": integrity_fail,
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
         "layer2": len(l2_passed),
@@ -2064,6 +2160,11 @@ def run(
         + (
             f"，实时快照补偿 {metrics.get('fetch_spot_patched', 0)} 只"
             if metrics.get("fetch_spot_patched")
+            else ""
+        )
+        + (
+            f"，完整性门槛跳过 {metrics.get('integrity_fail', 0)} 只"
+            if metrics.get("integrity_fail")
             else ""
         )
     )
