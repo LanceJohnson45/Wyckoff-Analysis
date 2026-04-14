@@ -94,7 +94,10 @@ def _get_admin_supabase_client() -> Client | None:
         return _ADMIN_CLIENT
     try:
         _ADMIN_CLIENT = _create_admin_client()
-    except Exception:
+        if _ADMIN_CLIENT is None:
+            print("[stock_cache] Admin client creation returned None", flush=True)
+    except Exception as e:
+        print(f"[stock_cache] Admin client creation failed: {e}", flush=True)
         _ADMIN_CLIENT = None
     return _ADMIN_CLIENT
 
