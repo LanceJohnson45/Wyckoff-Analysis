@@ -29,7 +29,7 @@ from integrations.supabase_recommendation import (
     mark_ai_recommendations,
     upsert_recommendations,
 )
-from utils.trading_clock import resolve_end_calendar_day
+from utils.trading_clock import resolve_end_calendar_day_for_market
 
 TZ = ZoneInfo("Asia/Shanghai")
 STEP3_REASON_MAP = {
@@ -96,7 +96,7 @@ def _run_with_stdout_tee(logs_path: str | None, fn, *args, **kwargs):
 def _latest_trade_date_str() -> str:
     market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
     window = _resolve_trading_window(
-        end_calendar_day=resolve_end_calendar_day(),
+        end_calendar_day=resolve_end_calendar_day_for_market(market),
         trading_days=30,
     )
     if market in {"us", "hk"}:
@@ -104,7 +104,7 @@ def _latest_trade_date_str() -> str:
 
         resolver = _resolve_us_window if market == "us" else _resolve_hk_window
         window = resolver(
-            end_calendar_day=resolve_end_calendar_day(),
+            end_calendar_day=resolve_end_calendar_day_for_market(market),
             trading_days=30,
         )
     return window.end_trade_date.isoformat()

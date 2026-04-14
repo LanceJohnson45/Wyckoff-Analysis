@@ -34,7 +34,7 @@ from integrations.data_source import (
 )
 from utils.feishu import send_feishu_notification
 from utils.notify import send_wecom_notification, send_dingtalk_notification
-from utils.trading_clock import CN_TZ, resolve_end_calendar_day
+from utils.trading_clock import CN_TZ, resolve_end_calendar_day_for_market
 from core.wyckoff_engine import fit_ai_candidate_quotas, normalize_hist_from_fetch
 from core.sector_rotation import SECTOR_STATE_LABELS
 
@@ -199,7 +199,7 @@ def _send_input_preview(
     report = (
         "\n".join(blocks).rstrip() + "\n"
     )
-    title = f"🧪 模型输入预演 {date.today().strftime('%Y-%m-%d')}"
+    title = f"🧪 模型输入预演 {_job_end_calendar_day().strftime('%Y-%m-%d')}"
     sent = send_feishu_notification(webhook_url, title, report) if webhook_url else True
     if wecom_webhook:
         send_wecom_notification(wecom_webhook, title, report)
@@ -498,12 +498,8 @@ def _extract_codes_from_text(
 
 
 def _job_end_calendar_day() -> date:
-    """
-    定时任务统一口径：
-    - 北京时间 17:00-23:59 走 T（当天）
-    - 北京时间 00:00-16:59 走 T-1（上一自然日）
-    """
-    return resolve_end_calendar_day()
+    market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
+    return resolve_end_calendar_day_for_market(market)
 
 
 def _latest_trade_date_from_hist(df: pd.DataFrame) -> date | None:
@@ -1571,7 +1567,7 @@ def run(
         if notify:
             model_banner = f"🤖 模型: {model}"
             content = f"{model_banner}\n\n{report}"
-            title = f"📄 批量研报 {date.today().strftime('%Y-%m-%d')}"
+            title = f"📄 批量研报 {_job_end_calendar_day().strftime('%Y-%m-%d')}"
             sent = send_feishu_notification(webhook_url, title, content) if webhook_url else True
             if wecom_webhook:
                 send_wecom_notification(wecom_webhook, title, content)
@@ -1816,7 +1812,7 @@ def run(
     if failed:
         content += f"\n\n**获取失败**: {', '.join(f'{s}({e})' for s, e in failed)}"
 
-    title = f"📄 批量研报 {date.today().strftime('%Y-%m-%d')}"
+    title = f"📄 批量研报 {_job_end_calendar_day().strftime('%Y-%m-%d')}"
     if notify:
         sent = send_feishu_notification(webhook_url, title, content) if webhook_url else True
         if wecom_webhook:

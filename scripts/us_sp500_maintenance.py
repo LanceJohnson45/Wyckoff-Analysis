@@ -27,7 +27,7 @@ from integrations.us_sp500_universe import (
     save_sp500_snapshot,
     snapshot_path,
 )
-from utils.trading_clock import resolve_end_calendar_day
+from utils.trading_clock import resolve_end_calendar_day_for_market
 
 
 DEFAULT_BATCH_SIZE = max(int(os.getenv("US_SP500_BATCH_SIZE", "40")), 1)
@@ -206,7 +206,7 @@ def _latest_cached_date(symbol: str) -> date | None:
 def _filter_symbols_needing_backfill(
     symbols: list[str], *, min_trading_days: int
 ) -> tuple[list[str], list[str]]:
-    end_day = resolve_end_calendar_day()
+    end_day = resolve_end_calendar_day_for_market("us")
     target_window = _resolve_us_window(
         end_calendar_day=end_day, trading_days=min_trading_days
     )
@@ -277,7 +277,7 @@ def sync_constituents(
     if removed:
         _log(f"removed: {', '.join(removed[:20])}{'...' if len(removed) > 20 else ''}")
     if bootstrap_new and added:
-        end_day = resolve_end_calendar_day()
+        end_day = resolve_end_calendar_day_for_market("us")
         window = _resolve_us_window(
             end_calendar_day=end_day, trading_days=bootstrap_trading_days
         )
@@ -299,7 +299,7 @@ def bootstrap_constituents(
 ) -> int:
     snapshot = get_sp500_constituents(prefer_snapshot=False)
     save_sp500_snapshot(snapshot.symbols, source=snapshot.source)
-    end_day = resolve_end_calendar_day()
+    end_day = resolve_end_calendar_day_for_market("us")
     window = _resolve_us_window(end_calendar_day=end_day, trading_days=trading_days)
     stats = _run_batches(
         snapshot.symbols,
@@ -317,7 +317,7 @@ def refresh_constituents(
 ) -> int:
     snapshot = get_sp500_constituents(prefer_snapshot=False)
     save_sp500_snapshot(snapshot.symbols, source=snapshot.source)
-    end_day = resolve_end_calendar_day()
+    end_day = resolve_end_calendar_day_for_market("us")
     window = _resolve_us_window(end_calendar_day=end_day, trading_days=trading_days)
     stats = _run_batches(
         snapshot.symbols,
@@ -342,7 +342,7 @@ def prewarm_constituents(
     )
     if not needs:
         return 0
-    end_day = resolve_end_calendar_day()
+    end_day = resolve_end_calendar_day_for_market("us")
     window = _resolve_us_window(end_calendar_day=end_day, trading_days=trading_days)
     stats = _run_batches(
         needs,

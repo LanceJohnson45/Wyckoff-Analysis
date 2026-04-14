@@ -33,7 +33,7 @@ jobs:
       US_SP500_BATCH_SIZE: "40"
       US_SP500_SLEEP_SECONDS: "0.5"
       SP500_SNAPSHOT_CACHE_KEY: us-sp500-snapshot-${{ github.ref_name }}-${{ github.run_id }}
-      TZ: Asia/Shanghai
+      TZ: America/New_York
 
     steps:
       - uses: actions/checkout@v4

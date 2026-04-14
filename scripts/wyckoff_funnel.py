@@ -67,7 +67,7 @@ from integrations.data_source import (
 from integrations.hk_index_universe import get_hk_index_union
 from integrations.us_sp500_universe import get_sp500_constituents
 from utils.feishu import send_feishu_notification
-from utils.trading_clock import CN_TZ, resolve_end_calendar_day
+from utils.trading_clock import CN_TZ, resolve_end_calendar_day_for_market
 
 TRIGGER_LABELS = {
     "sos": "SOS（量价点火）",
@@ -305,12 +305,8 @@ def _run_with_timeout(sym: str, window, timeout_s: int) -> pd.DataFrame:
 
 
 def _job_end_calendar_day() -> date:
-    """
-    定时任务统一口径：
-    - 北京时间 17:00-23:59 走 T（当天）
-    - 北京时间 00:00-16:59 走 T-1（上一自然日）
-    """
-    return resolve_end_calendar_day()
+    market = _resolve_funnel_market()
+    return resolve_end_calendar_day_for_market(market)
 
 
 def _resolve_symbol_pool_from_env() -> tuple[
@@ -1803,7 +1799,7 @@ def run(
             lines.append("无")
 
         content = "\n".join(lines)
-        title = f"🔬 Wyckoff Funnel {date.today().strftime('%Y-%m-%d')}"
+        title = f"🔬 Wyckoff Funnel {_job_end_calendar_day().strftime('%Y-%m-%d')}"
         ok = (
             True
             if not notify
@@ -2192,7 +2188,7 @@ def run(
         )
 
     content = "\n".join(lines)
-    title = f"🔬 Wyckoff Funnel {date.today().strftime('%Y-%m-%d')}"
+    title = f"🔬 Wyckoff Funnel {_job_end_calendar_day().strftime('%Y-%m-%d')}"
     ok = True if not notify else send_feishu_notification(webhook_url, title, content)
 
     def _selection_source(code: str) -> str:
