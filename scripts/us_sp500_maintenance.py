@@ -166,20 +166,32 @@ def _upsert_us_history(
     latest_date = pd.to_datetime(norm["date"], errors="coerce").dropna().max()
     if pd.isna(latest_date):
         return 0
-    ok = upsert_cache_data(
-        symbol=f"US:{symbol}",
-        adjust="qfq",
-        source="yfinance_batch",
-        df=norm,
-        context=context,
-    )
+    
+    max_retries = 3
+    ok = False
+    for attempt in range(max_retries):
+        ok = upsert_cache_data(
+            symbol=f"US:{symbol}",
+            adjust="qfq",
+            source="yfinance_batch",
+            df=norm,
+            context=context,
+        )
+        if ok:
+            break
+        if attempt < max_retries - 1:
+            time.sleep(0.5 * (attempt + 1))
+    
     if not ok:
         return 0
-    time.sleep(20)
-    meta = get_cache_meta(f"US:{symbol}", "qfq", context=context)
-    if meta is None or meta.end_date < latest_date.date():
-        return 0
-    return int(len(norm))
+    
+    for delay in [0.2, 0.5, 1.0]:
+        time.sleep(delay)
+        meta = get_cache_meta(f"US:{symbol}", "qfq", context=context)
+        if meta is not None and meta.end_date >= latest_date.date():
+            return int(len(norm))
+    
+    return 0
 
 
 def _latest_cached_date(symbol: str) -> date | None:
