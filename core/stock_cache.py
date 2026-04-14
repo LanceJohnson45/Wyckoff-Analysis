@@ -228,6 +228,12 @@ def upsert_cache_data(
     payload["symbol"] = symbol
     payload["adjust"] = adjust
     payload["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    for col in payload.columns:
+        if payload[col].dtype in ['float64', 'float32']:
+            payload[col] = payload[col].replace([float('inf'), float('-inf')], None)
+            payload[col] = payload[col].where(pd.notna(payload[col]), None)
+    
     records = payload.to_dict(orient="records")
 
     try:
