@@ -213,6 +213,20 @@ def _resolve_funnel_market() -> str:
     return market
 
 
+def _benchmark_label(code: str | None, market: str, *, smallcap: bool = False) -> str:
+    market_norm = str(market or "cn").strip().lower()
+    code_s = str(code or "").strip()
+    if market_norm == "us":
+        return code_s or ("IWM" if smallcap else "SPY")
+    if market_norm == "hk":
+        if smallcap:
+            return code_s or "HSTECH"
+        return code_s or "HSI"
+    if smallcap:
+        return "创业板指"
+    return "沪深300"
+
+
 def _fetch_hist(symbol: str, window, adjust: str) -> pd.DataFrame:
     df = _fetch_hist_with_market(
         symbol=symbol,
@@ -897,8 +911,9 @@ def _analyze_benchmark_and_tune_cfg(
     ratio_text = (
         f"{main_vol_ratio_5_20:.2f}x" if main_vol_ratio_5_20 is not None else "未知"
     )
+    market_label = _benchmark_label(context.get("main_code"), _resolve_funnel_market())
     market_pv_summary = (
-        f"沪深300近5日均量/20日均量={ratio_text}（{main_volume_state}），"
+        f"{market_label}近5日均量/20日均量={ratio_text}（{main_volume_state}），"
         f"当前位于{price_zone}。"
     )
     if regime == "RISK_ON":
@@ -1988,6 +2003,13 @@ def run(
     bench_line = "未知"
     pv_line = "暂无大盘量价推演"
     if benchmark_context:
+        bench_market = str(benchmark_context.get("market") or market or "cn").strip().lower()
+        main_label = _benchmark_label(benchmark_context.get("main_code"), bench_market)
+        smallcap_label = _benchmark_label(
+            benchmark_context.get("smallcap_code"),
+            bench_market,
+            smallcap=True,
+        )
         breadth = benchmark_context.get("breadth", {}) or {}
         breadth_text = (
             f"，上涨家数占比 {breadth.get('ratio_pct'):.1f}%"
@@ -2003,12 +2025,12 @@ def run(
         smallcap_close = benchmark_context.get("smallcap_close")
         smallcap_cum3 = benchmark_context.get("smallcap_recent3_cum_pct")
         smallcap_text = (
-            f" | 创业板指 {smallcap_close:.2f}，近3日 {smallcap_cum3:+.2f}%"
+            f" | {smallcap_label} {smallcap_close:.2f}，近3日 {smallcap_cum3:+.2f}%"
             if smallcap_close is not None and smallcap_cum3 is not None
             else ""
         )
         bench_line = (
-            f"{benchmark_context.get('regime')} | 沪深300 {benchmark_context.get('close'):.2f}"
+            f"{benchmark_context.get('regime')} | {main_label} {benchmark_context.get('close'):.2f}"
             f"（MA50={benchmark_context.get('ma50'):.1f} MA200={benchmark_context.get('ma200'):.1f}）"
             f"，近3日 {benchmark_context.get('recent3_cum_pct'):+.2f}%"
             f"{smallcap_text}"
