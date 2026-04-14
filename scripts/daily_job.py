@@ -184,6 +184,7 @@ def main() -> int:
     ).strip()
     step3_skip_llm = os.getenv("STEP3_SKIP_LLM", "").strip().lower() in {"1", "true", "yes", "on"}
     skip_step4 = os.getenv("DAILY_JOB_SKIP_STEP4", "").strip().lower() in {"1", "true", "yes", "on"}
+    require_step3_report = os.getenv("DAILY_JOB_REQUIRE_STEP3_REPORT", "").strip().lower() in {"1", "true", "yes", "on"}
     market = str(os.getenv("FUNNEL_MARKET", "cn") or "cn").strip().lower()
     if market not in {"cn", "us", "hk"}:
         market = "cn"
@@ -271,7 +272,7 @@ def main() -> int:
     elif step2_ok and symbols_info and is_non_cn_market:
         _log(f"推荐记录入库: {market.upper()} 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
 
-    # 阶段 2：批量研报（可降级：失败不影响 Funnel 成功）
+    # 阶段 2：批量研报（默认可降级；可通过 DAILY_JOB_REQUIRE_STEP3_REPORT 强制要求成功产出）
     step3_ok = True
     step3_err = None
     step3_springboard_codes: list[str] = []
@@ -296,6 +297,9 @@ def main() -> int:
         except Exception as e:
             step3_ok = False
             step3_err = str(e)
+        if step3_ok and not str(step3_report_text or "").strip():
+            step3_ok = False
+            step3_err = "empty_report"
         if step3_ok and step3_report_text:
             allowed_codes = [
                 str(item.get("code", "")).strip()
@@ -324,6 +328,12 @@ def main() -> int:
             f"阶段 2 批量研报: 起跳板代码={len(step3_springboard_codes)} ({preview_codes})",
             logs_path,
         )
+        if require_step3_report and not step3_ok:
+            has_blocking_failure = True
+            _log(
+                "阶段 2 批量研报: 已按 DAILY_JOB_REQUIRE_STEP3_REPORT=1 升级为阻断失败",
+                logs_path,
+            )
         if recommend_trade_date_int is not None and not is_non_cn_market:
             try:
                 ai_mark_ok = mark_ai_recommendations(

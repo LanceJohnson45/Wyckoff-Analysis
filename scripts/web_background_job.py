@@ -258,12 +258,18 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
         llm_base_url=base_url,
         market=market,
     )
+    report_text_s = str(report_text or "")
+    effective_ok = bool(ok)
+    reason_s = str(reason or "")
+    if effective_ok and not preview_only and not report_text_s.strip():
+        effective_ok = False
+        reason_s = "empty_report"
     return {
         "request_id": request_id,
         "job_kind": "batch_ai_report",
         "market": market,
-        "ok": bool(ok),
-        "reason": str(reason or ""),
+        "ok": effective_ok,
+        "reason": reason_s,
         "provider": provider,
         "model": model,
         "base_url": base_url,
@@ -272,7 +278,7 @@ def _run_batch_ai_report(request_id: str, payload: dict[str, Any]) -> dict[str, 
         "symbol_count": len(symbols_info),
         "symbols_info": symbols_info,
         "benchmark_context": benchmark_context,
-        "report_text": str(report_text or ""),
+        "report_text": report_text_s,
     }
 
 
@@ -317,6 +323,8 @@ def main() -> int:
         else:
             raise ValueError(f"不支持的 job_kind: {args.job_kind}")
         base_result.update(result)
+        if not bool(base_result.get("ok", True)):
+            base_result["status"] = "error"
     except Exception as e:
         base_result.update(
             {
