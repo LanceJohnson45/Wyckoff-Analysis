@@ -652,7 +652,7 @@ def run_backtest(
                 bench_raw = fetch_index_hist("000001", prefetch_start, prefetch_end)
             except Exception as exc:
                 raise RuntimeError(
-                    "回测需要大盘交易日历与基准收益，请先确保 akshare 可用；若走 Futu 兜底则还需 OpenD 可连接。"
+                    "回测需要大盘交易日历与基准收益，请先确保 akshare 可用。"
                 ) from exc
             bench_df = normalize_hist_from_fetch(bench_raw).sort_values("date").copy()
             bench_df["date"] = pd.to_datetime(bench_df["date"], errors="coerce").dt.date
@@ -1449,7 +1449,7 @@ def main() -> int:
 
     if success_count == 0:
         raise RuntimeError(
-            "多周期回测全部失败，请检查日期区间、快照覆盖范围、akshare/备用行情源与 Futu OpenD 兜底连接。"
+            "多周期回测全部失败，请检查日期区间、快照覆盖范围与 akshare/备用行情源。"
         ) from last_error
 
     if len(suite_rows) > 1:

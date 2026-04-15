@@ -1072,7 +1072,6 @@ def generate_stock_payload(
         background = f"  [结构背景] 现价:{close_val:.2f}, {extra_text}"
     else:
         background = f"  [结构背景] 现价:{close_val:.2f}"
-
     policy_prefix = f" {policy_tag}" if policy_tag else ""
     tag_text = ""
     raw_tag = str(wyckoff_tag or "").strip()
@@ -1670,7 +1669,6 @@ def run(
             if rotation_headline:
                 benchmark_lines.append(rotation_headline)
             benchmark_lines.extend(rotation_lines[:4])
-
     active_tracks = [
         track for track in ["Trend", "Accum"] if payloads_by_track.get(track)
     ]

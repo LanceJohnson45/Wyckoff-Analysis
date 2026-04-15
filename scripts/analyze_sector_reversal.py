@@ -2,7 +2,7 @@
 """
 板块"一日游"现象量化分析
 
-用 futuapi 拉取 A 股行业板块日线数据，
+用 akshare 拉取 A 股行业板块日线数据，
 统计板块隔日反转、连续性等特征，评估当前板块选择策略是否适配。
 
 用法:
@@ -14,6 +14,7 @@ import os
 import sys
 from collections import defaultdict
 
+import akshare as ak
 import numpy as np
 import pandas as pd
 
@@ -21,17 +22,14 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from integrations.futu_client import fetch_cn_industry_plates, fetch_history_kline
-
-
-def fetch_sector_daily(plate_code: str, start: str, end: str) -> pd.DataFrame:
+def fetch_sector_daily(plate_name: str, start: str, end: str) -> pd.DataFrame:
     """拉取单个行业板块日线。"""
-    df = fetch_history_kline(
-        plate_code,
-        start=start,
-        end=end,
-        market="cn",
-        adjust="none",
+    df = ak.stock_board_industry_hist_em(
+        symbol=plate_name,
+        start_date=start,
+        end_date=end,
+        period="日k",
+        adjust="",
     )
     if df is None or df.empty:
         return pd.DataFrame()
@@ -54,12 +52,12 @@ def main():
     print("=" * 70)
 
     # ── Step 1: 获取行业板块列表 ──
-    print("\n📂 拉取 Futu 行业板块列表...")
-    plate_df = fetch_cn_industry_plates()
+    print("\n📂 拉取 AKShare 行业板块列表...")
+    plate_df = ak.stock_board_industry_name_em()
     if plate_df is None or plate_df.empty:
-        print("✘ 无法获取行业板块列表，请检查 OpenD 连接与权限", file=sys.stderr)
+        print("✘ 无法获取行业板块列表，请检查 AKShare 可用性", file=sys.stderr)
         sys.exit(1)
-    sectors = list(zip(plate_df["code"], plate_df["name"]))
+    sectors = list(zip(plate_df["板块名称"], plate_df["板块名称"]))
     print(f"  共 {len(sectors)} 个行业板块")
 
     # ── Step 2: 逐个拉取行业指数日线 ──

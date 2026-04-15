@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：个股日线 akshare→baostock→efinance→futu；大盘指数 akshare→futu；行业/市值仅读缓存
+统一数据源：个股日线 akshare→baostock→efinance；大盘指数 akshare；行业/市值仅读缓存
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
 """
@@ -122,7 +122,7 @@ def _network_hint_from_details(details: list[str]) -> str:
     if "remotedisconnected" in blob or "remote end closed connection" in blob:
         return "疑似上游行情源瞬时断连，可稍后重试；服务端已支持自动重试。"
     if "permission denied" in blob and "efinance" in blob:
-        return "部署环境对 site-packages 为只读，efinance 本地缓存写入失败；建议依赖 futu/akshare/baostock 或启用兼容修复。"
+        return "部署环境对 site-packages 为只读，efinance 本地缓存写入失败；建议依赖 akshare/baostock 或启用兼容修复。"
     return ""
 
 
@@ -570,20 +570,6 @@ def _fetch_stock_efinance(symbol: str, start: str, end: str) -> pd.DataFrame:
     return df[out_cols].copy()
 
 
-def _fetch_stock_futu(
-    symbol: str, start: str, end: str, adjust: str
-) -> pd.DataFrame:
-    from integrations.futu_client import fetch_history_kline
-
-    return fetch_history_kline(
-        symbol,
-        start=start,
-        end=end,
-        market="cn",
-        adjust=adjust or "qfq",
-    )
-
-
 def _fetch_stock_yfinance(
     symbol: str,
     start: str,
@@ -680,6 +666,24 @@ def _fetch_index_yfinance(code: str, start: str, end: str) -> pd.DataFrame:
     )[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
 
 
+def _cn_index_to_yfinance_symbol(code: str) -> str:
+    code_s = str(code or "").strip().upper()
+    if not code_s:
+        raise ValueError("empty CN index code")
+    if code_s.endswith((".SS", ".SZ")):
+        return code_s
+    if "." in code_s:
+        base, suffix = code_s.split(".", 1)
+        suffix = suffix.upper()
+        if suffix in {"SH", "SS"}:
+            return f"{base}.SS"
+        if suffix == "SZ":
+            return f"{base}.SZ"
+    if code_s.isdigit() and len(code_s) == 6:
+        return f"{code_s}.SZ" if code_s.startswith("399") else f"{code_s}.SS"
+    return code_s
+
+
 def fetch_stock_hist(
     symbol: str,
     start: str | date,
@@ -688,7 +692,7 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：A 股优先 akshare/baostock/efinance，futu 仅作最后兜底。
+    个股日线：A 股优先 akshare/baostock/efinance。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_AKSHARE=1
     - DATA_SOURCE_DISABLE_BAOSTOCK=1
@@ -820,55 +824,18 @@ def fetch_stock_hist(
             failed_sources.append("efinance")
             failed_details.append(f"efinance={_compact_error(e)}")
 
-    # 4. futu
-    try:
-        return _tag_source(_fetch_stock_futu(symbol, start_s, end_s, adjust), "futu")
-    except ModuleNotFoundError as e:
-        _debug_source_fail("futu", e)
-        failed_sources.append(f"futu(缺少依赖 {e.name})")
-        failed_details.append(f"futu={_compact_error(e)}")
-    except Exception as e:
-        _debug_source_fail("futu", e)
-        failed_sources.append("futu")
-        failed_details.append(f"futu={_compact_error(e)}")
-
     detail_suffix = (
         f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance→futu，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance，"
         f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
     )
 
 
 # --- 大盘指数 ---
-
-
-def _fetch_index_futu(code: str, start: str, end: str) -> pd.DataFrame:
-    from integrations.futu_client import fetch_history_kline
-
-    df = fetch_history_kline(
-        code,
-        start=start,
-        end=end,
-        market="cn",
-        adjust="none",
-        security_type="index",
-    )
-    out = df.rename(
-        columns={
-            "日期": "date",
-            "开盘": "open",
-            "最高": "high",
-            "最低": "low",
-            "收盘": "close",
-            "成交量": "volume",
-            "涨跌幅": "pct_chg",
-        }
-    )
-    return out[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
 
 
 def _fetch_index_akshare(code: str, start: str, end: str) -> pd.DataFrame:
@@ -909,7 +876,7 @@ def fetch_index_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    大盘指数日线：A股优先 akshare，再回退 futu；US/HK 使用 yfinance。
+    大盘指数日线：A股优先 yfinance，失败后回退 akshare；US/HK 使用 yfinance。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
     """
     start_s = (
@@ -929,18 +896,19 @@ def fetch_index_hist(
             _debug_source_fail("yfinance(index)", e)
             raise RuntimeError(f"{market_norm.upper()} index {code} fetch failed via yfinance: {_compact_error(e)}") from e
 
+    yfinance_symbol = _cn_index_to_yfinance_symbol(code)
+    try:
+        return _fetch_index_yfinance(yfinance_symbol, start_s, end_s)
+    except Exception as e1:
+        _debug_source_fail("yfinance(index:cn)", e1)
+
     try:
         return _fetch_index_akshare(code, start_s, end_s)
     except Exception as e2:
         _debug_source_fail("akshare(index)", e2)
 
-    try:
-        return _fetch_index_futu(code, start_s, end_s)
-    except Exception as e1:
-        _debug_source_fail("futu(index)", e1)
-
     raise RuntimeError(
-        f"大盘指数 {code} 拉取失败（akshare/futu），请检查网络连通性与 OpenD 连接。"
+        f"大盘指数 {code} 拉取失败：已尝试 yfinance({yfinance_symbol}) -> akshare，请检查网络连通性。"
     )
 
 

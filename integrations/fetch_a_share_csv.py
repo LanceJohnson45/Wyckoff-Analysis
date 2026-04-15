@@ -99,20 +99,6 @@ def _trade_dates() -> list[date]:
         dates.append(date(year=1992, month=5, day=4))
         return sorted(set(dates))
 
-    def _fetch_from_futu_calendar() -> list[date]:
-        from integrations.futu_client import fetch_trading_days
-
-        values = fetch_trading_days(
-            market="cn",
-            start="1990-01-01",
-            end=(date.today() + timedelta(days=366)).strftime("%Y-%m-%d"),
-        )
-        s = pd.to_datetime(values, errors="coerce").dropna().date
-        dates = sorted(set(s.tolist()))
-        if not dates:
-            raise RuntimeError("futu trading days parsed empty")
-        return dates
-
     def _fetch_with_timeout(timeout: float) -> list[date]:
         try:
             import py_mini_racer
@@ -145,15 +131,7 @@ def _trade_dates() -> list[date]:
         pass
 
     last_err: Exception | None = None
-    # 交易日历优先 futu；失败后回退到 akshare/sina。
-    try:
-        dates = _fetch_from_futu_calendar()
-        if dates:
-            _write_cache(dates)
-            return dates
-    except Exception as e:
-        last_err = e
-
+    # 交易日历优先 akshare；失败后回退到新浪。
     for _ in range(3):
         try:
             dates = _fetch_from_akshare_calendar()
@@ -273,23 +251,7 @@ def get_all_stocks() -> list[dict[str, str]]:
         # 缓存读取异常不应阻塞后续网络尝试
         pass
 
-    # 1. 股票清单优先 futu
-    try:
-        from integrations.futu_client import fetch_cn_stock_basic
-
-        info = fetch_cn_stock_basic()
-        if info is None or info.empty:
-            raise RuntimeError("futu stock_basic empty")
-        records = info[["code", "name"]].to_dict("records")
-        try:
-            _atomic_json_dump(cache_path, records)
-        except Exception:
-            pass
-        return records
-    except Exception as e:
-        print(f"Futu error fetching stock list: {e}. Trying akshare...")
-
-    # 2. 尝试从 akshare 获取最新数据
+    # 1. 尝试从 akshare 获取最新数据
     try:
         info = ak.stock_info_a_code_name()
         info["code"] = info["code"].astype(str)
@@ -346,7 +308,7 @@ def get_stocks_by_board(board_name: str = "all") -> list[dict[str, str]]:
 
 
 def _fetch_hist(symbol: str, window: TradingWindow, adjust: str) -> pd.DataFrame:
-    """个股日线：akshare 优先，失败再回退其它数据源，最后才走 futu"""
+    """个股日线：akshare 优先，失败再回退其它数据源"""
     from integrations.stock_hist_repository import get_stock_hist
 
     context = "auto"

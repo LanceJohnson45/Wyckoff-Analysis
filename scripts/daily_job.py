@@ -215,7 +215,7 @@ def main() -> int:
         _log(f"LLM base_url: {llm_base_url or '(empty)'} (env={base_url_env_key})", logs_path)
 
     # 数据源口径在 integrations/data_source.py 中固定为：
-    # A 股历史 K 线优先 akshare / baostock / efinance，futu 仅作最后兜底。
+    # A 股历史 K 线优先 akshare / baostock / efinance。
 
     from core.funnel_pipeline import run_funnel as run_step2
     from core.batch_report import (
