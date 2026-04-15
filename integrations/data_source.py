@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：个股日线 akshare→baostock→efinance；大盘指数 akshare；行业/市值仅读缓存
+统一数据源：个股日线 akshare→baostock→efinance→futu；大盘指数 akshare→futu；行业/市值仅读缓存
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
 """
@@ -122,7 +122,7 @@ def _network_hint_from_details(details: list[str]) -> str:
     if "remotedisconnected" in blob or "remote end closed connection" in blob:
         return "疑似上游行情源瞬时断连，可稍后重试；服务端已支持自动重试。"
     if "permission denied" in blob and "efinance" in blob:
-        return "部署环境对 site-packages 为只读，efinance 本地缓存写入失败；建议依赖 tushare/akshare/baostock 或启用兼容修复。"
+        return "部署环境对 site-packages 为只读，efinance 本地缓存写入失败；建议依赖 futu/akshare/baostock 或启用兼容修复。"
     return ""
 
 
@@ -570,100 +570,18 @@ def _fetch_stock_efinance(symbol: str, start: str, end: str) -> pd.DataFrame:
     return df[out_cols].copy()
 
 
-def _fetch_stock_tushare(
+def _fetch_stock_futu(
     symbol: str, start: str, end: str, adjust: str
 ) -> pd.DataFrame:
-    import tushare as ts
-    from integrations.tushare_client import get_pro
+    from integrations.futu_client import fetch_history_kline
 
-    pro = get_pro()
-    if pro is None:
-        raise RuntimeError("TUSHARE_TOKEN 未配置")
-    ts_code = _to_ts_code(symbol)
-    # 口径固定：优先使用前复权（qfq）。
-    adj_val = "qfq"
-    # ts.pro_bar 绕过了 pro 对象，直接使用全局 token，需要显式限流
-    from integrations.tushare_client import _wait_for_rate_limit
-
-    _wait_for_rate_limit("pro_bar")
-    df = ts.pro_bar(ts_code=ts_code, adj=adj_val, start_date=start, end_date=end)
-
-    if df is None or df.empty:
-        # 诊断：尝试拉取不复权数据，看是否是权限问题（qfq 需要更高积分）
-        try:
-            df_no_adj = pro.daily(ts_code=ts_code, start_date=start, end_date=end)
-            if df_no_adj is not None and not df_no_adj.empty:
-                raise RuntimeError("tushare empty (qfq auth limit?)")
-        except Exception:
-            pass
-        raise RuntimeError("tushare empty")
-
-    df = df.rename(
-        columns={
-            "trade_date": "日期",
-            "open": "开盘",
-            "high": "最高",
-            "low": "最低",
-            "close": "收盘",
-            "vol": "成交量",
-            "amount": "成交额",
-            "pct_chg": "涨跌幅",
-        }
+    return fetch_history_kline(
+        symbol,
+        start=start,
+        end=end,
+        market="cn",
+        adjust=adjust or "qfq",
     )
-    df["成交量"] = pd.to_numeric(df["成交量"], errors="coerce") * 100  # 手 -> 股
-    df["成交额"] = pd.to_numeric(df["成交额"], errors="coerce") * 1000  # 千元 -> 元
-    df["换手率"] = pd.NA
-    df["振幅"] = pd.NA
-
-    # 尽量补齐换手率（daily_basic），失败不影响主流程。
-    try:
-        _wait_for_rate_limit("daily_basic")
-        basic = pro.daily_basic(
-            ts_code=ts_code,
-            start_date=start,
-            end_date=end,
-            fields="trade_date,turnover_rate",
-        )
-        if basic is not None and not basic.empty and "trade_date" in basic.columns:
-            basic = basic.copy()
-            basic["trade_date"] = basic["trade_date"].astype(str)
-            basic["turnover_rate"] = pd.to_numeric(
-                basic.get("turnover_rate"), errors="coerce"
-            )
-            tr_map = dict(zip(basic["trade_date"], basic["turnover_rate"]))
-            df["换手率"] = df["日期"].astype(str).str.replace("-", "").map(tr_map)
-    except Exception:
-        pass
-
-    # tushare 结果缺少振幅时，按 (最高-最低)/昨收 近似补齐。
-    if "pre_close" in df.columns:
-        pre_close = pd.to_numeric(df.get("pre_close"), errors="coerce")
-        high = pd.to_numeric(df.get("最高"), errors="coerce")
-        low = pd.to_numeric(df.get("最低"), errors="coerce")
-        amp = (high - low) / pre_close.replace(0, pd.NA) * 100
-        df["振幅"] = pd.to_numeric(df.get("振幅"), errors="coerce").fillna(amp)
-
-    df["日期"] = (
-        df["日期"].astype(str).str[:4]
-        + "-"
-        + df["日期"].astype(str).str[4:6]
-        + "-"
-        + df["日期"].astype(str).str[6:8]
-    )
-    return df[
-        [
-            "日期",
-            "开盘",
-            "最高",
-            "最低",
-            "收盘",
-            "成交量",
-            "成交额",
-            "涨跌幅",
-            "换手率",
-            "振幅",
-        ]
-    ].copy()
 
 
 def _fetch_stock_yfinance(
@@ -770,7 +688,7 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：akshare/baostock/efinance。
+    个股日线：A 股优先 akshare/baostock/efinance，futu 仅作最后兜底。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_AKSHARE=1
     - DATA_SOURCE_DISABLE_BAOSTOCK=1
@@ -902,13 +820,25 @@ def fetch_stock_hist(
             failed_sources.append("efinance")
             failed_details.append(f"efinance={_compact_error(e)}")
 
+    # 4. futu
+    try:
+        return _tag_source(_fetch_stock_futu(symbol, start_s, end_s, adjust), "futu")
+    except ModuleNotFoundError as e:
+        _debug_source_fail("futu", e)
+        failed_sources.append(f"futu(缺少依赖 {e.name})")
+        failed_details.append(f"futu={_compact_error(e)}")
+    except Exception as e:
+        _debug_source_fail("futu", e)
+        failed_sources.append("futu")
+        failed_details.append(f"futu={_compact_error(e)}")
+
     detail_suffix = (
         f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance→futu，"
         f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
     )
 
@@ -916,28 +846,29 @@ def fetch_stock_hist(
 # --- 大盘指数 ---
 
 
-def _fetch_index_tushare(code: str, start: str, end: str) -> pd.DataFrame:
-    from integrations.tushare_client import get_pro
+def _fetch_index_futu(code: str, start: str, end: str) -> pd.DataFrame:
+    from integrations.futu_client import fetch_history_kline
 
-    pro = get_pro()
-    if pro is None:
-        raise RuntimeError(
-            "拉取失败（非程序错误）：大盘指数需 Tushare Token，免费数据源（akshare 等）不支持大盘指数。请配置 TUSHARE_TOKEN。"
-        )
-    ts_code = _index_to_ts_code(code)
-    df = pro.index_daily(ts_code=ts_code, start_date=start, end_date=end)
-    if df is None or df.empty:
-        raise RuntimeError("拉取失败（非程序错误）：tushare 大盘指数返回空数据")
-    df = df.copy()
-    df["date"] = (
-        df["trade_date"].astype(str).str[:4]
-        + "-"
-        + df["trade_date"].astype(str).str[4:6]
-        + "-"
-        + df["trade_date"].astype(str).str[6:8]
+    df = fetch_history_kline(
+        code,
+        start=start,
+        end=end,
+        market="cn",
+        adjust="none",
+        security_type="index",
     )
-    df["volume"] = pd.to_numeric(df["vol"], errors="coerce")
-    return df[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
+    out = df.rename(
+        columns={
+            "日期": "date",
+            "开盘": "open",
+            "最高": "high",
+            "最低": "low",
+            "收盘": "close",
+            "成交量": "volume",
+            "涨跌幅": "pct_chg",
+        }
+    )
+    return out[["date", "open", "high", "low", "close", "volume", "pct_chg"]].copy()
 
 
 def _fetch_index_akshare(code: str, start: str, end: str) -> pd.DataFrame:
@@ -978,7 +909,7 @@ def fetch_index_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    大盘指数日线：A股使用 akshare，US/HK 使用 yfinance。
+    大盘指数日线：A股优先 akshare，再回退 futu；US/HK 使用 yfinance。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
     """
     start_s = (
@@ -998,14 +929,18 @@ def fetch_index_hist(
             _debug_source_fail("yfinance(index)", e)
             raise RuntimeError(f"{market_norm.upper()} index {code} fetch failed via yfinance: {_compact_error(e)}") from e
 
-    # A股指数仅走 akshare
     try:
         return _fetch_index_akshare(code, start_s, end_s)
     except Exception as e2:
         _debug_source_fail("akshare(index)", e2)
 
+    try:
+        return _fetch_index_futu(code, start_s, end_s)
+    except Exception as e1:
+        _debug_source_fail("futu(index)", e1)
+
     raise RuntimeError(
-        f"大盘指数 {code} 拉取失败（akshare），请检查网络连通性。"
+        f"大盘指数 {code} 拉取失败（akshare/futu），请检查网络连通性与 OpenD 连接。"
     )
 
 

@@ -99,28 +99,18 @@ def _trade_dates() -> list[date]:
         dates.append(date(year=1992, month=5, day=4))
         return sorted(set(dates))
 
-    def _fetch_from_tushare_calendar() -> list[date]:
-        from integrations.tushare_client import get_pro
+    def _fetch_from_futu_calendar() -> list[date]:
+        from integrations.futu_client import fetch_trading_days
 
-        pro = get_pro()
-        if pro is None:
-            raise RuntimeError("TUSHARE_TOKEN 未配置或无效")
-        end_s = (date.today() + timedelta(days=366)).strftime("%Y%m%d")
-        df = pro.trade_cal(
-            exchange="SSE",
-            start_date="19900101",
-            end_date=end_s,
-            fields="cal_date,is_open",
+        values = fetch_trading_days(
+            market="cn",
+            start="1990-01-01",
+            end=(date.today() + timedelta(days=366)).strftime("%Y-%m-%d"),
         )
-        if df is None or df.empty:
-            raise RuntimeError("tushare trade_cal empty")
-        open_df = df[pd.to_numeric(df["is_open"], errors="coerce") == 1]
-        if open_df.empty:
-            raise RuntimeError("tushare trade_cal has no open dates")
-        s = pd.to_datetime(open_df["cal_date"], errors="coerce").dropna().dt.date
+        s = pd.to_datetime(values, errors="coerce").dropna().date
         dates = sorted(set(s.tolist()))
         if not dates:
-            raise RuntimeError("tushare trade_cal parsed empty")
+            raise RuntimeError("futu trading days parsed empty")
         return dates
 
     def _fetch_with_timeout(timeout: float) -> list[date]:
@@ -155,9 +145,9 @@ def _trade_dates() -> list[date]:
         pass
 
     last_err: Exception | None = None
-    # tushare 优先；失败后回退到 akshare/sina。
+    # 交易日历优先 futu；失败后回退到 akshare/sina。
     try:
-        dates = _fetch_from_tushare_calendar()
+        dates = _fetch_from_futu_calendar()
         if dates:
             _write_cache(dates)
             return dates
@@ -283,29 +273,21 @@ def get_all_stocks() -> list[dict[str, str]]:
         # 缓存读取异常不应阻塞后续网络尝试
         pass
 
-    # 1. tushare 优先
+    # 1. 股票清单优先 futu
     try:
-        from integrations.tushare_client import get_pro
+        from integrations.futu_client import fetch_cn_stock_basic
 
-        pro = get_pro()
-        if pro is not None:
-            info = pro.stock_basic(
-                exchange="",
-                list_status="L",
-                fields="symbol,name",
-            )
-            if info is None or info.empty:
-                raise RuntimeError("tushare stock_basic empty")
-            info["code"] = info["symbol"].astype(str)
-            info["name"] = info["name"].astype(str)
-            records = info[["code", "name"]].to_dict("records")
-            try:
-                _atomic_json_dump(cache_path, records)
-            except Exception:
-                pass
-            return records
+        info = fetch_cn_stock_basic()
+        if info is None or info.empty:
+            raise RuntimeError("futu stock_basic empty")
+        records = info[["code", "name"]].to_dict("records")
+        try:
+            _atomic_json_dump(cache_path, records)
+        except Exception:
+            pass
+        return records
     except Exception as e:
-        print(f"Tushare error fetching stock list: {e}. Trying akshare...")
+        print(f"Futu error fetching stock list: {e}. Trying akshare...")
 
     # 2. 尝试从 akshare 获取最新数据
     try:
@@ -364,7 +346,7 @@ def get_stocks_by_board(board_name: str = "all") -> list[dict[str, str]]:
 
 
 def _fetch_hist(symbol: str, window: TradingWindow, adjust: str) -> pd.DataFrame:
-    """个股日线：tushare 优先（qfq），失败再回退其它数据源"""
+    """个股日线：akshare 优先，失败再回退其它数据源，最后才走 futu"""
     from integrations.stock_hist_repository import get_stock_hist
 
     context = "auto"

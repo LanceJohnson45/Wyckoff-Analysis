@@ -2,7 +2,7 @@
 """
 板块"一日游"现象量化分析
 
-用 tushare 拉取 2025-10 至 2026-04-03 的真实行业指数日线数据，
+用 futuapi 拉取 A 股行业板块日线数据，
 统计板块隔日反转、连续性等特征，评估当前板块选择策略是否适配。
 
 用法:
@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 import sys
-import time
 from collections import defaultdict
 
 import numpy as np
@@ -22,45 +21,30 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from integrations.tushare_client import get_pro
+from integrations.futu_client import fetch_cn_industry_plates, fetch_history_kline
 
 
-# ── 申万一级行业指数代码 (tushare index_classify + index_daily) ──
-# tushare 的行业指数用 SW (申万) 体系，代码格式为 8xxxxx.SI
-# 我们直接用 tushare 的 index_classify 接口拉取申万一级行业列表
-
-def fetch_sw_l1_members(pro) -> pd.DataFrame:
-    """拉取申万一级行业分类列表"""
-    df = pro.index_classify(level="L1", src="SW2021")
-    if df is None or df.empty:
-        raise RuntimeError("无法获取申万行业分类")
-    return df  # columns: index_code, industry_name, ...
-
-
-def fetch_sector_daily(pro, ts_code: str, start: str, end: str) -> pd.DataFrame:
-    """拉取单个申万行业指数日线（使用 sw_daily 接口）"""
-    df = pro.sw_daily(ts_code=ts_code, start_date=start, end_date=end)
+def fetch_sector_daily(plate_code: str, start: str, end: str) -> pd.DataFrame:
+    """拉取单个行业板块日线。"""
+    df = fetch_history_kline(
+        plate_code,
+        start=start,
+        end=end,
+        market="cn",
+        adjust="none",
+    )
     if df is None or df.empty:
         return pd.DataFrame()
-    df = df.sort_values("trade_date").reset_index(drop=True)
-    # sw_daily 的涨跌幅列叫 pct_change（不是 pct_chg）
-    if "pct_change" in df.columns:
-        df["pct_chg"] = pd.to_numeric(df["pct_change"], errors="coerce")
-    elif "pct_chg" in df.columns:
-        df["pct_chg"] = pd.to_numeric(df["pct_chg"], errors="coerce")
-    else:
-        # 手动计算
-        close = pd.to_numeric(df["close"], errors="coerce")
-        df["pct_chg"] = close.pct_change() * 100
-    return df
+    out = df.rename(columns={"日期": "trade_date", "涨跌幅": "pct_chg"})
+    out = out.sort_values("trade_date").reset_index(drop=True)
+    out["pct_chg"] = pd.to_numeric(out["pct_chg"], errors="coerce")
+    if out["pct_chg"].isna().all():
+        close = pd.to_numeric(out["收盘"], errors="coerce")
+        out["pct_chg"] = close.pct_change() * 100.0
+    return out
 
 
 def main():
-    pro = get_pro()
-    if pro is None:
-        print("✘ TUSHARE_TOKEN 未配置", file=sys.stderr)
-        sys.exit(1)
-
     START = "20251001"
     END = "20260403"
 
@@ -69,26 +53,28 @@ def main():
     print(f"  数据区间: {START[:4]}-{START[4:6]}-{START[6:]} → {END[:4]}-{END[4:6]}-{END[6:]}")
     print("=" * 70)
 
-    # ── Step 1: 获取申万一级行业列表 ──
-    print("\n📂 拉取申万一级行业列表...")
-    sw_df = fetch_sw_l1_members(pro)
-    sectors = list(zip(sw_df["index_code"], sw_df["industry_name"]))
-    print(f"  共 {len(sectors)} 个一级行业")
+    # ── Step 1: 获取行业板块列表 ──
+    print("\n📂 拉取 Futu 行业板块列表...")
+    plate_df = fetch_cn_industry_plates()
+    if plate_df is None or plate_df.empty:
+        print("✘ 无法获取行业板块列表，请检查 OpenD 连接与权限", file=sys.stderr)
+        sys.exit(1)
+    sectors = list(zip(plate_df["code"], plate_df["name"]))
+    print(f"  共 {len(sectors)} 个行业板块")
 
     # ── Step 2: 逐个拉取行业指数日线 ──
     print("\n📊 拉取行业指数日线数据...")
     sector_data: dict[str, pd.DataFrame] = {}
-    for ts_code, name in sectors:
+    for plate_code, name in sectors:
         try:
-            df = fetch_sector_daily(pro, ts_code, START, END)
+            df = fetch_sector_daily(plate_code, START, END)
             if not df.empty and len(df) > 10:
                 sector_data[name] = df
-                print(f"  ✔ {name} ({ts_code}): {len(df)} 条")
+                print(f"  ✔ {name} ({plate_code}): {len(df)} 条")
             else:
-                print(f"  ✘ {name} ({ts_code}): 数据不足")
+                print(f"  ✘ {name} ({plate_code}): 数据不足")
         except Exception as e:
-            print(f"  ✘ {name} ({ts_code}): {e}")
-        time.sleep(6.5)  # tushare sw_daily 限速: 10次/分钟
+            print(f"  ✘ {name} ({plate_code}): {e}")
 
     if not sector_data:
         print("✘ 未拉取到任何行业数据", file=sys.stderr)

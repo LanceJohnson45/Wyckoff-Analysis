@@ -160,7 +160,7 @@ def get_stock_hist(
                 f"cache_load failed: {type(e).__name__}: {e}"
             ) from e
 
-    # cache_only 模式：只返回缓存中已有的数据，不去 tushare 补拉
+    # cache_only 模式：只返回缓存中已有的数据，不去在线行情源补拉
     if cache_only:
         if cached_norm is not None and not cached_norm.empty:
             result_norm = _slice_df_by_date(cached_norm, start_d, end_d)

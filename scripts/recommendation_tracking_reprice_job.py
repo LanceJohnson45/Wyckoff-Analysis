@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 # Ensure project root is on sys.path for direct script invocation
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from integrations.supabase_recommendation import refresh_tracking_prices_with_tushare_unadjusted
+from integrations.supabase_recommendation import refresh_tracking_prices_with_hist_data
 
 TZ = ZoneInfo("Asia/Shanghai")
 
@@ -38,7 +38,7 @@ def _log(msg: str, logs_path: str | None = None) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="推荐跟踪价格回填任务（Tushare 不复权）")
+    parser = argparse.ArgumentParser(description="推荐跟踪价格回填任务（统一历史行情）")
     parser.add_argument("--logs", default="", help="日志文件路径（可选）")
     parser.add_argument("--market", choices=["cn", "us", "all"], default="all", help="仅回填指定市场；默认 all")
     args = parser.parse_args()
@@ -50,7 +50,7 @@ def main() -> int:
         logs_path,
     )
     try:
-        summary = refresh_tracking_prices_with_tushare_unadjusted(market=market)
+        summary = refresh_tracking_prices_with_hist_data(market=market)
     except Exception as e:
         _log(f"任务失败: {e}", logs_path)
         return 1

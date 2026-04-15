@@ -705,12 +705,12 @@ def _pick_close_on_or_before(sorted_trade_dates: list[str], target_yyyymmdd: str
     return sorted_trade_dates[i]
 
 
-def refresh_tracking_prices_with_tushare_unadjusted(
+def refresh_tracking_prices_with_hist_data(
     *,
     market: str = "",
 ) -> dict[str, Any]:
     """
-    使用 Tushare（日线不复权）回填并刷新推荐跟踪价格：
+    使用统一历史行情回填并刷新推荐跟踪价格：
     - initial_price: 推荐日（或之前最近交易日）收盘价
     - current_price: 当前系统时间对应最近交易日收盘价
     - change_pct: (current - initial) / initial * 100
@@ -854,3 +854,11 @@ def refresh_tracking_prices_with_tushare_unadjusted(
         "codes_no_data": codes_no_data,
         "latest_trade_date": latest_trade_date_global,
     }
+
+
+def refresh_tracking_prices_with_tushare_unadjusted(
+    *,
+    market: str = "",
+) -> dict[str, Any]:
+    """兼容旧调用名，内部已切换到统一历史行情入口。"""
+    return refresh_tracking_prices_with_hist_data(market=market)
