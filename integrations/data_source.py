@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：个股日线 akshare→baostock→efinance→tushare(qfq)；大盘 tushare 直连
+统一数据源：个股日线 akshare→baostock→efinance；大盘指数 akshare；行业/市值仅读缓存
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
 """
@@ -770,7 +770,7 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：akshare/baostock/efinance 优先，Tushare(qfq) 作为最后兜底。
+    个股日线：akshare/baostock/efinance。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_AKSHARE=1
     - DATA_SOURCE_DISABLE_BAOSTOCK=1
@@ -902,30 +902,13 @@ def fetch_stock_hist(
             failed_sources.append("efinance")
             failed_details.append(f"efinance={_compact_error(e)}")
 
-    # 4) tushare 兜底（固定 qfq）
-    from integrations.tushare_client import get_pro
-
-    pro = get_pro()
-    if pro is not None:
-        try:
-            return _tag_source(
-                _fetch_stock_tushare(symbol, start_s, end_s, "qfq"), "tushare"
-            )
-        except Exception as e:
-            _debug_source_fail("tushare", e)
-            failed_sources.append("tushare")
-            failed_details.append(f"tushare={_compact_error(e)}")
-    else:
-        failed_sources.append("tushare(unconfigured)")
-        failed_details.append("tushare=token_missing")
-
     detail_suffix = (
         f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance→tushare，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 akshare→baostock→efinance，"
         f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
     )
 
@@ -995,7 +978,7 @@ def fetch_index_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    大盘指数日线：tushare 优先，失败时 fallback 到 akshare。
+    大盘指数日线：A股使用 akshare，US/HK 使用 yfinance。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
     """
     start_s = (
@@ -1015,24 +998,18 @@ def fetch_index_hist(
             _debug_source_fail("yfinance(index)", e)
             raise RuntimeError(f"{market_norm.upper()} index {code} fetch failed via yfinance: {_compact_error(e)}") from e
 
-    # 1) tushare 优先
-    try:
-        return _fetch_index_tushare(code, start_s, end_s)
-    except Exception as e:
-        _debug_source_fail("tushare(index)", e)
-
-    # 2) akshare fallback
+    # A股指数仅走 akshare
     try:
         return _fetch_index_akshare(code, start_s, end_s)
     except Exception as e2:
         _debug_source_fail("akshare(index)", e2)
 
     raise RuntimeError(
-        f"大盘指数 {code} 拉取全部失败（tushare + akshare），请检查 TUSHARE_TOKEN 或网络连通性。"
+        f"大盘指数 {code} 拉取失败（akshare），请检查网络连通性。"
     )
 
 
-# --- 行业 & 市值批量获取（tushare） ---
+# --- 行业 & 市值批量获取（仅缓存） ---
 
 _DATA_CACHE_DIR = Path(__file__).resolve().parent.parent / "data"
 _SECTOR_CACHE = _DATA_CACHE_DIR / "sector_map_cache.json"
@@ -1076,7 +1053,7 @@ def _ts_code_to_symbol(ts_code: str) -> str:
 
 def fetch_sector_map() -> dict[str, str]:
     """
-    全市场 code->行业映射。优先用缓存，过期后通过 tushare stock_basic 刷新。
+    全市场 code->行业映射。仅使用本地缓存，不再调用 tushare 刷新。
     """
     try:
         if (
@@ -1088,40 +1065,18 @@ def fetch_sector_map() -> dict[str, str]:
     except Exception as e:
         _debug_source_fail("sector_cache_read", e)
 
-    from integrations.tushare_client import get_pro
-
-    pro = get_pro()
-    if pro is None:
-        try:
-            if _SECTOR_CACHE.exists():
-                with open(_SECTOR_CACHE, "r", encoding="utf-8") as f:
-                    return json.load(f)
-        except Exception as e:
-            _debug_source_fail("sector_cache_fallback_read", e)
-        return {}
-
-    df = pro.stock_basic(fields="ts_code,industry")
-    if df is None or df.empty:
-        return {}
-
-    mapping = {}
-    for _, row in df.iterrows():
-        sym = _ts_code_to_symbol(str(row["ts_code"]))
-        industry = str(row.get("industry", "")).strip()
-        if sym and industry:
-            mapping[sym] = industry
-
     try:
-        _atomic_write_json(_SECTOR_CACHE, mapping)
+        if _SECTOR_CACHE.exists():
+            with open(_SECTOR_CACHE, "r", encoding="utf-8") as f:
+                return json.load(f)
     except Exception as e:
-        _debug_source_fail("sector_cache_write", e)
-
-    return mapping
+        _debug_source_fail("sector_cache_fallback_read", e)
+    return {}
 
 
 def fetch_market_cap_map() -> dict[str, float]:
     """
-    全市场 code->总市值(亿元)。通过 tushare daily_basic 获取最新交易日数据。
+    全市场 code->总市值(亿元)。仅使用本地缓存，不再调用 tushare 刷新。
     """
     try:
         if (
@@ -1134,42 +1089,10 @@ def fetch_market_cap_map() -> dict[str, float]:
     except Exception as e:
         _debug_source_fail("market_cap_cache_read", e)
 
-    from integrations.tushare_client import get_pro
-
-    pro = get_pro()
-    if pro is None:
-        try:
-            if _MARKET_CAP_CACHE.exists():
-                with open(_MARKET_CAP_CACHE, "r", encoding="utf-8") as f:
-                    return {k: float(v) for k, v in json.load(f).items()}
-        except Exception as e:
-            _debug_source_fail("market_cap_cache_fallback_read", e)
-        return {}
-
-    from datetime import date as _date, timedelta as _td
-
-    # 尝试最近几个交易日
-    mapping: dict[str, float] = {}
-    for offset in range(5):
-        d = _date.today() - _td(days=1 + offset)
-        trade_date = d.strftime("%Y%m%d")
-        try:
-            df = pro.daily_basic(trade_date=trade_date, fields="ts_code,total_mv")
-            if df is not None and not df.empty:
-                for _, row in df.iterrows():
-                    sym = _ts_code_to_symbol(str(row["ts_code"]))
-                    total_mv = row.get("total_mv")
-                    if sym and pd.notna(total_mv):
-                        mapping[sym] = float(total_mv) / 10000.0  # 万元 -> 亿元
-                break
-        except Exception as e:
-            _debug_source_fail(f"tushare_daily_basic[{trade_date}]", e)
-            continue
-
-    if mapping:
-        try:
-            _atomic_write_json(_MARKET_CAP_CACHE, mapping)
-        except Exception as e:
-            _debug_source_fail("market_cap_cache_write", e)
-
-    return mapping
+    try:
+        if _MARKET_CAP_CACHE.exists():
+            with open(_MARKET_CAP_CACHE, "r", encoding="utf-8") as f:
+                return {k: float(v) for k, v in json.load(f).items()}
+    except Exception as e:
+        _debug_source_fail("market_cap_cache_fallback_read", e)
+    return {}

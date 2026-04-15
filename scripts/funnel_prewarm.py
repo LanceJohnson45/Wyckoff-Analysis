@@ -83,7 +83,7 @@ def main() -> int:
                 _log(f"prewarm ok {symbol} rows={rows}")
             except Exception as e:
                 fail += 1
-                _log(f"prewarm fail {symbol}: {e}")
+                _log(f"prewarm fail {symbol}: {type(e).__name__}: {e}")
             if args.sleep_seconds > 0:
                 time.sleep(max(float(args.sleep_seconds), 0.0))
     _log(f"prewarm done market={market} ok={ok} fail={fail}")

@@ -1475,11 +1475,11 @@ def run_funnel_job(
         print(f"[funnel] 市值映射加载结果: {len(market_cap_map)}")
         if not market_cap_map:
             print(
-                "[funnel] ⚠️ 市值数据为空（TUSHARE_TOKEN 可能缺失/失效），Layer1 将跳过市值过滤"
+                "[funnel] ⚠️ 市值数据为空（仅缓存模式下可能尚未准备好），Layer1 将跳过市值过滤"
             )
         if not sector_map:
             print(
-                "[funnel] ⚠️ 行业映射为空（TUSHARE_TOKEN 可能缺失/失效），Top行业/板块轮动将不可用"
+                "[funnel] ⚠️ 行业映射为空（仅缓存模式下可能尚未准备好），Top行业/板块轮动将不可用"
             )
     else:
         sector_map = {}

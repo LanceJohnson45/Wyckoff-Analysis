@@ -127,7 +127,10 @@ def get_stock_hist(
     else:
         cache_symbol = f"HK:{symbol}"
 
-    md_df = _load_from_md_tables(symbol, start_d, end_d, adjust, context)
+    try:
+        md_df = _load_from_md_tables(symbol, start_d, end_d, adjust, context)
+    except Exception as e:
+        raise RuntimeError(f"md_table_load failed: {type(e).__name__}: {e}") from e
     if md_df is not None and not md_df.empty:
         out = _slice_df_by_date(normalize_hist_df(md_df), start_d, end_d)
         out_cn = denormalize_hist_df(out)
@@ -135,17 +138,27 @@ def get_stock_hist(
         return out_cn
 
     cache_adjust = adjust or "none"
-    meta = get_cache_meta(cache_symbol, cache_adjust, context=context)
+    try:
+        meta = get_cache_meta(cache_symbol, cache_adjust, context=context)
+    except Exception as e:
+        raise RuntimeError(
+            f"cache_meta failed: {type(e).__name__}: {e}"
+        ) from e
     cached_norm: pd.DataFrame | None = None
     if meta is not None:
-        cached_norm = load_cached_history(
-            symbol=cache_symbol,
-            adjust=cache_adjust,
-            source=meta.source,
-            start_date=meta.start_date,
-            end_date=meta.end_date,
-            context=context,
-        )
+        try:
+            cached_norm = load_cached_history(
+                symbol=cache_symbol,
+                adjust=cache_adjust,
+                source=meta.source,
+                start_date=meta.start_date,
+                end_date=meta.end_date,
+                context=context,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"cache_load failed: {type(e).__name__}: {e}"
+            ) from e
 
     # cache_only 模式：只返回缓存中已有的数据，不去 tushare 补拉
     if cache_only:
@@ -174,7 +187,12 @@ def get_stock_hist(
             f"[stock_repo] cache_miss symbol={symbol} adjust={cache_adjust} "
             f"range={gap_start}..{gap_end} context={context}"
         )
-        frame, _ = _fetch_gap(symbol, gap_start, gap_end, adjust, market_norm)
+        try:
+            frame, _ = _fetch_gap(symbol, gap_start, gap_end, adjust, market_norm)
+        except Exception as e:
+            raise RuntimeError(
+                f"source_fetch failed [{gap_start}..{gap_end}]: {type(e).__name__}: {e}"
+            ) from e
         fetched_frames.append(frame)
 
     merged = _merge_norm_frames(
@@ -185,14 +203,24 @@ def get_stock_hist(
         # 缓存无可用数据且补拉失败时，按原行为抛错
         # （fetch_stock_hist_from_source 内部会提供详细数据源失败信息）
         did_fetch = True
-        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+        try:
+            frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+        except Exception as e:
+            raise RuntimeError(
+                f"source_fetch failed [{start_d}..{end_d}]: {type(e).__name__}: {e}"
+            ) from e
         merged = frame
 
     result_norm = _slice_df_by_date(merged, start_d, end_d)
     if result_norm.empty:
         # 防御性兜底：强制拉取完整窗口
         did_fetch = True
-        frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+        try:
+            frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+        except Exception as e:
+            raise RuntimeError(
+                f"source_refetch failed [{start_d}..{end_d}]: {type(e).__name__}: {e}"
+            ) from e
         result_norm = _slice_df_by_date(frame, start_d, end_d)
         merged = _merge_norm_frames([merged, frame])
     chosen_source = "cache"
@@ -201,21 +229,26 @@ def get_stock_hist(
     if did_fetch or meta is None:
         new_start = min(start_d, meta.start_date) if meta else start_d
         new_end = max(end_d, meta.end_date) if meta else end_d
-        upsert_cache_data(
-            symbol=cache_symbol,
-            adjust=cache_adjust,
-            source=chosen_source,
-            df=merged,
-            context=context,
-        )
-        upsert_cache_meta(
-            symbol=cache_symbol,
-            adjust=cache_adjust,
-            source=chosen_source,
-            start_date=new_start,
-            end_date=new_end,
-            context=context,
-        )
+        try:
+            upsert_cache_data(
+                symbol=cache_symbol,
+                adjust=cache_adjust,
+                source=chosen_source,
+                df=merged,
+                context=context,
+            )
+            upsert_cache_meta(
+                symbol=cache_symbol,
+                adjust=cache_adjust,
+                source=chosen_source,
+                start_date=new_start,
+                end_date=new_end,
+                context=context,
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"cache_upsert failed: {type(e).__name__}: {e}"
+            ) from e
         print(
             f"[stock_repo] cache_upsert symbol={symbol} adjust={cache_adjust} "
             f"rows={len(merged)} coverage={new_start}..{new_end} source={chosen_source}"
