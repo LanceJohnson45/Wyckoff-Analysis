@@ -58,6 +58,36 @@ class TestFetchCnIndexHist:
             "end": "20260415",
         }
 
+    def test_cn_index_falls_back_to_akshare_when_yfinance_history_is_too_short(
+        self, monkeypatch
+    ):
+        monkeypatch.setattr(
+            data_source,
+            "_fetch_index_yfinance",
+            lambda symbol, start, end: pd.DataFrame(
+                {
+                    "date": ["2026-04-15"],
+                    "open": [1.0],
+                    "high": [1.0],
+                    "low": [1.0],
+                    "close": [1.0],
+                    "volume": [1],
+                    "pct_chg": [0.0],
+                }
+            ),
+        )
+        monkeypatch.setattr(
+            data_source,
+            "_fetch_index_akshare",
+            lambda code, start, end: _index_frame(),
+        )
+
+        result = data_source.fetch_index_hist(
+            "399006", "2026-03-01", "2026-04-15", market="cn"
+        )
+
+        assert len(result) == 2
+
     def test_cn_index_falls_back_to_akshare_when_yfinance_fails(self, monkeypatch):
         monkeypatch.setattr(
             data_source,

@@ -684,6 +684,26 @@ def _cn_index_to_yfinance_symbol(code: str) -> str:
     return code_s
 
 
+def _cn_index_yfinance_has_sufficient_history(
+    frame: pd.DataFrame,
+    *,
+    start: str,
+    end: str,
+) -> bool:
+    if frame is None or frame.empty:
+        return False
+    if len(frame) >= 2:
+        return True
+    start_dt = pd.to_datetime(start, format="%Y%m%d", errors="coerce")
+    end_dt = pd.to_datetime(end, format="%Y%m%d", errors="coerce")
+    if pd.isna(start_dt) or pd.isna(end_dt):
+        return len(frame) >= 1
+    requested_days = (end_dt - start_dt).days + 1
+    if requested_days <= 3:
+        return len(frame) >= 1
+    return False
+
+
 def fetch_stock_hist(
     symbol: str,
     start: str | date,
@@ -898,7 +918,16 @@ def fetch_index_hist(
 
     yfinance_symbol = _cn_index_to_yfinance_symbol(code)
     try:
-        return _fetch_index_yfinance(yfinance_symbol, start_s, end_s)
+        frame = _fetch_index_yfinance(yfinance_symbol, start_s, end_s)
+        if _cn_index_yfinance_has_sufficient_history(
+            frame,
+            start=start_s,
+            end=end_s,
+        ):
+            return frame
+        raise RuntimeError(
+            f"yfinance insufficient history rows={len(frame)} for range {start_s}..{end_s}"
+        )
     except Exception as e1:
         _debug_source_fail("yfinance(index:cn)", e1)
 

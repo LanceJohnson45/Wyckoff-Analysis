@@ -1,0 +1,1627 @@
+{
+  "yfinance_version": "1.2.1",
+  "start": "2026-03-01",
+  "end": "2026-04-15",
+  "symbols": {
+    "000001.SS": {
+      "name": "上证指数",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 32,
+        "columns": [
+          "Date",
+          "Close__000001.SS",
+          "High__000001.SS",
+          "Low__000001.SS",
+          "Open__000001.SS",
+          "Volume__000001.SS"
+        ],
+        "first_date": "2026-03-02T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2026-04-09T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2026-03-16T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2026-01-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2025-10-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2025-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2024-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "2021-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 6972,
+          "columns": [
+            "Date",
+            "Close__000001.SS",
+            "High__000001.SS",
+            "Low__000001.SS",
+            "Open__000001.SS",
+            "Volume__000001.SS"
+          ],
+          "first_date": "1997-07-02T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-09T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-03-16T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-01-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-10-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2024-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2021-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 6972,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "1997-07-02T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        }
+      }
+    },
+    "399001.SZ": {
+      "name": "深证成指",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 32,
+        "columns": [
+          "Date",
+          "Close__399001.SZ",
+          "High__399001.SZ",
+          "Low__399001.SZ",
+          "Open__399001.SZ",
+          "Volume__399001.SZ"
+        ],
+        "first_date": "2026-03-02T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2026-04-09T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2026-03-16T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2026-01-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2025-10-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2025-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2024-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "2021-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 6939,
+          "columns": [
+            "Date",
+            "Close__399001.SZ",
+            "High__399001.SZ",
+            "Low__399001.SZ",
+            "Open__399001.SZ",
+            "Volume__399001.SZ"
+          ],
+          "first_date": "1997-08-22T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-09T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-03-16T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-01-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-10-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2024-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2021-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 6939,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "1997-08-22T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        }
+      }
+    },
+    "399006.SZ": {
+      "name": "创业板指",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 1,
+        "columns": [
+          "Date",
+          "Close__399006.SZ",
+          "High__399006.SZ",
+          "Low__399006.SZ",
+          "Open__399006.SZ",
+          "Volume__399006.SZ"
+        ],
+        "first_date": "2026-04-15T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__399006.SZ",
+            "High__399006.SZ",
+            "Low__399006.SZ",
+            "Open__399006.SZ",
+            "Volume__399006.SZ"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      }
+    },
+    "000300.SS": {
+      "name": "沪深300",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 32,
+        "columns": [
+          "Date",
+          "Close__000300.SS",
+          "High__000300.SS",
+          "Low__000300.SS",
+          "Open__000300.SS",
+          "Volume__000300.SS"
+        ],
+        "first_date": "2026-03-02T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2026-04-09T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2026-03-16T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2026-01-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2025-10-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2025-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2024-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2021-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 1235,
+          "columns": [
+            "Date",
+            "Close__000300.SS",
+            "High__000300.SS",
+            "Low__000300.SS",
+            "Open__000300.SS",
+            "Volume__000300.SS"
+          ],
+          "first_date": "2021-03-11T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 5,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-09T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 22,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-03-16T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 58,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-01-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 122,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-10-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 243,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2025-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 485,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2024-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1211,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2021-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 1235,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2021-03-11T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        }
+      }
+    },
+    "000905.SS": {
+      "name": "中证500",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 1,
+        "columns": [
+          "Date",
+          "Close__000905.SS",
+          "High__000905.SS",
+          "Low__000905.SS",
+          "Open__000905.SS",
+          "Volume__000905.SS"
+        ],
+        "first_date": "2026-04-15T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000905.SS",
+            "High__000905.SS",
+            "Low__000905.SS",
+            "Open__000905.SS",
+            "Volume__000905.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      }
+    },
+    "000688.SS": {
+      "name": "科创50",
+      "download_window": {
+        "ok": true,
+        "label": "download(start=2026-03-01, end=2026-04-15)",
+        "rows": 1,
+        "columns": [
+          "Date",
+          "Close__000688.SS",
+          "High__000688.SS",
+          "Low__000688.SS",
+          "Open__000688.SS",
+          "Volume__000688.SS"
+        ],
+        "first_date": "2026-04-15T00:00:00",
+        "last_date": "2026-04-15T00:00:00"
+      },
+      "download_periods": {
+        "5d": {
+          "ok": true,
+          "label": "download(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "download(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "download(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "download(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "download(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "download(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "download(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Close__000688.SS",
+            "High__000688.SS",
+            "Low__000688.SS",
+            "Open__000688.SS",
+            "Volume__000688.SS"
+          ],
+          "first_date": "2026-04-15T00:00:00",
+          "last_date": "2026-04-15T00:00:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "download(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      },
+      "history_periods": {
+        "5d": {
+          "ok": true,
+          "label": "Ticker.history(period=5d)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1mo": {
+          "ok": true,
+          "label": "Ticker.history(period=1mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "3mo": {
+          "ok": true,
+          "label": "Ticker.history(period=3mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "6mo": {
+          "ok": true,
+          "label": "Ticker.history(period=6mo)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "1y": {
+          "ok": true,
+          "label": "Ticker.history(period=1y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "2y": {
+          "ok": true,
+          "label": "Ticker.history(period=2y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "5y": {
+          "ok": true,
+          "label": "Ticker.history(period=5y)",
+          "rows": 1,
+          "columns": [
+            "Date",
+            "Open",
+            "High",
+            "Low",
+            "Close",
+            "Volume",
+            "Dividends",
+            "Stock Splits"
+          ],
+          "first_date": "2026-04-15T00:00:00+08:00",
+          "last_date": "2026-04-15T00:00:00+08:00"
+        },
+        "max": {
+          "ok": true,
+          "label": "Ticker.history(period=max)",
+          "rows": 0,
+          "columns": [],
+          "first_date": null,
+          "last_date": null
+        }
+      }
+    }
+  }
+}
