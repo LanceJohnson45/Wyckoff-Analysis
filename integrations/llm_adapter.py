@@ -2,13 +2,12 @@
 """
 LiteLLM 适配层 — 为 Agent 层提供统一的 LLM 调用接口。
 
-Phase 1:
+当前：
   - call_llm_via_litellm() 作为 integrations/llm_client.call_llm() 的可选替代
   - 支持现有全部 9 个 provider: Gemini / OpenAI / DeepSeek / Qwen / Kimi / Zhipu / Volcengine / Minimax
   - 内部通过 LiteLLM 自动路由，无需手动切分 Gemini vs OpenAI-compat 逻辑
 
-Phase 2:
-  - 替换 integrations/llm_client.call_llm() 的内部实现
+可通过 LITELLM_ENABLED=1 启用，作为 llm_client.call_llm() 的路由替代
 """
 from __future__ import annotations
 
@@ -39,16 +38,8 @@ PROVIDER_PREFIX_MAP: dict[str, str] = {
     "minimax": "openai",     # Minimax OpenAI-compatible
 }
 
-# 默认 base_url（同 integrations/llm_client.py 保持一致）
-DEFAULT_BASE_URLS: dict[str, str] = {
-    "openai": "https://api.openai.com/v1",
-    "zhipu": "https://open.bigmodel.cn/api/paas/v4",
-    "minimax": "https://api.minimax.chat/v1",
-    "deepseek": "https://api.deepseek.com/v1",
-    "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    "kimi": "https://api.moonshot.cn/v1",
-    "volcengine": "https://ark.cn-beijing.volces.com/api/v3",
-}
+# 复用 llm_client.py 的 URL 表，避免重复维护
+from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS as DEFAULT_BASE_URLS
 
 # ---------------------------------------------------------------------------
 # 默认参数
@@ -162,25 +153,3 @@ def call_llm_via_litellm(
     return content.strip()
 
 
-def call_llm_legacy(
-    provider: str,
-    model: str,
-    api_key: str,
-    system_prompt: str,
-    user_message: str,
-    **kwargs,
-) -> str:
-    """
-    Fallback: 直接调用现有 integrations/llm_client.call_llm()。
-
-    用于 LiteLLM 不可用或特定 provider 兼容性问题时的降级。
-    """
-    from integrations.llm_client import call_llm
-    return call_llm(
-        provider=provider,
-        model=model,
-        api_key=api_key,
-        system_prompt=system_prompt,
-        user_message=user_message,
-        **kwargs,
-    )

@@ -5,7 +5,6 @@ from datetime import date, timedelta
 import time
 import akshare as ak
 import pandas as pd
-from integrations.download_history import add_download_history
 from core.export_artifacts import cleanup_export_artifacts, file_loader, write_dataframe_csv
 from integrations.fetch_a_share_csv import get_all_stocks
 from integrations.stock_hist_repository import get_stock_hist
@@ -28,9 +27,9 @@ with content_col:
         cleanup_export_artifacts()
         st.session_state.custom_export_cleanup_last_ts = now_ts
 
-    # 首次进入页面时复用现有 Loading 组件（与页面其他操作保持一致）
+    # 首次进入页面时复用现有 Thinking 组件（与页面其他操作保持一致）
     if not st.session_state.get("_custom_export_entered", False):
-        loading = show_page_loading(title="加载中...", subtitle="正在准备页面内容")
+        loading = show_page_loading(title="思考中...", subtitle="正在准备页面内容")
         time.sleep(0.2)
         loading.empty()
         st.session_state["_custom_export_entered"] = True
@@ -175,7 +174,7 @@ with content_col:
 
     if run:
         try:
-            loading = show_page_loading(title="加载中...", subtitle="正在获取数据")
+            loading = show_page_loading(title="思考中...", subtitle="正在获取数据")
             try:
                 if source["id"] == "macro_china_cpi_monthly":
                     df = source["fn"]()
@@ -219,13 +218,6 @@ with content_col:
                 "preview_rows": preview_df.to_dict(orient="records"),
                 "preview_count": int(len(preview_df)),
                 "symbol": symbol,
-                "query_meta": {
-                    "source_id": source["id"],
-                    "symbol": symbol,
-                    "start_date": str(start_date),
-                    "end_date": str(end_date),
-                    "adjust": adjust,
-                },
             }
             st.session_state.custom_export_source_id = source["id"]
             st.session_state.custom_export_selected_signature = ""
@@ -323,7 +315,7 @@ with content_col:
     st.markdown("### 📥 导出")
     selected_bytes = file_loader(selected_path)
     all_bytes = file_loader(csv_path)
-    selected_clicked = st.download_button(
+    st.download_button(
         label="下载所选字段 CSV",
         data=selected_bytes,
         file_name=f"{file_prefix}_selected.csv",
@@ -331,7 +323,7 @@ with content_col:
         type="primary",
         width="stretch",
     )
-    all_clicked = st.download_button(
+    st.download_button(
         label="下载全部字段 CSV",
         data=all_bytes,
         file_name=f"{file_prefix}_all.csv",
@@ -339,31 +331,3 @@ with content_col:
         width="stretch",
     )
 
-    query_meta = payload.get("query_meta") if isinstance(payload, dict) else {}
-    if selected_clicked:
-        add_download_history(
-            page="CustomExport",
-            source=source_key,
-            title=f"{payload.get('symbol') or ''} 所选字段导出",
-            file_name=f"{file_prefix}_selected.csv",
-            mime="text/csv",
-            data=selected_bytes,
-            request_payload={
-                "kind": "custom_export_selected",
-                "query": query_meta or {},
-                "columns": selected_cols,
-            },
-        )
-    if all_clicked:
-        add_download_history(
-            page="CustomExport",
-            source=source_key,
-            title=f"{payload.get('symbol') or ''} 全字段导出",
-            file_name=f"{file_prefix}_all.csv",
-            mime="text/csv",
-            data=all_bytes,
-            request_payload={
-                "kind": "custom_export_all",
-                "query": query_meta or {},
-            },
-        )

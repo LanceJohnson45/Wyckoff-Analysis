@@ -36,16 +36,8 @@ def _user_payload(user) -> dict | None:
     if user is None:
         return None
     if isinstance(user, dict):
-        return {
-            "id": user.get("id"),
-            "email": user.get("email"),
-        }
-    if hasattr(user, "model_dump"):
-        data = user.model_dump()
-        return {"id": data.get("id"), "email": data.get("email")}
-    if hasattr(user, "dict"):
-        data = user.dict()
-        return {"id": data.get("id"), "email": data.get("email")}
+        return {"id": user.get("id"), "email": user.get("email")}
+    # Pydantic v1/v2 及普通对象统一走 getattr
     return {"id": getattr(user, "id", None), "email": getattr(user, "email", None)}
 
 
@@ -135,7 +127,7 @@ def login_form():
 <div style="text-align: center; margin-bottom: 2rem;">
     <h1>🔐</h1>
     <h2>欢迎回来</h2>
-    <p style="color: #666;">请登录以继续使用 Akshare 智能投研平台</p>
+    <p style="color: #666;">请登录以继续使用 Wyckoff 智能投研平台</p>
 </div>
             """,
             unsafe_allow_html=True,
@@ -165,7 +157,7 @@ def login_form():
                     else:
                         try:
                             loading = show_page_loading(
-                                title="加载中...", subtitle="正在登录"
+                                title="思考中...", subtitle="正在登录"
                             )
                             try:
                                 response = supabase.auth.sign_in_with_password(
@@ -236,7 +228,7 @@ def login_form():
                     else:
                         try:
                             loading = show_page_loading(
-                                title="加载中...", subtitle="正在注册"
+                                title="思考中...", subtitle="正在注册"
                             )
                             try:
                                 supabase.auth.sign_up(
@@ -280,6 +272,9 @@ def logout():
         pass
     clear_tokens_from_storage()
     reset_user_settings_state()
+    # 清理聊天状态，防止跨账号会话串用
+    for key in ("chat_manager", "chat_messages", "_chat_manager_user_id"):
+        st.session_state.pop(key, None)
     st.session_state.user = None
     st.session_state.access_token = None
     st.session_state.refresh_token = None

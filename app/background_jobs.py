@@ -4,6 +4,12 @@ from typing import Any
 
 import streamlit as st
 
+from app.agent_jobs import (
+    agent_mode_enabled,
+    agent_mode_ready_for_current_user,
+    submit_agent_job,
+    sync_agent_job_state,
+)
 from integrations.github_actions import (
     background_jobs_allowed_for_user,
     clear_github_actions_caches,
@@ -23,6 +29,10 @@ def current_user_id() -> str:
 
 
 def background_jobs_ready_for_current_user() -> tuple[bool, str]:
+    # ── AGENT_MODE: 进程内执行，无需 GH Actions Token ──
+    if agent_mode_enabled():
+        return agent_mode_ready_for_current_user()
+    # ── 原有 GH Actions 路径 ──
     ready, msg = github_actions_ready()
     if not ready:
         return (False, msg)
@@ -37,6 +47,9 @@ def background_jobs_ready_for_current_user() -> tuple[bool, str]:
 def submit_background_job(job_kind: str, payload: dict[str, Any], *, state_key: str) -> str:
     user_id = current_user_id()
     merged_payload = {"user_id": user_id, **payload}
+    if agent_mode_enabled():
+        return submit_agent_job(job_kind, merged_payload, state_key=state_key)
+    # ── 原有 GH Actions 路径 ──
     request_id = trigger_web_job(job_kind, merged_payload)
     st.session_state[state_key] = {
         "job_kind": job_kind,
@@ -51,6 +64,10 @@ def sync_background_job_state(*, state_key: str) -> dict[str, Any] | None:
     state = st.session_state.get(state_key)
     if not isinstance(state, dict):
         return None
+    # ── AGENT_MODE: 从进程内存读取状态 ──
+    if state.get("_agent_mode"):
+        return sync_agent_job_state(state_key=state_key)
+    # ── 原有 GH Actions 路径 ──
     request_id = str(state.get("request_id", "") or "").strip()
     if not request_id:
         return state
@@ -79,3 +96,38 @@ def load_latest_job_result(
 
 def refresh_background_job_data() -> None:
     clear_github_actions_caches()
+
+
+def render_background_job_status(state: dict | None, *, noun: str = "任务") -> dict | None:
+    """
+    渲染后台任务状态（WyckoffScreeners / AIAnalysis 共用）。
+
+    Returns:
+        result dict（如果有），否则 None。
+    """
+    if not isinstance(state, dict):
+        return None
+    run = state.get("run")
+    result = state.get("result")
+    request_id = str(state.get("request_id", "") or "").strip()
+    if request_id:
+        st.caption(f"请求 ID: `{request_id}`")
+    if run is None:
+        st.info(f"后台{noun}已提交，运行实例还在排队创建。")
+        return result if isinstance(result, dict) else None
+
+    status = f"{getattr(run, 'status', '') or '--'}"
+    conclusion = f"{getattr(run, 'conclusion', '') or '--'}"
+    html_url = str(getattr(run, "html_url", "") or "").strip()
+    if status == "completed":
+        if conclusion == "success":
+            st.success(f"后台{noun}完成。")
+        else:
+            st.error(f"后台{noun}已结束，但结论为 `{conclusion}`。")
+    else:
+        st.info(f"后台{noun}进行中：`{status}`")
+    if html_url:
+        st.markdown(f"[打开 GitHub Actions 运行详情]({html_url})")
+    if isinstance(result, dict) and str(result.get("status", "") or "") == "error":
+        st.error(str(result.get("error", f"后台{noun}失败")))
+    return result if isinstance(result, dict) else None

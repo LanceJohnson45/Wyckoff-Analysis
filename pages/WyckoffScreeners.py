@@ -10,6 +10,7 @@ from app.background_jobs import (
     background_jobs_ready_for_current_user,
     load_latest_job_result,
     refresh_background_job_data,
+    render_background_job_status,
     submit_background_job,
     sync_background_job_state,
 )
@@ -49,32 +50,7 @@ def _parse_symbols(text: str, market: str = "cn") -> str:
 
 
 def _render_job_status(state: dict | None) -> dict | None:
-    if not isinstance(state, dict):
-        return None
-    run = state.get("run")
-    result = state.get("result")
-    request_id = str(state.get("request_id", "") or "").strip()
-    if request_id:
-        st.caption(f"请求 ID: `{request_id}`")
-    if run is None:
-        st.info("后台任务已提交，GitHub Actions 运行实例还在排队创建。")
-        return result if isinstance(result, dict) else None
-
-    status = f"{getattr(run, 'status', '') or '--'}"
-    conclusion = f"{getattr(run, 'conclusion', '') or '--'}"
-    html_url = str(getattr(run, "html_url", "") or "").strip()
-    if status == "completed":
-        if conclusion == "success":
-            st.success("后台筛选完成。")
-        else:
-            st.error(f"后台任务已结束，但结论为 `{conclusion}`。")
-    else:
-        st.info(f"后台任务进行中：`{status}`")
-    if html_url:
-        st.markdown(f"[打开 GitHub Actions 运行详情]({html_url})")
-    if isinstance(result, dict) and str(result.get("status", "") or "") == "error":
-        st.error(str(result.get("error", "后台任务失败")))
-    return result if isinstance(result, dict) else None
+    return render_background_job_status(state, noun="筛选")
 
 
 def _render_funnel_result(result: dict) -> None:
@@ -319,3 +295,10 @@ with content_col:
 
     if active_result:
         _render_funnel_result(active_result)
+
+    st.divider()
+    st.page_link(
+        "pages/AIAnalysis.py",
+        label="前往 AI 分析",
+        icon="🤖",
+    )

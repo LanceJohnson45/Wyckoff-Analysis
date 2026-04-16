@@ -23,7 +23,7 @@ with content_col:
     st.markdown("记录每日定时任务生成的威科夫推荐股票，并跟踪其后续的表现。数据在每日定时任务后自动刷新。")
 
     # 1. 加载数据
-    loading = show_page_loading(title="正在拉取数据...", subtitle="从数据库加载推荐历史")
+    loading = show_page_loading(title="思考中...", subtitle="从数据库加载推荐历史")
     try:
         raw_data = load_recommendation_tracking(limit=2000)
     finally:

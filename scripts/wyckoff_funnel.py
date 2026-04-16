@@ -1,20 +1,24 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024 youngcan. All Rights Reserved.
+# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
 # 本代码仅供个人学习研究使用，未经授权不得用于商业目的。
 # 商业授权请联系作者支付授权费用。
 
 """
-Wyckoff Funnel 定时任务：4 层漏斗筛选 → 飞书发送
+Wyckoff Funnel 定时任务：5 层漏斗筛选 → 多渠道推送
 
-Layer 1: 剥离垃圾 → Layer 2: 强弱甄别 → Layer 3: 板块共振 → Layer 4: 威科夫狙击
+Layer 1: 剥离垃圾（ST/北交所/科创板/市值/成交额）
+Layer 2: 六通道甄选（主升/潜伏/吸筹/地量/暗中护盘/点火破局）
+Layer 2.5: Markup 加速检测
+Layer 3: 板块共振（行业 Top-N）
+Layer 4: 威科夫狙击（Spring / SOS / LPS / Effort vs Result）
 """
 
 from __future__ import annotations
+
 from collections import Counter
-from dataclasses import fields as dataclass_fields
+import socket
 import json
 import os
-import socket
 import sys
 import time
 from concurrent.futures import (
@@ -44,12 +48,12 @@ from integrations.fetch_a_share_csv import (
 from core.wyckoff_engine import (
     DataIntegrityPolicy,
     FunnelConfig,
+    normalize_hist_from_fetch,
     filter_symbols_by_integrity,
     layer1_filter,
     layer2_strength_detailed,
     layer3_sector_resonance,
     layer4_triggers,
-    normalize_hist_from_fetch,
     detect_markup_stage,
     detect_accum_stage,
     layer5_exit_signals,
@@ -59,26 +63,28 @@ from core.wyckoff_engine import (
 )
 from core.sector_rotation import (
     SECTOR_STATE_LABELS,
-    SECTOR_STATE_SCORE_BONUS,
     analyze_sector_rotation,
 )
 from integrations.data_source import (
     fetch_index_hist,
+    fetch_stock_spot_snapshot,
     fetch_sector_map,
     fetch_market_cap_map,
-    fetch_stock_spot_snapshot,
 )
 from integrations.hk_index_universe import get_hk_index_union
 from integrations.us_sp500_universe import get_sp500_constituents
 from utils.feishu import send_feishu_notification
 from utils.trading_clock import CN_TZ, resolve_end_calendar_day_for_market
 
-TRIGGER_LABELS = {
-    "sos": "SOS（量价点火）",
-    "spring": "Spring（终极震仓）",
-    "lps": "LPS（缩量回踩）",
-    "evr": "Effort vs Result（放量不跌）",
-}
+# ── tools/ 层导入 ──
+from tools.candidate_ranker import (
+    TRIGGER_LABELS,
+    TRIGGER_SHORT_LABELS,
+    TRIGGER_GROUP_ORDER,
+    TRIGGER_GROUP_TITLES,
+    rank_l3_candidates as _rank_l3_candidates,
+)
+
 TRADING_DAYS = int(os.getenv("FUNNEL_TRADING_DAYS", "320"))
 MAX_RETRIES = int(os.getenv("FUNNEL_FETCH_RETRIES", "2"))
 RETRY_BASE_DELAY = float(os.getenv("FUNNEL_RETRY_BASE_DELAY", "1.0"))
@@ -170,6 +176,11 @@ FUNNEL_AI_SELECTION_MODE = (
 FUNNEL_CARD_STYLE = os.getenv("FUNNEL_CARD_STYLE", "legacy_compact").strip().lower()
 FUNNEL_EVR_POLICY = os.getenv("FUNNEL_EVR_POLICY", "all_regimes").strip().lower()
 
+from tools.candidate_ranker import rank_l3_candidates as _shared_rank_l3_candidates
+
+
+from tools.funnel_config import apply_funnel_cfg_overrides as _apply_funnel_cfg_overrides
+
 
 def _parse_int_env(name: str, default: int) -> int:
     raw = str(os.getenv(name, "") or "").strip()
@@ -179,41 +190,6 @@ def _parse_int_env(name: str, default: int) -> int:
         return int(float(raw))
     except Exception:
         return default
-
-
-def _parse_bool(raw: str) -> bool:
-    return raw.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _apply_funnel_cfg_overrides(cfg: FunnelConfig) -> None:
-    """
-    将 .env 中的 FUNNEL_CFG_* 参数映射到 FunnelConfig。
-    示例：FUNNEL_CFG_MIN_MARKET_CAP_YI=35
-    """
-    for f in dataclass_fields(FunnelConfig):
-        if f.name == "enable_evr_trigger":
-            # EVR 仅由 regime 自动决策，不接受环境变量覆盖。
-            continue
-        key = f"FUNNEL_CFG_{f.name.upper()}"
-        raw = os.getenv(key)
-        if raw is None:
-            continue
-        val = raw.strip()
-        if not val:
-            continue
-        try:
-            current = getattr(cfg, f.name, None)
-            if isinstance(current, bool):
-                parsed = _parse_bool(val)
-            elif isinstance(current, int) and not isinstance(current, bool):
-                parsed = int(float(val))
-            elif isinstance(current, float):
-                parsed = float(val)
-            else:
-                parsed = val
-            setattr(cfg, f.name, parsed)
-        except Exception as e:
-            print(f"[funnel] ⚠️ 忽略非法配置 {key}={raw!r}: {e}")
 
 
 def _normalize_hist(df: pd.DataFrame) -> pd.DataFrame:
@@ -1162,7 +1138,6 @@ def _calc_market_breadth(
         "sample_size": valid_now,
     }
 
-
 def _dump_full_fetch_snapshot(
     df_map: dict[str, pd.DataFrame],
     all_symbols: list[str],
@@ -1420,7 +1395,6 @@ def _rank_l3_candidates(
     ranked_symbols = rank_df["code"].astype(str).tolist()
     score_map = {str(r["code"]): float(r["watch_score"]) for _, r in rank_df.iterrows()}
     return (ranked_symbols, score_map)
-
 
 def run_funnel_job(
     include_debug_context: bool = False,
@@ -1883,18 +1857,23 @@ def run(
         benchmark_context["latest_close_map"] = latest_close_map
 
     code_to_reasons: dict[str, list[str]] = {}
-    code_to_best_score: dict[str, float] = {}
+    code_to_trigger_keys: dict[str, list[str]] = {}
+    code_to_total_score: dict[str, float] = {}
     for key, label in TRIGGER_LABELS.items():
         for code, score in triggers.get(key, []):
             if code not in code_to_reasons:
                 code_to_reasons[code] = []
-                code_to_best_score[code] = score
+                code_to_trigger_keys[code] = []
+                code_to_total_score[code] = 0.0
             code_to_reasons[code].append(label)
-            code_to_best_score[code] = max(code_to_best_score.get(code, 0), score)
+            code_to_trigger_keys[code].append(key)
+            code_to_total_score[code] += score
 
+    # 兼容旧变量名（下游可能引用）
+    code_to_best_score = code_to_total_score
     sorted_codes = sorted(
         code_to_reasons.keys(),
-        key=lambda c: -code_to_best_score.get(c, 0),
+        key=lambda c: -code_to_total_score.get(c, 0),
     )
     unique_hit_count = len(sorted_codes)
     use_legacy_selection = FUNNEL_AI_SELECTION_MODE in {
@@ -2011,15 +1990,49 @@ def run(
             f"**候选分层**: 命中股票{unique_hit_count} -> AI输入全量{len(selected_for_ai)}",
             f"**Top 行业**: {', '.join(metrics['top_sectors']) if metrics['top_sectors'] else ('不可用（行业映射缺失）' if market == 'cn' and not sector_map else '无')}",
             "",
-            "**命中列表（按优先级）代码 名称 | 筛选理由 | 分值**",
-            "",
         ]
-        for code in selected_for_ai:
-            name = name_map.get(code, code)
-            reasons = "、".join(code_to_reasons.get(code, []))
-            lines.append(
-                f"• {code} {name} | {reasons} | score={code_to_best_score.get(code, 0):.2f}"
-            )
+
+        # ── 命中列表：按信号分组 ──
+        def _score_star(s: float) -> str:
+            if s >= 10:
+                return "★★"
+            if s >= 5:
+                return "★ "
+            return "  "
+
+        selected_set = set(selected_for_ai)
+
+        # 1) 多信号共振组（置顶）
+        multi_signal = [c for c in selected_for_ai if len(code_to_trigger_keys.get(c, [])) > 1]
+        if multi_signal:
+            lines.append(f"**【🔥 多信号共振】{len(multi_signal)} 只**")
+            for code in sorted(multi_signal, key=lambda c: -code_to_total_score.get(c, 0)):
+                name = name_map.get(code, code)
+                short = "+".join(TRIGGER_SHORT_LABELS.get(k, k) for k in code_to_trigger_keys.get(code, []))
+                score = code_to_total_score.get(code, 0)
+                lines.append(f"{_score_star(score)} {code} {name}  {score:.2f}  {short}")
+            lines.append("")
+
+        # 2) 各信号分组
+        single_signal_codes = [c for c in selected_for_ai if c not in set(multi_signal)]
+        # 为每个 code 确定主信号（取第一个 trigger key）
+        code_primary_key: dict[str, str] = {}
+        for code in single_signal_codes:
+            keys = code_to_trigger_keys.get(code, [])
+            code_primary_key[code] = keys[0] if keys else "sos"
+
+        for group_key in TRIGGER_GROUP_ORDER:
+            group_codes = [c for c in single_signal_codes if code_primary_key.get(c) == group_key]
+            if not group_codes:
+                continue
+            group_title = TRIGGER_GROUP_TITLES.get(group_key, group_key)
+            lines.append(f"**【{group_title}】{len(group_codes)} 只**")
+            for code in sorted(group_codes, key=lambda c: -code_to_total_score.get(c, 0)):
+                name = name_map.get(code, code)
+                score = code_to_total_score.get(code, 0)
+                lines.append(f"{_score_star(score)} {code} {name}  {score:.2f}")
+            lines.append("")
+
         if not selected_for_ai:
             lines.append("无")
 

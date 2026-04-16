@@ -166,6 +166,9 @@ def load_user_settings(user_id: str):
                     or OPENAI_COMPATIBLE_BASE_URLS.get(provider, "")
                 )
 
+            # 读盘室供应商
+            st.session_state.chat_provider = settings.get("chat_provider") or "gemini"
+
             # 其它
             st.session_state.tushare_token = settings.get("tushare_token") or ""
             st.session_state.tg_bot_token = settings.get("tg_bot_token") or ""
@@ -205,7 +208,7 @@ def save_user_settings(user_id: str, settings: dict):
                 changed = True
 
             # 兼容旧表结构（尚未添加这些列）时的兜底
-            for optional_key in ("custom_providers", "gemini_base_url"):
+            for optional_key in ("custom_providers", "gemini_base_url", "chat_provider"):
                 if optional_key in fallback and "column" in str(e.message or "").lower():
                     fallback.pop(optional_key, None)
                     changed = True

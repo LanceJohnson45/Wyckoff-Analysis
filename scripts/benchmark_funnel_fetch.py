@@ -27,10 +27,6 @@ from integrations.fetch_a_share_csv import _normalize_symbols, _resolve_trading_
 from core.wyckoff_engine import normalize_hist_from_fetch
 from utils.trading_clock import resolve_end_calendar_day
 
-def _job_end_calendar_day() -> date:
-    return resolve_end_calendar_day()
-
-
 def _fetch_one(symbol: str, window) -> tuple[str, bool]:
     from integrations.fetch_a_share_csv import _fetch_hist
 
@@ -100,7 +96,7 @@ def main() -> int:
         return 1
 
     window = _resolve_trading_window(
-        end_calendar_day=_job_end_calendar_day(),
+        end_calendar_day=resolve_end_calendar_day(),
         trading_days=max(args.trading_days, 30),
     )
 

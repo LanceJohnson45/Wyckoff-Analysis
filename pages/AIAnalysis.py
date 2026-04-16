@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """AI 分析页：单股本地，批量后台。"""
-import os
+
 import re
 
 import pandas as pd
@@ -20,60 +20,25 @@ from integrations.llm_client import (
     DEFAULT_GEMINI_MODEL,
     GEMINI_MODELS,
     OPENAI_COMPATIBLE_BASE_URLS,
+    PROVIDER_LABELS,
     SUPPORTED_PROVIDERS,
+    get_provider_credentials,
 )
 from utils import extract_symbols_from_text
-
-# 供应商展示名与 session_state 中的 key 后缀对应
-PROVIDER_LABELS = {
-    "gemini": "Gemini",
-    "openai": "OpenAI",
-    "zhipu": "智谱",
-    "minimax": "Minimax",
-    "deepseek": "DeepSeek",
-    "qwen": "Qwen",
-    "kimi": "Kimi",
-    "volcengine": "火山引擎",
-}
 
 AI_ANALYSIS_DEFAULT_FEISHU_WEBHOOK = (
     "https://open.feishu.cn/open-apis/bot/v2/hook/4ef56ec3-fb84-4eb4-b4d9-775ae7de69ff"
 )
 
+STATE_KEY = "batch_ai_background_job"
+
 
 def _resolve_ai_analysis_feishu_webhook() -> str:
-    """
-    AI 分析页专用 webhook 口径：
-    1) 优先用户在设置页保存的 feishu_webhook
-    2) 用户未设置时，回退到 AI 分析页专用兜底地址
-    """
     user_webhook = str(st.session_state.get("feishu_webhook") or "").strip()
     return user_webhook or AI_ANALYSIS_DEFAULT_FEISHU_WEBHOOK
 
 
-def _get_provider_credentials(provider: str) -> tuple[str, str, str]:
-    """根据 provider 从 session_state 取 api_key、model、base_url（OpenAI 兼容）。"""
-    key_suffix = provider.lower()
-    env_prefix = key_suffix.upper()
-    api_key = (
-        (st.session_state.get(f"{key_suffix}_api_key") or "").strip()
-        or str(os.getenv(f"{env_prefix}_API_KEY", "") or "").strip()
-    )
-    model = (
-        (st.session_state.get(f"{key_suffix}_model") or "").strip()
-        or str(os.getenv(f"{env_prefix}_MODEL", "") or "").strip()
-    )
-    base_url = ""
-    if provider in OPENAI_COMPATIBLE_BASE_URLS:
-        base_url = (
-            st.session_state.get(f"{key_suffix}_base_url")
-            or os.getenv(f"{env_prefix}_BASE_URL")
-            or OPENAI_COMPATIBLE_BASE_URLS.get(provider, "")
-            or ""
-        ).strip()
-    if not model and provider == "gemini":
-        model = st.session_state.get("gemini_model") or DEFAULT_GEMINI_MODEL
-    return (api_key, model or "", base_url)
+_get_provider_credentials = get_provider_credentials
 
 
 def _render_single_stock_page_compat(
@@ -83,10 +48,6 @@ def _render_single_stock_page_compat(
     base_url: str,
     feishu_webhook: str,
 ) -> None:
-    """
-    兼容旧版本 single_stock_logic.render_single_stock_page(provider, model, api_key)
-    与新版本 render_single_stock_page(..., base_url=...)。
-    """
     try:
         render_single_stock_page(
             provider,
@@ -116,10 +77,6 @@ def _render_single_stock_page_compat(
             return
         raise
 
-setup_page(page_title="AI 分析", page_icon="🤖")
-
-STATE_KEY = "batch_ai_background_job"
-
 
 def _parse_manual_codes(text: str, *, market: str = "cn") -> list[dict]:
     market_norm = str(market or "cn").strip().lower()
@@ -144,10 +101,17 @@ def _parse_manual_codes(text: str, *, market: str = "cn") -> list[dict]:
 def _load_find_gold_source(*, market: str = "cn") -> tuple[list[dict], dict]:
     market_norm = str(market or "cn").strip().lower()
     session_rows = st.session_state.get("ai_find_gold_background_symbols") or []
-    session_market = str(st.session_state.get("ai_find_gold_background_market") or "").strip().lower()
+    session_market = str(
+        st.session_state.get("ai_find_gold_background_market") or ""
+    ).strip().lower()
     if isinstance(session_rows, list) and session_rows and session_market == market_norm:
-        benchmark_context = st.session_state.get("ai_find_gold_background_benchmark_context") or {}
-        return (session_rows, benchmark_context if isinstance(benchmark_context, dict) else {})
+        benchmark_context = (
+            st.session_state.get("ai_find_gold_background_benchmark_context") or {}
+        )
+        return (
+            session_rows,
+            benchmark_context if isinstance(benchmark_context, dict) else {},
+        )
     _, latest_result = load_latest_job_result("funnel_screen", market=market_norm)
     if latest_result:
         return (
@@ -184,6 +148,8 @@ def _render_ai_status(state: dict | None) -> dict | None:
         st.error(str(result.get("error", "后台 AI 任务失败")))
     return result if isinstance(result, dict) else None
 
+
+setup_page(page_title="AI 分析", page_icon="🤖")
 
 content_col = show_right_nav()
 with content_col:
@@ -257,7 +223,9 @@ with content_col:
         format_func=lambda x: PROVIDER_LABELS.get(x, x),
         key="ai_provider_batch",
     )
-    batch_api_key, batch_default_model, batch_base_url = _get_provider_credentials(batch_provider)
+    batch_api_key, batch_default_model, batch_base_url = _get_provider_credentials(
+        batch_provider
+    )
     batch_market = st.selectbox(
         "后台市场",
         options=["cn", "us"],
@@ -266,7 +234,8 @@ with content_col:
     )
     model_override = st.text_input(
         "后台模型覆盖（可留空）",
-        value=batch_default_model or (GEMINI_MODELS[0] if batch_provider == "gemini" else ""),
+        value=batch_default_model
+        or (GEMINI_MODELS[0] if batch_provider == "gemini" else ""),
         key=f"ai_model_batch_{batch_provider}",
         help="留空则优先使用你在设置页保存的对应供应商模型。",
     ).strip()
@@ -291,7 +260,9 @@ with content_col:
     if analysis_type == "stock_list":
         stock_input = st.text_area(
             "股票代码（最多 6 个）",
-            placeholder="例如：AAPL, MSFT, NVDA" if batch_market == "us" else "例如：000001；600519；300364",
+            placeholder="例如：AAPL, MSFT, NVDA"
+            if batch_market == "us"
+            else "例如：000001；600519；300364",
             height=110,
             key="ai_stock_list_input_bg",
         )
@@ -351,7 +322,6 @@ with content_col:
     refresh_btn = st.button("刷新后台状态")
 
     if run_btn and selected_symbols_info:
-        effective_feishu_webhook = _resolve_ai_analysis_feishu_webhook()
         payload = {
             "market": batch_market,
             "symbols_info": selected_symbols_info,
@@ -359,7 +329,7 @@ with content_col:
             "provider": batch_provider,
             "model": model_override,
             "base_url": effective_batch_base_url,
-            "webhook_url": effective_feishu_webhook,
+            "webhook_url": _resolve_ai_analysis_feishu_webhook(),
             "preview_only": preview_only,
         }
         request_id = submit_background_job("batch_ai_report", payload, state_key=STATE_KEY)
@@ -372,7 +342,10 @@ with content_col:
         st.rerun()
 
     if not active_result:
-        latest_run, latest_result = load_latest_job_result("batch_ai_report", market=batch_market)
+        latest_run, latest_result = load_latest_job_result(
+            "batch_ai_report",
+            market=batch_market,
+        )
         if latest_result:
             st.divider()
             st.caption(
@@ -383,15 +356,16 @@ with content_col:
 
     if active_result:
         st.subheader("📄 深度研报")
-        
         ok_status = active_result.get("ok", True)
         if not ok_status:
-            err_msg = active_result.get("error") or active_result.get("reason") or "未知错误"
+            err_msg = (
+                active_result.get("error")
+                or active_result.get("reason")
+                or "未知错误"
+            )
             st.error(f"后台研报生成失败：\n\n{err_msg}")
-        
         if active_result.get("preview_only"):
             st.caption("当前结果来自输入预演模式。")
-            
         report_text = str(active_result.get("report_text", "") or "")
         if report_text:
             st.markdown(report_text)

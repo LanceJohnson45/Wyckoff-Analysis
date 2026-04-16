@@ -328,7 +328,6 @@ def _trim_symbol_history_window(
     except Exception:
         pass
 
-
 def upsert_cache_meta(
     symbol: str,
     adjust: str,
@@ -349,11 +348,8 @@ def cleanup_cache(
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return
-    cutoff = datetime.now(timezone.utc) - timedelta(days=ttl_days)
-    cutoff_iso = cutoff.isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=ttl_days)).date().isoformat()
     try:
-        supabase.table(TABLE_STOCK_HIST_CACHE).delete().lt(
-            "date", cutoff_date
-        ).execute()
+        supabase.table(TABLE_STOCK_HIST_CACHE).delete().lt("date", cutoff).execute()
     except Exception:
         pass

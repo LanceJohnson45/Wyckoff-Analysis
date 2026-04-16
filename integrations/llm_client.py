@@ -2,11 +2,20 @@
 """
 统一 LLM 调用层：支持 Gemini，可选 OpenAI 兼容接口。
 入参：provider、model、api_key、system_prompt、user_message；可选 base_url（OpenAI 兼容）。
+
+可选 LiteLLM 路由（LITELLM_ENABLED=1）：
+  - 自动路由到 integrations/llm_adapter.py 的 LiteLLM 实现
+  - 所有现有调用方（step3, step4, single_stock_logic, rag_veto）零改动自动切换
+  - images 参数暂不支持 LiteLLM 路径，带 images 时自动降级为原生实现
 """
 from __future__ import annotations
 
+import logging
+import os
 import time
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # 多厂商：Gemini + OpenAI 兼容（OpenAI/智谱/Minimax/DeepSeek/Qwen/Kimi/火山引擎）
 SUPPORTED_PROVIDERS = (
@@ -40,6 +49,47 @@ GEMINI_MAX_OUTPUT_TOKENS_DEFAULT = 32768
 GEMINI_MAX_RETRIES = 3
 GEMINI_RETRY_DELAY = 2.0
 
+# 供应商展示名（供 UI selectbox 的 format_func 使用）
+PROVIDER_LABELS: dict[str, str] = {
+    "gemini": "Gemini",
+    "openai": "OpenAI",
+    "zhipu": "智谱",
+    "minimax": "Minimax",
+    "deepseek": "DeepSeek",
+    "qwen": "Qwen",
+    "kimi": "Kimi",
+    "volcengine": "火山引擎",
+}
+
+
+def get_provider_credentials(provider: str) -> tuple[str, str, str]:
+    """
+    根据 provider 从 Streamlit session_state 和环境变量取 (api_key, model, base_url)。
+
+    优先 session_state，其次环境变量，Gemini 有模型兜底。
+    """
+    import streamlit as st
+
+    key_suffix = provider.lower()
+    env_prefix = key_suffix.upper()
+    api_key = (
+        (st.session_state.get(f"{key_suffix}_api_key") or "").strip()
+        or os.getenv(f"{env_prefix}_API_KEY", "").strip()
+    )
+    model = (
+        (st.session_state.get(f"{key_suffix}_model") or "").strip()
+        or os.getenv(f"{env_prefix}_MODEL", "").strip()
+    )
+    base_url = (
+        (st.session_state.get(f"{key_suffix}_base_url") or "").strip()
+        or os.getenv(f"{env_prefix}_BASE_URL", "").strip()
+    )
+    if not base_url and provider in OPENAI_COMPATIBLE_BASE_URLS:
+        base_url = (OPENAI_COMPATIBLE_BASE_URLS.get(provider, "") or "").strip()
+    if not model and provider == "gemini":
+        model = st.session_state.get("gemini_model") or DEFAULT_GEMINI_MODEL
+    return (api_key, model or "", base_url)
+
 # Gemini finish_reason 在不同 SDK/模型下可能是字符串或数字枚举，这里统一兜底识别“输出被截断”。
 _GEMINI_TRUNCATION_REASONS = {
     "MAX_TOKENS",
@@ -72,7 +122,7 @@ def call_llm(
         system_prompt: 系统提示词（Alpha 投委会等）。
         user_message: 用户消息（拼装好的 OHLCV 等）。
         images: 可选图片列表（PIL Image 或 bytes），仅部分模型支持。
-        base_url: 仅 OpenAI 兼容时使用，Gemini 忽略。
+        base_url: 可选代理地址，Gemini 和 OpenAI 兼容均支持。
         timeout: 请求超时秒数。
 
     Returns:
@@ -87,6 +137,37 @@ def call_llm(
     if provider not in SUPPORTED_PROVIDERS:
         raise ValueError(f"不支持的供应商: {provider}，当前仅支持: {SUPPORTED_PROVIDERS}")
 
+    # ── Phase 2: LiteLLM 路由开关 ──────────────────────────────
+    # 当 LITELLM_ENABLED=1 时，走 LiteLLM 统一适配层。
+    # 带 images 参数时降级为原生实现（LiteLLM 暂不支持 Gemini 多模态）。
+    if os.environ.get("LITELLM_ENABLED", "").strip() in ("1", "true", "yes"):
+        if not images:
+            try:
+                from integrations.llm_adapter import call_llm_via_litellm
+                logger.info(
+                    "[llm] LITELLM_ENABLED=1, routing to LiteLLM: provider=%s model=%s",
+                    provider, model,
+                )
+                return call_llm_via_litellm(
+                    provider=provider,
+                    model=model,
+                    api_key=api_key,
+                    system_prompt=system_prompt,
+                    user_message=user_message,
+                    base_url=base_url,
+                    timeout=timeout,
+                    max_output_tokens=max_output_tokens,
+                )
+            except ImportError:
+                logger.warning(
+                    "[llm] LiteLLM not installed, falling back to native implementation"
+                )
+        else:
+            logger.info(
+                "[llm] LITELLM_ENABLED=1 but images present, using native Gemini implementation"
+            )
+    # ── /Phase 2 ────────────────────────────────────────────────
+
     if provider == "gemini":
         return _call_gemini(
             model=model,
@@ -96,6 +177,7 @@ def call_llm(
             images=images,
             timeout=timeout,
             max_output_tokens=max_output_tokens,
+            base_url=(base_url or "").strip(),
         )
     if provider in OPENAI_COMPATIBLE_BASE_URLS:
         base = (base_url or OPENAI_COMPATIBLE_BASE_URLS.get(provider, "") or "").rstrip("/")
@@ -162,12 +244,16 @@ def _call_gemini(
     images: Optional[list],
     timeout: int,
     max_output_tokens: Optional[int],
+    base_url: str = "",
 ) -> str:
     from google import genai
     from google.genai import types
 
-    # 包含 timeout 的 HTTP 参数传入 Client
-    client = genai.Client(api_key=api_key, http_options={"timeout": timeout * 1000})
+    # 包含 timeout（+ 可选代理地址）的 HTTP 参数传入 Client
+    http_opts: dict = {"timeout": timeout * 1000}
+    if base_url:
+        http_opts["base_url"] = base_url.rstrip("/")
+    client = genai.Client(api_key=api_key, http_options=http_opts)
     
     resolved_max_tokens = (
         int(max_output_tokens)

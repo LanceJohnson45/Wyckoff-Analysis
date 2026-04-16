@@ -1,48 +1,27 @@
-# Copyright (c) 2024 youngcan. All Rights Reserved.
-# 本代码仅供个人学习研究使用，未经授权不得用于商业目的。
-# 商业授权请联系作者支付授权费用。
+# -*- coding: utf-8 -*-
+# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
+"""
+Wyckoff 智能对话 — 首页。
+
+基于 Google ADK 的对话式投研助手，用户可通过自然语言与 Wyckoff Agent 交互，
+触发系统所有能力：筛选、诊断、研报、策略、跟踪等。
+"""
+import json
+import os
 
 import streamlit as st
-from datetime import date, timedelta, datetime
-import requests
-import random
-import time
-from tenacity import (
-    retry,
-    stop_after_attempt,
-    wait_exponential,
-    retry_if_exception,
-)
 from dotenv import load_dotenv
-from integrations.fetch_a_share_csv import (
-    _resolve_trading_window,
-    _build_export,
-    get_all_stocks,
-    get_stocks_by_board,
-    _normalize_symbols,
-    _stock_name_from_code,
-)
-from utils import extract_symbols_from_text, safe_filename_part, stock_sector_em
-from integrations.download_history import add_download_history
-from app.auth_component import logout
-from app.layout import is_data_source_failure_message, setup_page, show_user_error
-from app.ui_helpers import show_page_loading, inject_custom_css
-from app.navigation import show_right_nav
-from core.export_artifacts import (
-    cleanup_export_artifacts,
-    file_loader,
-    write_dataframe_csv,
-    write_zip_from_files,
-)
-from integrations.stock_hist_repository import get_stock_hist
 
-# Load environment variables from .env file
+from app.auth_component import logout
+from app.layout import setup_page
+from app.navigation import show_right_nav
+
 load_dotenv()
 
-setup_page(page_title="A股历史行情导出工具", page_icon="📈")
-inject_custom_css()
+# ── 页面配置 ──
+setup_page(page_title="Wyckoff 读盘室", page_icon="💬")
 
-# === Logged In User Info ===
+# ── 用户信息 & 登出 & 供应商切换 ──
 with st.sidebar:
     if st.session_state.get("user"):
         st.caption(
@@ -52,647 +31,479 @@ with st.sidebar:
             logout()
     st.divider()
 
+    # ── 读盘室供应商快捷切换 ──
+    from integrations.llm_client import SUPPORTED_PROVIDERS, PROVIDER_LABELS
 
-@st.cache_data(ttl=3600, show_spinner=False, max_entries=1)
-def load_stock_list():
-    return get_all_stocks()
-
-
-@st.cache_data(ttl=3600, show_spinner=False, max_entries=4)
-def _cached_stocks_by_board(board: str):
-    return get_stocks_by_board(board)
-
-
-EXPORT_CLEANUP_INTERVAL_SECONDS = 3 * 60 * 60
-
-
-def _maybe_cleanup_export_artifacts() -> None:
-    now_ts = time.time()
-    last_ts = float(st.session_state.get("export_cleanup_last_ts", 0))
-    if now_ts - last_ts < EXPORT_CLEANUP_INTERVAL_SECONDS:
-        return
-    cleanup_export_artifacts()
-    st.session_state.export_cleanup_last_ts = now_ts
-
-
-# 增加网络请求重试机制，应对 RemoteDisconnected 等反爬限制
-def _should_retry_fetch(e: Exception) -> bool:
-    # 明确的“数据源全失败”不应重试，否则页面会长时间卡在加载中
-    if is_data_source_failure_message(str(e)):
-        return False
-    return True
-
-
-@retry(
-    stop=stop_after_attempt(5),
-    wait=wait_exponential(multiplier=2, min=3, max=30),
-    retry=retry_if_exception(_should_retry_fetch),
-    reraise=True,
-)
-def _fetch_hist_with_retry(symbol, window, adjust):
-    return get_stock_hist(
-        symbol=symbol,
-        start_date=window.start_trade_date,
-        end_date=window.end_trade_date,
-        adjust=adjust or "",
-        context="web",
+    st.session_state.setdefault("chat_provider", "gemini")
+    _current_provider = st.session_state.get("chat_provider", "gemini")
+    _provider_idx = (
+        list(SUPPORTED_PROVIDERS).index(_current_provider)
+        if _current_provider in SUPPORTED_PROVIDERS
+        else 0
     )
-
-
-def add_to_history(symbol, name):
-    item = {"symbol": symbol, "name": name}
-    # Remove if exists to move to top
-    st.session_state.search_history = [
-        x for x in st.session_state.search_history if x["symbol"] != symbol
-    ]
-    st.session_state.search_history.insert(0, item)
-    # Keep only last 10
-    st.session_state.search_history = st.session_state.search_history[:10]
-
-
-def set_symbol_from_history(symbol):
-    st.session_state.current_symbol = symbol
-    st.session_state.should_run = True
-
-
-def _parse_batch_symbols(text: str) -> list[str]:
-    candidates = extract_symbols_from_text(str(text or ""), valid_codes=None)
-    return _normalize_symbols(candidates)
-
-
-@st.cache_data(ttl=3600, show_spinner=False, max_entries=1)
-def _stock_name_map():
-    stocks = load_stock_list()
-    return {s.get("code"): s.get("name") for s in stocks if s.get("code")}
-
-
-def _friendly_error_message(e: Exception, symbol: str, trading_days: int) -> str:
-    msg = str(e)
-    if "not found in stock list" in msg:
-        return f"股票代码 {symbol} 未找到或已退市"
-    if "empty data returned" in msg:
-        return f"数据源返回空 (可能停牌或上市不足 {trading_days} 天)"
-    # 数据源拉取失败：直接展示原始提示（已标明哪些免费数据源失败）
-    if is_data_source_failure_message(msg):
-        return msg
-    return f"未知错误: {msg}"
-
+    _new_provider = st.selectbox(
+        "🗣️ 读盘室供应商",
+        options=list(SUPPORTED_PROVIDERS),
+        index=_provider_idx,
+        format_func=lambda x: PROVIDER_LABELS.get(x, x),
+        help="选择驱动读盘室对话的大模型供应商",
+    )
+    if _new_provider != _current_provider:
+        st.session_state["chat_provider"] = _new_provider
+        # 清掉旧 agent，下面会用新 provider 重建
+        st.session_state.pop("chat_manager", None)
+        st.session_state.pop("chat_messages", None)
+        st.rerun()
+    st.divider()
 
 content_col = show_right_nav()
-with content_col:
-    _maybe_cleanup_export_artifacts()
-    st.title("📈 A股历史行情导出工具")
-    st.markdown(
-        "基于 **akshare**，支持导出 **威科夫分析** 所需的增强版 CSV（包含量价、换手率、振幅、均价、板块等）。"
+
+# ── 工具函数名 → 中文描述 ──
+TOOL_DISPLAY_NAMES = {
+    "search_stock_by_name": "搜索股票",
+    "diagnose_stock": "个股诊断",
+    "diagnose_portfolio": "持仓诊断",
+    "get_stock_price": "查询行情",
+    "get_market_overview": "大盘概览",
+    "screen_stocks": "漏斗筛选",
+    "generate_ai_report": "AI 研报生成",
+    "generate_strategy_decision": "策略决策",
+    "get_recommendation_tracking": "推荐跟踪",
+}
+
+# ── 欢迎语 ──
+_WELCOME_TEXT = (
+    "我是理查德·威科夫。我只看供需关系和主力行为，不听故事。\n\n"
+    "你可以直接跟我说：\n"
+    "- 🔍 **\"搜一下宁德时代\"** — 我帮你查\n"
+    "- 🕵️ **\"帮我看看 000001\"** — 我给它做一次完整的量价体检\n"
+    "- 🪓 **\"审判我的持仓\"** — 我会逐一下达去留判决\n"
+    "- 🌊 **\"今天大盘水温怎么样\"** — 我告诉你现在适合进攻还是蛰伏\n"
+    "- 🧭 **\"有什么机会\"** — 我从四千多只股票里帮你扫出来\n"
+    "- 📈 **\"600519 最近走势\"** — 我调它的 K 线给你看\n"
+    "- 📝 **\"深度审一下这几只\"** — 我把它们分成三个阵营\n"
+    "- ⚔️ **\"该买什么该卖什么\"** — 我给你下作战指令\n"
+    "- 🎯 **\"之前推荐的表现怎么样\"** — 我翻一翻战绩\n\n"
+    "*说吧，你想看什么？*"
+)
+
+# 当系统提示词/工具策略有重要变更时，提升版本号以触发会话内 manager 重建
+CHAT_AGENT_VERSION = "2026-04-10-market-fetch-v1"
+
+def _get_chat_config() -> tuple[str, str, str, str]:
+    """
+    获取读盘室对话配置：(provider, api_key, model, base_url)。
+
+    根据 session_state['chat_provider'] 决定从哪组配置中读取凭证。
+    """
+    provider = (
+        str(st.session_state.get("chat_provider") or "").strip() or "gemini"
     )
-    st.markdown("💡 灵感来自 **秋生trader @Hoyooyoo**，祝各位在祖国的大A里找到价值！")
 
-    # Sidebar for inputs
-    with st.sidebar:
-        st.header("参数配置")
-
-        st.toggle(
-            "手机模式",
-            value=bool(st.session_state.get("mobile_mode", False)),
-            key="mobile_mode",
-            help="手机模式会优化按钮布局与表格展示。",
+    if provider == "gemini":
+        api_key = (
+            str(st.session_state.get("gemini_api_key") or "").strip()
+            or os.getenv("GEMINI_API_KEY", "").strip()
+            or os.getenv("GOOGLE_API_KEY", "").strip()
         )
-
-        batch_mode = st.toggle(
-            "批量生成",
-            value=False,
-            help=(
-                "开启后支持手动输入多个代码或按板块全量添加。\\n"
-                "注意：按板块添加可能涉及数千只股票，耗时较长且受数据源限流影响，请谨慎操作。"
-            ),
+        model = (
+            str(st.session_state.get("gemini_model") or "").strip()
+            or os.getenv("GEMINI_MODEL", "").strip()
+            or "gemini-2.0-flash"
         )
-
-        batch_symbols_text = ""
-        selected_boards_codes = []
-
-        if batch_mode:
-            st.markdown("##### 📌 1. 手动输入代码")
-            st.caption(
-                "批量模式：为降低失败率与封禁风险，固定回溯 60 个交易日，且最多 6 只股票。"
-            )
-            batch_symbols_text = st.text_area(
-                "股票代码列表（支持粘贴混合文本）",
-                value="",
-                placeholder="例如：000973;600798;300459（; 或 ；均可）",
-                help="用分号（; 或 ；）分隔，系统会提取其中的 6 位数字作为股票代码（自动去重）。",
-            )
-
-            board_help = (
-                "**💡 各板块交易规则速览**：\\n"
-                "- **主板**: 门槛无特殊要求；涨跌幅限制 ±10%（ST股±5%）。\\n"
-                "- **创业板**: 10万资产 + 2年经验；涨跌幅限制 ±20%。\\n"
-                "- **科创板**: 50万资产 + 2年经验；涨跌幅限制 ±20%。\\n"
-                "- **北交所**: 50万资产 + 2年经验；涨跌幅限制 ±30%。"
-            )
-
-            st.markdown("##### 📌 2. 按板块批量添加 (可选)", help=board_help)
-            col_b1, col_b2, col_b3, col_b4 = st.columns(4)
-            with col_b1:
-                check_main = st.checkbox(
-                    "主板", key="check_board_main", help=board_help
-                )
-            with col_b2:
-                check_chinext = st.checkbox("创业板", key="check_board_chinext")
-            with col_b3:
-                check_star = st.checkbox("科创板", key="check_board_star")
-            with col_b4:
-                check_bse = st.checkbox("北交所", key="check_board_bse")
-
-            if check_main:
-                selected_boards_codes.extend(
-                    [s["code"] for s in _cached_stocks_by_board("main")]
-                )
-            if check_chinext:
-                selected_boards_codes.extend(
-                    [s["code"] for s in _cached_stocks_by_board("chinext")]
-                )
-            if check_star:
-                selected_boards_codes.extend(
-                    [s["code"] for s in _cached_stocks_by_board("star")]
-                )
-            if check_bse:
-                selected_boards_codes.extend(
-                    [s["code"] for s in _cached_stocks_by_board("bse")]
-                )
-
-            if selected_boards_codes:
-                st.info(f"✅ 已从板块选择 {len(selected_boards_codes)} 只股票")
-
-        else:
-            enable_stock_search = st.toggle(
-                "启用股票名称搜索",
-                value=True,
-                help="开启后会加载全量股票列表用于搜索（首次加载可能较慢）。关闭则直接输入股票代码。",
-            )
-
-            stock_options = []
-            if enable_stock_search:
-                loading = show_page_loading(
-                    title="加载中...", subtitle="正在加载股票列表"
-                )
-                try:
-                    all_stocks = load_stock_list()
-                finally:
-                    loading.empty()
-                stock_options = (
-                    [f"{s['code']} {s['name']}" for s in all_stocks]
-                    if all_stocks
-                    else []
-                )
-
-            if stock_options:
-                default_index = 0
-                if st.session_state.current_symbol:
-                    for i, opt in enumerate(stock_options):
-                        if opt.startswith(st.session_state.current_symbol):
-                            default_index = i
-                            break
-
-                selected_stock = st.selectbox(
-                    "选择股票 (支持代码或名称搜索)",
-                    options=stock_options,
-                    index=default_index,
-                    help="输入代码（如 300364）或名称（如 中文在线）进行搜索",
-                    key="stock_selector",
-                )
-
-                stock_parts = selected_stock.split(maxsplit=1)
-                current_code = stock_parts[0] if stock_parts else ""
-                current_name_from_select = (
-                    stock_parts[1] if len(stock_parts) > 1 else ""
-                )
-                if current_code != st.session_state.current_symbol:
-                    st.session_state.current_symbol = current_code
-            else:
-                if enable_stock_search:
-                    st.warning(
-                        "股票列表加载失败（可能是网络或数据源问题）。你仍可直接输入 6 位股票代码继续使用。"
-                    )
-                    if st.button("🔄 重试加载股票列表", width="stretch"):
-                        load_stock_list.clear()
-                        st.rerun()
-
-                symbol_input = st.text_input(
-                    "股票代码 (必填)",
-                    value=st.session_state.current_symbol,
-                    help="请输入 6 位股票代码，例如 300364",
-                    key="symbol_input_widget",
-                )
-                if symbol_input != st.session_state.current_symbol:
-                    st.session_state.current_symbol = symbol_input
-                current_name_from_select = ""
-
-        symbol_name_input = ""
-        if not batch_mode:
-            symbol_name_input = st.text_input(
-                "股票名称 (选填)",
-                value=current_name_from_select,
-                help="仅用于展示或文件名，留空则自动从 akshare 获取",
-            )
-
-        trading_days = st.number_input(
-            "回溯交易日数量",
-            min_value=1,
-            max_value=700,
-            value=min(320, 700),
-            step=50,
-            help="从结束日期向前回溯的交易日天数（上限 700）",
+        base_url = (
+            str(st.session_state.get("gemini_base_url") or "").strip()
+            or os.getenv("GEMINI_BASE_URL", "").strip()
         )
-
-        end_offset = st.number_input(
-            "结束日期偏移 (天)",
-            min_value=0,
-            value=1,
-            help="0 表示今天，1 表示昨天。系统会自动对齐到最近的交易日。",
-        )
-
-        adjust = st.selectbox(
-            "复权类型",
-            options=["", "qfq", "hfq"],
-            format_func=lambda x: "不复权"
-            if x == ""
-            else ("前复权" if x == "qfq" else "后复权"),
-            index=1,
-            help=(
-                "不复权：原始行情；\n"
-                "前复权(qfq)：把历史价格按当前口径调整，除权后走势连续，适合看长期趋势；\n"
-                "后复权(hfq)：把当前价格按历史口径调整，便于对比历史绝对价位。"
-            ),
-        )
-
-        st.caption(
-            "复权用于处理分红送转等导致的价格跳变：前复权更常用于看趋势；后复权更常用于还原历史价位对比。"
-        )
-
-        st.markdown("---")
-
-        run_btn = st.button("🚀 开始获取数据", type="primary")
-
-        if st.session_state.search_history:
-            st.markdown("---")
-            st.header("🕒 搜索历史")
-            for item in st.session_state.search_history:
-                label = f"{item['symbol']} {item['name']}"
-                if st.button(label, key=f"hist_{item['symbol']}", width="stretch"):
-                    set_symbol_from_history(item["symbol"])
-                    st.rerun()
-
-    # Main content
-    if run_btn or st.session_state.should_run:
-        # Reset trigger
-        if st.session_state.should_run:
-            st.session_state.should_run = False
-
-        try:
-            is_mobile = bool(st.session_state.get("mobile_mode"))
-
-            if batch_mode:
-                symbols = _parse_batch_symbols(batch_symbols_text)
-
-                if selected_boards_codes:
-                    symbols.extend(selected_boards_codes)
-                symbols = _normalize_symbols(symbols)
-
-                if not symbols:
-                    st.error("请至少输入 1 个股票代码，或勾选至少 1 个板块。")
-                    st.stop()
-                if len(symbols) > 6:
-                    st.error(
-                        f"批量生成一次最多支持 6 个股票代码（当前识别到 {len(symbols)} 个）。"
-                    )
-                    st.stop()
-
-                progress_ph = st.empty()
-                status_ph = st.empty()
-                progress_bar = progress_ph.progress(0)
-                results_ph = st.empty()
-
-                loading = show_page_loading(
-                    title="加载中...",
-                    subtitle=f"正在批量生成（{len(symbols)} 个）",
-                )
-                try:
-                    end_calendar = date.today() - timedelta(days=int(end_offset))
-                    window = _resolve_trading_window(end_calendar, 60)
-
-                    results: list[dict[str, str]] = []
-                    name_map = _stock_name_map()
-                    zip_members: list[tuple[str, str]] = []
-                    for idx, symbol in enumerate(symbols, start=1):
-                        status_ph.caption(
-                            f"({idx}/{len(symbols)}) 正在处理：{symbol}"
-                        )
-                        try:
-                            name = name_map.get(symbol) or "Unknown"
-
-                            # 使用带重试的函数获取数据
-                            df_hist = _fetch_hist_with_retry(symbol, window, adjust)
-
-                            sector = stock_sector_em(symbol, timeout=60)
-                            df_export = _build_export(df_hist, sector)
-
-                            safe_symbol = safe_filename_part(symbol)
-                            safe_name = safe_filename_part(name)
-                            file_name_export = (
-                                f"{safe_symbol}_{safe_name}_ohlcv.csv"
-                            )
-                            file_name_hist = (
-                                f"{safe_symbol}_{safe_name}_hist_data.csv"
-                            )
-
-                            export_path = write_dataframe_csv(
-                                df_export,
-                                prefix=file_name_export.replace(".csv", ""),
-                            )
-                            hist_path = write_dataframe_csv(
-                                df_hist,
-                                prefix=file_name_hist.replace(".csv", ""),
-                            )
-                            zip_members.extend(
-                                [
-                                    (file_name_export, str(export_path)),
-                                    (file_name_hist, str(hist_path)),
-                                ]
-                            )
-
-                            add_to_history(symbol, name)
-                            results.append(
-                                {
-                                    "symbol": symbol,
-                                    "name": name,
-                                    "status": "ok",
-                                    "error": "",
-                                }
-                            )
-                        except Exception as e:
-                            msg = _friendly_error_message(e, symbol, 60)
-                            results.append(
-                                {
-                                    "symbol": symbol,
-                                    "name": "",
-                                    "status": "failed",
-                                    "error": msg,
-                                }
-                            )
-
-                        # 延长请求间隔到 2.0 ~ 4.0 秒，降低被封禁概率
-                        time.sleep(random.uniform(2.0, 4.0))
-                        progress_bar.progress(idx / len(symbols))
-                        results_ph.dataframe(results, width="stretch", height=260)
-
-                    file_name_zip = (
-                        f"batch_{safe_filename_part(str(window.start_trade_date))}_"
-                        f"{safe_filename_part(str(window.end_trade_date))}.zip"
-                    )
-                    zip_path = write_zip_from_files(
-                        zip_members,
-                        prefix=file_name_zip.replace(".zip", ""),
-                    )
-
-                    # === 自动记录批量下载历史 ===
-                    # 只要任务完成，就记录一次
-                    symbols_str = "_".join(symbols[:3]) + (
-                        f"_etc_{len(symbols)}" if len(symbols) > 3 else ""
-                    )
-                    current_batch_key = (
-                        f"batch_{symbols_str}_{datetime.now().strftime('%H%M')}"
-                    )
-                    last_batch_key = st.session_state.get("last_home_batch_key")
-
-                    if current_batch_key != last_batch_key:
-                        zip_bytes_for_history = file_loader(zip_path)
-                        add_download_history(
-                            page="Home",
-                            source="批量生成",
-                            title=f"批量 ({len(symbols)} 只)",
-                            file_name=file_name_zip,
-                            mime="application/zip",
-                            data=zip_bytes_for_history,
-                            request_payload={
-                                "kind": "home_batch_zip",
-                                "symbols": symbols,
-                                "start_trade_date": str(window.start_trade_date),
-                                "end_trade_date": str(window.end_trade_date),
-                                "adjust": adjust,
-                            },
-                        )
-                        st.session_state["last_home_batch_key"] = current_batch_key
-                    # 通知：飞书 + 企微 + 钉钉（任一配置则发送）
-                    feishu = st.session_state.get("feishu_webhook") or ""
-                    wecom = st.session_state.get("wecom_webhook") or ""
-                    dingtalk = st.session_state.get("dingtalk_webhook") or ""
-                    if feishu or wecom or dingtalk:
-                        success_count = len([r for r in results if r["status"] == "ok"])
-                        failed_count = len(results) - success_count
-                        notify_title = (
-                            f"📦 批量下载完成 ({success_count}/{len(symbols)})"
-                        )
-                        notify_text = (
-                            f"**任务状态**: 已完成\n"
-                            f"**成功**: {success_count} 个\n"
-                            f"**失败**: {failed_count} 个\n"
-                            f"**时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-                            f"**文件**: {file_name_zip}"
-                        )
-                        if failed_count > 0:
-                            failed_details = "\\n".join(
-                                [
-                                    f"- {r['symbol']}: {r['error']}"
-                                    for r in results
-                                    if r["status"] != "ok"
-                                ]
-                            )
-                            notify_text += f"\\n\\n**失败详情**:\\n{failed_details}"
-                        from utils.notify import send_all_webhooks
-                        send_all_webhooks(feishu, wecom, dingtalk, notify_title, notify_text)
-                        st.toast("✅ 通知已发送", icon="🔔")
-
-                finally:
-                    loading.empty()
-                    status_ph.empty()
-                    progress_ph.empty()
-                    results_ph.empty()
-
-                st.subheader("📦 批量生成结果")
-                st.dataframe(results, width="stretch")
-                st.download_button(
-                    label="📦 下载全部 (.zip)",
-                    data=file_loader(zip_path),
-                    file_name=file_name_zip,
-                    mime="application/zip",
-                    type="primary",
-                    width="stretch",
-                )
-                st.stop()
-
-            if (
-                not st.session_state.current_symbol
-                or not st.session_state.current_symbol.isdigit()
-                or len(st.session_state.current_symbol) != 6
-            ):
-                st.error("请输入有效的 6 位数字股票代码！")
-                st.stop()
-
-            loading = show_page_loading(
-                title="加载中...",
-                subtitle=f"正在获取 {st.session_state.current_symbol} 的数据",
-            )
-            try:
-                end_calendar = date.today() - timedelta(days=int(end_offset))
-                window = _resolve_trading_window(end_calendar, int(trading_days))
-
-                if not symbol_name_input:
-                    try:
-                        name = _stock_name_from_code(st.session_state.current_symbol)
-                    except Exception as e:
-                        st.warning(f"无法自动获取名称: {e}")
-                        name = "Unknown"
-                else:
-                    name = symbol_name_input
-
-                add_to_history(st.session_state.current_symbol, name)
-
-                st.info(
-                    f"股票: **{st.session_state.current_symbol} {name}** | "
-                    f"时间窗口: **{window.start_trade_date}** 至 "
-                    f"**{window.end_trade_date}** ({trading_days} 个交易日)"
-                )
-
-                df_hist = _fetch_hist_with_retry(
-                    st.session_state.current_symbol, window, adjust
-                )
-                sector = stock_sector_em(st.session_state.current_symbol, timeout=60)
-                df_export = _build_export(df_hist, sector)
-
-                st.subheader("📊 数据预览")
-                tab1, tab2 = st.tabs(["📈 OHLCV (增强版)", "📄 原始数据 (Hist Data)"])
-
-                with tab1:
-                    if is_mobile:
-                        st.dataframe(df_export, width="stretch", height=420)
-                    else:
-                        st.dataframe(df_export, width="stretch")
-
-                with tab2:
-                    if is_mobile:
-                        st.dataframe(df_hist, width="stretch", height=420)
-                    else:
-                        st.dataframe(df_hist, width="stretch")
-
-                file_name_export = f"{st.session_state.current_symbol}_{name}_ohlcv.csv"
-                file_name_hist = (
-                    f"{st.session_state.current_symbol}_{name}_hist_data.csv"
-                )
-                file_name_zip = f"{st.session_state.current_symbol}_{name}_all.zip"
-                export_path = write_dataframe_csv(
-                    df_export,
-                    prefix=file_name_export.replace(".csv", ""),
-                )
-                hist_path = write_dataframe_csv(
-                    df_hist,
-                    prefix=file_name_hist.replace(".csv", ""),
-                )
-                zip_path = write_zip_from_files(
-                    [
-                        (file_name_export, str(export_path)),
-                        (file_name_hist, str(hist_path)),
-                    ],
-                    prefix=file_name_zip.replace(".zip", ""),
-                )
-
-                # === 自动记录单只下载历史 ===
-                current_single_key = f"single_{st.session_state.current_symbol}_{datetime.now().strftime('%H%M')}"
-                last_single_key = st.session_state.get("last_home_single_key")
-
-                if current_single_key != last_single_key:
-                    zip_bytes_for_history = file_loader(zip_path)
-                    add_download_history(
-                        page="Home",
-                        source="单只导出",
-                        title=f"{st.session_state.current_symbol} {name}",
-                        file_name=file_name_zip,
-                        mime="application/zip",
-                        data=zip_bytes_for_history,
-                        request_payload={
-                            "kind": "home_single_zip",
-                            "symbol": st.session_state.current_symbol,
-                            "name": name,
-                            "start_trade_date": str(window.start_trade_date),
-                            "end_trade_date": str(window.end_trade_date),
-                            "adjust": adjust,
-                        },
-                    )
-                    st.session_state["last_home_single_key"] = current_single_key
-
-                st.markdown("### 📥 下载数据")
-                if is_mobile:
-                    st.download_button(
-                        label="📦 全部下载 (.zip)",
-                        data=file_loader(zip_path),
-                        file_name=file_name_zip,
-                        mime="application/zip",
-                        type="primary",
-                        width="stretch",
-                    )
-                    st.download_button(
-                        label="下载 OHLCV (增强版)",
-                        data=file_loader(export_path),
-                        file_name=file_name_export,
-                        mime="text/csv",
-                        width="stretch",
-                    )
-                    st.download_button(
-                        label="下载原始数据 (Hist Data)",
-                        data=file_loader(hist_path),
-                        file_name=file_name_hist,
-                        mime="text/csv",
-                        width="stretch",
-                    )
-                else:
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.download_button(
-                            label="下载 OHLCV (增强版)",
-                            data=file_loader(export_path),
-                            file_name=file_name_export,
-                            mime="text/csv",
-                            type="primary",
-                            width="stretch",
-                        )
-
-                    with col2:
-                        st.download_button(
-                            label="下载原始数据 (Hist Data)",
-                            data=file_loader(hist_path),
-                            file_name=file_name_hist,
-                            mime="text/csv",
-                            width="stretch",
-                        )
-
-                    with col3:
-                        st.download_button(
-                            label="📦 全部下载 (.zip)",
-                            data=file_loader(zip_path),
-                            file_name=file_name_zip,
-                            mime="application/zip",
-                            type="primary",
-                            width="stretch",
-                        )
-
-            finally:
-                loading.empty()
-
-        except Exception as e:
-            msg = str(e)
-            if is_data_source_failure_message(msg):
-                show_user_error(msg, None)
-            else:
-                show_user_error("发生错误，请稍后重试。", e)
-
     else:
-        st.info("👈 请在左侧输入参数并点击“开始获取数据”")
+        # 非 Gemini：读对应 provider 的 key/model/base_url
+        from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS
+
+        key_prefix = provider.lower()
+        env_prefix = key_prefix.upper()
+        api_key = (
+            str(st.session_state.get(f"{key_prefix}_api_key") or "").strip()
+            or os.getenv(f"{env_prefix}_API_KEY", "").strip()
+        )
+        model = (
+            str(st.session_state.get(f"{key_prefix}_model") or "").strip()
+            or os.getenv(f"{env_prefix}_MODEL", "").strip()
+        )
+        base_url = (
+            str(st.session_state.get(f"{key_prefix}_base_url") or "").strip()
+            or os.getenv(f"{env_prefix}_BASE_URL", "").strip()
+            or OPENAI_COMPATIBLE_BASE_URLS.get(provider, "")
+        )
+
+    return provider, api_key, model, base_url
+
+
+def _load_portfolio_context(user_id: str) -> str:
+    """从 Supabase 加载用户持仓，格式化为注入 Agent system prompt 的文本。"""
+    try:
+        from integrations.supabase_portfolio import load_portfolio_state, build_user_live_portfolio_id
+        state = load_portfolio_state(build_user_live_portfolio_id(user_id))
+        if not state or not state.get("positions"):
+            return ""
+        positions = state["positions"]
+        cash = state.get("free_cash", 0.0)
+        lines = [
+            "用户当前持仓（来自实盘组合）：",
+            f"可用资金：¥{cash:,.2f}",
+            "",
+            "| 代码 | 名称 | 成本 | 股数 | 策略 | 止损 |",
+            "|------|------|------|------|------|------|",
+        ]
+        for p in positions:
+            sl = f"{p['stop_loss']:.2f}" if p.get("stop_loss") is not None else "--"
+            lines.append(
+                f"| {p['code']} | {p['name']} | {p['cost']:.2f} | {p['shares']} | {p.get('strategy') or '--'} | {sl} |"
+            )
+        lines.append("")
+        lines.append("以上数据自动加载自用户的实盘持仓记录。对话中涉及这些股票时，你已经知道用户的成本和仓位。")
+        return "\n".join(lines)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).warning("Failed to load portfolio context for user %s", user_id, exc_info=True)
+        return ""
+
+
+def _init_chat_manager():
+    """初始化或获取已有的 ChatSessionManager。"""
+    user = st.session_state.get("user") or {}
+    user_id = str(user.get("id", "") if isinstance(user, dict) else "").strip()
+
+    # 检测 user_id 变化或 agent 版本升级 → 强制重建 manager
+    prev_uid = st.session_state.get("_chat_manager_user_id", "")
+    prev_ver = st.session_state.get("_chat_manager_agent_version", "")
+    if (prev_uid and prev_uid != user_id) or (prev_ver and prev_ver != CHAT_AGENT_VERSION):
+        st.session_state.pop("chat_manager", None)
+        st.session_state.pop("chat_messages", None)
+
+    if "chat_manager" not in st.session_state:
+        provider, api_key, model, base_url = _get_chat_config()
+        if not api_key:
+            return None
+
+        from agents.wyckoff_chat_agent import create_agent
+        from agents.session_manager import ChatSessionManager
+
+        # 加载用户持仓注入 Agent 上下文（记忆系统阶段 1）
+        portfolio_ctx = ""
+        if user_id:
+            portfolio_ctx = _load_portfolio_context(user_id)
+
+        agent = create_agent(
+            provider=provider, model=model, api_key=api_key, base_url=base_url,
+            portfolio_context=portfolio_ctx,
+        )
+        mgr = ChatSessionManager(
+            user_id=user_id or "anonymous",
+            agent=agent,
+            api_key=api_key,
+        )
+        st.session_state["chat_manager"] = mgr
+        st.session_state["_chat_manager_user_id"] = user_id
+        st.session_state["_chat_manager_agent_version"] = CHAT_AGENT_VERSION
+
+    return st.session_state["chat_manager"]
+
+
+def _inject_chat_css() -> None:
+    """注入聊天界面专属样式。"""
+    st.markdown(
+        """
+<style>
+.chat-shell {
+    border: 1px solid #e4e7ec;
+    border-radius: 16px;
+    padding: 0.85rem 1rem 0.3rem;
+    background:
+      radial-gradient(circle at top right, #f7fbff 0%, #ffffff 42%),
+      linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.chat-header-card {
+    border: 1px solid #e4e7ec;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    padding: 0.7rem 0.85rem;
+    margin-bottom: 0.65rem;
+}
+
+.chat-header-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 750;
+    color: #101828;
+    line-height: 1.25;
+}
+
+.chat-header-desc {
+    margin-top: 0.24rem;
+    color: #475467;
+    font-size: 0.86rem;
+}
+
+.chat-chip-row {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    margin-top: 0.46rem;
+}
+
+.chat-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.16rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid #d0d5dd;
+    color: #344054;
+    background: #fff;
+    font-size: 0.74rem;
+    line-height: 1.25;
+}
+
+[data-testid="stChatMessage"] {
+    border-radius: 12px;
+    margin-bottom: 0.3rem;
+    padding: 0.48rem 0.64rem;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+    background: #f3f7ff;
+    border: 1px solid #dbe8ff;
+}
+
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+    background: #f8fafc;
+    border: 1px solid #e4e7ec;
+}
+
+[data-testid="stChatInput"] {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.72) 0%, #ffffff 30%);
+    padding-top: 0.45rem;
+    z-index: 10;
+}
+
+.chat-stream-status {
+    font-size: 0.82rem;
+    color: #475467;
+    background: #f2f4f7;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    padding: 0.38rem 0.55rem;
+    margin-bottom: 0.45rem;
+}
+
+.compose-row button {
+    border-radius: 10px !important;
+    min-height: 2.5rem !important;
+}
+</style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_header_card(provider: str, model: str) -> None:
+    from integrations.llm_client import PROVIDER_LABELS
+
+    provider_label = PROVIDER_LABELS.get(provider, provider)
+    model_text = (model or "gemini-2.0-flash").strip()
+    uid = st.session_state.get("_chat_manager_user_id", "") or "anonymous"
+    uid_preview = str(uid)[:8] + "***" if uid and uid != "anonymous" else "anonymous"
+    st.markdown(
+        (
+            '<div class="chat-header-card">'
+            '<div class="chat-header-title">💬 Wyckoff 读盘室</div>'
+            '<div class="chat-header-desc">与威科夫对话，快速完成盘前研判、持仓审判和机会筛选</div>'
+            '<div class="chat-chip-row">'
+            f'<span class="chat-chip">供应商: {provider_label}</span>'
+            f'<span class="chat-chip">模型: {model_text}</span>'
+            f'<span class="chat-chip">会话用户: {uid_preview}</span>'
+            '</div>'
+            '</div>'
+        ),
+        unsafe_allow_html=True,
+    )
+# =====================================================================
+# 页面主体
+# =====================================================================
+with content_col:
+
+    # ── API Key 检查 ──
+    _provider, _api_key, _model, _base_url = _get_chat_config()
+    if not _api_key:
+        st.warning(
+            "未检测到 API Key。请前往 **设置页面** 配置后使用。",
+            icon="🔑",
+        )
+        st.page_link("pages/Settings.py", label="前往设置", icon="⚙️")
+        st.stop()
+
+    # ── 初始化 ChatSessionManager ──
+    manager = _init_chat_manager()
+    if manager is None:
+        st.error("ChatSessionManager 初始化失败")
+        st.stop()
+
+    # ── 消息历史 ──
+    if "chat_messages" not in st.session_state:
+        st.session_state["chat_messages"] = []
+
+    _inject_chat_css()
+    shell = st.container(border=True)
+    with shell:
+        _render_header_card(provider=_provider, model=_model)
+
+        # ── 聊天区域（固定高度） ──
+        chat_area = st.container(height=560)
+
+        with chat_area:
+            if not st.session_state["chat_messages"]:
+                with st.chat_message("assistant", avatar="assistant"):
+                    st.markdown(_WELCOME_TEXT)
+
+            for msg in st.session_state["chat_messages"]:
+                avatar = "assistant" if msg["role"] == "assistant" else "user"
+                with st.chat_message(msg["role"], avatar=avatar):
+                    st.markdown(msg["content"])
+
+        # ── 用户输入 ──
+        st.markdown('<div class="compose-row">', unsafe_allow_html=True)
+        compose_left, compose_mid, compose_right = st.columns([1.25, 7.2, 1.2])
+        with compose_left:
+            new_chat_clicked = st.button(
+                "🆕 新对话",
+                use_container_width=True,
+            )
+        # form 内只保留一个 submit_button，确保 Enter 键能可靠触发发送
+        with compose_mid:
+            with st.form("chat_compose_form", clear_on_submit=True):
+                _form_cols = st.columns([8, 1])
+                with _form_cols[0]:
+                    draft_input = st.text_input(
+                        "输入消息",
+                        label_visibility="collapsed",
+                        placeholder="问我关于股票的任何问题...",
+                    )
+                with _form_cols[1]:
+                    send_clicked = st.form_submit_button(
+                        "发送",
+                        type="primary",
+                        use_container_width=True,
+                    )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        if new_chat_clicked:
+            mgr = st.session_state.get("chat_manager")
+            if mgr:
+                mgr.new_session()
+            st.session_state["chat_messages"] = []
+            st.rerun()
+
+        # form 提交（Enter 或点击发送）时读取输入
+        prompt = str(draft_input or "").strip() if send_clicked else ""
+        if prompt:
+
+            # 显示用户消息
+            st.session_state["chat_messages"].append({"role": "user", "content": prompt})
+
+            with chat_area:
+                with st.chat_message("user", avatar="user"):
+                    st.markdown(prompt)
+
+                # Agent 流式回复
+                with st.chat_message("assistant", avatar="assistant"):
+                    # 布局：status/thinking 在上方，正文在下方
+                    status_container = st.container()
+                    response_placeholder = st.empty()
+                    stream_status_placeholder = status_container.empty()
+
+                    accumulated_text = ""
+                    thinking_text = ""
+                    thinking_expander = None
+                    thinking_placeholder = None
+                    final_response = ""
+                    called_tools: list[str] = []
+                    seen_tool_calls: set[str] = set()
+
+                    stream_status_placeholder.markdown(
+                        '<div class="chat-stream-status">🧠 正在思考与检索数据...</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    for event_type, data in manager.send_message_streaming(prompt):
+
+                        if event_type == "thinking":
+                            # 首次出现 thinking 时创建可折叠区域
+                            if thinking_expander is None:
+                                thinking_expander = status_container.expander(
+                                    "💭 推理过程", expanded=True
+                                )
+                                thinking_placeholder = thinking_expander.empty()
+                            thinking_text += data
+                            thinking_placeholder.markdown(thinking_text + "▌")
+
+                        elif event_type == "tool_call":
+                            tool_name = data.get("name", "unknown")
+                            tool_args = data.get("args", {})
+                            try:
+                                args_sig = json.dumps(
+                                    tool_args,
+                                    ensure_ascii=False,
+                                    sort_keys=True,
+                                    default=str,
+                                )
+                            except Exception:
+                                args_sig = str(tool_args)
+                            call_sig = f"{tool_name}:{args_sig}"
+                            if call_sig in seen_tool_calls:
+                                continue
+                            seen_tool_calls.add(call_sig)
+                            display_name = TOOL_DISPLAY_NAMES.get(tool_name, tool_name)
+                            called_tools.append(f"🔧 {display_name}")
+                            stream_status_placeholder.markdown(
+                                '<div class="chat-stream-status">正在调用工具：'
+                                + " · ".join(called_tools[-3:])
+                                + "</div>",
+                                unsafe_allow_html=True,
+                            )
+
+                        elif event_type == "tool_result":
+                            tool_name = data.get("name", "unknown")
+                            display_name = TOOL_DISPLAY_NAMES.get(tool_name, tool_name)
+                            stream_status_placeholder.markdown(
+                                f'<div class="chat-stream-status">✅ 已完成：{display_name}</div>',
+                                unsafe_allow_html=True,
+                            )
+
+                        elif event_type == "text_chunk":
+                            accumulated_text += data
+                            response_placeholder.markdown(accumulated_text + "▌")
+
+                        elif event_type == "done":
+                            # 优先使用 done 携带的完整文本，回退到累积文本
+                            final_response = data if data else accumulated_text
+                            response_placeholder.markdown(final_response)
+                            stream_status_placeholder.empty()
+                            # 收起 thinking 光标
+                            if thinking_placeholder and thinking_text:
+                                thinking_placeholder.markdown(thinking_text)
+
+                        elif event_type == "error":
+                            final_response = f"⚠️ Agent 出错: {data}"
+                            response_placeholder.markdown(final_response)
+                            stream_status_placeholder.empty()
+
+                    # 保存到消息历史
+                    if final_response:
+                        st.session_state["chat_messages"].append({
+                            "role": "assistant",
+                            "content": final_response,
+                        })
+
+            st.rerun()

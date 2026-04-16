@@ -54,7 +54,7 @@ def inject_custom_css():
 
 def show_page_loading(
     *,
-    title: str = "加载中...",
+    title: str = "思考中...",
     subtitle: str = "正在准备页面内容",
     quote: str | None = None,
 ) -> st.delta_generator.DeltaGenerator:

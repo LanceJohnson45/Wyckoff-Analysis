@@ -19,7 +19,7 @@ yfinance>=1.2.1
 pillow>=10.0.0
 
 # ── agent framework ──
-openai-agents>=0.1.0
+google-adk>=1.0.0
 litellm>=1.40.0
 
 # ── dev / test ──

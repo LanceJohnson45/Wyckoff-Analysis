@@ -153,7 +153,7 @@ def _resolve_model_credentials(payload: dict[str, Any]) -> tuple[str, str, str, 
     provider = str(payload.get("provider", "") or "gemini").strip().lower()
     if provider not in SUPPORTED_PROVIDERS:
         provider = "gemini"
-    api_key = ""
+    api_key = str(payload.get("api_key", "") or "").strip()
     model = str(payload.get("model", "") or "").strip()
     base_url = str(payload.get("base_url", "") or "").strip()
 

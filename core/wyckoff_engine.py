@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024 youngcan. All Rights Reserved.
+# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
 # 本代码仅供个人学习研究使用，未经授权不得用于商业目的。
 # 商业授权请联系作者支付授权费用。
 
 """
-Wyckoff Funnel 4 层漏斗筛选引擎
+Wyckoff Funnel 5 层漏斗筛选引擎
 
-Layer 1: 剥离垃圾 (ST / 北交所 / 科创板 / 市值 / 成交额)
-Layer 2: 强弱甄别 (MA50>MA200 多头排列, 或大盘连跌时守住 MA20)
-Layer 3: 板块共振 (行业分布 Top-N)
-Layer 4: 威科夫狙击 (Spring / LPS / Effort vs Result)
+Layer 1: 剥离垃圾（ST / 北交所 / 科创板 / 市值 / 成交额）
+Layer 2: 六通道甄选（主升/潜伏/吸筹/地量/暗中护盘/点火破局）
+Layer 2.5: Markup 加速检测
+Layer 3: 板块共振（行业分布 Top-N + RPS 动量）
+Layer 4: 威科夫狙击（Spring / SOS / LPS / Effort vs Result）
 """
 
 from __future__ import annotations
@@ -90,27 +91,9 @@ class SymbolFeatureBundle:
 
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
-    col_map = {
-        "Date": "date",
-        "Open": "open",
-        "High": "high",
-        "Low": "low",
-        "Close": "close",
-        "Volume": "volume",
-        "Amount": "amount",
-        "PctChange": "pct_chg",
-        "TurnoverRate": "turnover",
-        "日期": "date",
-        "开盘": "open",
-        "最高": "high",
-        "最低": "low",
-        "收盘": "close",
-        "成交量": "volume",
-        "成交额": "amount",
-        "涨跌幅": "pct_chg",
-        "换手率": "turnover",  # <--- 新增这行，捕获换手率
-        "换手": "turnover",  # <--- 兼容不同数据源的命名
-    }
+    from core.stock_cache import _COL_MAP
+
+    col_map = {**_COL_MAP, "换手率": "turnover", "换手": "turnover"}
     out = df.rename(columns=col_map)
     keep = [
         c

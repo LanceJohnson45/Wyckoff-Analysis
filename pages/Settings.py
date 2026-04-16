@@ -3,7 +3,7 @@ import streamlit as st
 from app.layout import setup_page
 from app.navigation import show_right_nav
 from integrations.supabase_client import save_user_settings
-from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS
+from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS, SUPPORTED_PROVIDERS, PROVIDER_LABELS
 from app.ui_helpers import show_page_loading
 
 setup_page(page_title="设置", page_icon="⚙️")
@@ -13,7 +13,7 @@ content_col = show_right_nav()
 with content_col:
 
     st.title("⚙️ 设置 (Settings)")
-    st.markdown("配置您的 API Key 和通知服务，让 Akshare 更加智能。")
+    st.markdown("配置您的 API Key 和通知服务，让 Wyckoff 智能投研更加强大。")
 
     # 获取当前用户 ID
     user = st.session_state.get("user") or {}
@@ -40,6 +40,9 @@ with content_col:
         "volcengine_api_key", "volcengine_model",
     ):
         st.session_state.setdefault(key, "")
+
+    # 读盘室对话供应商（默认 gemini）
+    st.session_state.setdefault("chat_provider", "gemini")
 
     # 顶部展示 user_id，方便复制
     with st.expander("🔑 账户信息", expanded=True):
@@ -85,6 +88,8 @@ with content_col:
             "feishu_webhook": st.session_state.feishu_webhook,
             "wecom_webhook": st.session_state.wecom_webhook,
             "dingtalk_webhook": st.session_state.dingtalk_webhook,
+            # 读盘室供应商
+            "chat_provider": st.session_state.chat_provider,
             # 大模型
             "gemini_api_key": st.session_state.gemini_api_key,
             "gemini_model": st.session_state.gemini_model,
@@ -102,7 +107,7 @@ with content_col:
             "tg_chat_id": st.session_state.tg_chat_id,
         }
 
-        loading = show_page_loading(title="加载中...", subtitle="正在保存到云端")
+        loading = show_page_loading(title="思考中...", subtitle="正在保存到云端")
         try:
             if save_user_settings(user_id, settings):
                 st.toast("✅ 配置已保存到云端", icon="☁️")
@@ -159,6 +164,18 @@ with content_col:
         with st.container(border=True):
             st.markdown("配置各家大模型的 API Key 与默认模型，后续在任务/研报中按需切换使用。")
 
+            # ── 读盘室对话供应商选择 ──
+            new_chat_provider = st.selectbox(
+                "🗣️ 读盘室对话供应商",
+                options=list(SUPPORTED_PROVIDERS),
+                index=list(SUPPORTED_PROVIDERS).index(
+                    st.session_state.get("chat_provider", "gemini")
+                ) if st.session_state.get("chat_provider", "gemini") in SUPPORTED_PROVIDERS else 0,
+                format_func=lambda x: PROVIDER_LABELS.get(x, x),
+                help="选择驱动读盘室对话的大模型供应商。默认 Gemini，国内直连受限时可切换为其他（需先在下方填写对应的 API Key）。",
+            )
+
+            st.markdown("---")
             st.markdown("**Gemini (Google)**")
             new_gemini_key = st.text_input(
                 "Gemini API Key",
@@ -315,6 +332,7 @@ with content_col:
             )
 
             if st.button("💾 保存 AI 配置", key="save_ai"):
+                st.session_state.chat_provider = new_chat_provider
                 st.session_state.gemini_api_key = new_gemini_key
                 st.session_state.gemini_model = new_gemini_model
                 st.session_state.gemini_base_url = new_gemini_base_url
@@ -339,6 +357,8 @@ with content_col:
                 st.session_state.volcengine_api_key = new_volc_key
                 st.session_state.volcengine_model = new_volc_model
                 st.session_state.volcengine_base_url = new_volc_base_url
+                # 清掉旧的 chat_manager，下次进读盘室时自动用新配置重建
+                st.session_state.pop("chat_manager", None)
                 on_save_settings()
 
         st.divider()

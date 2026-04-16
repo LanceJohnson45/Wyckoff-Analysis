@@ -43,12 +43,25 @@ from integrations.supabase_portfolio import (
 )
 from core.batch_report import generate_stock_payload
 from utils.trading_clock import CN_TZ, US_TZ, resolve_end_calendar_day_for_market
+from utils.notify import send_to_telegram
+from tools.data_fetcher import (
+    latest_trade_date_from_hist as _shared_latest_trade_date_from_hist,
+    append_spot_bar_if_needed as _append_spot_bar_if_needed_shared,
+)
+from tools.report_builder import _extract_json_block
+from functools import partial
+
+_append_spot_bar_if_needed_shared = partial(
+    _append_spot_bar_if_needed_shared,
+    env_prefix="STEP4",
+    sleep_default=0.3,
+    zero_fallback=True,
+)
 
 TRADING_DAYS = 320
 TELEGRAM_MAX_LEN = 3900
 ENFORCE_TARGET_TRADE_DATE = False
-DEBUG_MODEL_IO = os.getenv("DEBUG_MODEL_IO", "").strip().lower() in {"1", "true", "yes", "on"}
-DEBUG_MODEL_IO_FULL = os.getenv("DEBUG_MODEL_IO_FULL", "").strip().lower() in {"1", "true", "yes", "on"}
+from tools.debug_io import DEBUG_MODEL_IO, DEBUG_MODEL_IO_FULL, dump_model_input as _dump_model_input_shared
 STEP4_MAX_OUTPUT_TOKENS = 8192
 STEP4_ATR_PERIOD = int(os.getenv("STEP4_ATR_PERIOD", "14"))
 STEP4_ATR_MULTIPLIER = float(os.getenv("STEP4_ATR_MULTIPLIER", "2.0"))
@@ -66,14 +79,6 @@ STEP4_BUY_HARD_STOP_PCT = max(
 STEP4_BUY_STOP_MODE = os.getenv("STEP4_BUY_STOP_MODE", "floor").strip().lower()
 if STEP4_BUY_STOP_MODE not in {"fixed", "floor"}:
     STEP4_BUY_STOP_MODE = "floor"
-STEP4_ENABLE_SPOT_PATCH = os.getenv("STEP4_ENABLE_SPOT_PATCH", "1").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
-STEP4_SPOT_PATCH_RETRIES = int(os.getenv("STEP4_SPOT_PATCH_RETRIES", "2"))
-STEP4_SPOT_PATCH_SLEEP = float(os.getenv("STEP4_SPOT_PATCH_SLEEP", "0.3"))
 STEP4_ATR_SLIPPAGE_FACTOR = float(os.getenv("STEP4_ATR_SLIPPAGE_FACTOR", "0.25"))
 STEP4_PROBE_BUDGET_LIMIT = min(max(float(os.getenv("STEP4_PROBE_BUDGET_LIMIT", "0.10")), 0.0), 1.0)
 STEP4_ATTACK_BUDGET_LIMIT = min(max(float(os.getenv("STEP4_ATTACK_BUDGET_LIMIT", "0.20")), 0.0), 1.0)
@@ -1045,12 +1050,7 @@ def _job_end_calendar_day(market: str = "cn", now: datetime | None = None) -> da
 
 
 def _latest_trade_date_from_hist(df: pd.DataFrame) -> date | None:
-    if df is None or df.empty or "date" not in df.columns:
-        return None
-    s = pd.to_datetime(df["date"], errors="coerce").dropna()
-    if s.empty:
-        return None
-    return s.iloc[-1].date()
+    return _shared_latest_trade_date_from_hist(df)
 
 
 def _calc_holding_trade_days(
@@ -1090,65 +1090,11 @@ def _append_spot_bar_if_needed(
     当日线落后于 target_trade_date 时，尝试用实时快照补一根当日 bar。
     仅在 target_trade_date == 今日时启用，避免把 T 日快照错误拼到 T-1。
     """
-    if not STEP4_ENABLE_SPOT_PATCH or df is None or df.empty:
-        return (df, False)
     if _normalize_market(market) != "cn":
-        return (df, False)
-    latest_trade_date = _latest_trade_date_from_hist(df)
-    if latest_trade_date is None or latest_trade_date >= target_trade_date:
         return (df, False)
     if target_trade_date != _market_now(market).date():
         return (df, False)
-
-    df_s = df.sort_values("date").reset_index(drop=True)
-    last_close_series = pd.to_numeric(df_s.get("close"), errors="coerce").dropna()
-    prev_close = float(last_close_series.iloc[-1]) if not last_close_series.empty else None
-
-    for attempt in range(max(STEP4_SPOT_PATCH_RETRIES, 1)):
-        snap = fetch_stock_spot_snapshot(
-            code,
-            force_refresh=attempt > 0,
-        )
-        close_v = None if not snap else snap.get("close")
-        if close_v is None or float(close_v) <= 0:
-            if attempt < max(STEP4_SPOT_PATCH_RETRIES, 1) - 1:
-                time.sleep(max(STEP4_SPOT_PATCH_SLEEP, 0.0))
-            continue
-
-        close_f = float(close_v)
-        open_f = float(snap.get("open")) if snap and snap.get("open") is not None else close_f
-        high_raw = float(snap.get("high")) if snap and snap.get("high") is not None else close_f
-        low_raw = float(snap.get("low")) if snap and snap.get("low") is not None else close_f
-        high_f = max(high_raw, open_f, close_f)
-        low_f = min(low_raw, open_f, close_f)
-        turnover_ok = bool(float(snap.get("turnover_unit_ok", 0.0))) if snap else False
-        if turnover_ok:
-            volume_f = float(snap.get("volume")) if snap.get("volume") is not None else 0.0
-            amount_f = float(snap.get("amount")) if snap.get("amount") is not None else 0.0
-        else:
-            # 单位不确定时，宁可放弃量能，避免污染均量/ATR相关计算。
-            volume_f = 0.0
-            amount_f = 0.0
-        pct_f = float(snap.get("pct_chg")) if snap and snap.get("pct_chg") is not None else None
-        if pct_f is None and prev_close and prev_close > 0:
-            pct_f = (close_f - prev_close) / prev_close * 100.0
-
-        new_row = {
-            "date": target_trade_date.isoformat(),
-            "open": open_f,
-            "high": high_f,
-            "low": low_f,
-            "close": close_f,
-            "volume": volume_f,
-            "amount": amount_f,
-            "pct_chg": pct_f if pct_f is not None else 0.0,
-        }
-        patched = pd.concat([df_s, pd.DataFrame([new_row])], ignore_index=True)
-        patched = patched.sort_values("date").reset_index(drop=True)
-        return (patched, True)
-
-    return (df, False)
-
+    return _append_spot_bar_if_needed_shared(code, df, target_trade_date)
 
 def _fetch_latest_real_close(code: str, window, *, market: str = "cn") -> float | None:
     # 优先不复权；若交易日未对齐或拉取异常，再回退到前复权，避免误判“无最新价”。
@@ -1429,17 +1375,6 @@ def _format_candidate_payload(
     return ("\n\n".join(ordered_blocks), failures, latest_close_map, atr_map)
 
 
-def _extract_json_block(text: str) -> str:
-    raw = (text or "").strip()
-    if raw.startswith("```"):
-        raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.IGNORECASE)
-        raw = re.sub(r"\s*```$", "", raw)
-    start = raw.find("{")
-    end = raw.rfind("}")
-    if start >= 0 and end > start:
-        return raw[start:end + 1]
-    return raw
-
 
 def _parse_bool_like(v: object) -> bool:
     if isinstance(v, bool):
@@ -1608,92 +1543,14 @@ def _trim_new_buy_decisions(
 
 
 def _dump_model_input(model: str, system_prompt: str, user_message: str, symbols: list[str]) -> None:
-    if not DEBUG_MODEL_IO:
-        return
-    logs_dir = os.getenv("LOGS_DIR", "logs")
-    os.makedirs(logs_dir, exist_ok=True)
-    path = os.path.join(logs_dir, f"step4_model_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
-    body = (
-        f"[step4] model={model}\n"
-        f"[step4] symbol_count={len(symbols)}\n"
-        f"[step4] symbols={','.join(symbols)}\n"
-        f"[step4] system_prompt_len={len(system_prompt)}\n"
-        f"[step4] user_message_len={len(user_message)}\n"
+    """step4 专用包装：转发到 tools.debug_io.dump_model_input。"""
+    _dump_model_input_shared(
+        step_prefix="step4",
+        model=model,
+        system_prompt=system_prompt,
+        user_message=user_message,
+        symbols=symbols,
     )
-    if DEBUG_MODEL_IO_FULL:
-        body += (
-            "\n===== SYSTEM PROMPT =====\n"
-            + system_prompt
-            + "\n\n===== USER MESSAGE =====\n"
-            + user_message
-            + "\n"
-        )
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(body)
-    print(f"[step4] 模型输入已落盘: {path}")
-
-
-def _split_telegram_message(content: str, max_len: int = TELEGRAM_MAX_LEN) -> list[str]:
-    if len(content) <= max_len:
-        return [content]
-    chunks: list[str] = []
-    cur = ""
-    for line in content.splitlines(keepends=True):
-        # 极长单行兜底分段
-        if len(line) > max_len:
-            if cur:
-                chunks.append(cur.rstrip("\n"))
-                cur = ""
-            start = 0
-            while start < len(line):
-                chunks.append(line[start:start + max_len].rstrip("\n"))
-                start += max_len
-            continue
-
-        if len(cur) + len(line) <= max_len:
-            cur += line
-        else:
-            if cur:
-                chunks.append(cur.rstrip("\n"))
-            cur = line
-    if cur:
-        chunks.append(cur.rstrip("\n"))
-    return chunks
-
-
-def send_to_telegram(
-    message_text: str,
-    *,
-    tg_bot_token: str,
-    tg_chat_id: str,
-) -> bool:
-    import requests
-
-    token = str(tg_bot_token or "").strip()
-    chat_id = str(tg_chat_id or "").strip()
-    if not token or not chat_id:
-        print("[step4] tg_bot_token/tg_chat_id 未配置，跳过 Telegram 推送")
-        return False
-
-    proxy_url = os.getenv("PROXY_URL", "").strip()
-    proxies = {"http": proxy_url, "https": proxy_url} if proxy_url else None
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    chunks = _split_telegram_message(message_text)
-    for idx, chunk in enumerate(chunks, start=1):
-        payload = {
-            "chat_id": chat_id,
-            "text": chunk if len(chunks) == 1 else f"[{idx}/{len(chunks)}]\n{chunk}",
-            "disable_web_page_preview": True,
-        }
-        try:
-            resp = requests.post(url, json=payload, timeout=15, proxies=proxies)
-            if resp.status_code != 200:
-                print(f"[step4] Telegram 推送失败: status={resp.status_code}, body={resp.text[:200]}")
-                return False
-        except Exception as e:
-            print(f"[step4] Telegram 推送异常: {e}")
-            return False
-    return True
 
 
 def _render_trade_ticket(

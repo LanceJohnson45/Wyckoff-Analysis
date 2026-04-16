@@ -12,7 +12,7 @@ Tushare Pro 客户端封装（含分级限流）
 
     pro = get_pro()
     if pro:
-        df = pro.daily(ts_code="000001.SZ", start_date="20240101", end_date="20240226")
+        df = pro.daily(ts_code="000001.SZ", start_date="20260101", end_date="20260411")
 """
 from __future__ import annotations
 

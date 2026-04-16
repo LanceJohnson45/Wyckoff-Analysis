@@ -215,7 +215,9 @@ def diagnose_one_stock(
 
     # ── 止损参考 ──
     stop_loss_7pct = cost * 0.93
-    if latest_close <= stop_loss_7pct:
+    if stop_loss_7pct <= 0:
+        stop_status = "无成本价"
+    elif latest_close <= stop_loss_7pct:
         stop_status = "已穿止损"
     elif (latest_close - stop_loss_7pct) / stop_loss_7pct < 0.02:
         stop_status = "逼近止损(<2%)"

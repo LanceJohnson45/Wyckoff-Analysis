@@ -13,7 +13,7 @@ on:
       end:
         description: "回测结束日期 (YYYY-MM-DD)"
         required: true
-        default: "2026-03-03"
+        default: "2026-04-11"
       top_n:
         description: "每日选股 TopN"
         required: true
@@ -42,7 +42,7 @@ concurrency:
 env:
   # schedule 触发时 inputs.* 为空，这里统一设置默认值做 fallback
   BT_START: ${{ inputs.start || '2025-09-01' }}
-  BT_END: ${{ inputs.end || '2026-03-03' }}
+  BT_END: ${{ inputs.end || '2026-04-11' }}
   BT_TOP_N: ${{ inputs.top_n || '3' }}
   BT_BOARD: ${{ inputs.board || 'all' }}
   BT_SAMPLE_SIZE: ${{ inputs.sample_size || '0' }}
@@ -403,7 +403,8 @@ jobs:
       - name: Aggregate and notify
         shell: bash
         run: |
-          python3 -u -c "
+          export RUN_URL='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          python3 -u - <<'PYEOF'
           import os, glob, json, re, urllib.request
 
           webhook = os.environ.get('FEISHU_WEBHOOK_URL', '').strip()
@@ -412,7 +413,7 @@ jobs:
               exit(0)
 
           summaries = sorted(glob.glob('artifacts/**/summary_*.md', recursive=True))
-          run_url = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          run_url = os.environ.get('RUN_URL', '')
 
           def extract(content, keyword):
               for line in content.split('\n'):
@@ -459,7 +460,10 @@ jobs:
               best = max(valid, key=lambda c: c['sharpe']) if valid else None
 
               lines = []
-              lines.append(f'**区间**: ${{ env.BT_START }} ~ ${{ env.BT_END }}  |  **TopN**: ${{ env.BT_TOP_N }}  |  **共 {len(cells)} 单元**')
+              bt_start = os.environ.get('BT_START', '?')
+              bt_end = os.environ.get('BT_END', '?')
+              bt_topn = os.environ.get('BT_TOP_N', '?')
+              lines.append(f'**区间**: {bt_start} ~ {bt_end}  |  **TopN**: {bt_topn}  |  **共 {len(cells)} 单元**')
               lines.append(f'[查看详情]({run_url})')
               lines.append('')
 
@@ -549,18 +553,19 @@ jobs:
               print(f'飞书通知发送成功: {resp.status}')
           except Exception as e:
               print(f'飞书通知发送失败: {e}')
-          "
+          PYEOF
 
       - name: Notify on failure
         if: failure()
         run: |
-          python3 -c "
+          export RUN_URL='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          python3 - <<'PYEOF'
           import os, urllib.request, json
           url = os.environ.get('FEISHU_WEBHOOK_URL', '')
           if not url:
               print('FEISHU_WEBHOOK_URL 未配置，跳过失败通知')
               exit(0)
-          run_url = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          run_url = os.environ.get('RUN_URL', '')
           content = '**Backtest Grid 回测失败**\n**Run**: ' + run_url
           payload = {
               'msg_type': 'interactive',
@@ -575,4 +580,4 @@ jobs:
               urllib.request.urlopen(req, timeout=15)
           except Exception as e:
               print(f'通知失败: {e}')
-          "
+          PYEOF

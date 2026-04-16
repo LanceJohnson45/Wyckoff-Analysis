@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-定时任务主入口：Wyckoff Funnel → 批量研报
+定时任务主入口：Wyckoff Funnel（Step2） → 批量研报（Step3） → 私人再平衡（Step4）
 
 配置来源：仅读取环境变量（GitHub Secrets），与 Streamlit 用户配置（Supabase）完全独立。
 环境变量：FEISHU_WEBHOOK_URL, WECOM_WEBHOOK_URL(可选), DINGTALK_WEBHOOK_URL(可选),
 DEFAULT_LLM_PROVIDER(可选，默认 gemini), GEMINI_API_KEY, GEMINI_MODEL,
 OPENAI_API_KEY, OPENAI_MODEL(可选), 以及其它厂商 *_API_KEY/*_MODEL/*_BASE_URL,
 SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY(可选), SUPABASE_USER_ID,
-TG_BOT_TOKEN, TG_CHAT_ID, MY_PORTFOLIO_STATE(可选兜底)
+TG_BOT_TOKEN, TG_CHAT_ID, MY_PORTFOLIO_STATE(可选兜底),
+STEP3_SKIP_LLM(可选), DAILY_JOB_SKIP_STEP4(可选), LOGS_DIR(可选)
 """
 from __future__ import annotations
 
@@ -197,8 +198,6 @@ def main() -> int:
 
     # Secret 完整性预检
     missing = []
-    if not webhook:
-        missing.append("FEISHU_WEBHOOK_URL")
     # 仅当需要调用模型时强制要求对应厂商 API Key
     require_api_key = (not step3_skip_llm) or (not skip_step4)
     if require_api_key and not api_key:
@@ -206,6 +205,9 @@ def main() -> int:
     if missing:
         _log(f"配置缺失: {', '.join(missing)}", logs_path)
         return 1
+    # IM 渠道均为可选，未配置时仅跳过推送
+    if not webhook and not wecom_webhook and not dingtalk_webhook:
+        _log("未配置任何 IM 渠道（飞书/企微/钉钉），筛选与研报仍会执行，推送将被跳过", logs_path)
 
     if args.dry_run:
         _log("--dry-run: 配置校验通过，退出", logs_path)
@@ -222,7 +224,7 @@ def main() -> int:
         extract_operation_pool_codes,
         run_step3,
     )
-    from scripts.step4_rebalancer import run as run_step4
+    from core.strategy import run_step4
 
     summary: list[dict] = []
     has_blocking_failure = False
@@ -233,7 +235,7 @@ def main() -> int:
 
     _log(f"开始定时任务 market={market}", logs_path)
 
-    # 阶段 1：Wyckoff Funnel
+    # Step2: Wyckoff Funnel
     t0 = datetime.now(TZ)
     step2_ok = False
     step2_err = None
@@ -252,7 +254,7 @@ def main() -> int:
         "elapsed_s": round(elapsed2, 1),
         "output": f"{len(symbols_info)} symbols",
     })
-    _log(f"阶段 1 Wyckoff Funnel: ok={step2_ok}, symbols={len(symbols_info)}, elapsed={elapsed2:.1f}s, err={step2_err}", logs_path)
+    _log(f"Step2 Wyckoff Funnel: ok={step2_ok}, symbols={len(symbols_info)}, elapsed={elapsed2:.1f}s, err={step2_err}", logs_path)
     if step2_err:
         has_blocking_failure = True
     elif benchmark_context:
@@ -313,7 +315,7 @@ def main() -> int:
                 )
             except Exception as e:
                 step3_springboard_codes = []
-                _log(f"阶段 2 批量研报: 起跳板解析失败，已降级为空。err={e}", logs_path)
+                _log(f"Step3 批量研报: 起跳板解析失败，已降级为空。err={e}", logs_path)
         elapsed3 = (datetime.now(TZ) - t0).total_seconds()
         summary.append({
             "step": "批量研报",
@@ -322,10 +324,10 @@ def main() -> int:
             "elapsed_s": round(elapsed3, 1),
             "output": f"{len(symbols_info)} symbols",
         })
-        _log(f"阶段 2 批量研报: ok={step3_ok}, elapsed={elapsed3:.1f}s, err={step3_err}", logs_path)
+        _log(f"Step3 批量研报: ok={step3_ok}, elapsed={elapsed3:.1f}s, err={step3_err}", logs_path)
         preview_codes = ", ".join(step3_springboard_codes[:8]) if step3_springboard_codes else "无"
         _log(
-            f"阶段 2 批量研报: 起跳板代码={len(step3_springboard_codes)} ({preview_codes})",
+            f"Step3 批量研报: 起跳板代码={len(step3_springboard_codes)} ({preview_codes})",
             logs_path,
         )
         if require_step3_report and not step3_ok:
@@ -352,7 +354,7 @@ def main() -> int:
             _log(f"推荐记录AI标记: {market.upper()} 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
     else:
         summary.append({"step": "批量研报", "ok": True, "err": None, "elapsed_s": 0, "output": "skipped (no symbols)"})
-        _log("阶段 2 批量研报: 跳过（无筛选结果）", logs_path)
+        _log("Step3 批量研报: 跳过（无筛选结果）", logs_path)
 
     # 阶段 3：私人账户再平衡（按 SUPABASE_USER_ID 唯一执行）
     if is_non_cn_market:
@@ -366,7 +368,7 @@ def main() -> int:
         })
         _log(f"阶段 3 私人再平衡: 跳过（{market.upper()} 模式暂不启用 Step4）", logs_path)
         step4_target = None
-    elif skip_step4:
+    if skip_step4:
         summary.append({
             "step": "私人再平衡",
             "ok": True,
@@ -374,7 +376,7 @@ def main() -> int:
             "elapsed_s": 0,
             "output": "skipped (DAILY_JOB_SKIP_STEP4=1)",
         })
-        _log("阶段 3 私人再平衡: 跳过（DAILY_JOB_SKIP_STEP4=1）", logs_path)
+        _log("Step4 私人再平衡: 跳过（DAILY_JOB_SKIP_STEP4=1）", logs_path)
         step4_target = None
     else:
         step4_target, step4_target_reason = _load_step4_target()
@@ -388,6 +390,8 @@ def main() -> int:
         })
         _log(f"阶段 3 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
     elif not skip_step4 and not is_non_cn_market:
+        _log(f"Step4 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
+    elif not skip_step4 and not is_non_cn_market:
         tg_bot_token = os.getenv("TG_BOT_TOKEN", "").strip()
         tg_chat_id = os.getenv("TG_CHAT_ID", "").strip()
         if not tg_bot_token or not tg_chat_id:
@@ -398,7 +402,7 @@ def main() -> int:
                 "elapsed_s": 0,
                 "output": "skipped (TG_BOT_TOKEN/TG_CHAT_ID 未配置)",
             })
-            _log("阶段 3 私人再平衡: 跳过（TG_BOT_TOKEN/TG_CHAT_ID 未配置）", logs_path)
+            _log("Step4 私人再平衡: 跳过（TG_BOT_TOKEN/TG_CHAT_ID 未配置）", logs_path)
             step4_target = None
         if step4_target is None:
             pass
@@ -416,7 +420,7 @@ def main() -> int:
                     if code in allowed_set:
                         step4_candidate_meta.append(item)
             _log(
-                f"阶段 3 私人再平衡: 候选收口为 Step3 起跳板 {len(step4_candidate_meta)} 只",
+                f"Step4 私人再平衡: 候选收口为 Step3 起跳板 {len(step4_candidate_meta)} 只",
                 logs_path,
             )
             step4_ok = True
@@ -449,7 +453,7 @@ def main() -> int:
                 ),
             })
             _log(
-                f"阶段 3 私人再平衡: user={user_id}, portfolio={portfolio_id}, "
+                f"Step4 私人再平衡: user={user_id}, portfolio={portfolio_id}, "
                 f"ok={step4_ok}, reason={step4_reason}, elapsed={elapsed4:.1f}s, err={step4_err}",
                 logs_path,
             )

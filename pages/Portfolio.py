@@ -640,7 +640,7 @@ with content_col:
         st.error("无法识别当前用户，已拒绝加载持仓信息。请重新登录。")
         st.stop()
 
-    loading = show_page_loading(title="加载持仓中...", subtitle="正在读取当前账号持仓")
+    loading = show_page_loading(title="思考中...", subtitle="正在读取当前账号持仓")
     try:
         portfolio, positions = _load_user_live(portfolio_id)
     finally:

@@ -67,6 +67,7 @@ jobs:
       - name: Run daily job
         run: |
           echo "::group::Run daily job script"
+          set -o pipefail
           python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job.log \
             2>&1 | tee -a ${{ github.workspace }}/logs/daily_job.console.log
           echo "::endgroup::"

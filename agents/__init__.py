@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Wyckoff Agent 层 — 基于 OpenAI Agents SDK + LiteLLM 的多 Agent 编排。
+Wyckoff Agent 层 — 基于 Google ADK 的对话式智能投研 Agent。
 
-Phase 1: 每个 Agent 是对现有 pipeline 函数的薄包装。
-Phase 2: Agent 内部拆解为细粒度 Tool 调用。
-Phase 3: 结构化 LLM 输出 + 交互式单 Agent 调用。
+核心模块：
+- wyckoff_chat_agent.py — ADK LlmAgent 定义（威科夫人格）
+- chat_tools.py — 9 个 FunctionTool（包装引擎能力给对话 Agent）
+- session_manager.py — 会话管理（ADK Runner + InMemorySessionService）
 """

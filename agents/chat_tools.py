@@ -1,0 +1,823 @@
+# -*- coding: utf-8 -*-
+"""
+ADK 工具函数 — 将已有的 Wyckoff 引擎能力暴露给对话 Agent。
+
+每个函数都是一个 ADK tool：普通 Python 函数 + 类型标注 + docstring，
+ADK 的 FunctionTool 会自动解析为工具 schema。
+
+用户凭据（API Key / Tushare Token 等）按需从 Supabase 实时获取，
+不依赖 st.session_state 或 os.environ 的长链传递。
+"""
+from __future__ import annotations
+
+import logging
+import os
+import threading
+import time
+from datetime import date, datetime, timedelta
+from typing import Any
+
+try:
+    from google.adk.tools import ToolContext
+except ImportError:
+    # CLI 模式下无 ADK，使用 shim
+    class ToolContext:  # type: ignore[no-redef]
+        def __init__(self, state=None):
+            self.state = state or {}
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# 用户凭据：从 Supabase 实时获取 + 进程内短期缓存
+# ---------------------------------------------------------------------------
+
+_cred_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+_cred_cache_lock = threading.Lock()
+_CRED_CACHE_TTL = 300  # 5 分钟
+
+
+def _load_user_credentials(user_id: str) -> dict[str, Any]:
+    """
+    从 Supabase user_settings 表获取用户凭据，带 5 分钟内存缓存。
+
+    返回原始 row dict（可能为空 dict）。
+    """
+    if not user_id:
+        return {}
+
+    now = time.monotonic()
+    with _cred_cache_lock:
+        cached = _cred_cache.get(user_id)
+        if cached and (now - cached[0]) < _CRED_CACHE_TTL:
+            return cached[1]
+
+    try:
+        from integrations.supabase_portfolio import load_user_settings_admin
+        row = load_user_settings_admin(user_id) or {}
+    except Exception as e:
+        logger.warning("_load_user_credentials failed for %s: %s", user_id, e)
+        row = {}
+
+    with _cred_cache_lock:
+        _cred_cache[user_id] = (time.monotonic(), row)
+
+    return row
+
+
+def _get_user_id(tool_context: ToolContext | None = None) -> str:
+    """从 ADK tool_context 的 session state 获取 user_id。"""
+    if tool_context is not None:
+        uid = tool_context.state.get("user_id", "")
+        if uid:
+            return str(uid)
+    return ""
+
+
+def _get_credential(tool_context: ToolContext | None, key: str, env_fallback: str = "") -> str:
+    """
+    获取用户凭据：Supabase → 环境变量 → 空串。
+
+    Args:
+        tool_context: ADK 注入的上下文（含 user_id）
+        key: user_settings 表中的列名，如 "gemini_api_key" / "tushare_token"
+        env_fallback: 可选的环境变量名作为兜底
+    """
+    user_id = _get_user_id(tool_context)
+    if user_id:
+        creds = _load_user_credentials(user_id)
+        val = str(creds.get(key, "") or "").strip()
+        if val:
+            return val
+    # 兜底：环境变量（适用于本地开发 / 未登录场景）
+    if env_fallback:
+        return os.getenv(env_fallback, "").strip()
+    return ""
+
+
+def _ensure_tushare_token(tool_context: ToolContext | None) -> None:
+    """确保 tushare 能拿到 token：从 Supabase 获取后设置到环境变量。
+
+    tushare 库内部只认 ts.set_token() 或 TUSHARE_TOKEN 环境变量，
+    无法通过函数参数传递，所以这里做一次即时注入。
+    """
+    token = _get_credential(tool_context, "tushare_token", "TUSHARE_TOKEN")
+    if token:
+        os.environ["TUSHARE_TOKEN"] = token
+
+
+# ---------------------------------------------------------------------------
+# Tool 1: 股票搜索
+# ---------------------------------------------------------------------------
+
+def search_stock_by_name(keyword: str, tool_context: ToolContext) -> list[dict]:
+    """根据关键词搜索 A 股股票，支持名称、代码、拼音首字母模糊搜索。
+
+    Args:
+        keyword: 搜索关键词，如 "宁德" 或 "300750" 或 "gzmt"
+
+    Returns:
+        匹配的股票列表，每项包含 code、name、industry 字段。最多返回 10 条。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        from integrations.tushare_client import get_pro
+
+        pro = get_pro()
+        if pro is None:
+            return [{"error": "Tushare 未配置，无法搜索"}]
+
+        df = pro.stock_basic(
+            exchange="",
+            list_status="L",
+            fields="ts_code,symbol,name,area,industry,list_date",
+        )
+        if df is None or df.empty:
+            return []
+
+        kw = keyword.strip()
+        mask = (
+            df["name"].str.contains(kw, case=False, na=False)
+            | df["symbol"].str.contains(kw, case=False, na=False)
+            | df["ts_code"].str.contains(kw, case=False, na=False)
+        )
+        hits = df[mask].head(10)
+        results = []
+        for _, row in hits.iterrows():
+            results.append({
+                "code": str(row.get("symbol", "")),
+                "ts_code": str(row.get("ts_code", "")),
+                "name": str(row.get("name", "")),
+                "industry": str(row.get("industry", "")),
+                "area": str(row.get("area", "")),
+            })
+        return results if results else [{"message": f"未找到与 '{kw}' 匹配的股票"}]
+    except Exception as e:
+        logger.exception("search_stock_by_name error")
+        return [{"error": str(e)}]
+
+
+# ---------------------------------------------------------------------------
+# Tool 2: 个股诊断
+# ---------------------------------------------------------------------------
+
+def diagnose_stock(code: str, cost: float = 0.0, tool_context: ToolContext = None) -> dict:
+    """对单只 A 股股票做 Wyckoff 结构化健康诊断。
+
+    诊断内容包括：均线结构、L2 通道分类、吸筹阶段、L4 触发信号（SOS/Spring/LPS/EVR）、
+    退出信号、止损状态、量能与振幅等。
+
+    Args:
+        code: 6 位股票代码，如 "000001" 或 "600519"
+        cost: 持仓成本价，默认 0 表示未持仓，仅做技术面诊断
+
+    Returns:
+        结构化诊断结果 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        from integrations.data_source import fetch_stock_hist
+        from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
+
+        # 拉取 320 个交易日数据
+        end_date = date.today()
+        start_date = end_date - timedelta(days=500)  # 多拉以确保 320 根 K 线
+        df = fetch_stock_hist(code, start_date, end_date)
+
+        if df is None or df.empty:
+            return {"error": f"无法获取 {code} 的行情数据"}
+
+        # 标准化列名
+        from core.stock_cache import _COL_MAP
+        df = df.rename(columns=_COL_MAP)
+
+        name = code  # 默认用代码作名称
+        # 尝试获取名称
+        try:
+            from integrations.tushare_client import get_pro
+            pro = get_pro()
+            if pro:
+                info = pro.stock_basic(
+                    ts_code=_to_ts_code(code),
+                    fields="name",
+                )
+                if info is not None and not info.empty:
+                    name = str(info.iloc[0]["name"])
+        except Exception:
+            pass
+
+        d = diagnose_one_stock(code, name, cost, df)
+        text = format_diagnostic_text(d)
+        return {
+            "code": d.code,
+            "name": d.name,
+            "health": d.health,
+            "pnl_pct": round(d.pnl_pct, 2),
+            "latest_close": d.latest_close,
+            "ma_pattern": d.ma_pattern,
+            "l2_channel": d.l2_channel,
+            "track": d.track,
+            "accum_stage": d.accum_stage,
+            "l4_triggers": d.l4_triggers,
+            "exit_signal": d.exit_signal,
+            "stop_loss_status": d.stop_loss_status,
+            "vol_ratio_20_60": round(d.vol_ratio_20_60, 2),
+            "range_60d_pct": round(d.range_60d_pct, 1),
+            "ret_10d_pct": round(d.ret_10d_pct, 1),
+            "ret_20d_pct": round(d.ret_20d_pct, 1),
+            "from_year_high_pct": round(d.from_year_high_pct, 1),
+            "from_year_low_pct": round(d.from_year_low_pct, 1),
+            "health_reasons": d.health_reasons,
+            "formatted_text": text,
+        }
+    except Exception as e:
+        logger.exception("diagnose_stock error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 3: 持仓诊断
+# ---------------------------------------------------------------------------
+
+def diagnose_portfolio(tool_context: ToolContext) -> dict:
+    """诊断当前用户所有持仓的健康状况。
+
+    从 Supabase 加载用户持仓，对每只股票运行 Wyckoff 健康诊断。
+
+    Returns:
+        包含所有持仓诊断结果的 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        from integrations.data_source import fetch_stock_hist
+        from integrations.supabase_portfolio import (
+            load_portfolio_state,
+            build_user_live_portfolio_id,
+        )
+        from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
+
+        user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未找到用户 ID，无法加载持仓"}
+
+        portfolio_id = build_user_live_portfolio_id(user_id)
+        state = load_portfolio_state(portfolio_id)
+        if not state or not state.get("positions"):
+            return {"message": "当前没有持仓数据", "positions": []}
+
+        end_date = date.today()
+        start_date = end_date - timedelta(days=500)
+        results = []
+        for pos in state["positions"]:
+            code = pos["code"]
+            name = pos.get("name", code)
+            cost = float(pos.get("cost", 0))
+            try:
+                df = fetch_stock_hist(code, start_date, end_date)
+                if df is None or df.empty:
+                    results.append({"code": code, "name": name, "error": "无行情数据"})
+                    continue
+                from core.stock_cache import _COL_MAP
+                df = df.rename(columns=_COL_MAP)
+                d = diagnose_one_stock(code, name, cost, df)
+                results.append({
+                    "code": d.code,
+                    "name": d.name,
+                    "health": d.health,
+                    "pnl_pct": round(d.pnl_pct, 2),
+                    "latest_close": d.latest_close,
+                    "l2_channel": d.l2_channel,
+                    "l4_triggers": d.l4_triggers,
+                    "health_reasons": d.health_reasons,
+                    "formatted_text": format_diagnostic_text(d),
+                })
+            except Exception as e:
+                results.append({"code": code, "name": name, "error": str(e)})
+
+        return {
+            "portfolio_id": portfolio_id,
+            "free_cash": state.get("free_cash", 0),
+            "position_count": len(state["positions"]),
+            "diagnostics": results,
+        }
+    except Exception as e:
+        logger.exception("diagnose_portfolio error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 4: 行情查询
+# ---------------------------------------------------------------------------
+
+def get_stock_price(code: str, days: int = 30, tool_context: ToolContext = None) -> dict:
+    """获取指定股票的近期行情数据（OHLCV）。
+
+    Args:
+        code: 6 位股票代码，如 "000001"
+        days: 获取天数，默认 30，最大 250
+
+    Returns:
+        包含最近 N 天 OHLCV 数据的 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        from integrations.data_source import fetch_stock_hist
+
+        days = min(max(days, 1), 250)
+        end_date = date.today()
+        start_date = end_date - timedelta(days=int(days * 1.6))  # 多拉以覆盖交易日
+        df = fetch_stock_hist(code, start_date, end_date)
+
+        if df is None or df.empty:
+            return {"error": f"无法获取 {code} 的行情数据"}
+
+        from core.stock_cache import _COL_MAP
+        df = df.rename(columns=_COL_MAP)
+        df = df.tail(days)
+
+        latest = df.iloc[-1] if len(df) > 0 else {}
+        records = []
+        for _, row in df.iterrows():
+            records.append({
+                "date": str(row.get("date", "")),
+                "open": round(float(row.get("open", 0)), 2),
+                "high": round(float(row.get("high", 0)), 2),
+                "low": round(float(row.get("low", 0)), 2),
+                "close": round(float(row.get("close", 0)), 2),
+                "volume": int(row.get("volume", 0)),
+                "pct_chg": round(float(row.get("pct_chg", 0)), 2),
+            })
+
+        return {
+            "code": code,
+            "days": len(records),
+            "latest_close": round(float(latest.get("close", 0)), 2),
+            "latest_date": str(latest.get("date", "")),
+            "data": records,
+        }
+    except Exception as e:
+        logger.exception("get_stock_price error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 5: 大盘概览
+# ---------------------------------------------------------------------------
+
+def get_market_overview(tool_context: ToolContext) -> dict:
+    """获取当前 A 股大盘环境概览。
+
+    返回主要指数（上证、深证、创业板）的最新收盘数据和涨跌幅。
+
+    Returns:
+        大盘概览 dict，包含各指数的涨跌幅和近期走势。
+    """
+    try:
+        errors: list[str] = []
+        indices = {
+            "000001.SH": "上证指数",
+            "399001.SZ": "深证成指",
+            "399006.SZ": "创业板指",
+            "000016.SH": "上证50",
+            "000905.SH": "中证500",
+        }
+
+        # 优先 tushare（有 token 时数据更稳定）
+        try:
+            _ensure_tushare_token(tool_context)
+            from integrations.tushare_client import get_pro
+
+            pro = get_pro()
+            if pro is not None:
+                end_date = date.today().strftime("%Y%m%d")
+                start_date = (date.today() - timedelta(days=10)).strftime("%Y%m%d")
+                result = {}
+                for ts_code, name in indices.items():
+                    try:
+                        df = pro.index_daily(
+                            ts_code=ts_code,
+                            start_date=start_date,
+                            end_date=end_date,
+                        )
+                        if df is not None and not df.empty:
+                            df = df.sort_values("trade_date")
+                            latest = df.iloc[-1]
+                            result[name] = {
+                                "ts_code": ts_code,
+                                "trade_date": str(latest.get("trade_date", "")),
+                                "close": round(float(latest.get("close", 0)), 2),
+                                "pct_chg": round(float(latest.get("pct_chg", 0)), 2),
+                                "vol": int(latest.get("vol", 0)),
+                                "amount": round(float(latest.get("amount", 0)), 2),
+                            }
+                    except Exception as e:
+                        result[name] = {"error": str(e)}
+                if result:
+                    return {"indices": result, "source": "tushare"}
+            else:
+                errors.append("tushare: token 未配置或 client 不可用")
+        except Exception as e:
+            errors.append(f"tushare: {e}")
+
+        # 兜底 akshare（无需 token）
+        try:
+            import akshare as ak
+
+            spot = ak.stock_zh_index_spot_em()
+            if spot is None or spot.empty:
+                errors.append("akshare: stock_zh_index_spot_em 返回空")
+            else:
+                # 兼容不同版本列名
+                col_code = "代码" if "代码" in spot.columns else ("指数代码" if "指数代码" in spot.columns else "")
+                col_name = "名称" if "名称" in spot.columns else ("指数名称" if "指数名称" in spot.columns else "")
+                col_close = "最新价" if "最新价" in spot.columns else ("最新" if "最新" in spot.columns else "")
+                col_pct = "涨跌幅" if "涨跌幅" in spot.columns else ("涨跌幅(%)" if "涨跌幅(%)" in spot.columns else "")
+                col_vol = "成交量" if "成交量" in spot.columns else ""
+                col_amount = "成交额" if "成交额" in spot.columns else ""
+                if not col_code:
+                    errors.append("akshare: 缺少指数代码列")
+                else:
+                    code_to_ts = {
+                        "000001": "000001.SH",
+                        "399001": "399001.SZ",
+                        "399006": "399006.SZ",
+                        "000016": "000016.SH",
+                        "000905": "000905.SH",
+                    }
+                    target_codes = set(code_to_ts.keys())
+                    today = date.today().strftime("%Y%m%d")
+                    result = {}
+                    for _, row in spot.iterrows():
+                        code_raw = str(row.get(col_code, "") or "").strip()
+                        code = "".join(ch for ch in code_raw if ch.isdigit())[-6:]
+                        if code not in target_codes:
+                            continue
+                        name_cn = str(row.get(col_name, "") or "").strip() or indices[code_to_ts[code]]
+                        try:
+                            close_v = float(row.get(col_close, 0) or 0) if col_close else 0.0
+                        except Exception:
+                            close_v = 0.0
+                        try:
+                            pct_v = float(row.get(col_pct, 0) or 0) if col_pct else 0.0
+                        except Exception:
+                            pct_v = 0.0
+                        try:
+                            vol_v = int(float(row.get(col_vol, 0) or 0)) if col_vol else 0
+                        except Exception:
+                            vol_v = 0
+                        try:
+                            amount_v = round(float(row.get(col_amount, 0) or 0), 2) if col_amount else 0.0
+                        except Exception:
+                            amount_v = 0.0
+
+                        result[name_cn] = {
+                            "ts_code": code_to_ts[code],
+                            "trade_date": today,
+                            "close": round(close_v, 2),
+                            "pct_chg": round(pct_v, 2),
+                            "vol": vol_v,
+                            "amount": amount_v,
+                        }
+
+                    if result:
+                        return {"indices": result, "source": "akshare"}
+                    errors.append("akshare: 目标指数未命中")
+        except Exception as e:
+            errors.append(f"akshare: {e}")
+
+        return {
+            "error": "无法获取大盘数据",
+            "details": "; ".join(errors) if errors else "unknown",
+        }
+    except Exception as e:
+        logger.exception("get_market_overview error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 6: Wyckoff 漏斗筛选
+# ---------------------------------------------------------------------------
+
+_VALID_BOARDS = {"all", "main", "chinext"}
+_BOARD_ALIAS = {"gem": "chinext", "创业板": "chinext", "主板": "main", "全部": "all"}
+
+
+def screen_stocks(board: str = "all", tool_context: ToolContext = None) -> dict:
+    """运行 Wyckoff 五层漏斗筛选，从全市场中筛选出具有结构性机会的股票。
+
+    筛选过程包括：L1 基本面过滤、L2 通道分类、L3 板块轮动、L4 触发检测、L5 退出信号过滤。
+    整个过程可能需要几分钟时间。
+
+    Args:
+        board: 股票池板块，可选 "all"（全部主板+创业板）、"main"（仅主板）、"chinext"（仅创业板）
+
+    Returns:
+        筛选结果 dict，包含各层统计和最终候选股票列表。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        # 参数校验与别名映射
+        board = str(board or "all").strip().lower()
+        board = _BOARD_ALIAS.get(board, board)
+        if board not in _VALID_BOARDS:
+            return {"error": f"不支持的 board 值 '{board}'，可选: all / main / chinext"}
+
+        # 保存并设置环境变量（调用后恢复）
+        prev_mode = os.environ.get("FUNNEL_POOL_MODE")
+        prev_board = os.environ.get("FUNNEL_POOL_BOARD")
+        os.environ["FUNNEL_POOL_MODE"] = "board"
+        os.environ["FUNNEL_POOL_BOARD"] = board
+
+        from core.funnel_pipeline import run_funnel
+
+        try:
+            ok, symbols, bench_ctx, details = run_funnel(
+                "", notify=False, return_details=True,
+            )
+        finally:
+            # 恢复环境变量，避免影响后续调用
+            if prev_mode is None:
+                os.environ.pop("FUNNEL_POOL_MODE", None)
+            else:
+                os.environ["FUNNEL_POOL_MODE"] = prev_mode
+            if prev_board is None:
+                os.environ.pop("FUNNEL_POOL_BOARD", None)
+            else:
+                os.environ["FUNNEL_POOL_BOARD"] = prev_board
+
+        metrics = details.get("metrics") or {}
+        triggers = details.get("triggers") or {}
+        name_map = details.get("name_map") or {}
+
+        trigger_summary = {}
+        for trigger_name, rows in triggers.items():
+            trigger_summary[trigger_name] = [
+                {
+                    "code": str(code),
+                    "name": str(name_map.get(str(code), code)),
+                    "score": round(float(score), 2),
+                }
+                for code, score in rows
+            ]
+
+        return {
+            "ok": bool(ok),
+            "summary": {
+                "total_scanned": int(metrics.get("total_symbols", 0)),
+                "layer1_passed": int(metrics.get("layer1", 0)),
+                "layer2_passed": int(metrics.get("layer2", 0)),
+                "layer3_passed": int(metrics.get("layer3", 0)),
+            },
+            "trigger_groups": trigger_summary,
+            "top_sectors": metrics.get("top_sectors", []),
+            "symbols_for_report": symbols,
+        }
+    except Exception as e:
+        logger.exception("screen_stocks error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 7: AI 研报生成
+# ---------------------------------------------------------------------------
+
+def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dict:
+    """对指定股票列表生成威科夫三阵营 AI 深度研报。
+
+    使用 LLM 对股票进行威科夫供需分析，将股票分为三个阵营：
+    - 逻辑破产 (Invalidated)
+    - 储备营地 (Building Cause)
+    - 起跳板 (On the Springboard)
+
+    需要配置 Gemini API Key 才能使用。
+
+    Args:
+        stock_codes: 股票代码列表，如 ["000001", "600519", "300750"]，最多 10 只
+
+    Returns:
+        包含研报文本和起跳板代码的 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        if not stock_codes:
+            return {"error": "请提供至少一个股票代码"}
+        if len(stock_codes) > 10:
+            stock_codes = stock_codes[:10]
+
+        # 从 Supabase 获取 Gemini 凭据，兜底环境变量
+        api_key = _get_credential(tool_context, "gemini_api_key", "GEMINI_API_KEY")
+        model = _get_credential(tool_context, "gemini_model", "GEMINI_MODEL") or "gemini-2.0-flash"
+        base_url = _get_credential(tool_context, "gemini_base_url", "")
+        if not api_key:
+            return {"error": "未配置 Gemini API Key，无法生成 AI 研报。请在设置页面配置。"}
+
+        # 构建 symbols_info 格式
+        symbols_info = []
+        for code in stock_codes:
+            code = str(code).strip()
+            name = code
+            try:
+                from integrations.tushare_client import get_pro
+                pro = get_pro()
+                if pro:
+                    info = pro.stock_basic(ts_code=_to_ts_code(code), fields="name")
+                    if info is not None and not info.empty:
+                        name = str(info.iloc[0]["name"])
+            except Exception:
+                pass
+            symbols_info.append({"code": code, "name": name, "tag": "chat_request"})
+
+        from core.batch_report import run_step3
+
+        ok, reason, report_text = run_step3(
+            symbols_info,
+            webhook_url="",
+            api_key=api_key,
+            model=model,
+            benchmark_context=None,
+            notify=False,
+            provider="gemini",
+            llm_base_url=base_url,
+        )
+
+        return {
+            "ok": bool(ok),
+            "reason": str(reason or ""),
+            "report_text": str(report_text or ""),
+            "model": model,
+            "stock_count": len(symbols_info),
+        }
+    except Exception as e:
+        logger.exception("generate_ai_report error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 8: 持仓策略决策
+# ---------------------------------------------------------------------------
+
+def generate_strategy_decision(tool_context: ToolContext) -> dict:
+    """生成持仓去留决策和新标的买入策略（需要先运行筛选和研报）。
+
+    使用威科夫方法论，综合审视当前持仓和外部候选，给出：
+    - 现有持仓的去留决策（EXIT/TRIM/HOLD）
+    - 外部候选的买入建议（PROBE/ATTACK）
+
+    需要配置 Gemini API Key 和持仓数据。
+
+    Returns:
+        策略决策结果 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+
+        # 从 Supabase 获取 Gemini 凭据
+        api_key = _get_credential(tool_context, "gemini_api_key", "GEMINI_API_KEY")
+        model = _get_credential(tool_context, "gemini_model", "GEMINI_MODEL") or "gemini-2.0-flash"
+        base_url = _get_credential(tool_context, "gemini_base_url", "")
+        if not api_key:
+            return {"error": "未配置 Gemini API Key，无法生成策略决策。请在设置页面配置。"}
+
+        user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未找到用户 ID，无法加载持仓进行策略分析"}
+
+        from integrations.supabase_portfolio import build_user_live_portfolio_id
+
+        portfolio_id = build_user_live_portfolio_id(user_id)
+
+        # 先运行筛选获取候选
+        screen_result = screen_stocks(board="all")
+        if screen_result.get("error"):
+            return {"error": f"筛选失败: {screen_result['error']}"}
+
+        symbols_info = screen_result.get("symbols_for_report", [])
+
+        # 生成研报
+        report_text = ""
+        if symbols_info:
+            from core.batch_report import run_step3
+
+            ok, reason, report_text = run_step3(
+                symbols_info,
+                webhook_url="",
+                api_key=api_key,
+                model=model,
+                benchmark_context=None,
+                notify=False,
+                provider="gemini",
+                llm_base_url=base_url,
+            )
+
+        # 生成策略决策（需要 Telegram 配置来发送，但在聊天模式下直接返回结果）
+        from core.strategy import run_step4
+
+        tg_bot_token = os.getenv("TG_BOT_TOKEN", "")
+        tg_chat_id = os.getenv("TG_CHAT_ID", "")
+
+        if not tg_bot_token or not tg_chat_id:
+            return {
+                "message": "策略分析完成，但未配置 Telegram 无法发送通知。以下是筛选和研报结果。",
+                "screen_summary": screen_result.get("summary", {}),
+                "report_preview": (report_text[:2000] + "...") if len(report_text) > 2000 else report_text,
+            }
+
+        ok, reason = run_step4(
+            external_report=report_text,
+            benchmark_context=None,
+            api_key=api_key,
+            model=model,
+            portfolio_id=portfolio_id,
+            tg_bot_token=tg_bot_token,
+            tg_chat_id=tg_chat_id,
+        )
+
+        return {
+            "ok": bool(ok),
+            "reason": str(reason or ""),
+            "screen_summary": screen_result.get("summary", {}),
+        }
+    except Exception as e:
+        logger.exception("generate_strategy_decision error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 9: 推荐跟踪查询
+# ---------------------------------------------------------------------------
+
+def get_recommendation_tracking(limit: int = 20) -> dict:
+    """查询最近的 AI 推荐记录及其跟踪表现。
+
+    返回历史推荐的股票及其后续涨跌幅表现。
+
+    Args:
+        limit: 返回记录数，默认 20，最大 50
+
+    Returns:
+        推荐跟踪记录列表。
+    """
+    try:
+        from integrations.supabase_recommendation import load_recommendation_tracking
+
+        limit = min(max(limit, 1), 50)
+        records = load_recommendation_tracking(limit=limit)
+
+        if not records:
+            return {"message": "暂无推荐跟踪记录", "records": []}
+
+        # 简化返回格式
+        simplified = [
+            {
+                "code": str(r.get("code", "")),
+                "name": str(r.get("name", "")),
+                "recommend_date": str(r.get("recommend_date", "")),
+                "recommend_price": r.get("recommend_price"),
+                "current_price": r.get("current_price"),
+                "pnl_pct": r.get("pnl_pct"),
+                "max_pnl_pct": r.get("max_pnl_pct"),
+                "camp": str(r.get("camp", "")),
+                "status": str(r.get("status", "")),
+            }
+            for r in records
+        ]
+
+        return {
+            "total": len(simplified),
+            "records": simplified,
+        }
+    except Exception as e:
+        logger.exception("get_recommendation_tracking error")
+        return {"error": str(e)}
+
+
+
+# ---------------------------------------------------------------------------
+# Helper
+# ---------------------------------------------------------------------------
+
+def _to_ts_code(code: str) -> str:
+    """6 位代码 → tushare ts_code（如 000001 → 000001.SZ）。"""
+    code = str(code).strip()
+    if "." in code:
+        return code
+    if code.startswith(("6", "9")):
+        return f"{code}.SH"
+    return f"{code}.SZ"
+
+
+# ---------------------------------------------------------------------------
+# 工具列表导出
+# ---------------------------------------------------------------------------
+
+WYCKOFF_TOOLS = [
+    search_stock_by_name,
+    diagnose_stock,
+    diagnose_portfolio,
+    get_stock_price,
+    get_market_overview,
+    screen_stocks,
+    generate_ai_report,
+    generate_strategy_decision,
+    get_recommendation_tracking,
+]
