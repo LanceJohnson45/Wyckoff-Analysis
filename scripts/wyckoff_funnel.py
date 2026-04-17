@@ -63,6 +63,7 @@ from core.wyckoff_engine import (
 )
 from core.sector_rotation import (
     SECTOR_STATE_LABELS,
+    SECTOR_STATE_SCORE_BONUS,
     analyze_sector_rotation,
 )
 from integrations.data_source import (
