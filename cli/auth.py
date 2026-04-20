@@ -97,10 +97,15 @@ def restore_session() -> dict[str, Any] | None:
             _save_session(data)
 
         return data
-    except Exception:
+    except Exception as e:
         logger.debug("Session restore failed", exc_info=True)
-        _clear_session()
-        return None
+        err = str(e).lower()
+        # 仅在 token 确认无效时清除；网络异常保留本地 session
+        if "invalid" in err or "expired" in err or "revoked" in err:
+            _clear_session()
+            return None
+        # 网络问题：保留 session，用本地缓存的 token 继续
+        return data
 
 
 def logout() -> None:
