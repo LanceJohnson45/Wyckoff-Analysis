@@ -36,14 +36,26 @@ Web + CLI の二系統対応、Gemini / Claude / OpenAI から選択可能、Git
 
 ## クイックスタート
 
-### CLI（推奨）
+### ワンライナーインストール（推奨）
 
 ```bash
-# インストール
+curl -fsSL https://raw.githubusercontent.com/YoungCan-Wang/Wyckoff-Analysis/main/install.sh | bash
+```
+
+Python の検出、uv のインストール、隔離環境の作成を自動で行います。完了後 `wyckoff` で起動。
+
+### Homebrew
+
+```bash
+brew tap YoungCan-Wang/wyckoff
+brew install wyckoff
+```
+
+### pip
+
+```bash
 uv venv && source .venv/bin/activate
 uv pip install youngcan-wyckoff-analysis
-
-# 起動
 wyckoff
 ```
 

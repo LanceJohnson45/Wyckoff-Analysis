@@ -36,14 +36,26 @@ Web + CLI 듀얼 채널, Gemini / Claude / OpenAI 중 선택, GitHub Actions 자
 
 ## 빠른 시작
 
-### CLI (권장)
+### 원라인 설치 (권장)
 
 ```bash
-# 설치
+curl -fsSL https://raw.githubusercontent.com/YoungCan-Wang/Wyckoff-Analysis/main/install.sh | bash
+```
+
+Python 감지, uv 설치, 격리 환경 생성을 자동으로 수행합니다. 완료 후 `wyckoff`로 실행.
+
+### Homebrew
+
+```bash
+brew tap YoungCan-Wang/wyckoff
+brew install wyckoff
+```
+
+### pip
+
+```bash
 uv venv && source .venv/bin/activate
 uv pip install youngcan-wyckoff-analysis
-
-# 실행
 wyckoff
 ```
 
