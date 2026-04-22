@@ -36,6 +36,8 @@ from core.backtester import run_backtest, parse_date
 DEFAULT_HOLD_DAYS_GRID = [15, 30, 45, 60]
 DEFAULT_STOP_LOSS_GRID = [0.0, -5.0, -8.0, -12.0]  # 0 = 不设止损
 DEFAULT_TAKE_PROFIT_GRID = [0.0, 8.0, 15.0, 25.0]   # 0 = 不设止盈
+DEFAULT_TRAILING_STOP_GRID = [0.0, -5.0, -8.0, -12.0]  # 0 = 不启用移动止盈
+DEFAULT_TRAILING_ACTIVATE_GRID = [0.0, 10.0, 15.0]  # 移动止盈激活门槛(%)
 DEFAULT_TOP_N_GRID = [3, 5, 8]
 
 
@@ -64,6 +66,8 @@ def run_sensitivity(
     hold_days_grid: list[int] | None = None,
     stop_loss_grid: list[float] | None = None,
     take_profit_grid: list[float] | None = None,
+    trailing_stop_grid: list[float] | None = None,
+    trailing_activate_grid: list[float] | None = None,
     top_n_grid: list[int] | None = None,
     exit_mode: str = "sltp",
 ) -> pd.DataFrame:
@@ -72,18 +76,22 @@ def run_sensitivity(
     hd_grid = hold_days_grid or _load_grid("SENSITIVITY_HOLD_DAYS", DEFAULT_HOLD_DAYS_GRID)
     sl_grid = stop_loss_grid or _load_grid("SENSITIVITY_STOP_LOSS", DEFAULT_STOP_LOSS_GRID)
     tp_grid = take_profit_grid or _load_grid("SENSITIVITY_TAKE_PROFIT", DEFAULT_TAKE_PROFIT_GRID)
+    ts_grid = trailing_stop_grid or _load_grid("SENSITIVITY_TRAILING_STOP", DEFAULT_TRAILING_STOP_GRID)
+    ta_grid = trailing_activate_grid or _load_grid("SENSITIVITY_TRAILING_ACTIVATE", DEFAULT_TRAILING_ACTIVATE_GRID)
     tn_grid = top_n_grid or _load_grid("SENSITIVITY_TOP_N", DEFAULT_TOP_N_GRID)
 
-    combos = list(itertools.product(hd_grid, sl_grid, tp_grid, tn_grid))
-    print(f"[sensitivity] 参数空间: {len(hd_grid)}×{len(sl_grid)}×{len(tp_grid)}×{len(tn_grid)} = {len(combos)} 组合")
+    combos = list(itertools.product(hd_grid, sl_grid, tp_grid, ts_grid, ta_grid, tn_grid))
+    print(f"[sensitivity] 参数空间: {len(hd_grid)}×{len(sl_grid)}×{len(tp_grid)}×{len(ts_grid)}×{len(ta_grid)}×{len(tn_grid)} = {len(combos)} 组合")
 
     rows: list[dict] = []
-    for idx, (hd, sl, tp, tn) in enumerate(combos, 1):
+    for idx, (hd, sl, tp, ts, ta, tn) in enumerate(combos, 1):
         hd = int(hd)
         sl = float(sl)
         tp = float(tp)
+        ts = float(ts)
+        ta = float(ta)
         tn = int(tn)
-        label = f"hd={hd}_sl={sl}_tp={tp}_tn={tn}"
+        label = f"hd={hd}_sl={sl}_tp={tp}_ts={ts}_ta={ta}_tn={tn}"
         print(f"\n[sensitivity] ({idx}/{len(combos)}) {label}")
         try:
             _, summary = run_backtest(
@@ -99,11 +107,15 @@ def run_sensitivity(
                 exit_mode=exit_mode,
                 stop_loss_pct=sl,
                 take_profit_pct=tp,
+                trailing_stop_pct=ts,
+                trailing_activate_pct=ta,
             )
             row = {
                 "hold_days": hd,
                 "stop_loss_pct": sl,
                 "take_profit_pct": tp,
+                "trailing_stop_pct": ts,
+                "trailing_activate_pct": ta,
                 "top_n": tn,
                 "trades": summary.get("trades", 0),
                 "win_rate_pct": summary.get("win_rate_pct"),
@@ -119,11 +131,11 @@ def run_sensitivity(
             # 分层数据
             strat = summary.get("stratified", {})
             for track in ["Trend", "Accum"]:
-                ts = strat.get("by_track", {}).get(track, {})
-                row[f"{track}_trades"] = ts.get("trades", 0)
-                row[f"{track}_win_rate"] = ts.get("win_rate_pct")
-                row[f"{track}_avg_ret"] = ts.get("avg_ret_pct")
-                row[f"{track}_sharpe"] = ts.get("sharpe_ratio")
+                track_stats = strat.get("by_track", {}).get(track, {})
+                row[f"{track}_trades"] = track_stats.get("trades", 0)
+                row[f"{track}_win_rate"] = track_stats.get("win_rate_pct")
+                row[f"{track}_avg_ret"] = track_stats.get("avg_ret_pct")
+                row[f"{track}_sharpe"] = track_stats.get("sharpe_ratio")
             rows.append(row)
             print(f"  -> trades={row['trades']}, win={row.get('win_rate_pct', '-')}%, sharpe={row.get('sharpe_ratio', '-')}")
         except Exception as exc:
@@ -133,6 +145,8 @@ def run_sensitivity(
                 "hold_days": hd,
                 "stop_loss_pct": sl,
                 "take_profit_pct": tp,
+                "trailing_stop_pct": ts,
+                "trailing_activate_pct": ta,
                 "top_n": tn,
                 "trades": 0,
                 "error": str(exc),
@@ -166,6 +180,8 @@ def _build_sensitivity_md(df: pd.DataFrame) -> str:
             f"- hold_days: **{int(best['hold_days'])}**",
             f"- stop_loss: **{best['stop_loss_pct']}%**",
             f"- take_profit: **{best['take_profit_pct']}%**",
+            f"- trailing_stop: **{best.get('trailing_stop_pct', 0)}%**",
+            f"- trailing_activate: **{best.get('trailing_activate_pct', 0)}%**",
             f"- top_n: **{int(best['top_n'])}**",
             f"- 夏普比: **{best.get('sharpe_ratio', '-')}**",
             f"- 胜率: {best.get('win_rate_pct', '-')}%",

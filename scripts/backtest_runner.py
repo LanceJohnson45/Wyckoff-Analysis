@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import argparse
+import bisect
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -45,12 +46,21 @@ from core.funnel_pipeline import (
     calc_market_breadth as _calc_market_breadth_for_regime,
     rank_l3_candidates,
 )
+from core.signal_confirmation import PendingPool
 
 DEFAULT_HOLD_DAYS = 30  # 网格优化：30天夏普2.493 > 25天1.967 > 20天1.413
 DEFAULT_EXIT_MODE = "sltp"
 DEFAULT_STOP_LOSS_PCT = -7.0   # 网格优化最佳：SL7/TP18（夏普1.928 > SL6/TP15的1.679 > SL8/TP20的1.466）
 DEFAULT_TAKE_PROFIT_PCT = 18.0
 DEFAULT_TRAILING_STOP_PCT = 0.0  # 0 = 不启用移动止盈；如 -5.0 表示从最高点回撤 5% 卖出
+DEFAULT_TRAILING_ACTIVATE_PCT = 0.0  # 移动止盈激活门槛(%)，如 10.0 表示浮盈 ≥10% 后才启用移动止盈
+
+# ── ATR 模式常量（对齐实盘 step4_rebalancer） ──
+DEFAULT_ATR_PERIOD = 14
+DEFAULT_ATR_MULTIPLIER = 2.0         # 实盘 STEP4_ATR_MULTIPLIER = 2.0
+DEFAULT_ATR_HARD_STOP_PCT = -9.0     # 极限止损地板(%)，实盘 STEP4_BUY_HARD_STOP_PCT = 9.0
+DEFAULT_ATR_MAX_HOLD_DAYS = 120      # ATR 模式下最大持有天数（安全网）
+
 DEFAULT_USE_CURRENT_META = False
 DEFAULT_BUY_FRICTION_PCT = float(os.getenv("BACKTEST_BUY_FRICTION_PCT", "0.5"))
 DEFAULT_SELL_FRICTION_PCT = float(os.getenv("BACKTEST_SELL_FRICTION_PCT", "0.5"))
@@ -532,6 +542,29 @@ def _build_daily_ohlc_lookup(
     return out
 
 
+def _calc_atr_from_ohlc(
+    sorted_dates: list[date],
+    day_ohlc: dict[date, tuple[float, float, float, float]],
+    as_of: date,
+    period: int = 14,
+) -> float | None:
+    """从预排序日期列表 + OHLC lookup 计算截止 as_of 的 ATR（SMA of TR）。
+
+    复用 step4_rebalancer._calc_atr 的逻辑（SMA，非 Wilder EMA）。
+    sorted_dates 由调用方一次性排序并传入以避免重复排序。
+    """
+    right = bisect.bisect_right(sorted_dates, as_of)
+    if right < period + 1:
+        return None
+    window = sorted_dates[right - period - 1 : right]
+    trs: list[float] = []
+    for i in range(1, len(window)):
+        _, h, l, _ = day_ohlc[window[i]]
+        _, _, _, prev_c = day_ohlc[window[i - 1]]
+        trs.append(max(h - l, abs(h - prev_c), abs(l - prev_c)))
+    return sum(trs) / len(trs) if trs else None
+
+
 def run_backtest(
     start_dt: date,
     end_dt: date,
@@ -548,12 +581,19 @@ def run_backtest(
     stop_loss_pct: float = DEFAULT_STOP_LOSS_PCT,
     take_profit_pct: float = DEFAULT_TAKE_PROFIT_PCT,
     trailing_stop_pct: float = DEFAULT_TRAILING_STOP_PCT,
+    trailing_activate_pct: float = DEFAULT_TRAILING_ACTIVATE_PCT,
     sltp_priority: str = "stop_first",
     use_current_meta: bool = DEFAULT_USE_CURRENT_META,
     buy_friction_pct: float = DEFAULT_BUY_FRICTION_PCT,
     sell_friction_pct: float = DEFAULT_SELL_FRICTION_PCT,
     regime_filter: bool = False,
+    pending_mode: str = "both",
+    atr_period: int = DEFAULT_ATR_PERIOD,
+    atr_multiplier: float = DEFAULT_ATR_MULTIPLIER,
+    atr_hard_stop_pct: float = DEFAULT_ATR_HARD_STOP_PCT,
 ) -> tuple[pd.DataFrame, dict]:
+    if pending_mode not in {"off", "only", "both"}:
+        raise ValueError("pending_mode 必须是 off / only / both")
     if end_dt <= start_dt:
         raise ValueError("end 必须晚于 start")
     market_norm = str(market or "cn").strip().lower()
@@ -561,12 +601,14 @@ def run_backtest(
         raise ValueError("market 必须是 cn 或 us")
     if hold_days < 1:
         raise ValueError("hold_days 必须 >= 1")
-    if exit_mode not in {"close_only", "sltp"}:
-        raise ValueError("exit_mode 必须是 close_only 或 sltp")
+    if exit_mode not in {"close_only", "sltp", "atr"}:
+        raise ValueError("exit_mode 必须是 close_only、sltp 或 atr")
     if sltp_priority not in {"stop_first", "take_first"}:
         raise ValueError("sltp_priority 必须是 stop_first 或 take_first")
     if trailing_stop_pct > 0:
         raise ValueError("trailing_stop_pct 必须 <= 0（如 -5.0 表示从最高点回撤 5%），0 表示不启用")
+    if trailing_activate_pct < 0:
+        raise ValueError("trailing_activate_pct 必须 >= 0（如 10.0 表示浮盈 10% 后激活），0 表示立即启用")
     if stop_loss_pct > 0:
         raise ValueError("stop_loss_pct 必须 <= 0，0 表示不设止损")
     if take_profit_pct < 0:
@@ -707,6 +749,9 @@ def run_backtest(
     eval_days = 0
     ohlc_lookup_cache: dict[str, dict[date, tuple[float, float, float, float]]] = {}
 
+    pending_pool = PendingPool() if pending_mode != "off" else None
+    pending_confirmed_total = 0
+
     max_idx = len(trade_dates) - hold_days - 1  # -1: 信号次日才能入场，需多预留一天
     for idx in range(max_idx):
         signal_date = trade_dates[idx]
@@ -752,23 +797,50 @@ def run_backtest(
         )
 
         regime = bench_context.get("regime", "NEUTRAL") if bench_context else "NEUTRAL"
+        signal_date_str = signal_date.isoformat()
+
+        confirmed_codes: list[str] = []
+        confirmed_score_map: dict[str, float] = {}
+        confirmed_track_map: dict[str, str] = {}
+        if pending_pool is not None:
+            pending_pool.write(signal_date_str, result.triggers, day_df_map,
+                               regime, name_map, sector_map, day_cfg)
+            for cs in pending_pool.tick(day_df_map, signal_date_str):
+                c = str(cs.get("code", "")).strip()
+                if c:
+                    confirmed_codes.append(c)
+                    confirmed_score_map[c] = float(cs.get("score", 0))
+                    confirmed_track_map[c] = str(cs.get("track", "Trend"))
+            pending_confirmed_total += len(confirmed_codes)
+
         selected_for_ai, p_score_map, track_map = _select_ai_input_codes(
-            result=result,
-            day_df_map=day_df_map,
-            sector_map=sector_map,
-            regime=regime,
-            selection_mode=FUNNEL_AI_SELECTION_MODE,
+            result=result, day_df_map=day_df_map, sector_map=sector_map,
+            regime=regime, selection_mode=FUNNEL_AI_SELECTION_MODE,
         )
-        if not selected_for_ai:
-            continue
 
-        ranked_codes = selected_for_ai if int(top_n) <= 0 else selected_for_ai[:top_n]
+        if pending_mode == "only":
+            if not confirmed_codes:
+                continue
+            ranked_codes = confirmed_codes
+            p_score_map.update(confirmed_score_map)
+            track_map.update(confirmed_track_map)
+        elif pending_mode == "both":
+            seen = set(confirmed_codes)
+            merged = list(confirmed_codes) + [c for c in selected_for_ai if c not in seen]
+            if not merged:
+                continue
+            ranked_codes = merged if int(top_n) <= 0 else merged[:top_n]
+            p_score_map.update(confirmed_score_map)
+            track_map.update(confirmed_track_map)
+        else:
+            if not selected_for_ai:
+                continue
+            ranked_codes = selected_for_ai if int(top_n) <= 0 else selected_for_ai[:top_n]
 
-        # ── 大盘水温仓位控制 ──
         if regime_filter and ranked_codes:
             ratio = REGIME_POSITION_RATIO.get(regime, 1.0)
             if ratio <= 0:
-                continue  # CRASH → 完全不开仓
+                continue
             if ratio < 1.0:
                 keep_n = max(1, int(len(ranked_codes) * ratio + 0.5))
                 ranked_codes = ranked_codes[:keep_n]
@@ -793,15 +865,21 @@ def run_backtest(
             except ValueError:
                 # actual_entry_date 不在基准交易日列表中（极端情况：个股复牌日不在大盘交易日内）
                 actual_entry_idx = idx + 1  # fallback 到原始逻辑
-            actual_exit_idx = actual_entry_idx + hold_days
+            # ATR 模式使用更长的持有窗口（安全网），其余模式用 hold_days
+            effective_max_hold = DEFAULT_ATR_MAX_HOLD_DAYS if exit_mode == "atr" else hold_days
+            actual_exit_idx = actual_entry_idx + effective_max_hold
             if actual_exit_idx >= len(trade_dates):
-                continue  # 剩余交易日不足以覆盖完整持有期
+                if exit_mode == "atr":
+                    actual_exit_idx = len(trade_dates) - 1  # ATR 模式截断到可用范围
+                else:
+                    continue  # sltp/close_only 模式：剩余交易日不足以覆盖完整持有期
             actual_exit_anchor = trade_dates[actual_exit_idx]
 
             if exit_mode == "close_only":
                 # 兼容旧口径：持有 N 个市场交易日后按 anchor 日（或其后首个可得日）收盘离场。
                 exit_close, exit_date = _close_on_or_after(full_df, actual_exit_anchor)
-            else:
+
+            elif exit_mode == "sltp":
                 # sltp 口径：仅在实际入场日到退出锚点日的市场交易日窗口内检查触发。
                 exit_close = None
                 exit_date = None
@@ -822,6 +900,8 @@ def run_backtest(
                     else None
                 )
                 use_trailing = trailing_stop_pct < 0
+                trailing_activated = trailing_activate_pct <= 0  # 门槛 ≤0 表示立即激活
+                activate_price = entry_close * (1.0 + trailing_activate_pct / 100.0) if not trailing_activated else 0.0
                 peak_high = entry_close  # 持仓期间最高价，用于移动止盈
 
                 for mkt_day in market_window:
@@ -830,13 +910,15 @@ def run_backtest(
                         continue
                     open_px, high, low, _ = candle
 
-                    # 更新持仓期间最高价（用当日最高价）
-                    peak_high = max(peak_high, high)
+                    # 激活门槛：浮盈达到 trailing_activate_pct 后才启用移动止盈
+                    if use_trailing and not trailing_activated and high >= activate_price:
+                        trailing_activated = True
 
-                    # 移动止盈线 = 最高价 × (1 + trailing_stop_pct/100)
+                    # 移动止盈线基于昨日 peak_high 计算（避免同根K线悖论：
+                    # 当日最高价刷新 peak 的同时当日最低价触发回撤，逻辑自相矛盾）
                     trailing_price = (
                         peak_high * (1.0 + trailing_stop_pct / 100.0)
-                        if use_trailing
+                        if use_trailing and trailing_activated
                         else None
                     )
 
@@ -852,20 +934,16 @@ def run_backtest(
                         if px is None:
                             continue
                         if kind == "sl" and low <= px:
-                            # 若开盘已跳空跌破止损，只能按开盘附近成交；否则按止损价成交。
                             exit_close = px if open_px >= px else open_px
                             exit_date = mkt_day
                             hit = True
                             break
                         if kind == "trail" and low <= px:
-                            # 移动止盈触发（从最高点回撤超限）
-                            # 跳空逻辑同止损：开盘已低于 trailing_price 时按开盘成交
                             exit_close = px if open_px >= px else open_px
                             exit_date = mkt_day
                             hit = True
                             break
                         if kind == "tp" and high >= px:
-                            # 若开盘已跳空高开越过止盈，按开盘附近成交；否则按止盈价成交。
                             exit_close = px if open_px <= px else open_px
                             exit_date = mkt_day
                             hit = True
@@ -873,8 +951,83 @@ def run_backtest(
                     if hit:
                         break
 
+                    # 检查完毕后再更新 peak_high（放在 break 之后确保不影响当日判定）
+                    peak_high = max(peak_high, high)
+
                 if exit_close is None:
                     # 未触发则按窗口最后一天(含)及之前最近可得收盘离场，不延长持仓天数。
+                    exit_close, exit_date = _close_on_or_before(
+                        full_df,
+                        actual_exit_anchor,
+                        lower_exclusive=signal_date,
+                    )
+
+            elif exit_mode == "atr":
+                # ATR 模式：对齐实盘 step4_rebalancer 的 ATR 动态止损 + trailing。
+                # 无固定止盈，无固定持有期限制（仅有安全网 DEFAULT_ATR_MAX_HOLD_DAYS）。
+                exit_close = None
+                exit_date = None
+                market_window = trade_dates[actual_entry_idx : actual_exit_idx + 1]
+                day_ohlc = ohlc_lookup_cache.get(code)
+                if day_ohlc is None:
+                    day_ohlc = _build_daily_ohlc_lookup(full_df)
+                    ohlc_lookup_cache[code] = day_ohlc
+
+                # 预排序日期列表（给 _calc_atr_from_ohlc 用，避免每根 K 线重复排序）
+                sorted_ohlc_dates = sorted(day_ohlc.keys())
+
+                atr_stop: float | None = None  # ATR 动态止损（ratchet up only）
+                hard_floor = entry_close * (1.0 + atr_hard_stop_pct / 100.0)  # 极限止损地板
+                use_trailing = trailing_stop_pct < 0
+                trailing_activated = trailing_activate_pct <= 0
+                activate_price = entry_close * (1.0 + trailing_activate_pct / 100.0) if not trailing_activated else 0.0
+                peak_high = entry_close
+
+                for mkt_day in market_window:
+                    candle = day_ohlc.get(mkt_day)
+                    if candle is None:
+                        continue
+                    open_px, high, low, close_px = candle
+
+                    # 1. 计算当日 ATR，更新 ATR 止损（ratchet up only）
+                    atr_val = _calc_atr_from_ohlc(sorted_ohlc_dates, day_ohlc, mkt_day, atr_period)
+                    if atr_val and atr_val > 0:
+                        new_atr_stop = close_px - atr_multiplier * atr_val
+                        if atr_stop is None:
+                            atr_stop = new_atr_stop
+                        else:
+                            atr_stop = max(atr_stop, new_atr_stop)  # ratchet up
+
+                    # 2. 有效止损 = max(ATR 动态止损, 极限地板)
+                    effective_stop = max(atr_stop or hard_floor, hard_floor)
+
+                    # 3. 移动止盈（激活门槛 + 百分比回撤）
+                    if use_trailing and not trailing_activated and high >= activate_price:
+                        trailing_activated = True
+                    trailing_price = (
+                        peak_high * (1.0 + trailing_stop_pct / 100.0)
+                        if use_trailing and trailing_activated
+                        else None
+                    )
+
+                    # 4. 检查触发：ATR 止损 → trailing（无固定止盈）
+                    hit = False
+                    if low <= effective_stop:
+                        exit_close = effective_stop if open_px >= effective_stop else open_px
+                        exit_date = mkt_day
+                        hit = True
+                    elif trailing_price is not None and low <= trailing_price:
+                        exit_close = trailing_price if open_px >= trailing_price else open_px
+                        exit_date = mkt_day
+                        hit = True
+
+                    if hit:
+                        break
+
+                    peak_high = max(peak_high, high)
+
+                if exit_close is None:
+                    # 安全网到期：按窗口最后一天收盘离场
                     exit_close, exit_date = _close_on_or_before(
                         full_df,
                         actual_exit_anchor,
@@ -932,15 +1085,29 @@ def run_backtest(
         "stop_loss_pct": stop_loss_pct,
         "take_profit_pct": take_profit_pct,
         "trailing_stop_pct": trailing_stop_pct,
+        "trailing_activate_pct": trailing_activate_pct,
+        "atr_period": atr_period if exit_mode == "atr" else None,
+        "atr_multiplier": atr_multiplier if exit_mode == "atr" else None,
+        "atr_hard_stop_pct": atr_hard_stop_pct if exit_mode == "atr" else None,
         "sltp_priority": sltp_priority,
         "use_current_meta": bool(use_current_meta),
         "buy_friction_pct": float(buy_friction_pct),
         "sell_friction_pct": float(sell_friction_pct),
         "regime_filter": bool(regime_filter),
+        "pending_mode": pending_mode,
+        "pending_confirmed_total": pending_confirmed_total,
     }
     if not trades_df.empty:
         ret = pd.to_numeric(trades_df["ret_pct"], errors="coerce").dropna()
         var95_ret_pct, cvar95_ret_pct = _calc_cvar95_pct(ret)
+
+        # 组合级 NAV 曲线 → 正确的 Sharpe/MDD/Calmar
+        nav_df = _build_daily_nav(
+            records, all_df_map, ohlc_lookup_cache,
+            trade_dates, start_dt, end_dt, top_n, buy_friction_pct,
+        )
+        pm = _calc_portfolio_metrics(nav_df)
+
         summary.update(
             {
                 "win_rate_pct": float((ret > 0).mean() * 100.0),
@@ -948,13 +1115,18 @@ def run_backtest(
                 "median_ret_pct": float(ret.median()),
                 "q25_ret_pct": float(ret.quantile(0.25)),
                 "q75_ret_pct": float(ret.quantile(0.75)),
-                "max_drawdown_pct": _calc_max_drawdown_pct(ret),
+                "max_drawdown_pct": pm.get("portfolio_mdd_pct"),
                 "var95_ret_pct": var95_ret_pct,
                 "cvar95_ret_pct": cvar95_ret_pct,
                 "max_consecutive_losses": _calc_max_consecutive_losses(ret),
-                "sharpe_ratio": _calc_sharpe_ratio(ret, hold_days=hold_days),
-                "calmar_ratio": _calc_calmar_ratio(ret, hold_days=hold_days),
-                "stratified": _calc_stratified_stats(trades_df),
+                "sharpe_ratio": pm.get("portfolio_sharpe"),
+                "calmar_ratio": pm.get("portfolio_calmar"),
+                "portfolio_ann_ret_pct": pm.get("portfolio_ann_ret_pct"),
+                "portfolio_total_ret_pct": pm.get("portfolio_total_ret_pct"),
+                "portfolio_trading_days": pm.get("portfolio_trading_days"),
+                "portfolio_avg_positions": pm.get("portfolio_avg_positions"),
+                "_nav_df": nav_df,
+                "stratified": _calc_stratified_stats(trades_df, hold_days=hold_days),
             }
         )
     else:
@@ -971,6 +1143,10 @@ def run_backtest(
                 "max_consecutive_losses": 0,
                 "sharpe_ratio": None,
                 "calmar_ratio": None,
+                "portfolio_ann_ret_pct": None,
+                "portfolio_total_ret_pct": None,
+                "portfolio_trading_days": 0,
+                "portfolio_avg_positions": 0.0,
                 "stratified": {},
             }
         )
@@ -1091,7 +1267,7 @@ def _calc_information_ratio(
     return float(ann_excess / ann_te)
 
 
-def _calc_stratified_stats(trades_df: pd.DataFrame) -> dict[str, dict]:
+def _calc_stratified_stats(trades_df: pd.DataFrame, hold_days: int = DEFAULT_HOLD_DAYS) -> dict[str, dict]:
     """
     按 track (Trend/Accum) 和 regime 分层统计。
     返回 {"by_track": {"Trend": {...}, "Accum": {...}},
@@ -1113,8 +1289,8 @@ def _calc_stratified_stats(trades_df: pd.DataFrame) -> dict[str, dict]:
             "avg_ret_pct": float(ret.mean()),
             "median_ret_pct": float(ret.median()),
             "max_drawdown_pct": _calc_max_drawdown_pct(ret),
-            "sharpe_ratio": _calc_sharpe_ratio(ret),
-            "calmar_ratio": _calc_calmar_ratio(ret),
+            "sharpe_ratio": _calc_sharpe_ratio(ret, hold_days=hold_days),
+            "calmar_ratio": _calc_calmar_ratio(ret, hold_days=hold_days),
             "var95_ret_pct": var95,
             "cvar95_ret_pct": cvar95,
             "max_consecutive_losses": _calc_max_consecutive_losses(ret),
@@ -1150,6 +1326,289 @@ def _calc_stratified_stats(trades_df: pd.DataFrame) -> dict[str, dict]:
         result["by_track_regime"] = cross
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# 组合级净值曲线 & 指标（替代逐笔 cumprod 的错误算法）
+# ---------------------------------------------------------------------------
+
+def _build_daily_nav(
+    records: list[TradeRecord],
+    all_df_map: dict[str, pd.DataFrame],
+    ohlc_cache: dict[str, dict[date, tuple[float, float, float, float]]],
+    trade_dates: list[date],
+    start_dt: date,
+    end_dt: date,
+    top_n: int,
+    buy_friction_pct: float = 0.0,
+) -> pd.DataFrame:
+    """
+    从交易记录 + 每日 OHLCV 构建 mark-to-market 组合净值曲线。
+
+    算法：等权归一化收益指数。
+    - 每天对所有 open 持仓按收盘价 mark-to-market
+    - 组合日收益 = open 持仓收益率的等权平均（无持仓日=0）
+    - NAV[t] = NAV[t-1] × (1 + portfolio_daily_ret)
+    """
+    if not records:
+        return pd.DataFrame(columns=["date", "nav", "daily_ret_pct", "positions_count"])
+
+    # 为每笔交易建立持仓信息
+    # entry_date = signal 次日（实际买入日），exit_date = 实际卖出日
+    # entry_exec = entry_close × (1 + friction)，与 ret_pct 口径一致
+    positions: list[dict] = []
+    for r in records:
+        # entry_target = signal_date 的下一个交易日
+        try:
+            sig_idx = next(i for i, d in enumerate(trade_dates) if d >= r.signal_date)
+            entry_date = trade_dates[sig_idx + 1] if sig_idx + 1 < len(trade_dates) else None
+        except StopIteration:
+            entry_date = None
+        if entry_date is None:
+            continue
+        entry_exec = r.entry_close * (1.0 + buy_friction_pct / 100.0)
+        if entry_exec <= 0:
+            continue
+        # 确保 ohlc_cache 有此 code
+        if r.code not in ohlc_cache:
+            df = all_df_map.get(r.code)
+            if df is not None and not df.empty:
+                ohlc_cache[r.code] = _build_daily_ohlc_lookup(df)
+        positions.append({
+            "code": r.code,
+            "entry_date": entry_date,
+            "exit_date": r.exit_date,
+            "entry_exec": entry_exec,
+        })
+
+    if not positions:
+        return pd.DataFrame(columns=["date", "nav", "daily_ret_pct", "positions_count"])
+
+    window = [d for d in trade_dates if start_dt <= d <= end_dt]
+    if not window:
+        return pd.DataFrame(columns=["date", "nav", "daily_ret_pct", "positions_count"])
+
+    nav = 1.0
+    prev_mtm: dict[int, float] = {}  # position_idx -> 昨日 mtm 价格
+    rows: list[dict] = []
+
+    for day in window:
+        open_indices: list[int] = []
+        daily_rets: list[float] = []
+
+        for idx, pos in enumerate(positions):
+            if pos["entry_date"] > day or pos["exit_date"] < day:
+                continue
+            open_indices.append(idx)
+
+            ohlc = ohlc_cache.get(pos["code"], {})
+            candle = ohlc.get(day)
+            if candle is None:
+                # 无此日行情（停牌），沿用昨日 mtm
+                daily_rets.append(0.0)
+                continue
+
+            close_today = candle[3]  # (open, high, low, close)
+            prev_price = prev_mtm.get(idx, pos["entry_exec"])
+            if prev_price > 0:
+                daily_rets.append(close_today / prev_price - 1.0)
+            else:
+                daily_rets.append(0.0)
+            prev_mtm[idx] = close_today
+
+        n_open = len(open_indices)
+        if n_open > 0 and daily_rets:
+            port_ret = sum(daily_rets) / n_open
+        else:
+            port_ret = 0.0
+
+        nav *= (1.0 + port_ret)
+        rows.append({
+            "date": day,
+            "nav": nav,
+            "daily_ret_pct": port_ret * 100.0,
+            "positions_count": n_open,
+        })
+
+        # 清理已结束持仓的 prev_mtm
+        for idx in list(prev_mtm.keys()):
+            if positions[idx]["exit_date"] < day:
+                del prev_mtm[idx]
+
+    return pd.DataFrame(rows)
+
+
+def _calc_portfolio_metrics(
+    nav_df: pd.DataFrame,
+    risk_free_annual: float = 2.0,
+) -> dict:
+    """从每日 NAV 曲线计算组合级风险调整指标。"""
+    empty = {
+        "portfolio_sharpe": None,
+        "portfolio_mdd_pct": None,
+        "portfolio_calmar": None,
+        "portfolio_ann_ret_pct": None,
+        "portfolio_total_ret_pct": None,
+        "portfolio_trading_days": 0,
+        "portfolio_avg_positions": 0.0,
+    }
+    if nav_df is None or nav_df.empty or len(nav_df) < 2:
+        return empty
+
+    nav = nav_df["nav"]
+    daily_ret = nav_df["daily_ret_pct"] / 100.0  # 转为小数
+
+    n_days = len(nav_df)
+    total_ret_pct = (float(nav.iloc[-1]) / float(nav.iloc[0]) - 1.0) * 100.0
+    ann_factor = 250.0 / max(n_days, 1)
+    ann_ret_pct = total_ret_pct * ann_factor
+
+    # MDD
+    peak = nav.cummax()
+    drawdown = (nav / peak - 1.0)
+    mdd_pct = float(drawdown.min()) * 100.0
+
+    # Sharpe
+    rf_daily = risk_free_annual / 100.0 / 250.0
+    excess = daily_ret - rf_daily
+    std_daily = float(excess.std(ddof=1))
+    if std_daily > 0 and len(excess) >= 3:
+        sharpe = float(excess.mean()) / std_daily * (250.0 ** 0.5)
+    else:
+        sharpe = None
+
+    # Calmar
+    if mdd_pct < 0:
+        calmar = ann_ret_pct / abs(mdd_pct)
+    else:
+        calmar = None
+
+    avg_pos = float(nav_df["positions_count"].mean()) if "positions_count" in nav_df.columns else 0.0
+
+    return {
+        "portfolio_sharpe": sharpe,
+        "portfolio_mdd_pct": mdd_pct,
+        "portfolio_calmar": calmar,
+        "portfolio_ann_ret_pct": ann_ret_pct,
+        "portfolio_total_ret_pct": total_ret_pct,
+        "portfolio_trading_days": n_days,
+        "portfolio_avg_positions": avg_pos,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 策略建议自动生成
+# ---------------------------------------------------------------------------
+
+def _generate_strategy_advice(summary: dict) -> list[str]:
+    """根据回测分层统计自动生成策略调整建议。"""
+    advice: list[str] = []
+
+    win_rate = summary.get("win_rate_pct")
+    avg_ret = summary.get("avg_ret_pct")
+    mdd = summary.get("max_drawdown_pct")
+    sharpe = summary.get("sharpe_ratio")
+    max_consec = summary.get("max_consecutive_losses", 0)
+    avg_pos = summary.get("portfolio_avg_positions", 0)
+    hold_days = summary.get("hold_days", 0)
+    stop_loss = summary.get("stop_loss_pct", 0)
+    take_profit = summary.get("take_profit_pct", 0)
+    stratified = summary.get("stratified", {})
+    by_regime = stratified.get("by_regime", {})
+    by_track = stratified.get("by_track", {})
+
+    # 1. 各水温环境诊断
+    for regime, stats in sorted(by_regime.items()):
+        r_avg = stats.get("avg_ret_pct")
+        r_trades = stats.get("trades", 0)
+        r_win = stats.get("win_rate_pct")
+        if r_avg is not None and r_trades >= 10 and r_avg < -1.5:
+            advice.append(
+                f"🔴 {regime} 环境下平均收益 {r_avg:+.2f}%（{r_trades}笔），"
+                f"建议该水温下暂停开仓或大幅降仓"
+            )
+        elif r_avg is not None and r_trades >= 10 and r_avg < -0.5:
+            advice.append(
+                f"🟡 {regime} 环境下平均收益 {r_avg:+.2f}%（{r_trades}笔），"
+                f"建议降低仓位至 30% 以下"
+            )
+        elif r_avg is not None and r_trades >= 10 and r_avg > 1.0:
+            advice.append(
+                f"🟢 {regime} 环境下表现较好（均收 {r_avg:+.2f}%），可加大仓位"
+            )
+
+    # 2. Trend vs Accum 分化
+    t_stats = by_track.get("Trend", {})
+    a_stats = by_track.get("Accum", {})
+    t_sharpe = t_stats.get("sharpe_ratio")
+    a_sharpe = a_stats.get("sharpe_ratio")
+    if t_sharpe is not None and a_sharpe is not None:
+        diff = abs((t_sharpe or 0) - (a_sharpe or 0))
+        if diff > 0.5:
+            better = "Accum" if (a_sharpe or 0) > (t_sharpe or 0) else "Trend"
+            worse = "Trend" if better == "Accum" else "Accum"
+            advice.append(
+                f"🟡 {better}（夏普 {by_track[better].get('sharpe_ratio', 0):.3f}）"
+                f"明显优于 {worse}（夏普 {by_track[worse].get('sharpe_ratio', 0):.3f}），"
+                f"考虑侧重 {better} 信号"
+            )
+
+    # 3. 整体胜率
+    if win_rate is not None and win_rate < 35:
+        advice.append(
+            f"🔴 整体胜率仅 {win_rate:.1f}%，低于 35% 警戒线，"
+            f"建议收紧入场筛选条件或增加信号确认环节"
+        )
+    elif win_rate is not None and win_rate < 45:
+        advice.append(
+            f"🟡 胜率 {win_rate:.1f}%，偏低，考虑提高信号分数门槛"
+        )
+
+    # 4. 回撤
+    if mdd is not None and mdd < -25:
+        advice.append(
+            f"🔴 最大回撤 {mdd:.1f}%，建议收紧止损线或降低每日候选数 TopN"
+        )
+    elif mdd is not None and mdd < -15:
+        advice.append(
+            f"🟡 最大回撤 {mdd:.1f}%，关注风控参数是否偏松"
+        )
+
+    # 5. 连续亏损
+    if max_consec and int(max_consec) >= 8:
+        advice.append(
+            f"🔴 最长连续亏损 {int(max_consec)} 笔，建议增加信号确认机制或缩短持有期"
+        )
+    elif max_consec and int(max_consec) >= 5:
+        advice.append(
+            f"🟡 最长连续亏损 {int(max_consec)} 笔，关注是否需要加入熔断机制"
+        )
+
+    # 6. 持仓稀疏
+    if avg_pos is not None and avg_pos < 0.5:
+        advice.append(
+            "🟡 大部分交易日无持仓，信号触发过少，考虑放宽筛选条件或扩大股票池"
+        )
+
+    # 7. 止盈效果（如果开了止盈但夏普仍负）
+    if take_profit and take_profit > 0 and sharpe is not None and sharpe < -0.3:
+        advice.append(
+            f"🟡 开启 TP{take_profit:.0f}% 后夏普仍为 {sharpe:.3f}，"
+            f"止盈可能过早截断盈利单，建议尝试关闭止盈"
+        )
+
+    # 8. 夏普整体评估
+    if sharpe is not None and sharpe > 0.5:
+        advice.append(f"🟢 组合夏普 {sharpe:.3f}，策略表现良好")
+    elif sharpe is not None and sharpe < -0.5:
+        advice.append(
+            f"🔴 组合夏普 {sharpe:.3f}，策略整体亏损，需要全面复盘信号源质量"
+        )
+
+    if not advice:
+        advice.append("🟢 当前参数组合表现尚可，暂无强烈调整建议")
+
+    return advice
 
 
 def _build_summary_md(summary: dict) -> str:
@@ -1190,13 +1649,25 @@ def _build_summary_md(summary: dict) -> str:
             f"- 评估交易日: {summary.get('eval_days')}",
             f"- 触发交易日: {summary.get('signal_days')}",
             f"- 离场模式: {summary.get('exit_mode')}",
-            f"- 止损线: {_fmt_metric(summary.get('stop_loss_pct'), 1)}%",
-            f"- 止盈线: {_fmt_metric(summary.get('take_profit_pct'), 1)}%",
-            f"- 移动止盈: {_fmt_metric(summary.get('trailing_stop_pct'), 1)}%（从最高点回撤）" if summary.get('trailing_stop_pct', 0) < 0 else "- 移动止盈: 关闭",
+            *(
+                [
+                    f"- ATR 周期: {summary.get('atr_period')}",
+                    f"- ATR 乘数: {summary.get('atr_multiplier')}",
+                    f"- ATR 极限止损: {_fmt_metric(summary.get('atr_hard_stop_pct'), 1)}%",
+                    f"- 最大持有天数: {DEFAULT_ATR_MAX_HOLD_DAYS}（安全网）",
+                ]
+                if summary.get("exit_mode") == "atr"
+                else [
+                    f"- 止损线: {_fmt_metric(summary.get('stop_loss_pct'), 1)}%",
+                    f"- 止盈线: {_fmt_metric(summary.get('take_profit_pct'), 1)}%",
+                ]
+            ),
+            f"- 移动止盈: {_fmt_metric(summary.get('trailing_stop_pct'), 1)}%（从最高点回撤，浮盈≥{_fmt_metric(summary.get('trailing_activate_pct'), 1)}%后激活）" if summary.get('trailing_stop_pct', 0) < 0 else "- 移动止盈: 关闭",
             f"- 日内触发优先级: {summary.get('sltp_priority')}",
             f"- 买入摩擦成本: {_fmt_metric(summary.get('buy_friction_pct'), 3)}%",
             f"- 卖出摩擦成本: {_fmt_metric(summary.get('sell_friction_pct'), 3)}%",
             f"- 元数据口径: {meta_mode}",
+            f"- 信号确认模式: {summary.get('pending_mode')}",
             f"- 大盘水温仓控: {'开启' if summary.get('regime_filter') else '关闭'}",
             f"- 成交样本: {summary.get('trades')}",
             "",
@@ -1207,12 +1678,17 @@ def _build_summary_md(summary: dict) -> str:
             f"- 25%分位: {_fmt_metric(summary.get('q25_ret_pct'), 3)}%",
             f"- 75%分位: {_fmt_metric(summary.get('q75_ret_pct'), 3)}%",
             "",
-            "## 风险调整指标",
+            "## 组合风险指标（基于每日净值曲线）",
             f"- 夏普比 (Sharpe Ratio): {_fmt_metric(summary.get('sharpe_ratio'), 3)}",
             f"- 卡玛比 (Calmar Ratio): {_fmt_metric(summary.get('calmar_ratio'), 3)}",
-            f"- 最大回撤(逐笔复利): {_fmt_metric(summary.get('max_drawdown_pct'), 3)}%",
+            f"- 最大回撤: {_fmt_metric(summary.get('max_drawdown_pct'), 2)}%",
+            f"- 组合年化收益: {_fmt_metric(summary.get('portfolio_ann_ret_pct'), 2)}%",
+            f"- 组合总收益: {_fmt_metric(summary.get('portfolio_total_ret_pct'), 2)}%",
+            f"- 平均持仓数: {_fmt_metric(summary.get('portfolio_avg_positions'), 1)}",
+            "",
+            "## 逐笔风险统计",
             f"- VaR95(单笔收益): {_fmt_metric(summary.get('var95_ret_pct'), 3)}%",
-            f"- CVaR95(最差5%%均值): {_fmt_metric(summary.get('cvar95_ret_pct'), 3)}%",
+            f"- CVaR95(最差5%均值): {_fmt_metric(summary.get('cvar95_ret_pct'), 3)}%",
             f"- 最长连续亏损笔数: {_fmt_metric(summary.get('max_consecutive_losses'), 0)}",
     ]
 
@@ -1255,14 +1731,23 @@ def _build_summary_md(summary: dict) -> str:
             vals = [_fmt_metric(by_regime[rk].get(key), nd) for rk in regime_keys]
             lines.append(f"| {label} | " + " | ".join(vals) + " |")
 
+    # 策略调整建议
+    advice_items = _generate_strategy_advice(summary)
+    if advice_items:
+        lines.extend(["", "## 策略调整建议", ""])
+        for i, item in enumerate(advice_items, 1):
+            lines.append(f"{i}. {item}")
+
     lines.extend(["", "## 说明", *notes])
     return "\n".join(lines)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Wyckoff Funnel 日线轻量回测器")
-    parser.add_argument("--start", required=True, help="起始日期: YYYY-MM-DD 或 YYYYMMDD")
-    parser.add_argument("--end", required=True, help="结束日期: YYYY-MM-DD 或 YYYYMMDD")
+    _default_end = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
+    _default_start = (date.today() - timedelta(days=548)).strftime("%Y-%m-%d")  # ~18 个月
+    parser.add_argument("--start", default=_default_start, help=f"起始日期 (default: {_default_start}，约18个月前)")
+    parser.add_argument("--end", default=_default_end, help=f"结束日期 (default: {_default_end}，T-1)")
     parser.add_argument(
         "--hold-days",
         type=int,
@@ -1293,9 +1778,9 @@ def main() -> int:
     parser.add_argument("--workers", type=int, default=8, help="历史拉取并发数")
     parser.add_argument(
         "--exit-mode",
-        choices=["close_only", "sltp"],
+        choices=["close_only", "sltp", "atr"],
         default=DEFAULT_EXIT_MODE,
-        help=f"离场模式：close_only=仅按持有天数收盘离场；sltp=启用日内止盈止损 (default: {DEFAULT_EXIT_MODE})",
+        help=f"离场模式：close_only=收盘离场；sltp=固定止盈止损；atr=ATR动态止损(对齐实盘) (default: {DEFAULT_EXIT_MODE})",
     )
     parser.add_argument(
         "--stop-loss",
@@ -1314,6 +1799,30 @@ def main() -> int:
         type=float,
         default=DEFAULT_TRAILING_STOP_PCT,
         help=f"移动止盈(%%), 如 -5.0 表示从最高点回撤 5%% 卖出. 0 表示不启用 (default: {DEFAULT_TRAILING_STOP_PCT})",
+    )
+    parser.add_argument(
+        "--trailing-activate",
+        type=float,
+        default=DEFAULT_TRAILING_ACTIVATE_PCT,
+        help=f"移动止盈激活门槛(%%), 浮盈达到此值后才启用移动止盈. 0 表示立即启用 (default: {DEFAULT_TRAILING_ACTIVATE_PCT})",
+    )
+    parser.add_argument(
+        "--atr-period",
+        type=int,
+        default=DEFAULT_ATR_PERIOD,
+        help=f"ATR 周期（仅 atr 模式生效） (default: {DEFAULT_ATR_PERIOD})",
+    )
+    parser.add_argument(
+        "--atr-multiplier",
+        type=float,
+        default=DEFAULT_ATR_MULTIPLIER,
+        help=f"ATR 乘数（仅 atr 模式生效，实盘=2.0） (default: {DEFAULT_ATR_MULTIPLIER})",
+    )
+    parser.add_argument(
+        "--atr-hard-stop",
+        type=float,
+        default=DEFAULT_ATR_HARD_STOP_PCT,
+        help=f"ATR 模式极限止损地板(%%)（仅 atr 模式生效） (default: {DEFAULT_ATR_HARD_STOP_PCT})",
     )
     parser.add_argument(
         "--sltp-priority",
@@ -1362,6 +1871,12 @@ def main() -> int:
         default=False,
         help="启用大盘水温仓位控制: CRASH 不开仓, RISK_ON/PANIC_REPAIR 半仓, NEUTRAL 全仓",
     )
+    parser.add_argument(
+        "--pending-mode",
+        choices=["off", "only", "both"],
+        default="both",
+        help="信号确认模式: off=直接用L4信号, only=仅用确认后信号, both=两者合并(默认, 与生产链路对齐)",
+    )
     args = parser.parse_args()
 
     start_dt = _parse_date(args.start)
@@ -1396,11 +1911,16 @@ def main() -> int:
                 stop_loss_pct=args.stop_loss,
                 take_profit_pct=args.take_profit,
                 trailing_stop_pct=args.trailing_stop,
+                trailing_activate_pct=args.trailing_activate,
                 sltp_priority=args.sltp_priority,
                 use_current_meta=args.use_current_meta,
                 buy_friction_pct=args.buy_friction_pct,
                 sell_friction_pct=args.sell_friction_pct,
                 regime_filter=args.regime_filter,
+                pending_mode=args.pending_mode,
+                atr_period=args.atr_period,
+                atr_multiplier=args.atr_multiplier,
+                atr_hard_stop_pct=args.atr_hard_stop,
             )
         except Exception as exc:
             last_error = exc
@@ -1427,6 +1947,13 @@ def main() -> int:
         summary_md = _build_summary_md(summary)
         summary_path.write_text(summary_md + "\n", encoding="utf-8")
         trades_df.to_csv(trades_path, index=False, encoding="utf-8-sig")
+
+        # 输出 NAV 曲线 CSV（便于画图分析）
+        nav_df = summary.pop("_nav_df", None)
+        if nav_df is not None and not nav_df.empty:
+            nav_path = out_dir / f"nav_{stamp}.csv"
+            nav_df.to_csv(nav_path, index=False, encoding="utf-8-sig")
+            print(f"[backtest] nav     -> {nav_path}")
 
         print(summary_md)
         print("")

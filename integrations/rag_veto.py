@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-RAG 防雷：基于新闻检索做负面关键词 veto
-
-默认使用 Tavily Search API（若未配置 TAVILY_API_KEY 则自动跳过）。
+RAG 防雷：基于东方财富个股新闻做负面关键词 veto（通过 akshare）。
 """
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import time
@@ -15,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import requests
+logger = logging.getLogger(__name__)
 
 DEFAULT_NEGATIVE_KEYWORDS = [
     "立案",
@@ -41,10 +40,8 @@ DEFAULT_NEGATIVE_KEYWORDS = [
     "审计保留意见",
 ]
 
-RAG_TIMEOUT = int(os.getenv("RAG_TIMEOUT", "12"))
 RAG_MAX_WORKERS = int(os.getenv("RAG_MAX_WORKERS", "6"))
 RAG_NEWS_LOOKBACK_DAYS = int(os.getenv("RAG_NEWS_LOOKBACK_DAYS", "7"))
-RAG_MAX_RESULTS = int(os.getenv("RAG_MAX_RESULTS", "5"))
 RAG_SEMANTIC_VETO_ENABLED = os.getenv("RAG_SEMANTIC_VETO_ENABLED", "1").strip().lower() in {
     "1",
     "true",
@@ -86,20 +83,13 @@ def is_rag_veto_enabled() -> bool:
 
 
 def get_rag_veto_runtime_status() -> dict[str, Any]:
-    """
-    返回 RAG 运行时状态，供上层日志观测。
-    """
-    tavily_key = (os.getenv("TAVILY_API_KEY") or "").strip()
-    serpapi_key = (os.getenv("SERPAPI_API_KEY") or "").strip()
     enabled = is_rag_veto_enabled()
     return {
         "enabled": enabled,
-        "tavily_configured": bool(tavily_key),
-        "serpapi_configured": bool(serpapi_key),
-        "has_provider": bool(tavily_key or serpapi_key),
+        "has_provider": True,  # akshare 无需 API key
         "lookback_days": int(max(RAG_NEWS_LOOKBACK_DAYS, 1)),
-        "max_results": int(max(RAG_MAX_RESULTS, 1)),
         "max_workers": int(max(RAG_MAX_WORKERS, 1)),
+        "source": "akshare/eastmoney",
     }
 
 
@@ -113,18 +103,6 @@ def _normalize_keywords() -> list[str]:
 
 def _normalize_match_text(s: str) -> str:
     return re.sub(r"\s+", "", str(s or "")).lower()
-
-
-def _is_relevant_result(code: str, name: str, title: str, content: str) -> bool:
-    """
-    仅保留与当前股票相关的新闻结果，避免英文同名/缩写污染。
-    """
-    body = _normalize_match_text(f"{title} {content}")
-    if not body:
-        return False
-    code_s = re.sub(r"\D+", "", str(code or ""))
-    name_s = _normalize_match_text(name)
-    return (bool(code_s) and code_s in body) or (bool(name_s) and name_s in body)
 
 
 def _extract_hits(text: str, keywords: list[str]) -> list[str]:
@@ -143,11 +121,37 @@ def _extract_hits(text: str, keywords: list[str]) -> list[str]:
     return hits
 
 
+def _fetch_news_akshare(code: str) -> list[dict[str, str]]:
+    """通过 akshare 拉取东方财富个股新闻，返回近 N 天内的条目。"""
+    import akshare as ak
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=max(RAG_NEWS_LOOKBACK_DAYS, 1))
+    df = ak.stock_news_em(symbol=code)
+    if df is None or df.empty:
+        return []
+    results: list[dict[str, str]] = []
+    for _, row in df.iterrows():
+        pub_time = row.get("发布时间")
+        if pub_time:
+            try:
+                dt = datetime.fromisoformat(str(pub_time))
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone(timedelta(hours=8)))
+                if dt < cutoff:
+                    continue
+            except Exception:
+                pass
+        results.append({
+            "title": str(row.get("新闻标题", "")).strip(),
+            "content": str(row.get("新闻内容", "")).strip(),
+        })
+    return results
+
+
 def _parse_semantic_judgement(raw: str) -> tuple[bool | None, str]:
     text = str(raw or "").strip()
     if not text:
         return (None, "")
-    # 优先 JSON 解析
     try:
         obj = json.loads(text)
         v = obj.get("is_extreme_negative")
@@ -178,12 +182,7 @@ def _semantic_negative_via_gemini(
     hits: list[str],
     snippets: list[str],
 ) -> tuple[bool | None, str | None]:
-    """
-    关键词命中后的二次语义判定：
-    True  => 极端负面，维持 veto
-    False => 中性/澄清，不 veto
-    None  => 判定失败，调用方决定回退策略
-    """
+    """关键词命中后的二次语义判定。"""
     if not RAG_SEMANTIC_VETO_ENABLED:
         return (None, None)
     api_key = (os.getenv("GEMINI_API_KEY") or "").strip()
@@ -201,7 +200,6 @@ def _semantic_negative_via_gemini(
             if any(h in ss for h in normalized_hits):
                 relevant_snippets.append(s)
     if not relevant_snippets:
-        # 兜底：至少给模型看少量上下文，不空判。
         relevant_snippets = cleaned_snippets[:2]
 
     content = "\n\n".join(relevant_snippets[:3]).strip()
@@ -211,7 +209,7 @@ def _semantic_negative_via_gemini(
         content = content[:3000]
 
     system_prompt = (
-        "你是A股舆情风控判定器。任务是判断新闻是否构成“极端负面实锤风险”。\n"
+        "你是A股舆情风控判定器。任务是判断新闻是否构成【极端负面实锤风险】。\n"
         "极端负面=监管立案属实、财务造假属实、退市风险、重大诉讼败诉、债务违约等会显著打击股价的事件。\n"
         "若新闻为辟谣、澄清、误传、传闻未证实、或中性事件，则判定为 false。\n"
         "只输出 JSON，不要输出额外文本。"
@@ -221,7 +219,7 @@ def _semantic_negative_via_gemini(
         f"关键词命中: {', '.join(hits[:8])}\n"
         "新闻片段:\n"
         f"{content}\n\n"
-        '输出格式: {"is_extreme_negative": true|false, "reason": "<20字内原因>"}'
+        '输出格式: {{"is_extreme_negative": true|false, "reason": "<20字内原因>"}}'
     )
     try:
         raw = call_llm(
@@ -241,102 +239,21 @@ def _semantic_negative_via_gemini(
         return (None, f"semantic_llm_err:{e}")
 
 
-def _tavily_search(query: str, max_results: int = RAG_MAX_RESULTS) -> list[dict[str, Any]]:
-    api_key = (os.getenv("TAVILY_API_KEY") or "").strip()
-    if not api_key:
-        return []
-    url = "https://api.tavily.com/search"
-    after = (datetime.now(timezone.utc) - timedelta(days=max(RAG_NEWS_LOOKBACK_DAYS, 1))).date().isoformat()
-    payload = {
-        "api_key": api_key,
-        "query": query,
-        "search_depth": "basic",
-        "topic": "news",
-        "max_results": max_results,
-        "include_answer": False,
-        "include_raw_content": False,
-        "include_images": False,
-        "start_date": after,
-    }
-    resp = requests.post(url, json=payload, timeout=RAG_TIMEOUT)
-    resp.raise_for_status()
-    data = resp.json()
-    return data.get("results", []) or []
-
-
-def _serpapi_search(query: str, max_results: int = RAG_MAX_RESULTS) -> list[dict[str, Any]]:
-    api_key = (os.getenv("SERPAPI_API_KEY") or "").strip()
-    if not api_key:
-        return []
-    # SerpApi Google News Search
-    # 官方参数: engine=google_news, q=..., api_key=..., gl=cn, hl=zh-cn, tbs=qdr:w (过去一周)
-    params = {
-        "engine": "google_news",
-        "q": query,
-        "api_key": api_key,
-        "gl": "cn",
-        "hl": "zh-cn",
-        "num": max_results,
-        "tbs": "qdr:w",  # past week
-    }
-    resp = requests.get("https://serpapi.com/search", params=params, timeout=RAG_TIMEOUT)
-    resp.raise_for_status()
-    data = resp.json()
-    # 转换为统一格式
-    out = []
-    for item in data.get("news_results", []) or []:
-        out.append({
-            "title": item.get("title", ""),
-            "content": item.get("snippet", ""),
-            "url": item.get("link", ""),
-        })
-    return out
-
-
 def _scan_one(code: str, name: str, keywords: list[str]) -> VetoResult:
     started = time.perf_counter()
-    query = f"{code} {name} A股 公告 风险"
-    results = []
-    search_source = ""
+    search_source = "akshare"
     error_msg = None
-    tavily_key = (os.getenv("TAVILY_API_KEY") or "").strip()
-    serpapi_key = (os.getenv("SERPAPI_API_KEY") or "").strip()
 
-    # 1) 优先 Tavily；失败或空结果时，再尝试 SerpApi
-    if tavily_key:
-        try:
-            results = _tavily_search(query, max_results=RAG_MAX_RESULTS)
-            if results:
-                search_source = "tavily"
-        except Exception as e:
-            error_msg = f"tavily_err:{e}"
-
-    if not results:
-        if serpapi_key:
-            try:
-                results = _serpapi_search(query, max_results=RAG_MAX_RESULTS)
-                if results:
-                    search_source = "serpapi"
-                    error_msg = None
-            except Exception as e2:
-                if error_msg:
-                    error_msg = f"{error_msg}; serpapi_err:{e2}"
-                else:
-                    error_msg = f"serpapi_err:{e2}"
-
-    if not results and error_msg:
+    try:
+        results = _fetch_news_akshare(code)
+    except Exception as e:
+        logger.debug("[rag_veto] akshare fetch failed for %s: %s", code, e)
         elapsed_ms = int((time.perf_counter() - started) * 1000)
         return VetoResult(
-            code=code,
-            name=name,
-            veto=False,
-            hits=[],
-            evidence=[],
-            search_source=search_source,
-            raw_result_count=0,
-            relevant_result_count=0,
-            elapsed_ms=elapsed_ms,
-            error=error_msg,
+            code=code, name=name, veto=False, hits=[], evidence=[],
+            search_source=search_source, raw_result_count=0,
+            relevant_result_count=0, elapsed_ms=elapsed_ms,
+            error=f"akshare_err:{e}",
         )
 
     text_parts: list[str] = []
@@ -345,44 +262,31 @@ def _scan_one(code: str, name: str, keywords: list[str]) -> VetoResult:
     for item in results:
         title = str(item.get("title", "")).strip()
         content = str(item.get("content", "")).strip()
-        url = str(item.get("url", "")).strip()
-        if not _is_relevant_result(code, name, title, content):
-            continue
         merged = f"{title}\n{content}".strip()
         if merged:
             text_parts.append(merged.lower())
             semantic_snippets.append(merged)
         if title:
-            evidence.append(f"{title} | {url}" if url else title)
+            evidence.append(title)
     combined = "\n".join(text_parts)
-    relevant_count = len(semantic_snippets)
+    relevant_count = len(results)
     elapsed_ms = int((time.perf_counter() - started) * 1000)
 
     hits = _extract_hits(combined, keywords)
-    keyword_veto = len(hits) > 0
-    if not keyword_veto:
+    if not hits:
         return VetoResult(
-            code=code,
-            name=name,
-            veto=False,
-            hits=[],
-            evidence=evidence[:3],
-            search_source=search_source,
-            raw_result_count=len(results),
-            relevant_result_count=relevant_count,
-            elapsed_ms=elapsed_ms,
-            error=None,
+            code=code, name=name, veto=False, hits=[], evidence=evidence[:3],
+            search_source=search_source, raw_result_count=len(results),
+            relevant_result_count=relevant_count, elapsed_ms=elapsed_ms,
         )
 
+    # 关键词命中 → 语义二判
     semantic_checked = False
     semantic_negative: bool | None = None
     semantic_reason: str | None = None
     semantic_err: str | None = None
     verdict, reason_or_err = _semantic_negative_via_gemini(
-        code=code,
-        name=name,
-        hits=hits,
-        snippets=semantic_snippets,
+        code=code, name=name, hits=hits, snippets=semantic_snippets,
     )
     if verdict is not None:
         semantic_checked = True
@@ -394,19 +298,11 @@ def _scan_one(code: str, name: str, keywords: list[str]) -> VetoResult:
         semantic_err = reason_or_err
 
     return VetoResult(
-        code=code,
-        name=name,
-        veto=veto,
-        hits=hits,
-        evidence=evidence[:3],
-        search_source=search_source,
-        raw_result_count=len(results),
-        relevant_result_count=relevant_count,
-        elapsed_ms=elapsed_ms,
-        semantic_checked=semantic_checked,
-        semantic_negative=semantic_negative,
-        semantic_reason=semantic_reason,
-        error=semantic_err,
+        code=code, name=name, veto=veto, hits=hits, evidence=evidence[:3],
+        search_source=search_source, raw_result_count=len(results),
+        relevant_result_count=relevant_count, elapsed_ms=elapsed_ms,
+        semantic_checked=semantic_checked, semantic_negative=semantic_negative,
+        semantic_reason=semantic_reason, error=semantic_err,
     )
 
 
@@ -415,11 +311,7 @@ def run_negative_news_veto(candidates: list[dict[str, str]]) -> dict[str, VetoRe
     candidates: [{"code":"000001","name":"平安银行"}, ...]
     """
     out: dict[str, VetoResult] = {}
-    status = get_rag_veto_runtime_status()
-    if not bool(status.get("enabled")):
-        return out
-
-    if not bool(status.get("has_provider")):
+    if not is_rag_veto_enabled():
         return out
 
     keywords = _normalize_keywords()

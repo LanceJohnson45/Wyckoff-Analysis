@@ -138,12 +138,26 @@ def get_stock_hist(
         return out_cn
 
     cache_adjust = adjust or "none"
+
+    # 不复权数据不走缓存，直接拉取（节省 Supabase 存储）
+    if cache_adjust == "none":
+        df = fetch_stock_hist_from_source(
+            symbol=symbol,
+            start=start_d,
+            end=end_d,
+            adjust=adjust,
+            market=market_norm,
+        )
+        norm = normalize_hist_df(df)
+        result_norm = _slice_df_by_date(norm, start_d, end_d)
+        result = denormalize_hist_df(result_norm)
+        result.attrs["source"] = "realtime"
+        return result
+
     try:
         meta = get_cache_meta(cache_symbol, cache_adjust, context=context)
     except Exception as e:
-        raise RuntimeError(
-            f"cache_meta failed: {type(e).__name__}: {e}"
-        ) from e
+        raise RuntimeError(f"cache_meta failed: {type(e).__name__}: {e}") from e
     cached_norm: pd.DataFrame | None = None
     if meta is not None:
         try:

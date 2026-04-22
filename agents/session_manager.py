@@ -218,7 +218,16 @@ class ChatSessionManager:
                         if text_bits:
                             q.put(("text_chunk", "".join(text_bits)))
 
-                    # 5) Final response
+                    # 5) Usage metadata
+                    um = getattr(event, "usage_metadata", None)
+                    if um:
+                        q.put(("usage", {
+                            "input_tokens": getattr(um, "prompt_token_count", 0) or 0,
+                            "output_tokens": getattr(um, "candidates_token_count", 0) or 0,
+                            "total_tokens": getattr(um, "total_token_count", 0) or 0,
+                        }))
+
+                    # 6) Final response
                     if event.is_final_response():
                         final_parts = []
                         for p in parts:

@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       start:
-        description: "回测起始日期 (YYYY-MM-DD)"
-        required: true
-        default: "2025-09-01"
+        description: "回测起始日期 (YYYY-MM-DD)，留空=自动取6个月前"
+        required: false
+        default: ""
       end:
-        description: "回测结束日期 (YYYY-MM-DD)"
-        required: true
-        default: "2026-04-11"
+        description: "回测结束日期 (YYYY-MM-DD)，留空=自动取昨天"
+        required: false
+        default: ""
       top_n:
         description: "每日选股 TopN"
         required: true
@@ -33,21 +33,21 @@ on:
       trailing_stop:
         description: "移动止盈(%), 如 -5 表示从最高点回撤5%卖出, 0=关闭"
         required: true
-        default: "-5"
+        default: "0"
 
 concurrency:
   group: backtest-grid-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # schedule 触发时 inputs.* 为空，这里统一设置默认值做 fallback
-  BT_START: ${{ inputs.start || '2025-09-01' }}
-  BT_END: ${{ inputs.end || '2026-04-11' }}
+  # BT_START / BT_END 留空时由各 job 的 compute-dates 步骤动态计算
+  BT_START: ${{ inputs.start }}
+  BT_END: ${{ inputs.end }}
   BT_TOP_N: ${{ inputs.top_n || '3' }}
   BT_BOARD: ${{ inputs.board || 'all' }}
   BT_SAMPLE_SIZE: ${{ inputs.sample_size || '0' }}
   BT_TRADING_DAYS: ${{ inputs.trading_days || '320' }}
-  BT_TRAILING_STOP: ${{ inputs.trailing_stop || '-5' }}
+  BT_TRAILING_STOP: ${{ inputs.trailing_stop || '0' }}
 
 jobs:
   # ────────────────────────────────────────────────
@@ -65,6 +65,15 @@ jobs:
       TZ: Asia/Shanghai
       FUNNEL_EXPORT_FULL_FETCH: "1"
     steps:
+      - name: Compute date defaults
+        run: |
+          if [ -z "$BT_END" ]; then
+            echo "BT_END=$(TZ=Asia/Shanghai date -d '-1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+          if [ -z "$BT_START" ]; then
+            echo "BT_START=$(TZ=Asia/Shanghai date -d '-6 months -1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Set up Python
@@ -76,7 +85,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -e .
 
       - name: Fetch data snapshot
@@ -297,8 +305,8 @@ jobs:
           retention-days: 3
 
   # ────────────────────────────────────────────────
-  # Phase 2: 36 个并行 job 读快照做回测（无需网络拉取）
-  # 维度: hold_days × stop_loss × take_profit × trailing_stop
+  # Phase 2: 18 个并行 job 读快照做回测（无需网络拉取）
+  # 维度: hold_days × stop_loss × take_profit（生产对齐默认关闭 trailing）
   # ────────────────────────────────────────────────
   grid:
     runs-on: ubuntu-latest
@@ -310,12 +318,21 @@ jobs:
         hold_days: [5, 10, 15]
         stop_loss: [-6, -7, -8]
         take_profit: [0, 18]
-        trailing_stop: [0, -5]
+        trailing_stop: [0]
     env:
       PYTHONUNBUFFERED: "1"
       TZ: Asia/Shanghai
 
     steps:
+      - name: Compute date defaults
+        run: |
+          if [ -z "$BT_END" ]; then
+            echo "BT_END=$(TZ=Asia/Shanghai date -d '-1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+          if [ -z "$BT_START" ]; then
+            echo "BT_START=$(TZ=Asia/Shanghai date -d '-6 months -1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Set up Python
@@ -327,7 +344,6 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -e .
 
       - name: Download snapshot
@@ -362,7 +378,7 @@ jobs:
             --stop-loss "${STOP}" \
             --take-profit "${TP}" \
             --sltp-priority stop_first \
-            --regime-filter \
+            --pending-mode both \
             --trailing-stop "${TRAIL}" \
             --snapshot-dir snapshot_data \
             --output-dir "${OUT_DIR}" \
@@ -387,6 +403,15 @@ jobs:
     env:
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
     steps:
+      - name: Compute date defaults
+        run: |
+          if [ -z "$BT_END" ]; then
+            echo "BT_END=$(TZ=Asia/Shanghai date -d '-1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+          if [ -z "$BT_START" ]; then
+            echo "BT_START=$(TZ=Asia/Shanghai date -d '-6 months -1 day' +%Y-%m-%d)" >> "$GITHUB_ENV"
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Set up Python
@@ -400,40 +425,57 @@ jobs:
           path: artifacts/
           pattern: backtest-grid-*
 
+      - name: Install dependencies
+        run: pip install requests
+
       - name: Aggregate and notify
         shell: bash
+        env:
+          BT_TOP_N: ${{ inputs.top_n || '3' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          export RUN_URL='${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           python3 -u - <<'PYEOF'
-          import os, glob, json, re, urllib.request
+          import os, glob, json, re, requests
 
           webhook = os.environ.get('FEISHU_WEBHOOK_URL', '').strip()
           if not webhook:
               print('FEISHU_WEBHOOK_URL 未配置，跳过通知')
               exit(0)
 
-          summaries = sorted(glob.glob('artifacts/**/summary_*.md', recursive=True))
-          run_url = os.environ.get('RUN_URL', '')
+          # 诊断：打印 artifacts 目录结构
+          print('[notify] artifacts 目录结构:')
+          for root, dirs, files in os.walk('artifacts'):
+              for f in files:
+                  print(f'  {os.path.join(root, f)}')
+          if not os.path.isdir('artifacts'):
+              print('[notify] ⚠️ artifacts 目录不存在!')
 
+          summaries = sorted(glob.glob('artifacts/**/summary_*.md', recursive=True))
+          print(f'[notify] 找到 {len(summaries)} 个 summary 文件: {summaries[:5]}')
+
+          # --- 单个 summary 用 send_backtest_card ---
+          if len(summaries) == 1:
+              from utils.feishu import send_backtest_card
+              ok = send_backtest_card(webhook, summaries[0])
+              print(f'send_backtest_card: {ok}')
+              exit(0)
+
+          # --- 多单元 grid：用 column_set 原生组件 ---
           def extract(content, keyword):
               for line in content.split('\n'):
                   if keyword in line:
                       val = line.split(':')[-1].strip().rstrip('%')
-                      try:
-                          return float(val)
-                      except ValueError:
-                          return None
+                      try: return float(val)
+                      except ValueError: return None
               return None
 
-          # ---- 解析所有单元（支持 hold×sl×tp×trailing 多维） ----
           cells = []
           for sf in summaries:
               dirname = os.path.basename(os.path.dirname(sf))
-              # 目录名如: h5_sl6_tp18_tr5  or  h5_sl6_tp0_tr0
               m_hold = re.search(r'h(\d+)', dirname)
-              m_sl = re.search(r'sl(\d+)', dirname)
+              m_sl = re.search(r'sl-?(\d+)', dirname)
               m_tp = re.search(r'tp(\d+)', dirname)
-              m_tr = re.search(r'tr(\d+)', dirname)
+              m_tr = re.search(r'tr-?(\d+)', dirname)
               if not m_hold or not m_sl:
                   continue
               with open(sf, 'r') as f:
@@ -451,108 +493,109 @@ jobs:
                   'calmar': extract(content, '卡玛比'),
               })
 
+          def fmt(v, spec):
+              return format(v, spec) if v is not None else '-'
+
+          elements = []
+          run_url = os.environ.get('RUN_URL', '')
+          bt_start = os.environ.get('BT_START', '?')
+          bt_end = os.environ.get('BT_END', '?')
+          bt_topn = os.environ.get('BT_TOP_N', '?')
+
+          elements.append({'tag': 'div', 'text': {'tag': 'lark_md',
+              'content': f'**区间** {bt_start} ~ {bt_end}  ·  **TopN** {bt_topn}  ·  **共 {len(cells)} 单元**\n[查看详情]({run_url})'}})
+
           best = None
           if not cells:
-              lines = ['⚠️ 未找到回测结果文件']
+              elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': '⚠️ 未找到回测结果文件'}})
           else:
-              # 找出最优参数（按夏普排序）
-              valid = [c for c in cells if c['sharpe'] is not None]
+              valid = [c for c in cells if c.get('sharpe') is not None]
               best = max(valid, key=lambda c: c['sharpe']) if valid else None
 
-              lines = []
-              bt_start = os.environ.get('BT_START', '?')
-              bt_end = os.environ.get('BT_END', '?')
-              bt_topn = os.environ.get('BT_TOP_N', '?')
-              lines.append(f'**区间**: {bt_start} ~ {bt_end}  |  **TopN**: {bt_topn}  |  **共 {len(cells)} 单元**')
-              lines.append(f'[查看详情]({run_url})')
-              lines.append('')
-
               if best:
-                  bh = best.get('hold', '?')
-                  bs = best.get('sl', '?')
-                  btp = best.get('tp', 0)
-                  btr = best.get('tr', 0)
-                  bsharpe = best.get('sharpe', 0) or 0
-                  tag = '🏆' if bsharpe > 0 else '📌'
-                  tp_str = f'TP{btp}%' if btp else '无止盈'
-                  tr_str = f'移动止盈-{btr}%' if btr else '无移动止盈'
-                  lines.append(f'{tag} **最优参数**: 持有{bh}天 / SL-{bs}% / {tp_str} / {tr_str}')
-                  parts = []
-                  if best.get('sharpe') is not None: parts.append(f'夏普 **{bsharpe:.3f}**')
-                  bwin = best.get('win')
-                  bavg = best.get('avg')
-                  bmdd = best.get('mdd')
-                  if bwin is not None: parts.append(f'胜率 {bwin:.1f}%')
-                  if bavg is not None: parts.append(f'均收 {bavg:+.2f}%')
-                  if bmdd is not None: parts.append(f'回撤 {bmdd:.1f}%')
-                  lines.append('  '.join(parts))
-                  lines.append('')
+                  elements.append({'tag': 'hr'})
+                  bs = best.get('sharpe', 0) or 0
+                  tag = '🏆' if bs > 0 else '📌'
+                  tp_str = f'TP{best["tp"]}%' if best['tp'] else '无止盈'
+                  tr_str = f'移动止盈-{best["tr"]}%' if best['tr'] else '无移动止盈'
+                  elements.append({'tag': 'div', 'text': {'tag': 'lark_md',
+                      'content': f'{tag} **最优参数**: 持有{best["hold"]}天 / SL-{best["sl"]}% / {tp_str} / {tr_str}'}})
 
-              # ---- 按 (tp, tr) 分组输出夏普排行榜 ----
-              def fmt(val, spec):
-                  if val is None:
-                      return '-'
-                  return format(val, spec)
+                  cols = [
+                      ('**夏普**', f'{fmt(best.get("sharpe"), ".3f")}'),
+                      ('**胜率**', f'{fmt(best.get("win"), ".1f")}%'),
+                      ('**均收**', f'{fmt(best.get("avg"), "+.2f")}%'),
+                      ('**回撤**', f'{fmt(best.get("mdd"), ".1f")}%'),
+                      ('**样本**', f'{int(best.get("trades") or 0)}笔'),
+                  ]
+                  elements.append({'tag': 'column_set', 'flex_mode': 'stretch',
+                      'background_style': 'grey', 'columns': [
+                          {'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                              {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'{label}\n{val}'}}
+                          ]} for label, val in cols
+                      ]})
 
-              # 按夏普排序输出 Top-10 参数组合
-              lines.append('**夏普 Top-10 参数组合**')
-              lines.append('| 持有 | SL | TP | Trail | 夏普 | 胜率 | 均收 | 回撤 | 样本 |')
-              lines.append('|---|---|---|---|---:|---:|---:|---:|---:|')
+              # Top-10 排行（用文本列表代替 pipe table）
+              elements.append({'tag': 'hr'})
               ranked = sorted(valid, key=lambda c: c['sharpe'], reverse=True)[:10]
-              for c in ranked:
-                  is_best = best and c['hold'] == best['hold'] and c['sl'] == best['sl'] and c['tp'] == best['tp'] and c['tr'] == best['tr']
+              rank_lines = ['**夏普 Top-10 参数组合**', '']
+              for i, c in enumerate(ranked, 1):
+                  is_best = best and c['hold'] == best['hold'] and c['sl'] == best['sl'] and c['tp'] == best.get('tp') and c['tr'] == best.get('tr')
                   mark = ' 🏆' if is_best else ''
-                  tp_s = f'{c["tp"]}%' if c['tp'] else '关'
-                  tr_s = f'-{c["tr"]}%' if c['tr'] else '关'
-                  lines.append(f'| {c["hold"]}天 | -{c["sl"]}% | {tp_s} | {tr_s} | {fmt(c.get("sharpe"), ".3f")}{mark} | {fmt(c.get("win"), ".1f")} | {fmt(c.get("avg"), "+.2f")} | {fmt(c.get("mdd"), ".1f")} | {int(c.get("trades") or 0)} |')
-              lines.append('')
+                  tp_s = f'TP{c["tp"]}%' if c['tp'] else '无TP'
+                  tr_s = f'Trail-{c["tr"]}%' if c['tr'] else '无Trail'
+                  rank_lines.append(
+                      f'{i}. **{c["hold"]}天/SL-{c["sl"]}%/{tp_s}/{tr_s}**{mark}\n'
+                      f'    夏普{fmt(c.get("sharpe"), ".3f")}  胜率{fmt(c.get("win"), ".1f")}%  '
+                      f'均收{fmt(c.get("avg"), "+.2f")}%  回撤{fmt(c.get("mdd"), ".1f")}%  '
+                      f'{int(c.get("trades") or 0)}笔')
+              elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': '\n'.join(rank_lines)}})
 
-              # ---- 按 hold×sl 聚合的夏普矩阵（取各 tp/tr 组合的最优） ----
+              # 夏普矩阵（用 column_set 模拟）
               holds = sorted(set(c['hold'] for c in cells))
               sls = sorted(set(c['sl'] for c in cells))
-              agg_map = {}
+              agg = {}
               for c in cells:
                   key = (c['hold'], c['sl'])
                   if c.get('sharpe') is not None:
-                      if key not in agg_map or c['sharpe'] > agg_map[key]['sharpe']:
-                          agg_map[key] = c
+                      if key not in agg or c['sharpe'] > agg[key]['sharpe']:
+                          agg[key] = c
 
-              header = '| | ' + ' | '.join(f'-{s}%' for s in sls) + ' |'
-              sep = '|---|' + '|'.join(['---:'] * len(sls)) + '|'
-              lines.append('**最优夏普矩阵** (每格取 TP/Trail 最优)')
-              lines.append(header)
-              lines.append(sep)
-              for h in holds:
-                  row_vals = []
+              if len(holds) > 1 and len(sls) > 1:
+                  elements.append({'tag': 'hr'})
+                  elements.append({'tag': 'div', 'text': {'tag': 'lark_md',
+                      'content': '**最优夏普矩阵** (每格取 TP/Trail 最优)'}})
+                  # Header row
+                  hdr_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                      {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '**持有\\\\SL**'}}]}]
                   for s in sls:
-                      c = agg_map.get((h, s))
-                      v = fmt(c.get('sharpe') if c else None, '.3f')
-                      if best and c and c.get('hold') == best.get('hold') and c.get('sl') == best.get('sl') and c.get('tp') == best.get('tp') and c.get('tr') == best.get('tr') and v != '-':
-                          v = f'**{v}** 🏆'
-                      row_vals.append(v)
-                  lines.append(f'| {h}天 | ' + ' | '.join(row_vals) + ' |')
+                      hdr_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                          {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**-{s}%**'}}]})
+                  elements.append({'tag': 'column_set', 'flex_mode': 'stretch',
+                      'background_style': 'grey', 'columns': hdr_cols})
+                  # Data rows
+                  for h in holds:
+                      row_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                          {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**{h}天**'}}]}]
+                      for s in sls:
+                          c = agg.get((h, s))
+                          v = fmt(c.get('sharpe') if c else None, '.3f')
+                          is_b = best and c and c.get('hold') == best.get('hold') and c.get('sl') == best.get('sl') and c.get('tp') == best.get('tp') and c.get('tr') == best.get('tr')
+                          cell_text = f'**{v}** 🏆' if is_b and v != '-' else v
+                          row_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                              {'tag': 'div', 'text': {'tag': 'lark_md', 'content': cell_text}}]})
+                      elements.append({'tag': 'column_set', 'flex_mode': 'stretch', 'columns': row_cols})
 
-          content = '\n'.join(lines)[:2800]
-
+          template = 'blue' if (best and (best.get('sharpe') or 0) > 0) else 'orange' if cells else 'red'
           payload = {
               'msg_type': 'interactive',
               'card': {
-                  'header': {
-                      'title': {'tag': 'plain_text', 'content': '📊 Backtest Grid 回测完成'},
-                      'template': 'blue' if (best and (best.get('sharpe') or 0) > 0) else 'orange',
-                  },
-                  'elements': [
-                      {'tag': 'div', 'text': {'tag': 'lark_md', 'content': content}},
-                  ],
+                  'header': {'title': {'tag': 'plain_text', 'content': '📊 Backtest Grid 回测完成'}, 'template': template},
+                  'elements': elements,
               },
           }
-          data = json.dumps(payload).encode('utf-8')
-          req = urllib.request.Request(webhook, data=data, headers={'Content-Type': 'application/json'})
-          try:
-              resp = urllib.request.urlopen(req, timeout=15)
-              print(f'飞书通知发送成功: {resp.status}')
-          except Exception as e:
-              print(f'飞书通知发送失败: {e}')
+          resp = requests.post(webhook, json=payload, timeout=15)
+          print(f'飞书通知: status={resp.status_code}, body={resp.text[:200]}')
           PYEOF
 
       - name: Notify on failure

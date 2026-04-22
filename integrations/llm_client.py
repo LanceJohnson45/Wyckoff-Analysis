@@ -17,7 +17,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# 多厂商：Gemini + OpenAI 兼容（OpenAI/智谱/Minimax/DeepSeek/Qwen/Kimi/火山引擎）
+# 多厂商：Gemini + OpenAI 兼容（OpenAI/智谱/Minimax/DeepSeek/Qwen/火山引擎）
 SUPPORTED_PROVIDERS = (
     "gemini",
     "openai",
@@ -25,7 +25,6 @@ SUPPORTED_PROVIDERS = (
     "minimax",
     "deepseek",
     "qwen",
-    "kimi",
     "volcengine",
 )
 # OpenAI 兼容接口的默认 base_url（可被调用方 base_url 覆盖）
@@ -35,7 +34,6 @@ OPENAI_COMPATIBLE_BASE_URLS = {
     "minimax": "https://api.minimax.chat/v1",
     "deepseek": "https://api.deepseek.com/v1",
     "qwen": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-    "kimi": "https://api.moonshot.cn/v1",
     "volcengine": "https://ark.cn-beijing.volces.com/api/v3",
 }
 DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite-preview"
@@ -57,7 +55,6 @@ PROVIDER_LABELS: dict[str, str] = {
     "minimax": "Minimax",
     "deepseek": "DeepSeek",
     "qwen": "Qwen",
-    "kimi": "Kimi",
     "volcengine": "火山引擎",
 }
 

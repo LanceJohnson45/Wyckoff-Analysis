@@ -15,7 +15,9 @@ from core.constants import TABLE_STOCK_HIST_CACHE
 from integrations.supabase_base import create_admin_client as _create_admin_client
 
 _ADMIN_CLIENT: Client | None = None
-_STOCK_HIST_RETENTION_DAYS = 550
+_CLI_CLIENT: Client | None = None
+_CLI_TOKENS: tuple[str, str] = ("", "")
+_STOCK_HIST_RETENTION_DAYS = 320
 
 
 def _parse_iso_datetime(value: str) -> datetime:
@@ -131,27 +133,54 @@ def _get_admin_supabase_client() -> Client | None:
     return _ADMIN_CLIENT
 
 
+def set_cli_tokens(access_token: str, refresh_token: str = "") -> None:
+    """CLI 登录后调用，注入 user JWT 供缓存层使用。"""
+    global _CLI_CLIENT, _CLI_TOKENS
+    _CLI_TOKENS = (access_token, refresh_token)
+    _CLI_CLIENT = None  # 下次调用时重建
+
+
+def _get_cli_user_client() -> Client | None:
+    global _CLI_CLIENT
+    if _CLI_CLIENT is not None:
+        return _CLI_CLIENT
+    at, rt = _CLI_TOKENS
+    if not at:
+        return None
+    try:
+        from integrations.supabase_base import create_user_client
+        _CLI_CLIENT = create_user_client(at, rt)
+        return _CLI_CLIENT
+    except Exception:
+        return None
+
+
 def _get_stock_cache_client(context: str = "auto") -> Client | None:
     """
     context:
     - web/session: 优先使用登录态 session client（RLS）
     - background/admin: 使用 service-role/admin client
-    - auto: session 优先，失败后回退 admin client
+    - auto: web session → CLI user client → admin client
     """
     ctx = str(context or "auto").strip().lower()
     try_session = ctx in {"auto", "web", "session"}
     try_admin = ctx in {"auto", "background", "admin"}
 
     if try_session:
+        # 1) Streamlit session client
         try:
             from integrations.supabase_client import get_supabase_client
-
             client = get_supabase_client()
             if client is not None:
                 return client
         except Exception:
-            if ctx in {"web", "session"}:
-                return None
+            pass
+        # 2) CLI user client (access_token)
+        cli = _get_cli_user_client()
+        if cli is not None:
+            return cli
+        if ctx in {"web", "session"}:
+            return None
 
     if try_admin:
         return _get_admin_supabase_client()

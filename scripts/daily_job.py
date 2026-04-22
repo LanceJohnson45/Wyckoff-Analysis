@@ -217,7 +217,8 @@ def main() -> int:
         _log(f"LLM base_url: {llm_base_url or '(empty)'} (env={base_url_env_key})", logs_path)
 
     # 数据源口径在 integrations/data_source.py 中固定为：
-    # A 股历史 K 线优先 akshare / baostock / efinance。
+    # tickflow 优先（前复权 qfq），失败按 tushare→akshare→baostock→efinance 回退。
+    # US/HK 个股使用 yfinance，A 股指数优先 yfinance 后回退 akshare。
 
     from core.funnel_pipeline import run_funnel as run_step2
     from core.batch_report import (
@@ -239,8 +240,10 @@ def main() -> int:
     t0 = datetime.now(TZ)
     step2_ok = False
     step2_err = None
+    step2_details: dict = {}
     try:
-        step2_ok, symbols_info, benchmark_context = run_step2(webhook)
+        result = run_step2(webhook, return_details=True)
+        step2_ok, symbols_info, benchmark_context, step2_details = result
         if benchmark_context:
             benchmark_context["market"] = market
         step2_err = None if step2_ok else "飞书发送失败"
@@ -274,7 +277,30 @@ def main() -> int:
     elif step2_ok and symbols_info and is_non_cn_market:
         _log(f"推荐记录入库: {market.upper()} 模式暂跳过（等待 market-aware recommendation schema）", logs_path)
 
-    # 阶段 2：批量研报（默认可降级；可通过 DAILY_JOB_REQUIRE_STEP3_REPORT 强制要求成功产出）
+    # Step2.5: 信号确认（pending → confirmed/expired）
+    if step2_ok and step2_details:
+        try:
+            from integrations.supabase_signal_pending import run_step2_5
+            triggers_raw = step2_details.get("triggers", {})
+            all_df_map = step2_details.get("all_df_map", {})
+            if triggers_raw and all_df_map:
+                confirmed_extra = run_step2_5(
+                    signal_date=_latest_trade_date_str(),
+                    triggers=triggers_raw, df_map=all_df_map,
+                    regime=(benchmark_context.get("regime") or "NEUTRAL").strip().upper(),
+                    name_map=step2_details.get("name_map", {}),
+                    sector_map=step2_details.get("sector_map", {}),
+                )
+                _log(f"Step2.5 信号确认: confirmed={len(confirmed_extra)}", logs_path)
+                existing_codes = {str(s.get("code", "")).strip() for s in symbols_info}
+                for cs in confirmed_extra:
+                    if str(cs.get("code", "")).strip() not in existing_codes:
+                        symbols_info.append(cs)
+        except Exception as e:
+            _log(f"Step2.5 信号确认失败（已降级）: {e}", logs_path)
+
+    # Step3: 批量研报（可降级：失败不影响 Funnel 成功）
+    # 也可通过 DAILY_JOB_REQUIRE_STEP3_REPORT 强制要求成功产出。
     step3_ok = True
     step3_err = None
     step3_springboard_codes: list[str] = []

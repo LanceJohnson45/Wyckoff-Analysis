@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Generator
 
 
 class LLMProvider(ABC):
@@ -13,6 +13,11 @@ class LLMProvider(ABC):
     每个 provider 把各自 SDK 的响应翻译成统一格式：
     - {"type": "text", "text": "..."}
     - {"type": "tool_calls", "tool_calls": [{"id", "name", "args"}]}
+
+    流式接口 yield chunk：
+    - {"type": "text_delta", "text": "..."}
+    - {"type": "tool_calls", "tool_calls": [...]}   （流结束时一次性返回）
+    - {"type": "usage", "input_tokens": N, "output_tokens": N}
     """
 
     @abstractmethod
@@ -22,22 +27,16 @@ class LLMProvider(ABC):
         tools: list[dict[str, Any]],
         system_prompt: str = "",
     ) -> dict[str, Any]:
-        """
-        发送对话消息，返回模型响应。
+        ...
 
-        Parameters
-        ----------
-        messages : 对话历史，格式：
-            [{"role": "user"|"assistant"|"tool", "content": "...", ...}]
-        tools : 工具 JSON Schema 列表
-        system_prompt : 系统提示词
-
-        Returns
-        -------
-        {"type": "text", "text": "最终回答"}
-        或
-        {"type": "tool_calls", "tool_calls": [{"id": "...", "name": "...", "args": {...}}]}
-        """
+    @abstractmethod
+    def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_prompt: str = "",
+    ) -> Generator[dict[str, Any], None, None]:
+        """流式调用，yield chunk 字典。"""
         ...
 
     @property

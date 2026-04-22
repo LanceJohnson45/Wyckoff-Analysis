@@ -650,9 +650,7 @@ def correct_tracking_initial_prices() -> int:
 def load_recommendation_tracking(limit: int = 1000) -> list[dict[str, Any]]:
     """加载推荐跟踪数据"""
     try:
-        # 这里可以使用普通 client，也可以用 admin
-        from integrations.supabase_client import get_supabase_client
-        client = get_supabase_client()
+        client = _get_supabase_admin_client()
         resp = (
             client.table(TABLE_RECOMMENDATION_TRACKING)
             .select("*")

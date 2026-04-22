@@ -249,7 +249,7 @@ def diagnose_one_stock(
     if stop_status == "已穿止损":
         reasons.append("已穿止损线(-7%)")
     if exit_signal == "stop_loss":
-        reasons.append("Wyckoff 止损信号触发")
+        reasons.append("结构止损（从高点回撤>10%）")
     if ma_pattern == "空头排列":
         reasons.append("均线空头排列")
     if range_60d > 50:
@@ -279,7 +279,7 @@ def diagnose_one_stock(
         positive.append(f"L4信号:{'+'.join(l4_triggers)}")
 
     # 打分
-    danger_count = sum(1 for r in reasons if any(k in r for k in ["已穿", "暴跌", "空头排列", "止损信号"]))
+    danger_count = sum(1 for r in reasons if any(k in r for k in ["已穿", "暴跌", "空头排列", "结构止损"]))
     warn_count = len(reasons) - danger_count
 
     if danger_count >= 1:

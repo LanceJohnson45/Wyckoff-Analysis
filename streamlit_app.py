@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
 """
 Wyckoff 智能对话 — 首页。
 
@@ -8,6 +7,7 @@ Wyckoff 智能对话 — 首页。
 """
 import json
 import os
+import time
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -63,6 +63,7 @@ TOOL_DISPLAY_NAMES = {
     "search_stock_by_name": "搜索股票",
     "diagnose_stock": "个股诊断",
     "diagnose_portfolio": "持仓诊断",
+    "get_portfolio": "查看持仓",
     "get_stock_price": "查询行情",
     "get_market_overview": "大盘概览",
     "screen_stocks": "漏斗筛选",
@@ -151,13 +152,13 @@ def _load_portfolio_context(user_id: str) -> str:
             "用户当前持仓（来自实盘组合）：",
             f"可用资金：¥{cash:,.2f}",
             "",
-            "| 代码 | 名称 | 成本 | 股数 | 策略 | 止损 |",
-            "|------|------|------|------|------|------|",
+            "| 代码 | 名称 | 成本 | 股数 | 止损 |",
+            "|------|------|------|------|------|",
         ]
         for p in positions:
             sl = f"{p['stop_loss']:.2f}" if p.get("stop_loss") is not None else "--"
             lines.append(
-                f"| {p['code']} | {p['name']} | {p['cost']:.2f} | {p['shares']} | {p.get('strategy') or '--'} | {sl} |"
+                f"| {p['code']} | {p['name']} | {p['cost']:.2f} | {p['shares']} | {sl} |"
             )
         lines.append("")
         lines.append("以上数据自动加载自用户的实盘持仓记录。对话中涉及这些股票时，你已经知道用户的成本和仓位。")
@@ -430,6 +431,9 @@ with content_col:
                     final_response = ""
                     called_tools: list[str] = []
                     seen_tool_calls: set[str] = set()
+                    total_input_tokens = 0
+                    total_output_tokens = 0
+                    t_start = time.monotonic()
 
                     stream_status_placeholder.markdown(
                         '<div class="chat-stream-status">🧠 正在思考与检索数据...</div>',
@@ -481,15 +485,28 @@ with content_col:
                                 unsafe_allow_html=True,
                             )
 
+                        elif event_type == "usage":
+                            total_input_tokens += data.get("input_tokens", 0)
+                            total_output_tokens += data.get("output_tokens", 0)
+
                         elif event_type == "text_chunk":
                             accumulated_text += data
                             response_placeholder.markdown(accumulated_text + "▌")
 
                         elif event_type == "done":
+                            elapsed = time.monotonic() - t_start
                             # 优先使用 done 携带的完整文本，回退到累积文本
                             final_response = data if data else accumulated_text
                             response_placeholder.markdown(final_response)
-                            stream_status_placeholder.empty()
+                            # 显示耗时和 token
+                            usage_parts = []
+                            if total_input_tokens or total_output_tokens:
+                                usage_parts.append(f"↑{total_input_tokens:,} ↓{total_output_tokens:,}")
+                            usage_parts.append(f"{elapsed:.1f}s")
+                            stream_status_placeholder.markdown(
+                                f'<div class="chat-stream-status" style="text-align:right">{" · ".join(usage_parts)}</div>',
+                                unsafe_allow_html=True,
+                            )
                             # 收起 thinking 光标
                             if thinking_placeholder and thinking_text:
                                 thinking_placeholder.markdown(thinking_text)

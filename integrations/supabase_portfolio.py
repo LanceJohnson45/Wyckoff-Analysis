@@ -9,20 +9,24 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from datetime import datetime, timezone
 import os
 import re
 from typing import Any
 
+logger = logging.getLogger(__name__)
+
 from supabase import Client
-from core.constants import TABLE_USER_SETTINGS
+from core.constants import (
+    TABLE_DAILY_NAV,
+    TABLE_PORTFOLIOS,
+    TABLE_PORTFOLIO_POSITIONS,
+    TABLE_TRADE_ORDERS,
+    TABLE_USER_SETTINGS,
+)
 from integrations.supabase_base import create_admin_client as _get_supabase_admin_client
 from integrations.supabase_base import is_admin_configured as is_supabase_configured
-
-TABLE_PORTFOLIOS = "portfolios"
-TABLE_PORTFOLIO_POSITIONS = "portfolio_positions"
-TABLE_TRADE_ORDERS = "trade_orders"
-TABLE_DAILY_NAV = "daily_nav"
 
 
 def _normalize_market(raw: Any, *, default: str = "cn") -> str:
@@ -71,7 +75,7 @@ def load_user_settings_admin(user_id: str) -> dict[str, Any] | None:
             return None
         return row
     except Exception as e:
-        print(f"[supabase_portfolio] load_user_settings_admin failed: {e}")
+        logger.debug("[supabase_portfolio] load_user_settings_admin failed: {e}")
         return None
 
 
@@ -101,7 +105,6 @@ def compute_portfolio_state_signature(
                 "shares": int(row.get("shares", 0) or 0),
                 "cost_price": round(float(row.get("cost_price", row.get("cost", 0.0)) or 0.0), 4),
                 "buy_dt": _normalize_buy_dt_text(row.get("buy_dt")),
-                "strategy": str(row.get("strategy", "") or "").strip(),
             }
         )
     normalized_positions.sort(key=lambda x: x["code"])
@@ -123,20 +126,20 @@ def _is_active_trade_order_status(status: Any) -> bool:
     return str(status or "").strip().upper() not in {"", "CANCELLED", "CANCELED"}
 
 
-def load_portfolio_state(portfolio_id: str = "USER_LIVE") -> dict[str, Any] | None:
+def load_portfolio_state(portfolio_id: str = "USER_LIVE", client: Client | None = None) -> dict[str, Any] | None:
     """
     返回格式：
     {
       "portfolio_id": "...",
       "free_cash": 12345.6,
       "total_equity": 23456.7 | None,
-      "positions": [{"code","name","cost","buy_dt","shares","strategy"}, ...]
+      "positions": [{"code","name","cost","buy_dt","shares"}, ...]
     }
     """
-    if not is_supabase_configured():
+    if client is None and not is_supabase_configured():
         return None
     try:
-        client = _get_supabase_admin_client()
+        client = client or _get_supabase_admin_client()
         p_resp = (
             client.table(TABLE_PORTFOLIOS)
             .select("portfolio_id,free_cash,total_equity,updated_at")
@@ -169,7 +172,6 @@ def load_portfolio_state(portfolio_id: str = "USER_LIVE") -> dict[str, Any] | No
                     "cost": float(row.get("cost_price", 0.0) or 0.0),
                     "buy_dt": str(row.get("buy_dt", "") or "").strip(),
                     "shares": int(row.get("shares", 0) or 0),
-                    "strategy": str(row.get("strategy", "") or "").strip(),
                     "stop_loss": (
                         float(row["stop_loss"]) if row.get("stop_loss") is not None else None
                     ),
@@ -191,7 +193,7 @@ def load_portfolio_state(portfolio_id: str = "USER_LIVE") -> dict[str, Any] | No
             "positions": positions,
         }
     except Exception as e:
-        print(f"[supabase_portfolio] load_portfolio_state failed: {e}")
+        logger.warning("[supabase_portfolio] load_portfolio_state failed: %s", e)
         return None
 
 
@@ -246,7 +248,7 @@ def list_step4_targets(target_user_id: str | None = None) -> list[dict[str, Any]
             )
         return targets
     except Exception as e:
-        print(f"[supabase_portfolio] list_step4_targets failed: {e}")
+        logger.debug("[supabase_portfolio] list_step4_targets failed: {e}")
         return []
 
 
@@ -284,7 +286,7 @@ def check_daily_run_exists(
             for row in active_rows
         )
     except Exception as e:
-        print(f"[supabase_portfolio] check_daily_run_exists failed: {e}")
+        logger.debug("[supabase_portfolio] check_daily_run_exists failed: {e}")
         return False
 
 
@@ -313,8 +315,69 @@ def update_position_stops(portfolio_id: str, updates: list[dict[str, Any]]) -> b
             )
         return True
     except Exception as e:
-        print(f"[supabase_portfolio] update_position_stops failed: {e}")
+        logger.debug("[supabase_portfolio] update_position_stops failed: {e}")
         return False
+
+
+def _ensure_portfolio_exists(portfolio_id: str, client: Client) -> None:
+    """确保 portfolios 行存在，不存在则创建。"""
+    resp = client.table(TABLE_PORTFOLIOS).select("portfolio_id").eq("portfolio_id", portfolio_id).limit(1).execute()
+    if not resp.data:
+        client.table(TABLE_PORTFOLIOS).upsert(
+            {"portfolio_id": portfolio_id, "free_cash": 0, "name": "我的持仓"},
+            on_conflict="portfolio_id",
+        ).execute()
+
+
+def upsert_position(portfolio_id: str, position: dict[str, Any], client: Client | None = None) -> tuple[bool, str]:
+    """新增或更新单个持仓。
+
+    position 需包含 code，可选 name/shares/cost_price/buy_dt/strategy。
+    返回 (成功, 消息)。
+    """
+    code = str(position.get("code", "")).strip()
+    if not code or len(code) != 6:
+        return False, f"无效的股票代码: {code}"
+    try:
+        client = client or _get_supabase_admin_client()
+        _ensure_portfolio_exists(portfolio_id, client)
+        row = {
+            "portfolio_id": portfolio_id,
+            "code": code,
+            "name": str(position.get("name", "") or "").strip(),
+            "shares": int(position.get("shares", 0) or 0),
+            "cost_price": float(position.get("cost_price", 0) or 0),
+            "buy_dt": str(position.get("buy_dt", "") or "").strip(),
+        }
+        client.table(TABLE_PORTFOLIO_POSITIONS).upsert(row, on_conflict="portfolio_id,code").execute()
+        return True, f"{code} 已更新"
+    except Exception as e:
+        logger.warning("[supabase_portfolio] upsert_position failed: %s", e)
+        return False, str(e)
+
+
+def delete_position(portfolio_id: str, code: str, client: Client | None = None) -> tuple[bool, str]:
+    """删除单个持仓。"""
+    code = code.strip()
+    try:
+        client = client or _get_supabase_admin_client()
+        client.table(TABLE_PORTFOLIO_POSITIONS).delete().eq("portfolio_id", portfolio_id).eq("code", code).execute()
+        return True, f"{code} 已删除"
+    except Exception as e:
+        logger.warning("[supabase_portfolio] delete_position failed: %s", e)
+        return False, str(e)
+
+
+def update_free_cash(portfolio_id: str, free_cash: float, client: Client | None = None) -> tuple[bool, str]:
+    """更新可用资金。"""
+    try:
+        client = client or _get_supabase_admin_client()
+        _ensure_portfolio_exists(portfolio_id, client)
+        client.table(TABLE_PORTFOLIOS).update({"free_cash": free_cash}).eq("portfolio_id", portfolio_id).execute()
+        return True, f"可用资金已更新为 {free_cash:,.2f}"
+    except Exception as e:
+        logger.warning("[supabase_portfolio] update_free_cash failed: %s", e)
+        return False, str(e)
 
 
 def save_ai_trade_orders(
@@ -370,7 +433,7 @@ def save_ai_trade_orders(
         client.table(TABLE_TRADE_ORDERS).insert(payload).execute()
         return True
     except Exception as e:
-        print(f"[supabase_portfolio] save_ai_trade_orders failed: {e}")
+        logger.debug("[supabase_portfolio] save_ai_trade_orders failed: {e}")
         return False
 
 
@@ -404,7 +467,7 @@ def cancel_trade_orders(
             )
         return len(active_rows)
     except Exception as e:
-        print(f"[supabase_portfolio] cancel_trade_orders failed: {e}")
+        logger.debug("[supabase_portfolio] cancel_trade_orders failed: {e}")
         return 0
 
 
@@ -434,5 +497,5 @@ def upsert_daily_nav(
         ).execute()
         return True
     except Exception as e:
-        print(f"[supabase_portfolio] upsert_daily_nav failed: {e}")
+        logger.debug("[supabase_portfolio] upsert_daily_nav failed: {e}")
         return False

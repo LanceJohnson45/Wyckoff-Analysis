@@ -137,16 +137,17 @@ with content_col:
 
     # 3. 统计指标 (KPIs)
     st.markdown("### 📊 表现摘要")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     avg_change = df['change_pct'].mean()
     max_change = df['change_pct'].max()
-    ai_count = int(df["is_ai_recommended"].sum())
+    min_change = df['change_pct'].min()
     total_recommend_events = int(df["recommend_count"].sum())
 
     col1.metric("覆盖股票数", f"{len(df)} 支")
     col2.metric("平均表现", f"{avg_change:+.2f}%")
     col3.metric("最高涨幅", f"{max_change:+.2f}%")
-    col4.metric("总推荐次数", f"{total_recommend_events} 次")
+    col4.metric("最大跌幅", f"{min_change:+.2f}%")
+    col5.metric("总推荐次数", f"{total_recommend_events} 次")
 
     st.divider()
 

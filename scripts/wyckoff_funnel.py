@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
-# 本代码仅供个人学习研究使用，未经授权不得用于商业目的。
-# 商业授权请联系作者支付授权费用。
-
 """
 Wyckoff Funnel 定时任务：5 层漏斗筛选 → 多渠道推送
 
@@ -1806,6 +1802,7 @@ def run_funnel_job(
         "markup_symbols": markup_symbols,
         "accum_stage_map": accum_stage_map,
         "exit_signals": exit_signals,
+        "all_df_map": all_df_map,
     }
     if include_debug_context:
         metrics["_debug"] = {
@@ -1849,6 +1846,7 @@ def run(
     每项为 {"code": str, "name": str, "tag": str}。
     """
     triggers, metrics = run_funnel_job()
+    all_df_map = metrics.get("all_df_map", {})
     benchmark_context = metrics.get("benchmark_context", {}) or {}
     market = str(metrics.get("market", "cn") or "cn").strip().lower()
     name_map = _stock_name_map(market)
@@ -2135,6 +2133,7 @@ def run(
                 "priority_score_map": score_map,
                 "name_map": name_map,
                 "sector_map": sector_map,
+                "all_df_map": all_df_map,
             }
             return (ok, symbols_for_report, benchmark_context, details)
         return (ok, symbols_for_report, benchmark_context)
@@ -2577,6 +2576,7 @@ def run(
             "priority_score_map": score_map,
             "name_map": name_map,
             "sector_map": sector_map,
+            "all_df_map": all_df_map,
             "explanation_map": explanation_map,
             "layer1_rejections": result.layer1_rejections or {},
             "layer2_rejections": result.layer2_rejections or {},

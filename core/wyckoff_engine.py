@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2024-2026 youngcan. All Rights Reserved.
-# 本代码仅供个人学习研究使用，未经授权不得用于商业目的。
-# 商业授权请联系作者支付授权费用。
-
 """
 Wyckoff Funnel 5 层漏斗筛选引擎
 
@@ -143,9 +139,7 @@ def _latest_trade_date(df: pd.DataFrame) -> object | None:
     if df is None or df.empty or "date" not in df.columns:
         return None
     s = pd.to_datetime(df["date"], errors="coerce").dropna()
-    if s.empty:
-        return None
-    return s.iloc[-1].date()
+    return s.iloc[-1].date() if not s.empty else None
 
 
 def build_symbol_feature_bundle(
@@ -342,7 +336,7 @@ class FunnelConfig:
 
     # Layer 4 - Spring
     spring_support_window: int = 60
-    spring_vol_ratio: float = 1.3  # 弹簧信号要求成交量 >= 均量 1.3 倍（原 1.0 太松）
+    spring_vol_ratio: float = 1.1  # 放宽以激活 Accum 轨（原 1.3 导致 Spring 几乎不触发）
     spring_tr_max_range_pct: float = 30.0
     spring_tr_max_drift_pct: float = 12.0
     # Spring 动态振幅
@@ -375,8 +369,8 @@ class FunnelConfig:
     evr_confirm_allow_break_pct: float = 0.0
 
     # Layer 4 - SOS / JAC (Sign of Strength / Jump Across the Creek)
-    sos_pct_min: float = 4.5  # 点火当日最小涨幅（%）
-    sos_vol_ratio: float = 2.0  # 点火当日相比近期均量的最小倍数（爆量）
+    sos_pct_min: float = 6.0  # 提高门槛过滤弱突破（原 4.5 追高触发止损率极高）
+    sos_vol_ratio: float = 2.5  # 要求更强量能确认（原 2.0 噪音太多）
     sos_vol_window: int = 20  # 计算点火爆量时的参考窗口
     sos_breakout_window: int = 20  # 要求突破或接近近 N 日的高点
     sos_breakout_tolerance: float = 0.01  # 改为 0.01：突破容差 1%（从 2% 改为 1%）
@@ -1201,15 +1195,6 @@ def layer2_strength_detailed(
     return passed, channel_map
 
 
-def layer2_strength(
-    symbols: list[str],
-    df_map: dict[str, pd.DataFrame],
-    bench_df: pd.DataFrame | None,
-    cfg: FunnelConfig,
-) -> list[str]:
-    passed, _ = layer2_strength_detailed(symbols, df_map, bench_df, cfg)
-    return passed
-
 
 # Layer 3: 板块共振
 
@@ -1490,7 +1475,6 @@ def _detect_spring(
     vol_avg = df_s["volume"].tail(5).iloc[:-1].mean()
     if vol_avg <= 0 or last["volume"] < vol_avg * cfg.spring_vol_ratio:
         return None
-
     # 加入放量确认：收回时的成交量 > 下探时的成交量
     prev_vol = float(prev["volume"]) if pd.notna(prev["volume"]) else 0
     last_vol = float(last["volume"]) if pd.notna(last["volume"]) else 0

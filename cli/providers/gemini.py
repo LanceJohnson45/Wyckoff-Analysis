@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from typing import Any
+from typing import Any, Generator
 
 from google import genai
 from google.genai import types
@@ -47,6 +47,56 @@ class GeminiProvider(LLMProvider):
         )
 
         return self._parse_response(response)
+
+    def chat_stream(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        system_prompt: str = "",
+    ) -> Generator[dict[str, Any], None, None]:
+        contents = self._build_contents(messages)
+        gemini_tools = self._build_tools(tools) if tools else None
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt or None,
+            tools=gemini_tools,
+        )
+
+        text_buf = ""
+        tool_calls = []
+        usage_meta = None
+
+        for chunk in self._client.models.generate_content_stream(
+            model=self._model,
+            contents=contents,
+            config=config,
+        ):
+            # usage_metadata 可能出现在任意 chunk（尤其是最后一个无 candidates 的 chunk）
+            um = getattr(chunk, "usage_metadata", None)
+            if um is not None:
+                usage_meta = um
+            if not chunk.candidates:
+                continue
+            for part in chunk.candidates[0].content.parts:
+                if part.function_call:
+                    fc = part.function_call
+                    tool_calls.append({
+                        "id": uuid.uuid4().hex[:12],
+                        "name": fc.name,
+                        "args": dict(fc.args) if fc.args else {},
+                    })
+                elif part.text:
+                    text_buf += part.text
+                    yield {"type": "text_delta", "text": part.text}
+
+        if tool_calls:
+            yield {"type": "tool_calls", "tool_calls": tool_calls, "text": text_buf}
+
+        yield {
+            "type": "usage",
+            "input_tokens": getattr(usage_meta, "prompt_token_count", 0) or 0,
+            "output_tokens": getattr(usage_meta, "candidates_token_count", 0) or 0,
+        }
 
     def _build_contents(self, messages: list[dict]) -> list[types.Content]:
         """将统一消息格式转为 Gemini Content 列表。"""

@@ -9,6 +9,7 @@ import os
 import re
 import sys
 from datetime import date, datetime
+from typing import Any
 
 import pandas as pd
 
@@ -102,6 +103,13 @@ STEP3_SKIP_LLM = os.getenv("STEP3_SKIP_LLM", "0").strip().lower() in {
 STEP3_RESPECT_UPSTREAM_PRIORITY = os.getenv(
     "STEP3_RESPECT_UPSTREAM_PRIORITY", "1"
 ).strip().lower() in {"1", "true", "yes", "on"}
+STEP3_SEND_COMPLIANCE_BRIEF = os.getenv(
+    "STEP3_SEND_COMPLIANCE_BRIEF", "1"
+).strip().lower() in {"1", "true", "yes", "on"}
+STEP3_COMPLIANCE_FOCUS_LIMIT = max(
+    int(os.getenv("STEP3_COMPLIANCE_FOCUS_LIMIT", "5")),
+    1,
+)
 
 
 RECENT_DAYS = 15
@@ -119,6 +127,14 @@ TRACK_LABELS = {
     "Trend": "Trend轨（右侧主升 / 放量点火）",
     "Accum": "Accum轨（左侧潜伏 / Spring / LPS）",
 }
+SPRINGBOARD_ABC_LEGEND = (
+    "## 🧾 起跳板硬门槛释义（A/B/C）\n"
+    "- A：近5日出现缩量测试/拒绝下跌（量比 < 0.8x 且收位 > 60%）\n"
+    "- B：突破日量比 >= 1.5x 且收盘站稳突破位（收位 > 70%）\n"
+    "- C：支撑位至少经过 2 次测试且未被有效击穿\n"
+    "- 进入“处于起跳板”通常需至少满足 2 条；若弱市（RISK_OFF/CRASH）执行更严格。\n\n"
+    "---\n"
+)
 
 
 def _dump_model_input(
@@ -531,6 +547,110 @@ def _strip_report_title(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _fmt_pct(v: Any) -> str:
+    num = pd.to_numeric(v, errors="coerce")
+    if pd.isna(num):
+        return "待更新"
+    x = float(num)
+    sign = "+" if x >= 0 else ""
+    return f"{sign}{x:.2f}%"
+
+
+def _build_compliance_brief(
+    *,
+    benchmark_context: dict,
+    selected_df: pd.DataFrame,
+    ops_codes: list[str],
+    code_name: dict[str, str],
+) -> str:
+    regime = str((benchmark_context or {}).get("regime", "NEUTRAL") or "NEUTRAL").strip().upper()
+    main_today_pct = _fmt_pct((benchmark_context or {}).get("main_today_pct"))
+    recent3_cum_pct = _fmt_pct((benchmark_context or {}).get("recent3_cum_pct"))
+    breadth = (benchmark_context or {}).get("breadth", {}) or {}
+    breadth_ratio = _fmt_pct(breadth.get("ratio_pct"))
+    vol_state = str((benchmark_context or {}).get("main_volume_state", "") or "").strip() or "待更新"
+
+    sec_df = selected_df.copy() if isinstance(selected_df, pd.DataFrame) else pd.DataFrame()
+    if not sec_df.empty:
+        sec_df["industry"] = sec_df.get("industry", "").astype(str).str.strip()
+        sec_df = sec_df[sec_df["industry"] != ""]
+        score_series = pd.to_numeric(sec_df.get("priority_score"), errors="coerce")
+        score_series = score_series.where(score_series.notna(), pd.to_numeric(sec_df.get("funnel_score"), errors="coerce"))
+        sec_df["score"] = score_series.fillna(0.0)
+
+    strong_lines: list[str] = []
+    if not sec_df.empty:
+        grouped = (
+            sec_df.groupby("industry", as_index=False)
+            .agg(cnt=("code", "count"), score=("score", "mean"))
+            .sort_values(["cnt", "score"], ascending=[False, False])
+            .head(3)
+        )
+        for _, row in grouped.iterrows():
+            strong_lines.append(f"- {str(row['industry'])}（样本{int(row['cnt'])}）")
+
+    focus_codes: list[str] = []
+    for c in ops_codes:
+        cc = str(c).strip()
+        if cc and cc not in focus_codes:
+            focus_codes.append(cc)
+        if len(focus_codes) >= STEP3_COMPLIANCE_FOCUS_LIMIT:
+            break
+    if len(focus_codes) < STEP3_COMPLIANCE_FOCUS_LIMIT and not sec_df.empty:
+        ranked = sec_df.sort_values("score", ascending=False)
+        for code in ranked["code"].astype(str).tolist():
+            cc = code.strip()
+            if cc and cc not in focus_codes:
+                focus_codes.append(cc)
+            if len(focus_codes) >= STEP3_COMPLIANCE_FOCUS_LIMIT:
+                break
+
+    focus_lines = [f"- {c} {code_name.get(c, c)}" for c in focus_codes]
+
+    out: list[str] = [
+        "## 📌 今日市场观察简报（合规版）",
+        "",
+        "⚠️ **重要提示：以下内容由大模型自动生成，仅用于市场研究交流，不构成任何投资建议；股市有风险，投资需谨慎。**",
+        "",
+        "### 一、今日大盘数据",
+        (
+            f"- 市场状态: {regime} | 当日涨跌: {main_today_pct} | "
+            f"近3日累计: {recent3_cum_pct} | 市场广度: {breadth_ratio} | 量能状态: {vol_state}"
+        ),
+        "- 说明: 上述为客观量价观察，不构成交易建议。",
+        "",
+        "### 二、AI分析强势板块",
+    ]
+    if strong_lines:
+        out.extend(strong_lines)
+    else:
+        out.append("- 暂无明显强势板块（样本不足或分化明显）")
+
+    out.extend(
+        [
+            "",
+            "### 三、今日值得关注（研究观察）",
+        ]
+    )
+    if focus_lines:
+        out.extend(focus_lines)
+    else:
+        out.append("- 今日暂无明确观察标的")
+
+    out.extend(
+        [
+            "",
+            "### 合规声明",
+            "- 以下内容为大模型自动生成结果，仅供参考。",
+            "- 本简报仅用于市场研究与信息交流，不构成个股推荐或买卖建议。",
+            "- 不承诺收益，不涉及代客理财或代客下单。",
+            "- **股市有风险，投资需谨慎。**",
+            "- 投资决策请独立判断并自行承担风险。",
+        ]
+    )
+    return "\n".join(out).strip() + "\n"
+
+
 def _call_track_report(
     *,
     track: str,
@@ -581,6 +701,15 @@ def _call_track_report(
     if not _has_required_sections(report):
         print(f"[step3] {track} 轨结构修复后仍缺少关键章节，追加系统兜底分层")
         report = report.rstrip() + "\n\n" + _build_fallback_sections(selected_df)
+
+    # 校验：检测报告中出现但不属于本轨输入集的股票代码（模型幻觉）
+    input_set = set(str(c).strip() for c in selected_codes)
+    mentioned = set(re.findall(r"\b(\d{6})\b", report))
+    leaked = mentioned - input_set
+    if leaked:
+        print(f"[step3] ⚠ {track} 轨报告中出现非本轨标的: {','.join(sorted(leaked))}")
+        report += f"\n\n> ⚠ 以下代码不在{track}轨输入集中，可能为模型幻觉: {', '.join(sorted(leaked))}"
+
     return (True, report, used_model or model)
 
 
@@ -860,23 +989,15 @@ def run(
         if not bool(rag_status.get("enabled")):
             print("[step3][rag] 已关闭（RAG_VETO_ENABLED=0）")
             rag_skip_reason = "RAG_VETO_ENABLED=0"
-        elif not bool(rag_status.get("has_provider")):
-            print("[step3][rag] 跳过：未配置 TAVILY_API_KEY/SERPAPI_API_KEY")
-            rag_skip_reason = "未配置 TAVILY_API_KEY/SERPAPI_API_KEY"
         else:
             rag_inputs = [
                 {"code": str(r.get("code", "")).strip(), "name": str(r.get("name", ""))}
                 for _, r in selected_df.iterrows()
             ]
-            provider_text = (
-                f"tavily={bool(rag_status.get('tavily_configured'))}, "
-                f"serpapi={bool(rag_status.get('serpapi_configured'))}"
-            )
             print(
-                "[step3][rag] 启动："
-                f"candidates={len(rag_inputs)}, providers=({provider_text}), "
+                f"[step3][rag] 启动：candidates={len(rag_inputs)}, "
+                f"source={rag_status.get('source', 'akshare')}, "
                 f"lookback_days={rag_status.get('lookback_days')}, "
-                f"max_results={rag_status.get('max_results')}, "
                 f"workers={rag_status.get('max_workers')}"
             )
 
@@ -887,17 +1008,7 @@ def run(
             relevant_n = 0
             semantic_checked_n = 0
             error_n = 0
-            source_counts = {"tavily": 0, "serpapi": 0, "none": 0}
-
             for code, result in veto_map.items():
-                src = str(result.search_source or "").strip().lower()
-                if src == "tavily":
-                    source_counts["tavily"] += 1
-                elif src == "serpapi":
-                    source_counts["serpapi"] += 1
-                else:
-                    source_counts["none"] += 1
-
                 if int(result.raw_result_count or 0) > 0:
                     external_ok_n += 1
                 if int(result.relevant_result_count or 0) > 0:
@@ -935,14 +1046,10 @@ def run(
 
             rag_summary_lines = [
                 f"- 扫描股票: {scanned_n}",
-                f"- 外部检索成功: {external_ok_n}/{scanned_n}" if scanned_n else "- 外部检索成功: 0/0",
-                f"- 有效相关新闻: {relevant_n}/{scanned_n}" if scanned_n else "- 有效相关新闻: 0/0",
-                (
-                    f"- 来源分布: tavily={source_counts['tavily']}, "
-                    f"serpapi={source_counts['serpapi']}, none={source_counts['none']}"
-                ),
+                f"- 新闻拉取成功: {external_ok_n}/{scanned_n}" if scanned_n else "- 新闻拉取成功: 0/0",
+                f"- 命中负面关键词: {relevant_n}/{scanned_n}" if scanned_n else "- 命中负面关键词: 0/0",
                 f"- 语义二判执行: {semantic_checked_n}",
-                f"- 检索异常: {error_n}",
+                f"- 拉取异常: {error_n}",
                 f"- veto 剔除: {len(vetoed_codes)}",
             ]
 
@@ -1005,6 +1112,21 @@ def run(
             title = f"📄 批量研报 {_job_end_calendar_day().strftime('%Y-%m-%d')}"
             if not _notify_all(title, content):
                 return (False, "feishu_failed", report)
+            if STEP3_SEND_COMPLIANCE_BRIEF:
+                compliance_title = f"📄 市场观察简报（合规版） {date.today().strftime('%Y-%m-%d')}"
+                compliance_name_map = {
+                    str(x.get("code", "")).strip(): str(x.get("name", x.get("code", ""))).strip()
+                    for x in items
+                    if isinstance(x, dict) and str(x.get("code", "")).strip()
+                }
+                compliance_content = _build_compliance_brief(
+                    benchmark_context=benchmark_context or {},
+                    selected_df=selected_df,
+                    ops_codes=[],
+                    code_name=compliance_name_map,
+                )
+                if not _notify_all(compliance_title, compliance_content):
+                    print("[step3] 合规简报推送失败（主报告已发送）")
         return (True, "ok", report)
 
     payloads_by_track: dict[str, list[str]] = {"Trend": [], "Accum": []}
@@ -1230,7 +1352,7 @@ def run(
         + "\n\n---\n"
     )
 
-    content = f"{model_banner}\n\n{rag_veto_preview}{ops_preview}\n{report}"
+    content = f"{model_banner}\n\n{rag_veto_preview}{ops_preview}{SPRINGBOARD_ABC_LEGEND}\n{report}"
     if rag_veto_lines:
         content += "\n\n## 🛑 RAG 防雷剔除清单\n" + "\n".join(rag_veto_lines)
     print(f"[step3] 飞书发送原文长度={len(content)}（不压缩，交由飞书分片）")
@@ -1246,6 +1368,16 @@ def run(
         if not _notify_all(title, content):
             print("[step3] 飞书推送失败")
             return (False, "feishu_failed", report)
+        if STEP3_SEND_COMPLIANCE_BRIEF:
+            compliance_title = f"📄 市场观察简报（合规版） {date.today().strftime('%Y-%m-%d')}"
+            compliance_content = _build_compliance_brief(
+                benchmark_context=benchmark_context or {},
+                selected_df=selected_df,
+                ops_codes=ops_codes,
+                code_name=code_name,
+            )
+            if not _notify_all(compliance_title, compliance_content):
+                print("[step3] 合规简报推送失败（主报告已发送）")
     print(
         f"[step3] 研报发送成功，股票数={sum(len(payloads_by_track.get(t, [])) for t in active_tracks)}，"
         f"拉取失败数={len(failed)}"

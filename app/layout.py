@@ -61,14 +61,13 @@ def init_session_state() -> None:
         "minimax_api_key", "minimax_model",
         "deepseek_api_key", "deepseek_model",
         "qwen_api_key", "qwen_model",
-        "kimi_api_key", "kimi_model",
         "volcengine_api_key", "volcengine_model",
     ):
         _set_default(key, "")
 
     _set_default("gemini_model", DEFAULT_GEMINI_MODEL)
     _set_default("gemini_base_url", "")
-    for provider in ("openai", "zhipu", "minimax", "deepseek", "qwen", "kimi", "volcengine"):
+    for provider in ("openai", "zhipu", "minimax", "deepseek", "qwen", "volcengine"):
         _set_default(f"{provider}_base_url", OPENAI_COMPATIBLE_BASE_URLS.get(provider, ""))
 
     # 从服务端缓存恢复 token（刷新页面后登录态保持）

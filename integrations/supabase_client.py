@@ -7,7 +7,7 @@ from core.constants import TABLE_USER_SETTINGS
 from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS
 from integrations.supabase_base import create_anon_client
 
-CUSTOM_PROVIDER_KEYS = ("zhipu", "minimax", "qwen", "kimi", "volcengine")
+CUSTOM_PROVIDER_KEYS = ("zhipu", "minimax", "qwen", "volcengine")
 
 
 def _parse_custom_providers(raw_value) -> dict:
@@ -45,6 +45,7 @@ def reset_user_settings_state() -> None:
     st.session_state.dingtalk_webhook = ""
     st.session_state.gemini_api_key = ""
     st.session_state.tushare_token = ""
+    st.session_state.tickflow_api_key = ""
     st.session_state.gemini_model = DEFAULT_GEMINI_MODEL
     st.session_state.gemini_base_url = ""
     st.session_state.tg_bot_token = ""
@@ -66,9 +67,6 @@ def reset_user_settings_state() -> None:
     st.session_state.qwen_api_key = ""
     st.session_state.qwen_model = ""
     st.session_state.qwen_base_url = OPENAI_COMPATIBLE_BASE_URLS.get("qwen", "")
-    st.session_state.kimi_api_key = ""
-    st.session_state.kimi_model = ""
-    st.session_state.kimi_base_url = OPENAI_COMPATIBLE_BASE_URLS.get("kimi", "")
     st.session_state.volcengine_api_key = ""
     st.session_state.volcengine_model = ""
     st.session_state.volcengine_base_url = OPENAI_COMPATIBLE_BASE_URLS.get("volcengine", "")
@@ -171,6 +169,7 @@ def load_user_settings(user_id: str):
 
             # 其它
             st.session_state.tushare_token = settings.get("tushare_token") or ""
+            st.session_state.tickflow_api_key = settings.get("tickflow_api_key") or ""
             st.session_state.tg_bot_token = settings.get("tg_bot_token") or ""
             st.session_state.tg_chat_id = settings.get("tg_chat_id") or ""
             return True

@@ -50,7 +50,6 @@ jobs:
         run: |
           echo "::group::Install packages"
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
           pip install -e .
           echo "::endgroup::"
 

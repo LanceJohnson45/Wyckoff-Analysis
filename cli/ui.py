@@ -3,35 +3,45 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.key_binding import KeyBindings
 from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
-from rich.panel import Panel
 from rich.spinner import Spinner
-from rich.table import Table
 from rich.text import Text
 
 console = Console()
 
-# prompt_toolkit 会话
 _commands = WordCompleter(
-    ["/help", "/clear", "/new", "/quit", "/exit", "/q", "/model", "/login", "/logout"],
+    ["/help", "/clear", "/new", "/quit", "/exit", "/q", "/model", "/login", "/logout", "/token"],
     sentence=True,
 )
 _session: PromptSession | None = None
+
+# Enter 提交，Escape+Enter（终端中的 Alt+Enter）插入换行
+_kb = KeyBindings()
+
+
+@_kb.add("escape", "enter")
+def _insert_newline(event):
+    event.current_buffer.insert_text("\n")
 
 
 def _get_session() -> PromptSession:
     global _session
     if _session is None:
+        history_path = Path.home() / ".wyckoff" / "input_history"
+        history_path.parent.mkdir(parents=True, exist_ok=True)
         _session = PromptSession(
-            history=InMemoryHistory(),
+            history=FileHistory(str(history_path)),
             completer=_commands,
+            key_bindings=_kb,
         )
     return _session
 
@@ -63,58 +73,57 @@ def _prompt_secret(label: str, current: str = "") -> str:
 
 
 # ---------------------------------------------------------------------------
-# Banner
+# Banner — Claude Code 风格
 # ---------------------------------------------------------------------------
 
-def print_banner(email: str = "", model: str = "") -> None:
-    # 左侧：Logo + 身份
-    left = Text()
-    left.append("  ╦ ╦╦ ╦╔═╗╦╔═╔═╗╔═╗╔═╗\n", style="bold white")
-    left.append("  ║║║╚╦╝║  ╠╩╗║ ║╠╣ ╠╣\n", style="bold white")
-    left.append("  ╚╩╝ ╩ ╚═╝╩ ╩╚═╝╚  ╚\n", style="bold white")
-    left.append("\n")
-    left.append("  终端读盘室", style="bold blue")
+# 小型像素风 logo（5 行高）
+_LOGO = r"""
+ ╦ ╦
+ ║║║
+ ╚╩╝
+""".strip("\n")
 
-    # 右侧：快速开始 + 状态
-    right = Text()
-    right.append("快速开始\n", style="bold yellow")
-    if email:
-        right.append("✓ ", style="green")
-        right.append(f"{email}\n", style="dim")
-    else:
-        right.append("运行 ")
-        right.append("/login", style="bold cyan")
-        right.append(" 登录账号\n")
+
+def print_banner(email: str = "", model: str = "", version: str = "") -> None:
+    if not version:
+        try:
+            from importlib.metadata import version as _v
+            version = _v("youngcan-wyckoff-analysis")
+        except Exception:
+            version = "dev"
+
+    console.print()
+
+    # Logo + 标题行
+    logo_lines = _LOGO.split("\n")
+    info_lines = [
+        f"[bold]Wyckoff CLI[/bold] v{version}",
+        "",
+        "",
+    ]
+
+    # 状态信息
+    parts = []
     if model:
-        right.append("✓ ", style="green")
-        right.append(f"{model}\n", style="dim")
+        parts.append(model)
     else:
-        right.append("运行 ")
-        right.append("/model", style="bold cyan")
-        right.append(" 配置模型\n")
-    right.append("\n")
-    right.append("快捷命令\n", style="bold yellow")
-    right.append("/login", style="cyan")
-    right.append("  登录  ")
-    right.append("/logout", style="cyan")
-    right.append("  登出  ")
-    right.append("/model", style="cyan")
-    right.append("  模型\n")
-    right.append("/clear", style="cyan")
-    right.append("  新对话  ")
-    right.append("/help", style="cyan")
-    right.append("  帮助  ")
-    right.append("/quit", style="cyan")
-    right.append("  退出")
+        parts.append("[dim]未配置模型 /model[/dim]")
+    if email:
+        parts.append(email)
+    else:
+        parts.append("[dim]未登录 /login[/dim]")
+    info_lines[1] = " · ".join(parts)
 
-    layout = Table.grid(padding=(0, 3))
-    layout.add_column(width=30)
-    layout.add_column()
-    layout.add_row(left, right)
+    # 提示
+    info_lines[2] = "[dim]直接输入问题开始对话，/help 查看更多[/dim]"
+
+    for i, logo_line in enumerate(logo_lines):
+        info = info_lines[i] if i < len(info_lines) else ""
+        console.print(f"        [bold yellow]{logo_line}[/bold yellow]   {info}")
 
     console.print()
-    console.print(Panel(layout, title="[dim]Wyckoff CLI[/dim]", border_style="blue", padding=(1, 2)))
-    console.print()
+    # 分隔线
+    console.print(f"[dim]{'─' * min(console.width, 80)}[/dim]")
 
 
 # ---------------------------------------------------------------------------
@@ -124,15 +133,18 @@ def print_banner(email: str = "", model: str = "") -> None:
 def print_help() -> None:
     console.print()
     console.print("  [bold]命令[/bold]")
-    console.print("  [cyan]/login[/cyan]   登录（邮箱密码，打通持仓和凭证）")
-    console.print("  [cyan]/logout[/cyan]  登出")
-    console.print("  [cyan]/model[/cyan]   配置模型（Provider / API Key / 模型名）")
-    console.print("  [cyan]/clear[/cyan]   清空对话，开始新对话")
-    console.print("  [cyan]/help[/cyan]    显示此帮助")
-    console.print("  [cyan]/quit[/cyan]    退出")
+    console.print("  [cyan]/model[/cyan]    配置模型      [cyan]/login[/cyan]   登录")
+    console.print("  [cyan]/new[/cyan]      新对话        [cyan]/logout[/cyan]  登出")
+    console.print("  [cyan]/token[/cyan]    用量统计      [cyan]/quit[/cyan]    退出")
+    console.print("  [cyan]/clear[/cyan]    清屏")
     console.print()
-    console.print("  [bold]直接输入问题开始对话：[/bold]")
-    console.print("  [dim]帮我看看宁德时代 / 大盘现在什么水温 / 我的持仓还安全吗[/dim]")
+    console.print("  [bold]试试这样问[/bold]")
+    console.print("  [dim]帮我看看宁德时代[/dim]          个股诊断")
+    console.print("  [dim]大盘现在什么水温[/dim]          市场概览")
+    console.print("  [dim]有没有确认的信号[/dim]          信号确认池")
+    console.print("  [dim]我的持仓还安全吗[/dim]          持仓体检")
+    console.print("  [dim]帮我从全市场找机会[/dim]        五层漏斗扫描")
+    console.print("  [dim]过去推荐的表现怎么样[/dim]      战绩追踪")
     console.print()
 
 
@@ -141,7 +153,6 @@ def print_help() -> None:
 # ---------------------------------------------------------------------------
 
 def login_prompt() -> tuple[str, str] | None:
-    """交互式输入邮箱密码。返回 (email, password) 或 None（取消）。"""
     console.print()
     email = _prompt("邮箱")
     if not email:
@@ -175,10 +186,8 @@ DEFAULT_MODELS = {
 }
 
 
-def _save_to_dotenv(key: str, value: str) -> None:
-    from dotenv import set_key
-    env_path = os.path.join(os.getcwd(), ".env")
-    set_key(env_path, key, value)
+def _save_to_env(key: str, value: str) -> None:
+    """将配置写入环境变量（运行时生效，持久化由 config.json 负责）。"""
     os.environ[key] = value
 
 
@@ -201,7 +210,6 @@ def configure_model(state: dict) -> dict | None:
         print_error(f"无效选项: {choice}")
         return None
 
-    # --- API Key ---
     env_key = KEY_ENV_MAP.get(provider_name, "")
     env_val = os.getenv(env_key, "").strip() if env_key else ""
 
@@ -214,10 +222,8 @@ def configure_model(state: dict) -> dict | None:
         if not api_key:
             print_error("API Key 不能为空。")
             return None
-        _save_to_dotenv(env_key, api_key)
-        console.print(f"  [green]+[/green] 已保存到 .env")
+        _save_to_env(env_key, api_key)
 
-    # --- Model ---
     model_env_key = f"{provider_name.upper()}_MODEL"
     if provider_name == "claude":
         model_env_key = "ANTHROPIC_MODEL"
@@ -229,10 +235,8 @@ def configure_model(state: dict) -> dict | None:
         default_model = DEFAULT_MODELS.get(provider_name, "")
         model = _prompt("模型名称", default_model)
         if model and model != default_model:
-            _save_to_dotenv(model_env_key, model)
-            console.print(f"  [green]+[/green] 已保存到 .env")
+            _save_to_env(model_env_key, model)
 
-    # --- Base URL (OpenAI only) ---
     base_url = ""
     if provider_name == "openai":
         env_base = os.getenv("OPENAI_BASE_URL", "").strip()
@@ -243,8 +247,7 @@ def configure_model(state: dict) -> dict | None:
             console.print("  [dim]OpenAI 官方直接回车跳过，第三方兼容端点请输入 URL[/dim]")
             base_url = _prompt("Base URL")
             if base_url:
-                _save_to_dotenv("OPENAI_BASE_URL", base_url)
-                console.print(f"  [green]+[/green] 已保存到 .env")
+                _save_to_env("OPENAI_BASE_URL", base_url)
 
     console.print()
     return {
@@ -259,12 +262,11 @@ def configure_model(state: dict) -> dict | None:
 # 工具调用 / 响应渲染
 # ---------------------------------------------------------------------------
 
-# 正在运行的 Live spinner 实例
 _live: Live | None = None
+_tool_start: float = 0
 
 
 def _stop_live() -> None:
-    """停止当前 spinner（如有）。"""
     global _live
     if _live is not None:
         _live.stop()
@@ -272,9 +274,10 @@ def _stop_live() -> None:
 
 
 def print_tool_call(name: str, display_name: str, args: dict) -> None:
-    """显示工具调用 — 带 spinner 动画。"""
-    global _live
+    import time
+    global _live, _tool_start
     _stop_live()
+    _tool_start = time.monotonic()
 
     args_brief = ""
     if args:
@@ -287,19 +290,43 @@ def print_tool_call(name: str, display_name: str, args: dict) -> None:
 
 
 def print_tool_result(name: str, display_name: str, result) -> None:
-    """显示工具执行完成 — 停止 spinner，打印结果。"""
+    import time
     _stop_live()
+    elapsed = time.monotonic() - _tool_start
+    time_str = f" [dim]{elapsed:.1f}s[/dim]" if elapsed >= 1.0 else ""
     if isinstance(result, dict) and result.get("error"):
-        console.print(f"  [red]✗ {display_name}[/red] [dim]{result['error']}[/dim]")
+        console.print(f"  [red]✗ {display_name}[/red]{time_str} [dim]{result['error']}[/dim]")
     else:
-        console.print(f"  [green]✓ {display_name}[/green]")
+        console.print(f"  [green]✓ {display_name}[/green]{time_str}")
 
 
 def print_response(text: str) -> None:
-    """渲染模型回复。"""
     _stop_live()
     console.print()
     console.print(Markdown(text), width=min(console.width, 100))
+    console.print()
+
+
+def print_usage(input_tokens: int, output_tokens: int, elapsed: float = 0, model: str = "") -> None:
+    parts = []
+    if input_tokens or output_tokens:
+        parts.append(f"{input_tokens:,} in · {output_tokens:,} out")
+    if elapsed > 0:
+        parts.append(f"{elapsed:.1f}s")
+    if parts:
+        console.print(f"  [dim]↳ {' · '.join(parts)}[/dim]")
+
+
+def print_token_summary(session_tokens: dict, model: str = "") -> None:
+    total = session_tokens["input"] + session_tokens["output"]
+    console.print()
+    console.print("  [bold]本次会话 Token 用量[/bold]")
+    if model:
+        console.print(f"  模型      {model}")
+    console.print(f"  对话轮数  {session_tokens['rounds']}")
+    console.print(f"  输入      {session_tokens['input']:,}")
+    console.print(f"  输出      {session_tokens['output']:,}")
+    console.print(f"  合计      {total:,}")
     console.print()
 
 
@@ -311,10 +338,22 @@ def print_info(message: str) -> None:
     console.print(f"  [dim]{message}[/dim]")
 
 
+_ctrl_c_count = 0
+
 def get_input() -> str:
+    global _ctrl_c_count
     try:
-        return _get_session().prompt(HTML('<b><style fg="ansiblue">❯ </style></b>')).strip()
-    except (KeyboardInterrupt, EOFError):
-        # Ctrl+C 或 Ctrl+D 都退出
+        result = _get_session().prompt(HTML('<b><style fg="ansiblue">❯ </style></b>')).strip()
+        _ctrl_c_count = 0
+        return result
+    except KeyboardInterrupt:
+        _ctrl_c_count += 1
+        console.print()
+        if _ctrl_c_count >= 2:
+            return "/quit"
+        console.print("  [dim]再按一次 Ctrl+C 退出，或继续输入[/dim]")
+        return ""
+    except EOFError:
+        # Ctrl+D 退出
         console.print()
         return "/quit"

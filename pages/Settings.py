@@ -29,14 +29,12 @@ with content_col:
     st.session_state.setdefault("minimax_base_url", OPENAI_COMPATIBLE_BASE_URLS.get("minimax", ""))
     st.session_state.setdefault("deepseek_base_url", OPENAI_COMPATIBLE_BASE_URLS.get("deepseek", ""))
     st.session_state.setdefault("qwen_base_url", OPENAI_COMPATIBLE_BASE_URLS.get("qwen", ""))
-    st.session_state.setdefault("kimi_base_url", OPENAI_COMPATIBLE_BASE_URLS.get("kimi", ""))
     st.session_state.setdefault("volcengine_base_url", OPENAI_COMPATIBLE_BASE_URLS.get("volcengine", ""))
 
     for key in (
         "zhipu_api_key", "zhipu_model",
         "minimax_api_key", "minimax_model",
         "qwen_api_key", "qwen_model",
-        "kimi_api_key", "kimi_model",
         "volcengine_api_key", "volcengine_model",
     ):
         st.session_state.setdefault(key, "")
@@ -72,11 +70,6 @@ with content_col:
                 "baseurl": st.session_state.qwen_base_url,
                 "model": st.session_state.qwen_model,
             },
-            "kimi": {
-                "apikey": st.session_state.kimi_api_key,
-                "baseurl": st.session_state.kimi_base_url,
-                "model": st.session_state.kimi_model,
-            },
             "volcengine": {
                 "apikey": st.session_state.volcengine_api_key,
                 "baseurl": st.session_state.volcengine_base_url,
@@ -103,6 +96,7 @@ with content_col:
             "custom_providers": custom_providers,
             # 其它
             "tushare_token": st.session_state.tushare_token,
+            "tickflow_api_key": st.session_state.tickflow_api_key,
             "tg_bot_token": st.session_state.tg_bot_token,
             "tg_chat_id": st.session_state.tg_chat_id,
         }
@@ -294,25 +288,6 @@ with content_col:
             )
 
             st.markdown("---")
-            st.markdown("**Kimi (Moonshot)**")
-            new_kimi_key = st.text_input(
-                "Kimi API Key",
-                value=st.session_state.kimi_api_key,
-                type="password",
-                placeholder="sk-...",
-            )
-            new_kimi_model = st.text_input(
-                "Kimi 默认模型",
-                value=st.session_state.kimi_model,
-                placeholder="moonshot-v1-8k",
-            )
-            new_kimi_base_url = st.text_input(
-                "Kimi Base URL",
-                value=st.session_state.kimi_base_url,
-                placeholder="https://api.moonshot.cn/v1",
-            )
-
-            st.markdown("---")
             st.markdown("**火山引擎 (Volcengine Ark)**")
             new_volc_key = st.text_input(
                 "火山引擎 API Key",
@@ -351,9 +326,6 @@ with content_col:
                 st.session_state.qwen_api_key = new_qwen_key
                 st.session_state.qwen_model = new_qwen_model
                 st.session_state.qwen_base_url = new_qwen_base_url
-                st.session_state.kimi_api_key = new_kimi_key
-                st.session_state.kimi_model = new_kimi_model
-                st.session_state.kimi_base_url = new_kimi_base_url
                 st.session_state.volcengine_api_key = new_volc_key
                 st.session_state.volcengine_model = new_volc_model
                 st.session_state.volcengine_base_url = new_volc_base_url
@@ -366,7 +338,15 @@ with content_col:
         # 3. 数据源
         st.subheader("📊 数据源配置")
         with st.container(border=True):
-            st.markdown("**Tushare Token**（可选）用于行情、市值等。不配置时优先用 akshare/baostock/efinance，三者均失败时才需 Tushare。")
+            st.markdown("**TickFlow API Key**（推荐）解锁实时行情 + 分钟K线 + 盘中监控。[注册购买 →](https://tickflow.org/auth/register?ref=5N4NKTCPL4)")
+            new_tickflow = st.text_input(
+                "TickFlow API Key",
+                value=st.session_state.tickflow_api_key,
+                type="password",
+                placeholder="tk_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                key="tickflow_input",
+            )
+            st.markdown("**Tushare Token**（可选）用于高级补充数据。日线主链路优先 TickFlow，不可用时回退 Tushare/akshare/baostock/efinance。")
             new_tushare = st.text_input(
                 "Tushare Token",
                 value=st.session_state.tushare_token,
@@ -375,6 +355,7 @@ with content_col:
                 key="tushare_input",
             )
             if st.button("💾 保存数据源配置", key="save_tushare"):
+                st.session_state.tickflow_api_key = new_tickflow
                 st.session_state.tushare_token = new_tushare
                 on_save_settings()
 
