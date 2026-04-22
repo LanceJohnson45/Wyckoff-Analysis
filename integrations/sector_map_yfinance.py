@@ -201,13 +201,19 @@ def refresh_sector_cache(
     retries: int = 1,
     max_symbols_per_market: int = 0,
     force: bool = False,
+    checkpoint_every: int = 20,
 ) -> dict[str, Any]:
     import yfinance as yf
 
     delay = max(float(delay_seconds), 0.0)
     retry_count = max(int(retries), 0)
     cache = load_sector_cache()
-    stats: dict[str, Any] = {"markets": {}, "legacy_cache_cleared": clear_legacy_sector_cache()}
+    checkpoint_size = max(int(checkpoint_every), 1)
+    stats: dict[str, Any] = {
+        "markets": {},
+        "legacy_cache_cleared": clear_legacy_sector_cache(),
+        "checkpoint_every": checkpoint_size,
+    }
     for market in markets:
         market_norm = str(market or "").strip().lower()
         targets = _all_targets_for_market(market_norm)
@@ -225,6 +231,7 @@ def refresh_sector_cache(
             "ok": 0,
             "failed": 0,
             "errors": {},
+            "checkpoints": 0,
         }
         for idx, symbol in enumerate(pending, start=1):
             last_err = ""
@@ -242,8 +249,12 @@ def refresh_sector_cache(
             if last_err:
                 market_stats["failed"] += 1
                 market_stats["errors"][symbol] = last_err
+            if idx % checkpoint_size == 0:
+                save_sector_cache(cache)
+                market_stats["checkpoints"] += 1
             if delay > 0 and idx < len(pending):
                 time.sleep(delay)
+        save_sector_cache(cache)
+        market_stats["checkpoints"] += 1
         stats["markets"][market_norm] = market_stats
-    save_sector_cache(cache)
     return stats

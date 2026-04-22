@@ -30,12 +30,13 @@ def main() -> int:
     parser.add_argument("--delay-seconds", type=float, default=1.2)
     parser.add_argument("--retries", type=int, default=1)
     parser.add_argument("--max-symbols-per-market", type=int, default=0)
+    parser.add_argument("--checkpoint-every", type=int, default=20)
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     _log(
         f"sector cache refresh start markets={args.markets} delay={args.delay_seconds}s retries={args.retries} "
-        f"max_symbols_per_market={args.max_symbols_per_market} force={bool(args.force)}"
+        f"max_symbols_per_market={args.max_symbols_per_market} checkpoint_every={args.checkpoint_every} force={bool(args.force)}"
     )
     stats = refresh_sector_cache(
         markets=list(args.markets),
@@ -43,6 +44,7 @@ def main() -> int:
         retries=max(int(args.retries), 0),
         max_symbols_per_market=max(int(args.max_symbols_per_market), 0),
         force=bool(args.force),
+        checkpoint_every=max(int(args.checkpoint_every), 1),
     )
     _log(f"sector cache refresh done path={cache_path()}")
     print(json.dumps(stats, ensure_ascii=False, indent=2))
