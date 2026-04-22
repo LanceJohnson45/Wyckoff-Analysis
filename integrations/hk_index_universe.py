@@ -251,11 +251,23 @@ def save_hk_snapshot(snapshot: HkUniverseSnapshot) -> HkUniverseSnapshot:
 
 
 def get_hk_index_union(*, prefer_snapshot: bool = True) -> HkUniverseSnapshot:
-    if prefer_snapshot:
-        cached = load_hk_snapshot()
+    cached = load_hk_snapshot()
+    if prefer_snapshot and cached is not None:
+        return cached
+    try:
+        fresh = fetch_hk_index_union()
+    except Exception as e:
         if cached is not None:
-            return cached
-    fresh = fetch_hk_index_union()
+            return HkUniverseSnapshot(
+                source=f"{cached.source}|stale_snapshot_fallback:{type(e).__name__}",
+                as_of=str(cached.as_of or ""),
+                symbols=list(cached.symbols),
+                hsi_symbols=list(cached.hsi_symbols),
+                hstech_symbols=list(cached.hstech_symbols),
+            )
+        raise RuntimeError(
+            "failed to fetch HK HSI/HSTECH constituents and no local snapshot is available"
+        ) from e
     save_hk_snapshot(fresh)
     return fresh
 

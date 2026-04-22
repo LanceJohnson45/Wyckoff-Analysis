@@ -5,7 +5,7 @@
 
 """
 统一数据源：A 股个股日线 tickflow / tushare / akshare / baostock / efinance 逐级回退；
-US/HK 个股通过 yfinance；A 股指数优先 yfinance，失败回退 akshare；行业/市值仅读缓存。
+US/HK 个股优先 yfinance，失败回退 tickflow；A 股指数优先 yfinance，失败回退 akshare；行业/市值仅读缓存。
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
 """
@@ -58,6 +58,12 @@ _BAOSTOCK_CIRCUIT_NOTE = ""
 _TICKFLOW_CLIENT = None
 _TICKFLOW_CLIENT_READY = False
 _TICKFLOW_DAILY_MAX_COUNT = max(int(os.getenv("TICKFLOW_DAILY_MAX_COUNT", "10000")), 64)
+_TICKFLOW_DAILY_MIN_INTERVAL_SECONDS = max(
+    float(os.getenv("TICKFLOW_DAILY_MIN_INTERVAL_SECONDS", "6.2")),
+    0.0,
+)
+_TICKFLOW_DAILY_LOCK = threading.RLock()
+_TICKFLOW_DAILY_LAST_TS = 0.0
 
 
 def _debug_source_fail(source: str, err: Exception) -> None:
@@ -170,7 +176,9 @@ def _get_tickflow_client():
     if _TICKFLOW_CLIENT_READY:
         return _TICKFLOW_CLIENT
     _TICKFLOW_CLIENT_READY = True
-    api_key = os.getenv("TICKFLOW_API_KEY", "").strip()
+    api_key = os.getenv("TICKFLOW_API_KEY", "").strip() or os.getenv(
+        "TIKFLOW_API_KEY", ""
+    ).strip()
     if not api_key:
         _TICKFLOW_CLIENT = None
         return None
@@ -182,6 +190,20 @@ def _get_tickflow_client():
         _debug_source_fail("tickflow(client_init)", e)
         _TICKFLOW_CLIENT = None
     return _TICKFLOW_CLIENT
+
+
+def _wait_tickflow_daily_slot() -> None:
+    """TickFlow 日线 K 线限频：10/min，按最小间隔串行化请求。"""
+    global _TICKFLOW_DAILY_LAST_TS
+    min_interval = float(_TICKFLOW_DAILY_MIN_INTERVAL_SECONDS)
+    if min_interval <= 0:
+        return
+    with _TICKFLOW_DAILY_LOCK:
+        now = time.monotonic()
+        elapsed = now - float(_TICKFLOW_DAILY_LAST_TS)
+        if _TICKFLOW_DAILY_LAST_TS > 0 and elapsed < min_interval:
+            time.sleep(min_interval - elapsed)
+        _TICKFLOW_DAILY_LAST_TS = time.monotonic()
 
 
 def _tag_source(df: pd.DataFrame, source: str) -> pd.DataFrame:
@@ -768,6 +790,7 @@ def _fetch_stock_tickflow(
     }
     tick_adjust = adjust_map.get(adjust_norm, "forward")
 
+    _wait_tickflow_daily_slot()
     df = client.get_klines(
         symbol=symbol,
         period="1d",
@@ -793,6 +816,101 @@ def _fetch_stock_tickflow(
         prev_ref = close.shift(1)
     pct = (close / prev_ref - 1.0) * 100.0
     amp = (pd.to_numeric(out.get("high"), errors="coerce") - pd.to_numeric(out.get("low"), errors="coerce")) / prev_ref * 100.0
+
+    result = pd.DataFrame(
+        {
+            "日期": out["date"],
+            "开盘": pd.to_numeric(out.get("open"), errors="coerce"),
+            "最高": pd.to_numeric(out.get("high"), errors="coerce"),
+            "最低": pd.to_numeric(out.get("low"), errors="coerce"),
+            "收盘": close,
+            "成交量": pd.to_numeric(out.get("volume"), errors="coerce"),
+            "成交额": pd.to_numeric(out.get("amount"), errors="coerce"),
+            "涨跌幅": pct,
+            "换手率": pd.NA,
+            "振幅": amp,
+        }
+    )
+    return result[
+        [
+            "日期",
+            "开盘",
+            "最高",
+            "最低",
+            "收盘",
+            "成交量",
+            "成交额",
+            "涨跌幅",
+            "换手率",
+            "振幅",
+        ]
+    ].copy()
+
+
+def _fetch_stock_tickflow_global(
+    symbol: str,
+    start: str,
+    end: str,
+    adjust: str,
+    *,
+    market: Literal["cn", "us", "hk"] = "cn",
+) -> pd.DataFrame:
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm == "cn":
+        return _fetch_stock_tickflow(symbol, start, end, adjust)
+
+    client = _get_tickflow_client()
+    if client is None:
+        raise RuntimeError("TickFlow API key 未配置（支持 TICKFLOW_API_KEY / TIKFLOW_API_KEY）")
+
+    try:
+        start_d = datetime.strptime(start, "%Y%m%d").date()
+        end_d = datetime.strptime(end, "%Y%m%d").date()
+    except Exception as e:
+        raise RuntimeError(f"tickflow date parse failed: {start}..{end}") from e
+    if end_d < start_d:
+        raise RuntimeError(f"tickflow invalid range: {start}..{end}")
+
+    day_span = (end_d - start_d).days + 1
+    count = min(max(day_span * 2 + 16, 64), _TICKFLOW_DAILY_MAX_COUNT)
+    adjust_norm = str(adjust or "").strip().lower()
+    adjust_map = {
+        "": "none",
+        "none": "none",
+        "qfq": "forward",
+        "forward": "forward",
+        "hfq": "backward",
+        "backward": "backward",
+    }
+    tick_adjust = adjust_map.get(adjust_norm, "forward")
+
+    _wait_tickflow_daily_slot()
+    df = client.get_klines(
+        symbol=str(symbol).strip().upper(),
+        period="1d",
+        count=count,
+        intraday=False,
+        adjust=tick_adjust,
+    )
+    if df is None or df.empty:
+        raise RuntimeError("tickflow empty")
+
+    start_iso = start_d.isoformat()
+    end_iso = end_d.isoformat()
+    out = df[(df["date"] >= start_iso) & (df["date"] <= end_iso)].copy()
+    if out.empty:
+        raise RuntimeError("tickflow empty in range")
+
+    close = pd.to_numeric(out.get("close"), errors="coerce")
+    prev_close = pd.to_numeric(out.get("prev_close"), errors="coerce")
+    prev_ref = prev_close.where(prev_close > 0)
+    if prev_ref.notna().sum() == 0:
+        prev_ref = close.shift(1)
+    pct = (close / prev_ref - 1.0) * 100.0
+    amp = (
+        pd.to_numeric(out.get("high"), errors="coerce")
+        - pd.to_numeric(out.get("low"), errors="coerce")
+    ) / prev_ref * 100.0
 
     result = pd.DataFrame(
         {
@@ -897,8 +1015,8 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：tickflow 优先（固定 qfq），失败时回退 tushare/akshare/baostock/efinance。
-    US/HK 个股通过 yfinance。
+    个股日线：A 股 tickflow 优先（固定 qfq），失败时回退 tushare/akshare/baostock/efinance。
+    US/HK 个股优先 yfinance，失败回退 tickflow。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_TICKFLOW=1
     - DATA_SOURCE_DISABLE_AKSHARE=1
@@ -920,14 +1038,56 @@ def fetch_stock_hist(
     )
 
     if market_norm in {"us", "hk"}:
+        failed_sources: list[str] = []
+        failed_details: list[str] = []
+        disable_tickflow = os.getenv("DATA_SOURCE_DISABLE_TICKFLOW", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         try:
             return _tag_source(
                 _fetch_stock_yfinance(symbol, start_s, end_s), "yfinance"
             )
         except Exception as e:
-            raise RuntimeError(
-                f"{market_norm.upper()} stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]: {_compact_error(e)}"
-            ) from e
+            _debug_source_fail(f"yfinance({market_norm})", e)
+            failed_sources.append("yfinance")
+            failed_details.append(f"yfinance={_compact_error(e)}")
+
+        if disable_tickflow:
+            failed_sources.append("tickflow(disabled)")
+            failed_details.append("tickflow=disabled_by_env")
+        elif not (
+            os.getenv("TICKFLOW_API_KEY", "").strip()
+            or os.getenv("TIKFLOW_API_KEY", "").strip()
+        ):
+            failed_sources.append("tickflow(unconfigured)")
+            failed_details.append("tickflow=api_key_missing")
+        else:
+            try:
+                return _tag_source(
+                    _fetch_stock_tickflow_global(
+                        symbol,
+                        start_s,
+                        end_s,
+                        adjust,
+                        market=market_norm,
+                    ),
+                    "tickflow",
+                )
+            except Exception as e:
+                _debug_source_fail(f"tickflow({market_norm})", e)
+                failed_sources.append("tickflow")
+                failed_details.append(f"tickflow={_compact_error(e)}")
+
+        detail_suffix = (
+            f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
+        )
+        raise RuntimeError(
+            f"{market_norm.upper()} stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]："
+            f"已按顺序尝试 yfinance→tickflow，均无可用 K 线数据。{detail_suffix}"
+        )
 
     failed_sources: list[str] = []
     failed_details: list[str] = []
@@ -962,9 +1122,12 @@ def fetch_stock_hist(
     if disable_tickflow:
         failed_sources.append("tickflow(disabled)")
         failed_details.append("tickflow=disabled_by_env")
-    elif not os.getenv("TICKFLOW_API_KEY", "").strip():
+    elif not (
+        os.getenv("TICKFLOW_API_KEY", "").strip()
+        or os.getenv("TIKFLOW_API_KEY", "").strip()
+    ):
         failed_sources.append("tickflow(unconfigured)")
-        failed_details.append("tickflow=api_key_missing(购买: https://tickflow.org/auth/register?ref=5N4NKTCPL4)")
+        failed_details.append("tickflow=api_key_missing(支持 TICKFLOW_API_KEY / TIKFLOW_API_KEY)")
     else:
         try:
             return _tag_source(

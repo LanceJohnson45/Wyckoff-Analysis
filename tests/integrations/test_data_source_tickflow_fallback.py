@@ -81,3 +81,40 @@ def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pyt
     with pytest.raises(RuntimeError) as exc:
         ds.fetch_stock_hist("000001", "2026-04-10", "2026-04-18", adjust="qfq")
     assert "tickflow→tushare→akshare→baostock→efinance" in str(exc.value)
+
+
+def test_fetch_stock_hist_us_prefers_yfinance_then_tickflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TIKFLOW_API_KEY", "dummy")
+    monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)
+
+    monkeypatch.setattr(
+        ds,
+        "_fetch_stock_yfinance",
+        lambda *args, **kwargs: _sample_cn_hist(),
+    )
+
+    def _raise_tickflow_if_called(*args, **kwargs):
+        raise RuntimeError("should_not_call")
+
+    monkeypatch.setattr(ds, "_fetch_stock_tickflow_global", _raise_tickflow_if_called)
+    out = ds.fetch_stock_hist("AAPL", "2026-04-10", "2026-04-18", adjust="qfq", market="us")
+    assert not out.empty
+    assert out.attrs.get("source") == "yfinance"
+
+
+def test_fetch_stock_hist_hk_falls_back_to_tickflow_when_yfinance_failed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TIKFLOW_API_KEY", "dummy")
+    monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)
+    monkeypatch.setattr(
+        ds,
+        "_fetch_stock_yfinance",
+        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("yf failed")),
+    )
+    monkeypatch.setattr(
+        ds,
+        "_fetch_stock_tickflow_global",
+        lambda *args, **kwargs: _sample_cn_hist(),
+    )
+    out = ds.fetch_stock_hist("0700.HK", "2026-04-10", "2026-04-18", adjust="qfq", market="hk")
+    assert not out.empty
+    assert out.attrs.get("source") == "tickflow"
