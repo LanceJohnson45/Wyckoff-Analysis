@@ -771,7 +771,7 @@ def run(
     regime = (benchmark_context or {}).get("regime", "NEUTRAL")
     sector_rotation_ctx = (benchmark_context or {}).get("sector_rotation", {}) or {}
     sector_rotation_map = sector_rotation_ctx.get("state_map", {}) or {}
-    sector_map = fetch_sector_map() if market_norm == "cn" else {}
+    sector_map = fetch_sector_map()
     market_cap_map = fetch_market_cap_map() if market_norm == "cn" else {}
     benchmark_ret_10: float | None = None
     try:

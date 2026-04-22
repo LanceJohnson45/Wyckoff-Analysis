@@ -1,0 +1,181 @@
+{
+  "yfinance_version": "1.2.1",
+  "targets": {
+    "us": [
+      "MSFT",
+      "AAPL",
+      "NVDA"
+    ],
+    "hk": [
+      "0700.HK",
+      "9988.HK",
+      "1810.HK"
+    ],
+    "cn": [
+      "600519.SS",
+      "000001.SZ",
+      "300750.SZ"
+    ]
+  },
+  "tests": {
+    "us": {
+      "MSFT": {
+        "symbol": "MSFT",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: argument of type 'NoneType' is not iterable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "AAPL": {
+        "symbol": "AAPL",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: argument of type 'NoneType' is not iterable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "NVDA": {
+        "symbol": "NVDA",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      }
+    },
+    "hk": {
+      "0700.HK": {
+        "symbol": "0700.HK",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "9988.HK": {
+        "symbol": "9988.HK",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "1810.HK": {
+        "symbol": "1810.HK",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      }
+    },
+    "cn": {
+      "600519.SS": {
+        "symbol": "600519.SS",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "000001.SZ": {
+        "symbol": "000001.SZ",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      },
+      "300750.SZ": {
+        "symbol": "300750.SZ",
+        "ticker_ok": false,
+        "ticker_error": "DNSError: Failed to perform, curl: (6) Could not resolve host: guce.yahoo.com. See https://curl.se/libcurl/c/libcurl-errors.html first for more details.",
+        "ticker_info": {},
+        "sector_key": null,
+        "industry_key": null,
+        "ticker_history_error": "TypeError: 'NoneType' object is not subscriptable",
+        "sector_probe": {
+          "ok": false,
+          "error": "sectorKey_missing"
+        },
+        "industry_probe": {
+          "ok": false,
+          "error": "industryKey_missing"
+        }
+      }
+    }
+  }
+}

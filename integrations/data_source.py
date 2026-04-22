@@ -1332,7 +1332,7 @@ def fetch_index_hist(
 # --- 行业 & 市值批量获取（仅缓存） ---
 
 _DATA_CACHE_DIR = Path(__file__).resolve().parent.parent / "data"
-_SECTOR_CACHE = _DATA_CACHE_DIR / "sector_map_cache.json"
+_SECTOR_CACHE = _DATA_CACHE_DIR / "yahoo_sector_map_cache.json"
 _MARKET_CAP_CACHE = _DATA_CACHE_DIR / "market_cap_cache.json"
 _SECTOR_CACHE_TTL = int(os.getenv("SECTOR_CACHE_TTL_SECONDS", str(7 * 24 * 60 * 60)))
 _MARKET_CAP_CACHE_TTL = int(
@@ -1373,24 +1373,15 @@ def _ts_code_to_symbol(ts_code: str) -> str:
 
 def fetch_sector_map() -> dict[str, str]:
     """
-    全市场 code->行业映射。仅使用本地缓存，不再调用 tushare 刷新。
+    全市场 symbol/code -> Yahoo 统一行业映射。仅使用本地缓存。
+    CN 返回 6 位代码键；HK/US 返回 Yahoo 符号键。
     """
     try:
-        if (
-            _SECTOR_CACHE.exists()
-            and (time.time() - _SECTOR_CACHE.stat().st_mtime) < _SECTOR_CACHE_TTL
-        ):
-            with open(_SECTOR_CACHE, "r", encoding="utf-8") as f:
-                return json.load(f)
+        from integrations.sector_map_yfinance import sector_map_from_cache
+
+        return sector_map_from_cache()
     except Exception as e:
         _debug_source_fail("sector_cache_read", e)
-
-    try:
-        if _SECTOR_CACHE.exists():
-            with open(_SECTOR_CACHE, "r", encoding="utf-8") as f:
-                return json.load(f)
-    except Exception as e:
-        _debug_source_fail("sector_cache_fallback_read", e)
     return {}
 
 

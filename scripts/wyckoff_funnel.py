@@ -1497,10 +1497,10 @@ def run_funnel_job(
     # 批量元数据
     sector_map: dict[str, str]
     market_cap_map: dict[str, float]
+    print(f"[funnel] 加载行业映射...")
+    sector_map = fetch_sector_map()
+    print(f"[funnel] 行业映射加载结果: {len(sector_map)}")
     if market == "cn":
-        print(f"[funnel] 加载行业映射...")
-        sector_map = fetch_sector_map()
-        print(f"[funnel] 行业映射加载结果: {len(sector_map)}")
         print(f"[funnel] 加载市值数据...")
         market_cap_map = fetch_market_cap_map()
         print(f"[funnel] 市值映射加载结果: {len(market_cap_map)}")
@@ -1513,9 +1513,12 @@ def run_funnel_job(
                 "[funnel] ⚠️ 行业映射为空（仅缓存模式下可能尚未准备好），Top行业/板块轮动将不可用"
             )
     else:
-        sector_map = {}
         market_cap_map = {}
-        print("[funnel] US 模式暂不加载行业与市值映射，按价格/量能结构筛选")
+        if not sector_map:
+            print(
+                "[funnel] ⚠️ Yahoo 行业映射为空，Top行业/板块轮动将不可用"
+            )
+        print("[funnel] 非CN模式暂不加载市值映射，按价格/量能结构筛选")
     print(f"[funnel] 加载股票名称...")
     name_map = _stock_name_map(market)
 
@@ -1919,7 +1922,7 @@ def run(
     benchmark_context = metrics.get("benchmark_context", {}) or {}
     market = str(metrics.get("market", "cn") or "cn").strip().lower()
     name_map = _stock_name_map(market)
-    sector_map = fetch_sector_map() if market == "cn" else {}
+    sector_map = fetch_sector_map()
     latest_close_map = metrics.get("latest_close_map", {}) or {}
     if latest_close_map:
         benchmark_context["latest_close_map"] = latest_close_map

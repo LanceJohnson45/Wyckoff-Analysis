@@ -723,12 +723,11 @@ def run_backtest(
                 f"[backtest] 元数据从快照加载: sector_map={len(sector_map)}, market_cap_map={len(market_cap_map)}"
             )
         else:
+            sector_map = fetch_sector_map()
             if market_norm == "cn":
                 market_cap_map = fetch_market_cap_map()
-                sector_map = fetch_sector_map()
             else:
                 market_cap_map = {}
-                sector_map = {}
             print(
                 "[backtest] ⚠️ 使用当前截面市值/行业映射（会引入 look-ahead bias）"
             )
