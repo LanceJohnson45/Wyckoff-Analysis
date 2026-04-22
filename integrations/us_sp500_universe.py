@@ -3,20 +3,19 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from io import StringIO
 from pathlib import Path
+import re
 from tempfile import NamedTemporaryFile
-
-import pandas as pd
-import requests
-
-from integrations.fetch_a_share_csv import _normalize_symbols
+from typing import Any
 
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _SNAPSHOT_PATH = _DATA_DIR / "us_sp500_constituents.json"
-_WIKI_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-_WIKI_API_URL = "https://en.wikipedia.org/w/api.php?action=parse&page=List_of_S%26P_500_companies&prop=text&formatversion=2&format=json"
+_INPUT_PATHS = {
+    "dowjones": _DATA_DIR / "dowjones.json",
+    "sp500": _DATA_DIR / "sp500.json",
+    "qqq": _DATA_DIR / "qqq.json",
+}
 
 
 @dataclass(frozen=True)
@@ -60,17 +59,87 @@ def _normalize_yahoo_symbol(raw: object) -> str:
     return text
 
 
-def _snapshot_payload(symbols: list[str], *, source: str) -> dict:
+def _normalize_symbols(symbols: list[str], *, market: str = "us") -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    market_norm = str(market or "us").strip().lower()
+    for raw in symbols:
+        s = str(raw).strip()
+        if not s:
+            continue
+        if market_norm == "us":
+            s = s.upper()
+            if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", s):
+                continue
+        elif market_norm == "hk":
+            s = s.upper()
+            if s.endswith(".HK"):
+                s = s[:-3]
+            digits = "".join(ch for ch in s if ch.isdigit())
+            if not digits:
+                continue
+            s = f"{digits[-4:].zfill(4)}.HK"
+        else:
+            if not re.fullmatch(r"\d{6}", s):
+                continue
+        if s in seen:
+            continue
+        seen.add(s)
+        out.append(s)
+    return out
+
+
+def _snapshot_payload(symbols: list[str], *, source: str) -> dict[str, Any]:
     now = datetime.now(timezone.utc).isoformat()
     today = date.today().isoformat()
     return {
         "market": "us",
-        "index": "sp500",
+        "index": "dowjones_sp500_qqq_union",
         "source": source,
         "as_of": today,
         "updated_at": now,
         "symbols": symbols,
     }
+
+
+def _load_json_file(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as e:
+        raise RuntimeError(f"missing local US constituent file: {path.name}") from e
+    except Exception as e:
+        raise RuntimeError(f"failed to read local US constituent file {path.name}: {e}") from e
+
+
+def _parse_symbols_from_local_rows(rows: Any) -> list[str]:
+    if not isinstance(rows, list):
+        raise RuntimeError("US constituent file payload must be a JSON array")
+    seen: set[str] = set()
+    symbols: list[str] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        symbol = _normalize_yahoo_symbol(row.get("symbol"))
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        symbols.append(symbol)
+    normalized = _normalize_symbols(symbols, market="us")
+    if not normalized:
+        raise RuntimeError("failed to parse US local constituent payload")
+    return normalized
+
+
+def _resolve_as_of(paths: list[Path]) -> str:
+    latest_ts = 0.0
+    for path in paths:
+        try:
+            latest_ts = max(latest_ts, path.stat().st_mtime)
+        except Exception:
+            continue
+    if latest_ts > 0:
+        return datetime.fromtimestamp(latest_ts, tz=timezone.utc).date().isoformat()
+    return date.today().isoformat()
 
 
 def snapshot_path() -> Path:
@@ -112,41 +181,38 @@ def save_sp500_snapshot(symbols: list[str], *, source: str) -> UniverseSnapshot:
 
 
 def fetch_sp500_constituents() -> UniverseSnapshot:
-    try:
-        resp = requests.get(_WIKI_API_URL, headers={"User-Agent": "Mozilla/5.0 (compatible; Wyckoff-Analysis/1.0)"}, timeout=30)
-        resp.raise_for_status()
-        payload = resp.json()
-        html = str((payload.get("parse") or {}).get("text") or "")
-        if not html:
-            raise RuntimeError("MediaWiki parse API returned empty HTML")
-        tables = pd.read_html(StringIO(html))
-    except Exception as e:
-        raise RuntimeError(f"failed to fetch S&P 500 constituents: {e}") from e
-    if not tables:
-        raise RuntimeError("S&P 500 constituents table not found")
-    table = tables[0]
-    if "Symbol" not in table.columns:
-        raise RuntimeError("S&P 500 constituents table missing Symbol column")
-    raw_symbols = table["Symbol"].astype(str).tolist()
-    symbols = _normalize_symbols(
-        [_normalize_yahoo_symbol(x) for x in raw_symbols],
-        market="us",
-    )
+    all_symbols: list[str] = []
+    input_paths = list(_INPUT_PATHS.values())
+    for path in input_paths:
+        payload = _load_json_file(path)
+        all_symbols.extend(_parse_symbols_from_local_rows(payload))
+    symbols = _normalize_symbols(all_symbols, market="us")
     if not symbols:
-        raise RuntimeError("normalized S&P 500 universe is empty")
+        raise RuntimeError("normalized US local universe is empty")
     return UniverseSnapshot(
-        source="wikipedia_sp500",
-        as_of=date.today().isoformat(),
+        source="local_data_dowjones_sp500_qqq",
+        as_of=_resolve_as_of(input_paths),
         symbols=symbols,
     )
 
 
 def get_sp500_constituents(*, prefer_snapshot: bool = True) -> UniverseSnapshot:
-    if prefer_snapshot:
-        snap = load_sp500_snapshot()
-        if snap is not None:
-            return snap
-    return fetch_sp500_constituents()
+    cached = load_sp500_snapshot()
+    try:
+        fresh = fetch_sp500_constituents()
+    except Exception as e:
+        if cached is not None:
+            return UniverseSnapshot(
+                source=f"{cached.source}|stale_snapshot_fallback:{type(e).__name__}",
+                as_of=str(cached.as_of or ""),
+                symbols=list(cached.symbols),
+            )
+        raise RuntimeError(
+            "failed to load US constituents from local data files and no snapshot is available"
+        ) from e
+    if not prefer_snapshot or cached is None or cached.symbols != fresh.symbols:
+        save_sp500_snapshot(fresh.symbols, source=fresh.source)
+    return fresh
 
 
 def diff_symbols(previous: list[str], current: list[str]) -> tuple[list[str], list[str]]:

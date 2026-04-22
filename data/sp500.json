@@ -1,0 +1,4026 @@
+[
+    {
+        "name": "NVIDIA Corp",
+        "symbol": "NVDA",
+        "weight": "7.56%",
+        "price": "200.95",
+        "change": "1.07",
+        "changePercent": "(0.54%)"
+    },
+    {
+        "name": "Apple Inc",
+        "symbol": "AAPL",
+        "weight": "6.08%",
+        "price": "267.80",
+        "change": "1.63",
+        "changePercent": "(0.61%)"
+    },
+    {
+        "name": "Microsoft Corp",
+        "symbol": "MSFT",
+        "weight": "4.90%",
+        "price": "426.46",
+        "change": "2.30",
+        "changePercent": "(0.54%)"
+    },
+    {
+        "name": "Amazon.com Inc",
+        "symbol": "AMZN",
+        "weight": "4.20%",
+        "price": "252.42",
+        "change": "2.51",
+        "changePercent": "(1.00%)"
+    },
+    {
+        "name": "Alphabet Inc",
+        "symbol": "GOOGL",
+        "weight": "3.26%",
+        "price": "337.14",
+        "change": "4.85",
+        "changePercent": "(1.46%)"
+    },
+    {
+        "name": "Alphabet Inc",
+        "symbol": "GOOG",
+        "weight": "3.03%",
+        "price": "334.91",
+        "change": "4.44",
+        "changePercent": "(1.34%)"
+    },
+    {
+        "name": "Broadcom Inc",
+        "symbol": "AVGO",
+        "weight": "2.98%",
+        "price": "406.70",
+        "change": "4.53",
+        "changePercent": "(1.13%)"
+    },
+    {
+        "name": "Meta Platforms Inc",
+        "symbol": "META",
+        "weight": "2.65%",
+        "price": "674.59",
+        "change": "5.75",
+        "changePercent": "(0.86%)"
+    },
+    {
+        "name": "Tesla Inc",
+        "symbol": "TSLA",
+        "weight": "2.25%",
+        "price": "387.58",
+        "change": "1.16",
+        "changePercent": "(0.30%)"
+    },
+    {
+        "name": "Walmart Inc",
+        "symbol": "WMT",
+        "weight": "1.60%",
+        "price": "130.03",
+        "change": "0.43",
+        "changePercent": "(0.33%)"
+    },
+    {
+        "name": "Berkshire Hathaway Inc",
+        "symbol": "BRK.B",
+        "weight": "1.56%",
+        "price": "468.81",
+        "change": "0.31",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "JPMorgan Chase & Co",
+        "symbol": "JPM",
+        "weight": "1.31%",
+        "price": "315.00",
+        "change": "2.00",
+        "changePercent": "(0.64%)"
+    },
+    {
+        "name": "Eli Lilly & Co",
+        "symbol": "LLY",
+        "weight": "1.25%",
+        "price": "906.03",
+        "change": "3.01",
+        "changePercent": "(0.33%)"
+    },
+    {
+        "name": "Exxon Mobil Corp",
+        "symbol": "XOM",
+        "weight": "0.96%",
+        "price": "149.18",
+        "change": "0.82",
+        "changePercent": "(0.55%)"
+    },
+    {
+        "name": "Visa Inc",
+        "symbol": "V",
+        "weight": "0.93%",
+        "price": "311.00",
+        "change": "1.06",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "Johnson & Johnson",
+        "symbol": "JNJ",
+        "weight": "0.84%",
+        "price": "226.10",
+        "change": "-0.06",
+        "changePercent": "(-0.03%)"
+    },
+    {
+        "name": "Oracle Corp",
+        "symbol": "ORCL",
+        "weight": "0.83%",
+        "price": "185.80",
+        "change": "4.63",
+        "changePercent": "(2.56%)"
+    },
+    {
+        "name": "Micron Technology Inc",
+        "symbol": "MU",
+        "weight": "0.81%",
+        "price": "462.81",
+        "change": "13.43",
+        "changePercent": "(2.99%)"
+    },
+    {
+        "name": "Advanced Micro Devices Inc",
+        "symbol": "AMD",
+        "weight": "0.74%",
+        "price": "291.40",
+        "change": "6.91",
+        "changePercent": "(2.43%)"
+    },
+    {
+        "name": "Mastercard Inc",
+        "symbol": "MA",
+        "weight": "0.71%",
+        "price": "512.07",
+        "change": "0.72",
+        "changePercent": "(0.14%)"
+    },
+    {
+        "name": "Costco Wholesale Corp",
+        "symbol": "COST",
+        "weight": "0.69%",
+        "price": "1005.29",
+        "change": "-0.52",
+        "changePercent": "(-0.05%)"
+    },
+    {
+        "name": "Netflix Inc",
+        "symbol": "NFLX",
+        "weight": "0.61%",
+        "price": "93.07",
+        "change": "0.49",
+        "changePercent": "(0.53%)"
+    },
+    {
+        "name": "Bank of America Corp",
+        "symbol": "BAC",
+        "weight": "0.59%",
+        "price": "53.70",
+        "change": "0.23",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Caterpillar Inc",
+        "symbol": "CAT",
+        "weight": "0.59%",
+        "price": "815.74",
+        "change": "15.29",
+        "changePercent": "(1.91%)"
+    },
+    {
+        "name": "Chevron Corp",
+        "symbol": "CVX",
+        "weight": "0.58%",
+        "price": "186.97",
+        "change": "1.00",
+        "changePercent": "(0.54%)"
+    },
+    {
+        "name": "AbbVie Inc",
+        "symbol": "ABBV",
+        "weight": "0.56%",
+        "price": "204.10",
+        "change": "-1.02",
+        "changePercent": "(-0.50%)"
+    },
+    {
+        "name": "Cisco Systems Inc",
+        "symbol": "CSCO",
+        "weight": "0.55%",
+        "price": "89.92",
+        "change": "0.22",
+        "changePercent": "(0.25%)"
+    },
+    {
+        "name": "Palantir Technologies Inc",
+        "symbol": "PLTR",
+        "weight": "0.55%",
+        "price": "148.32",
+        "change": "2.35",
+        "changePercent": "(1.61%)"
+    },
+    {
+        "name": "Home Depot Inc/The",
+        "symbol": "HD",
+        "weight": "0.53%",
+        "price": "344.16",
+        "change": "0.24",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "Intel Corp",
+        "symbol": "INTC",
+        "weight": "0.53%",
+        "price": "67.93",
+        "change": "1.67",
+        "changePercent": "(2.52%)"
+    },
+    {
+        "name": "Procter & Gamble Co/The",
+        "symbol": "PG",
+        "weight": "0.51%",
+        "price": "142.23",
+        "change": "-0.09",
+        "changePercent": "(-0.06%)"
+    },
+    {
+        "name": "Lam Research Corp",
+        "symbol": "LRCX",
+        "weight": "0.51%",
+        "price": "261.89",
+        "change": "3.52",
+        "changePercent": "(1.36%)"
+    },
+    {
+        "name": "Coca-Cola Co/The",
+        "symbol": "KO",
+        "weight": "0.50%",
+        "price": "74.82",
+        "change": "0.12",
+        "changePercent": "(0.16%)"
+    },
+    {
+        "name": "UnitedHealth Group Inc",
+        "symbol": "UNH",
+        "weight": "0.49%",
+        "price": "350.08",
+        "change": "4.07",
+        "changePercent": "(1.18%)"
+    },
+    {
+        "name": "Applied Materials Inc",
+        "symbol": "AMAT",
+        "weight": "0.49%",
+        "price": "399.75",
+        "change": "5.43",
+        "changePercent": "(1.38%)"
+    },
+    {
+        "name": "Morgan Stanley",
+        "symbol": "MS",
+        "weight": "0.47%",
+        "price": "190.75",
+        "change": "1.44",
+        "changePercent": "(0.76%)"
+    },
+    {
+        "name": "General Electric Co",
+        "symbol": "GE",
+        "weight": "0.46%",
+        "price": "286.63",
+        "change": "-0.10",
+        "changePercent": "(-0.03%)"
+    },
+    {
+        "name": "GE Vernova Inc",
+        "symbol": "GEV",
+        "weight": "0.45%",
+        "price": "1076.49",
+        "change": "85.19",
+        "changePercent": "(8.59%)"
+    },
+    {
+        "name": "Merck & Co Inc",
+        "symbol": "MRK",
+        "weight": "0.43%",
+        "price": "112.69",
+        "change": "0.13",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Goldman Sachs Group Inc/The",
+        "symbol": "GS",
+        "weight": "0.43%",
+        "price": "937.19",
+        "change": "10.64",
+        "changePercent": "(1.15%)"
+    },
+    {
+        "name": "RTX Corp",
+        "symbol": "RTX",
+        "weight": "0.39%",
+        "price": "187.83",
+        "change": "0.66",
+        "changePercent": "(0.35%)"
+    },
+    {
+        "name": "Wells Fargo & Co",
+        "symbol": "WFC",
+        "weight": "0.39%",
+        "price": "81.73",
+        "change": "0.19",
+        "changePercent": "(0.23%)"
+    },
+    {
+        "name": "Philip Morris International Inc",
+        "symbol": "PM",
+        "weight": "0.38%",
+        "price": "157.38",
+        "change": "4.13",
+        "changePercent": "(2.70%)"
+    },
+    {
+        "name": "International Business Machines Corp",
+        "symbol": "IBM",
+        "weight": "0.37%",
+        "price": "256.27",
+        "change": "0.59",
+        "changePercent": "(0.23%)"
+    },
+    {
+        "name": "KLA Corp",
+        "symbol": "KLAC",
+        "weight": "0.37%",
+        "price": "1810.00",
+        "change": "24.63",
+        "changePercent": "(1.38%)"
+    },
+    {
+        "name": "Linde PLC",
+        "symbol": "LIN",
+        "weight": "0.36%",
+        "price": "495.85",
+        "change": "1.01",
+        "changePercent": "(0.20%)"
+    },
+    {
+        "name": "American Express Co",
+        "symbol": "AXP",
+        "weight": "0.35%",
+        "price": "332.18",
+        "change": "2.38",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Citigroup Inc",
+        "symbol": "C",
+        "weight": "0.35%",
+        "price": "132.43",
+        "change": "0.75",
+        "changePercent": "(0.57%)"
+    },
+    {
+        "name": "Arista Networks Inc",
+        "symbol": "ANET",
+        "weight": "0.34%",
+        "price": "174.50",
+        "change": "1.64",
+        "changePercent": "(0.95%)"
+    },
+    {
+        "name": "McDonald's Corp",
+        "symbol": "MCD",
+        "weight": "0.33%",
+        "price": "302.28",
+        "change": "0.44",
+        "changePercent": "(0.15%)"
+    },
+    {
+        "name": "Texas Instruments Inc",
+        "symbol": "TXN",
+        "weight": "0.33%",
+        "price": "235.83",
+        "change": "2.68",
+        "changePercent": "(1.15%)"
+    },
+    {
+        "name": "T-Mobile US Inc",
+        "symbol": "TMUS",
+        "weight": "0.33%",
+        "price": "192.62",
+        "change": "-2.77",
+        "changePercent": "(-1.42%)"
+    },
+    {
+        "name": "PepsiCo Inc",
+        "symbol": "PEP",
+        "weight": "0.33%",
+        "price": "155.10",
+        "change": "0.19",
+        "changePercent": "(0.12%)"
+    },
+    {
+        "name": "Thermo Fisher Scientific Inc",
+        "symbol": "TMO",
+        "weight": "0.31%",
+        "price": "531.10",
+        "change": "6.53",
+        "changePercent": "(1.24%)"
+    },
+    {
+        "name": "Verizon Communications Inc",
+        "symbol": "VZ",
+        "weight": "0.30%",
+        "price": "45.90",
+        "change": "-0.37",
+        "changePercent": "(-0.80%)"
+    },
+    {
+        "name": "NextEra Energy Inc",
+        "symbol": "NEE",
+        "weight": "0.29%",
+        "price": "91.36",
+        "change": "0.76",
+        "changePercent": "(0.83%)"
+    },
+    {
+        "name": "Analog Devices Inc",
+        "symbol": "ADI",
+        "weight": "0.29%",
+        "price": "380.21",
+        "change": "4.94",
+        "changePercent": "(1.32%)"
+    },
+    {
+        "name": "Amgen Inc",
+        "symbol": "AMGN",
+        "weight": "0.29%",
+        "price": "344.02",
+        "change": "-0.84",
+        "changePercent": "(-0.24%)"
+    },
+    {
+        "name": "Walt Disney Co/The",
+        "symbol": "DIS",
+        "weight": "0.29%",
+        "price": "104.69",
+        "change": "0.39",
+        "changePercent": "(0.38%)"
+    },
+    {
+        "name": "Amphenol Corp",
+        "symbol": "APH",
+        "weight": "0.28%",
+        "price": "148.37",
+        "change": "-3.56",
+        "changePercent": "(-2.34%)"
+    },
+    {
+        "name": "Boeing Co/The",
+        "symbol": "BA",
+        "weight": "0.28%",
+        "price": "228.48",
+        "change": "9.32",
+        "changePercent": "(4.25%)"
+    },
+    {
+        "name": "TJX Cos Inc/The",
+        "symbol": "TJX",
+        "weight": "0.27%",
+        "price": "160.21",
+        "change": "0.96",
+        "changePercent": "(0.60%)"
+    },
+    {
+        "name": "AT&T Inc",
+        "symbol": "T",
+        "weight": "0.27%",
+        "price": "25.02",
+        "change": "-0.86",
+        "changePercent": "(-3.34%)"
+    },
+    {
+        "name": "Gilead Sciences Inc",
+        "symbol": "GILD",
+        "weight": "0.26%",
+        "price": "133.38",
+        "change": "0.09",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "Intuitive Surgical Inc",
+        "symbol": "ISRG",
+        "weight": "0.25%",
+        "price": "463.00",
+        "change": "11.71",
+        "changePercent": "(2.60%)"
+    },
+    {
+        "name": "Blackrock Inc",
+        "symbol": "BLK",
+        "weight": "0.25%",
+        "price": "1052.97",
+        "change": "10.12",
+        "changePercent": "(0.97%)"
+    },
+    {
+        "name": "AppLovin Corp",
+        "symbol": "APP",
+        "weight": "0.25%",
+        "price": "481.54",
+        "change": "8.36",
+        "changePercent": "(1.77%)"
+    },
+    {
+        "name": "Eaton Corp PLC",
+        "symbol": "ETN",
+        "weight": "0.25%",
+        "price": "416.60",
+        "change": "6.90",
+        "changePercent": "(1.68%)"
+    },
+    {
+        "name": "Abbott Laboratories",
+        "symbol": "ABT",
+        "weight": "0.25%",
+        "price": "92.82",
+        "change": "0.10",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Charles Schwab Corp/The",
+        "symbol": "SCHW",
+        "weight": "0.25%",
+        "price": "92.38",
+        "change": "0.41",
+        "changePercent": "(0.44%)"
+    },
+    {
+        "name": "Deere & Co",
+        "symbol": "DE",
+        "weight": "0.25%",
+        "price": "593.16",
+        "change": "5.86",
+        "changePercent": "(1.00%)"
+    },
+    {
+        "name": "Uber Technologies Inc",
+        "symbol": "UBER",
+        "weight": "0.25%",
+        "price": "77.91",
+        "change": "0.65",
+        "changePercent": "(0.84%)"
+    },
+    {
+        "name": "Pfizer Inc",
+        "symbol": "PFE",
+        "weight": "0.24%",
+        "price": "27.30",
+        "change": "-0.00",
+        "changePercent": "(-0.02%)"
+    },
+    {
+        "name": "Salesforce Inc",
+        "symbol": "CRM",
+        "weight": "0.24%",
+        "price": "188.07",
+        "change": "0.96",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "Booking Holdings Inc",
+        "symbol": "BKNG",
+        "weight": "0.23%",
+        "price": "191.01",
+        "change": "0.15",
+        "changePercent": "(0.08%)"
+    },
+    {
+        "name": "Union Pacific Corp",
+        "symbol": "UNP",
+        "weight": "0.23%",
+        "price": "251.22",
+        "change": "-0.03",
+        "changePercent": "(-0.01%)"
+    },
+    {
+        "name": "ConocoPhillips",
+        "symbol": "COP",
+        "weight": "0.23%",
+        "price": "120.75",
+        "change": "0.49",
+        "changePercent": "(0.41%)"
+    },
+    {
+        "name": "QUALCOMM Inc",
+        "symbol": "QCOM",
+        "weight": "0.23%",
+        "price": "136.39",
+        "change": "0.83",
+        "changePercent": "(0.61%)"
+    },
+    {
+        "name": "Welltower Inc",
+        "symbol": "WELL",
+        "weight": "0.22%",
+        "price": "205.44",
+        "change": "-0.95",
+        "changePercent": "(-0.46%)"
+    },
+    {
+        "name": "Corning Inc",
+        "symbol": "GLW",
+        "weight": "0.22%",
+        "price": "168.25",
+        "change": "2.80",
+        "changePercent": "(1.69%)"
+    },
+    {
+        "name": "Honeywell International Inc",
+        "symbol": "HON",
+        "weight": "0.22%",
+        "price": "225.00",
+        "change": "2.78",
+        "changePercent": "(1.25%)"
+    },
+    {
+        "name": "Palo Alto Networks Inc",
+        "symbol": "PANW",
+        "weight": "0.22%",
+        "price": "175.75",
+        "change": "0.79",
+        "changePercent": "(0.45%)"
+    },
+    {
+        "name": "Lowe's Cos Inc",
+        "symbol": "LOW",
+        "weight": "0.22%",
+        "price": "250.92",
+        "change": "-0.27",
+        "changePercent": "(-0.11%)"
+    },
+    {
+        "name": "Dell Technologies Inc",
+        "symbol": "DELL",
+        "weight": "0.22%",
+        "price": "215.50",
+        "change": "3.14",
+        "changePercent": "(1.48%)"
+    },
+    {
+        "name": "Danaher Corp",
+        "symbol": "DHR",
+        "weight": "0.21%",
+        "price": "194.48",
+        "change": "-0.06",
+        "changePercent": "(-0.03%)"
+    },
+    {
+        "name": "Sandisk Corp/DE",
+        "symbol": "SNDK",
+        "weight": "0.21%",
+        "price": "922.91",
+        "change": "19.42",
+        "changePercent": "(2.15%)"
+    },
+    {
+        "name": "Western Digital Corp",
+        "symbol": "WDC",
+        "weight": "0.21%",
+        "price": "398.13",
+        "change": "14.31",
+        "changePercent": "(3.73%)"
+    },
+    {
+        "name": "Prologis Inc",
+        "symbol": "PLD",
+        "weight": "0.21%",
+        "price": "142.14",
+        "change": "0.22",
+        "changePercent": "(0.16%)"
+    },
+    {
+        "name": "Lockheed Martin Corp",
+        "symbol": "LMT",
+        "weight": "0.20%",
+        "price": "573.80",
+        "change": "1.85",
+        "changePercent": "(0.32%)"
+    },
+    {
+        "name": "S&P Global Inc",
+        "symbol": "SPGI",
+        "weight": "0.20%",
+        "price": "446.54",
+        "change": "1.87",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Seagate Technology Holdings PLC",
+        "symbol": "STX",
+        "weight": "0.20%",
+        "price": "580.04",
+        "change": "20.14",
+        "changePercent": "(3.60%)"
+    },
+    {
+        "name": "Stryker Corp",
+        "symbol": "SYK",
+        "weight": "0.20%",
+        "price": "330.81",
+        "change": "3.51",
+        "changePercent": "(1.07%)"
+    },
+    {
+        "name": "Capital One Financial Corp",
+        "symbol": "COF",
+        "weight": "0.19%",
+        "price": "202.09",
+        "change": "-0.41",
+        "changePercent": "(-0.20%)"
+    },
+    {
+        "name": "Chubb Ltd",
+        "symbol": "CB",
+        "weight": "0.19%",
+        "price": "322.31",
+        "change": "-6.98",
+        "changePercent": "(-2.12%)"
+    },
+    {
+        "name": "Parker-Hannifin Corp",
+        "symbol": "PH",
+        "weight": "0.19%",
+        "price": "984.44",
+        "change": "11.75",
+        "changePercent": "(1.21%)"
+    },
+    {
+        "name": "Progressive Corp/The",
+        "symbol": "PGR",
+        "weight": "0.19%",
+        "price": "207.48",
+        "change": "-0.02",
+        "changePercent": "(-0.01%)"
+    },
+    {
+        "name": "Bristol-Myers Squibb Co",
+        "symbol": "BMY",
+        "weight": "0.19%",
+        "price": "59.30",
+        "change": "-0.09",
+        "changePercent": "(-0.16%)"
+    },
+    {
+        "name": "Newmont Corp",
+        "symbol": "NEM",
+        "weight": "0.19%",
+        "price": "111.31",
+        "change": "2.01",
+        "changePercent": "(1.84%)"
+    },
+    {
+        "name": "Accenture PLC",
+        "symbol": "ACN",
+        "weight": "0.19%",
+        "price": "195.24",
+        "change": "0.82",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Vertiv Holdings",
+        "symbol": "VRT",
+        "weight": "0.18%",
+        "price": "305.74",
+        "change": "-6.70",
+        "changePercent": "(-2.15%)"
+    },
+    {
+        "name": "Crowdstrike Holdings Inc",
+        "symbol": "CRWD",
+        "weight": "0.18%",
+        "price": "455.00",
+        "change": "5.39",
+        "changePercent": "(1.20%)"
+    },
+    {
+        "name": "Intuit Inc",
+        "symbol": "INTU",
+        "weight": "0.17%",
+        "price": "406.65",
+        "change": "1.80",
+        "changePercent": "(0.45%)"
+    },
+    {
+        "name": "Vertex Pharmaceuticals Inc",
+        "symbol": "VRTX",
+        "weight": "0.17%",
+        "price": "439.05",
+        "change": "2.46",
+        "changePercent": "(0.56%)"
+    },
+    {
+        "name": "Starbucks Corp",
+        "symbol": "SBUX",
+        "weight": "0.17%",
+        "price": "98.00",
+        "change": "0.20",
+        "changePercent": "(0.20%)"
+    },
+    {
+        "name": "Equinix Inc",
+        "symbol": "EQIX",
+        "weight": "0.17%",
+        "price": "1099.08",
+        "change": "4.74",
+        "changePercent": "(0.43%)"
+    },
+    {
+        "name": "Altria Group Inc",
+        "symbol": "MO",
+        "weight": "0.17%",
+        "price": "64.69",
+        "change": "0.03",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "Trane Technologies PLC",
+        "symbol": "TT",
+        "weight": "0.17%",
+        "price": "482.74",
+        "change": "3.62",
+        "changePercent": "(0.75%)"
+    },
+    {
+        "name": "Medtronic PLC",
+        "symbol": "MDT",
+        "weight": "0.16%",
+        "price": "82.72",
+        "change": "0.72",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "HCA Healthcare Inc",
+        "symbol": "HCA",
+        "weight": "0.16%",
+        "price": "473.46",
+        "change": "2.28",
+        "changePercent": "(0.48%)"
+    },
+    {
+        "name": "ServiceNow Inc",
+        "symbol": "NOW",
+        "weight": "0.16%",
+        "price": "101.25",
+        "change": "1.11",
+        "changePercent": "(1.11%)"
+    },
+    {
+        "name": "Comcast Corp",
+        "symbol": "CMCSA",
+        "weight": "0.16%",
+        "price": "29.14",
+        "change": "0.09",
+        "changePercent": "(0.29%)"
+    },
+    {
+        "name": "Southern Co/The",
+        "symbol": "SO",
+        "weight": "0.16%",
+        "price": "92.50",
+        "change": "0.58",
+        "changePercent": "(0.64%)"
+    },
+    {
+        "name": "McKesson Corp",
+        "symbol": "MCK",
+        "weight": "0.16%",
+        "price": "844.50",
+        "change": "2.25",
+        "changePercent": "(0.27%)"
+    },
+    {
+        "name": "Adobe Inc",
+        "symbol": "ADBE",
+        "weight": "0.16%",
+        "price": "254.29",
+        "change": "7.11",
+        "changePercent": "(2.88%)"
+    },
+    {
+        "name": "Constellation Energy Corp",
+        "symbol": "CEG",
+        "weight": "0.16%",
+        "price": "281.86",
+        "change": "4.16",
+        "changePercent": "(1.50%)"
+    },
+    {
+        "name": "Blackstone Inc",
+        "symbol": "BX",
+        "weight": "0.16%",
+        "price": "131.01",
+        "change": "2.51",
+        "changePercent": "(1.95%)"
+    },
+    {
+        "name": "Howmet Aerospace Inc",
+        "symbol": "HWM",
+        "weight": "0.16%",
+        "price": "250.85",
+        "change": "3.13",
+        "changePercent": "(1.27%)"
+    },
+    {
+        "name": "CME Group Inc",
+        "symbol": "CME",
+        "weight": "0.15%",
+        "price": "276.02",
+        "change": "-8.38",
+        "changePercent": "(-2.95%)"
+    },
+    {
+        "name": "CVS Health Corp",
+        "symbol": "CVS",
+        "weight": "0.15%",
+        "price": "77.69",
+        "change": "0.33",
+        "changePercent": "(0.43%)"
+    },
+    {
+        "name": "Marriott International Inc/MD",
+        "symbol": "MAR",
+        "weight": "0.15%",
+        "price": "375.81",
+        "change": "0.37",
+        "changePercent": "(0.10%)"
+    },
+    {
+        "name": "Freeport-McMoRan Inc",
+        "symbol": "FCX",
+        "weight": "0.15%",
+        "price": "69.12",
+        "change": "1.55",
+        "changePercent": "(2.30%)"
+    },
+    {
+        "name": "Duke Energy Corp",
+        "symbol": "DUK",
+        "weight": "0.15%",
+        "price": "126.25",
+        "change": "0.58",
+        "changePercent": "(0.46%)"
+    },
+    {
+        "name": "Bank of New York Mellon Corp/The",
+        "symbol": "BK",
+        "weight": "0.15%",
+        "price": "138.75",
+        "change": "0.83",
+        "changePercent": "(0.60%)"
+    },
+    {
+        "name": "FedEx Corp",
+        "symbol": "FDX",
+        "weight": "0.15%",
+        "price": "397.35",
+        "change": "2.76",
+        "changePercent": "(0.70%)"
+    },
+    {
+        "name": "KKR & Co Inc",
+        "symbol": "KKR",
+        "weight": "0.15%",
+        "price": "105.35",
+        "change": "0.90",
+        "changePercent": "(0.86%)"
+    },
+    {
+        "name": "Boston Scientific Corp",
+        "symbol": "BSX",
+        "weight": "0.14%",
+        "price": "62.80",
+        "change": "3.28",
+        "changePercent": "(5.52%)"
+    },
+    {
+        "name": "Quanta Services Inc",
+        "symbol": "PWR",
+        "weight": "0.14%",
+        "price": "614.42",
+        "change": "8.53",
+        "changePercent": "(1.41%)"
+    },
+    {
+        "name": "PNC Financial Services Group Inc/The",
+        "symbol": "PNC",
+        "weight": "0.14%",
+        "price": "228.26",
+        "change": "0.21",
+        "changePercent": "(0.09%)"
+    },
+    {
+        "name": "Cadence Design Systems Inc",
+        "symbol": "CDNS",
+        "weight": "0.14%",
+        "price": "332.02",
+        "change": "6.18",
+        "changePercent": "(1.90%)"
+    },
+    {
+        "name": "United Parcel Service Inc",
+        "symbol": "UPS",
+        "weight": "0.14%",
+        "price": "107.49",
+        "change": "1.18",
+        "changePercent": "(1.11%)"
+    },
+    {
+        "name": "Intercontinental Exchange Inc",
+        "symbol": "ICE",
+        "weight": "0.14%",
+        "price": "160.78",
+        "change": "2.16",
+        "changePercent": "(1.36%)"
+    },
+    {
+        "name": "Synopsys Inc",
+        "symbol": "SNPS",
+        "weight": "0.14%",
+        "price": "471.47",
+        "change": "3.89",
+        "changePercent": "(0.83%)"
+    },
+    {
+        "name": "Waste Management Inc",
+        "symbol": "WM",
+        "weight": "0.14%",
+        "price": "223.89",
+        "change": "0.47",
+        "changePercent": "(0.21%)"
+    },
+    {
+        "name": "Cummins Inc",
+        "symbol": "CMI",
+        "weight": "0.14%",
+        "price": "649.35",
+        "change": "10.36",
+        "changePercent": "(1.62%)"
+    },
+    {
+        "name": "US Bancorp",
+        "symbol": "USB",
+        "weight": "0.14%",
+        "price": "57.03",
+        "change": "0.19",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "General Dynamics Corp",
+        "symbol": "GD",
+        "weight": "0.14%",
+        "price": "327.00",
+        "change": "1.49",
+        "changePercent": "(0.46%)"
+    },
+    {
+        "name": "Airbnb Inc",
+        "symbol": "ABNB",
+        "weight": "0.14%",
+        "price": "146.47",
+        "change": "3.82",
+        "changePercent": "(2.68%)"
+    },
+    {
+        "name": "Northrop Grumman Corp",
+        "symbol": "NOC",
+        "weight": "0.13%",
+        "price": "613.50",
+        "change": "2.37",
+        "changePercent": "(0.39%)"
+    },
+    {
+        "name": "Williams Cos Inc/The",
+        "symbol": "WMB",
+        "weight": "0.13%",
+        "price": "70.61",
+        "change": "0.18",
+        "changePercent": "(0.26%)"
+    },
+    {
+        "name": "Johnson Controls International plc",
+        "symbol": "JCI",
+        "weight": "0.13%",
+        "price": "140.44",
+        "change": "0.72",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "Marsh & McLennan Cos Inc",
+        "symbol": "MRSH",
+        "weight": "0.13%",
+        "price": "176.68",
+        "change": "-2.32",
+        "changePercent": "(-1.30%)"
+    },
+    {
+        "name": "Sherwin-Williams Co/The",
+        "symbol": "SHW",
+        "weight": "0.13%",
+        "price": "340.74",
+        "change": "6.13",
+        "changePercent": "(1.83%)"
+    },
+    {
+        "name": "Moody's Corp",
+        "symbol": "MCO",
+        "weight": "0.13%",
+        "price": "470.00",
+        "change": "10.41",
+        "changePercent": "(2.26%)"
+    },
+    {
+        "name": "American Tower Corp",
+        "symbol": "AMT",
+        "weight": "0.13%",
+        "price": "177.34",
+        "change": "2.58",
+        "changePercent": "(1.48%)"
+    },
+    {
+        "name": "Emerson Electric Co",
+        "symbol": "EMR",
+        "weight": "0.13%",
+        "price": "146.02",
+        "change": "1.19",
+        "changePercent": "(0.82%)"
+    },
+    {
+        "name": "Automatic Data Processing Inc",
+        "symbol": "ADP",
+        "weight": "0.13%",
+        "price": "202.75",
+        "change": "-0.12",
+        "changePercent": "(-0.06%)"
+    },
+    {
+        "name": "CSX Corp",
+        "symbol": "CSX",
+        "weight": "0.12%",
+        "price": "43.36",
+        "change": "-0.01",
+        "changePercent": "(-0.03%)"
+    },
+    {
+        "name": "Robinhood Markets Inc",
+        "symbol": "HOOD",
+        "weight": "0.12%",
+        "price": "89.43",
+        "change": "3.00",
+        "changePercent": "(3.47%)"
+    },
+    {
+        "name": "DoorDash Inc",
+        "symbol": "DASH",
+        "weight": "0.12%",
+        "price": "184.00",
+        "change": "1.55",
+        "changePercent": "(0.85%)"
+    },
+    {
+        "name": "SLB Ltd",
+        "symbol": "SLB",
+        "weight": "0.12%",
+        "price": "53.19",
+        "change": "0.42",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "CRH PLC",
+        "symbol": "CRH",
+        "weight": "0.12%",
+        "price": "119.04",
+        "change": "1.68",
+        "changePercent": "(1.43%)"
+    },
+    {
+        "name": "Regeneron Pharmaceuticals Inc",
+        "symbol": "REGN",
+        "weight": "0.12%",
+        "price": "748.63",
+        "change": "1.26",
+        "changePercent": "(0.17%)"
+    },
+    {
+        "name": "O'Reilly Automotive Inc",
+        "symbol": "ORLY",
+        "weight": "0.12%",
+        "price": "93.53",
+        "change": "-0.28",
+        "changePercent": "(-0.30%)"
+    },
+    {
+        "name": "Illinois Tool Works Inc",
+        "symbol": "ITW",
+        "weight": "0.12%",
+        "price": "271.20",
+        "change": "0.15",
+        "changePercent": "(0.06%)"
+    },
+    {
+        "name": "3M Co",
+        "symbol": "MMM",
+        "weight": "0.12%",
+        "price": "149.78",
+        "change": "1.31",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "Hilton Worldwide Holdings Inc",
+        "symbol": "HLT",
+        "weight": "0.12%",
+        "price": "337.71",
+        "change": "-2.50",
+        "changePercent": "(-0.73%)"
+    },
+    {
+        "name": "Ecolab Inc",
+        "symbol": "ECL",
+        "weight": "0.12%",
+        "price": "272.03",
+        "change": "1.19",
+        "changePercent": "(0.44%)"
+    },
+    {
+        "name": "Monolithic Power Systems Inc",
+        "symbol": "MPWR",
+        "weight": "0.12%",
+        "price": "1547.50",
+        "change": "19.55",
+        "changePercent": "(1.28%)"
+    },
+    {
+        "name": "Apollo Global Management Inc",
+        "symbol": "APO",
+        "weight": "0.12%",
+        "price": "128.77",
+        "change": "1.51",
+        "changePercent": "(1.19%)"
+    },
+    {
+        "name": "Monster Beverage Corp",
+        "symbol": "MNST",
+        "weight": "0.12%",
+        "price": "76.02",
+        "change": "0.75",
+        "changePercent": "(1.00%)"
+    },
+    {
+        "name": "Motorola Solutions Inc",
+        "symbol": "MSI",
+        "weight": "0.11%",
+        "price": "445.00",
+        "change": "-0.48",
+        "changePercent": "(-0.11%)"
+    },
+    {
+        "name": "Elevance Health Inc",
+        "symbol": "ELV",
+        "weight": "0.11%",
+        "price": "335.51",
+        "change": "7.40",
+        "changePercent": "(2.26%)"
+    },
+    {
+        "name": "Ross Stores Inc",
+        "symbol": "ROST",
+        "weight": "0.11%",
+        "price": "227.37",
+        "change": "1.78",
+        "changePercent": "(0.79%)"
+    },
+    {
+        "name": "Royal Caribbean Cruises Ltd",
+        "symbol": "RCL",
+        "weight": "0.11%",
+        "price": "272.95",
+        "change": "1.48",
+        "changePercent": "(0.55%)"
+    },
+    {
+        "name": "Cigna Group/The",
+        "symbol": "CI",
+        "weight": "0.11%",
+        "price": "276.43",
+        "change": "-0.26",
+        "changePercent": "(-0.09%)"
+    },
+    {
+        "name": "Ciena",
+        "symbol": "CIEN",
+        "weight": "0.11%",
+        "price": "512.00",
+        "change": "6.07",
+        "changePercent": "(1.20%)"
+    },
+    {
+        "name": "Mondelez International Inc",
+        "symbol": "MDLZ",
+        "weight": "0.11%",
+        "price": "56.23",
+        "change": "0.09",
+        "changePercent": "(0.17%)"
+    },
+    {
+        "name": "American Electric Power Co Inc",
+        "symbol": "AEP",
+        "weight": "0.11%",
+        "price": "132.69",
+        "change": "0.80",
+        "changePercent": "(0.60%)"
+    },
+    {
+        "name": "Aon PLC",
+        "symbol": "AON",
+        "weight": "0.11%",
+        "price": "335.90",
+        "change": "0.58",
+        "changePercent": "(0.17%)"
+    },
+    {
+        "name": "General Motors Co",
+        "symbol": "GM",
+        "weight": "0.11%",
+        "price": "79.56",
+        "change": "0.51",
+        "changePercent": "(0.64%)"
+    },
+    {
+        "name": "EOG Resources Inc",
+        "symbol": "EOG",
+        "weight": "0.11%",
+        "price": "132.75",
+        "change": "0.32",
+        "changePercent": "(0.25%)"
+    },
+    {
+        "name": "Cintas Corp",
+        "symbol": "CTAS",
+        "weight": "0.11%",
+        "price": "177.52",
+        "change": "1.26",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Kinder Morgan Inc",
+        "symbol": "KMI",
+        "weight": "0.11%",
+        "price": "31.75",
+        "change": "0.18",
+        "changePercent": "(0.57%)"
+    },
+    {
+        "name": "Digital Realty Trust Inc",
+        "symbol": "DLR",
+        "weight": "0.11%",
+        "price": "201.54",
+        "change": "0.27",
+        "changePercent": "(0.13%)"
+    },
+    {
+        "name": "Valero Energy Corp",
+        "symbol": "VLO",
+        "weight": "0.11%",
+        "price": "234.82",
+        "change": "1.44",
+        "changePercent": "(0.61%)"
+    },
+    {
+        "name": "NIKE Inc",
+        "symbol": "NKE",
+        "weight": "0.11%",
+        "price": "46.34",
+        "change": "-0.05",
+        "changePercent": "(-0.11%)"
+    },
+    {
+        "name": "TransDigm Group Inc",
+        "symbol": "TDG",
+        "weight": "0.11%",
+        "price": "1215.01",
+        "change": "9.34",
+        "changePercent": "(0.77%)"
+    },
+    {
+        "name": "Warner Bros Discovery Inc",
+        "symbol": "WBD",
+        "weight": "0.11%",
+        "price": "27.33",
+        "change": "0.02",
+        "changePercent": "(0.09%)"
+    },
+    {
+        "name": "Norfolk Southern Corp",
+        "symbol": "NSC",
+        "weight": "0.11%",
+        "price": "302.27",
+        "change": "0.05",
+        "changePercent": "(0.02%)"
+    },
+    {
+        "name": "PACCAR Inc",
+        "symbol": "PCAR",
+        "weight": "0.10%",
+        "price": "127.08",
+        "change": "0.90",
+        "changePercent": "(0.71%)"
+    },
+    {
+        "name": "Simon Property Group Inc",
+        "symbol": "SPG",
+        "weight": "0.10%",
+        "price": "205.14",
+        "change": "0.38",
+        "changePercent": "(0.18%)"
+    },
+    {
+        "name": "Colgate-Palmolive Co",
+        "symbol": "CL",
+        "weight": "0.10%",
+        "price": "82.42",
+        "change": "0.61",
+        "changePercent": "(0.74%)"
+    },
+    {
+        "name": "Coherent",
+        "symbol": "COHR",
+        "weight": "0.10%",
+        "price": "351.02",
+        "change": "7.23",
+        "changePercent": "(2.10%)"
+    },
+    {
+        "name": "Air Products and Chemicals Inc",
+        "symbol": "APD",
+        "weight": "0.10%",
+        "price": "295.24",
+        "change": "0.46",
+        "changePercent": "(0.16%)"
+    },
+    {
+        "name": "Marathon Petroleum Corp",
+        "symbol": "MPC",
+        "weight": "0.10%",
+        "price": "222.59",
+        "change": "2.24",
+        "changePercent": "(1.02%)"
+    },
+    {
+        "name": "Phillips 66",
+        "symbol": "PSX",
+        "weight": "0.10%",
+        "price": "160.06",
+        "change": "0.68",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Travelers Cos Inc/The",
+        "symbol": "TRV",
+        "weight": "0.10%",
+        "price": "301.21",
+        "change": "-0.21",
+        "changePercent": "(-0.07%)"
+    },
+    {
+        "name": "Fortinet Inc",
+        "symbol": "FTNT",
+        "weight": "0.10%",
+        "price": "86.41",
+        "change": "1.15",
+        "changePercent": "(1.35%)"
+    },
+    {
+        "name": "Truist Financial Corp",
+        "symbol": "TFC",
+        "weight": "0.10%",
+        "price": "51.28",
+        "change": "0.21",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "L3Harris Technologies Inc",
+        "symbol": "LHX",
+        "weight": "0.10%",
+        "price": "342.06",
+        "change": "1.76",
+        "changePercent": "(0.52%)"
+    },
+    {
+        "name": "Republic Services Inc",
+        "symbol": "RSG",
+        "weight": "0.10%",
+        "price": "206.25",
+        "change": "0.95",
+        "changePercent": "(0.46%)"
+    },
+    {
+        "name": "TE Connectivity PLC",
+        "symbol": "TEL",
+        "weight": "0.10%",
+        "price": "216.19",
+        "change": "-26.99",
+        "changePercent": "(-11.10%)"
+    },
+    {
+        "name": "Cencora Inc",
+        "symbol": "COR",
+        "weight": "0.10%",
+        "price": "315.62",
+        "change": "3.23",
+        "changePercent": "(1.03%)"
+    },
+    {
+        "name": "Sempra",
+        "symbol": "SRE",
+        "weight": "0.09%",
+        "price": "93.92",
+        "change": "0.77",
+        "changePercent": "(0.83%)"
+    },
+    {
+        "name": "Teradyne Inc",
+        "symbol": "TER",
+        "weight": "0.09%",
+        "price": "387.90",
+        "change": "7.97",
+        "changePercent": "(2.10%)"
+    },
+    {
+        "name": "Lumentum Holdings",
+        "symbol": "LITE",
+        "weight": "0.09%",
+        "price": "850.50",
+        "change": "13.58",
+        "changePercent": "(1.62%)"
+    },
+    {
+        "name": "Baker Hughes Co",
+        "symbol": "BKR",
+        "weight": "0.09%",
+        "price": "60.85",
+        "change": "0.60",
+        "changePercent": "(0.99%)"
+    },
+    {
+        "name": "Comfort Systems USA Inc",
+        "symbol": "FIX",
+        "weight": "0.09%",
+        "price": "1707.55",
+        "change": "33.39",
+        "changePercent": "(1.99%)"
+    },
+    {
+        "name": "Target Corp",
+        "symbol": "TGT",
+        "weight": "0.09%",
+        "price": "132.50",
+        "change": "0.40",
+        "changePercent": "(0.30%)"
+    },
+    {
+        "name": "Aflac Inc",
+        "symbol": "AFL",
+        "weight": "0.09%",
+        "price": "115.97",
+        "change": "0.00",
+        "changePercent": "(0.00%)"
+    },
+    {
+        "name": "Realty Income Corp",
+        "symbol": "O",
+        "weight": "0.09%",
+        "price": "63.93",
+        "change": "-0.07",
+        "changePercent": "(-0.11%)"
+    },
+    {
+        "name": "AutoZone Inc",
+        "symbol": "AZO",
+        "weight": "0.09%",
+        "price": "3560.09",
+        "change": "-46.09",
+        "changePercent": "(-1.28%)"
+    },
+    {
+        "name": "Keysight Technologies Inc",
+        "symbol": "KEYS",
+        "weight": "0.09%",
+        "price": "341.65",
+        "change": "2.35",
+        "changePercent": "(0.69%)"
+    },
+    {
+        "name": "Carvana Co",
+        "symbol": "CVNA",
+        "weight": "0.09%",
+        "price": "408.25",
+        "change": "7.33",
+        "changePercent": "(1.83%)"
+    },
+    {
+        "name": "NXP Semiconductors NV",
+        "symbol": "NXPI",
+        "weight": "0.09%",
+        "price": "228.50",
+        "change": "4.00",
+        "changePercent": "(1.78%)"
+    },
+    {
+        "name": "Arthur J Gallagher & Co",
+        "symbol": "AJG",
+        "weight": "0.09%",
+        "price": "224.23",
+        "change": "-0.23",
+        "changePercent": "(-0.10%)"
+    },
+    {
+        "name": "Occidental Petroleum Corp",
+        "symbol": "OXY",
+        "weight": "0.09%",
+        "price": "56.55",
+        "change": "0.22",
+        "changePercent": "(0.40%)"
+    },
+    {
+        "name": "Allstate Corp/The",
+        "symbol": "ALL",
+        "weight": "0.09%",
+        "price": "217.17",
+        "change": "0.83",
+        "changePercent": "(0.38%)"
+    },
+    {
+        "name": "WW Grainger Inc",
+        "symbol": "GWW",
+        "weight": "0.09%",
+        "price": "1173.54",
+        "change": "2.51",
+        "changePercent": "(0.21%)"
+    },
+    {
+        "name": "AMETEK Inc",
+        "symbol": "AME",
+        "weight": "0.08%",
+        "price": "236.19",
+        "change": "2.65",
+        "changePercent": "(1.13%)"
+    },
+    {
+        "name": "Dominion Energy Inc",
+        "symbol": "D",
+        "weight": "0.08%",
+        "price": "61.52",
+        "change": "0.43",
+        "changePercent": "(0.71%)"
+    },
+    {
+        "name": "Coinbase Global Inc",
+        "symbol": "COIN",
+        "weight": "0.08%",
+        "price": "204.32",
+        "change": "8.37",
+        "changePercent": "(4.27%)"
+    },
+    {
+        "name": "Public Storage",
+        "symbol": "PSA",
+        "weight": "0.08%",
+        "price": "306.66",
+        "change": "-1.67",
+        "changePercent": "(-0.54%)"
+    },
+    {
+        "name": "Corteva Inc",
+        "symbol": "CTVA",
+        "weight": "0.08%",
+        "price": "79.96",
+        "change": "-0.39",
+        "changePercent": "(-0.49%)"
+    },
+    {
+        "name": "ONEOK Inc",
+        "symbol": "OKE",
+        "weight": "0.08%",
+        "price": "85.18",
+        "change": "0.49",
+        "changePercent": "(0.58%)"
+    },
+    {
+        "name": "Diamondback Energy Inc",
+        "symbol": "FANG",
+        "weight": "0.08%",
+        "price": "190.25",
+        "change": "0.45",
+        "changePercent": "(0.24%)"
+    },
+    {
+        "name": "Vistra Corp",
+        "symbol": "VST",
+        "weight": "0.08%",
+        "price": "157.82",
+        "change": "2.91",
+        "changePercent": "(1.88%)"
+    },
+    {
+        "name": "Fastenal Co",
+        "symbol": "FAST",
+        "weight": "0.08%",
+        "price": "46.08",
+        "change": "0.38",
+        "changePercent": "(0.83%)"
+    },
+    {
+        "name": "Carrier Global Corp",
+        "symbol": "CARR",
+        "weight": "0.08%",
+        "price": "62.98",
+        "change": "1.27",
+        "changePercent": "(2.07%)"
+    },
+    {
+        "name": "Autodesk Inc",
+        "symbol": "ADSK",
+        "weight": "0.08%",
+        "price": "247.42",
+        "change": "1.94",
+        "changePercent": "(0.79%)"
+    },
+    {
+        "name": "Garmin Ltd",
+        "symbol": "GRMN",
+        "weight": "0.08%",
+        "price": "268.51",
+        "change": "3.02",
+        "changePercent": "(1.14%)"
+    },
+    {
+        "name": "Ford Motor Co",
+        "symbol": "F",
+        "weight": "0.08%",
+        "price": "12.87",
+        "change": "0.09",
+        "changePercent": "(0.70%)"
+    },
+    {
+        "name": "United Rentals Inc",
+        "symbol": "URI",
+        "weight": "0.08%",
+        "price": "816.08",
+        "change": "9.86",
+        "changePercent": "(1.22%)"
+    },
+    {
+        "name": "Entergy Corp",
+        "symbol": "ETR",
+        "weight": "0.08%",
+        "price": "111.50",
+        "change": "0.27",
+        "changePercent": "(0.24%)"
+    },
+    {
+        "name": "Electronic Arts Inc",
+        "symbol": "EA",
+        "weight": "0.08%",
+        "price": "203.56",
+        "change": "0.00",
+        "changePercent": "(0.00%)"
+    },
+    {
+        "name": "MetLife Inc",
+        "symbol": "MET",
+        "weight": "0.08%",
+        "price": "77.98",
+        "change": "0.50",
+        "changePercent": "(0.65%)"
+    },
+    {
+        "name": "Zoetis Inc",
+        "symbol": "ZTS",
+        "weight": "0.08%",
+        "price": "119.36",
+        "change": "1.18",
+        "changePercent": "(1.00%)"
+    },
+    {
+        "name": "Targa Resources Corp",
+        "symbol": "TRGP",
+        "weight": "0.08%",
+        "price": "232.66",
+        "change": "0.01",
+        "changePercent": "(0.00%)"
+    },
+    {
+        "name": "Nasdaq Inc",
+        "symbol": "NDAQ",
+        "weight": "0.08%",
+        "price": "87.69",
+        "change": "0.09",
+        "changePercent": "(0.10%)"
+    },
+    {
+        "name": "Xcel Energy Inc",
+        "symbol": "XEL",
+        "weight": "0.08%",
+        "price": "78.37",
+        "change": "-0.71",
+        "changePercent": "(-0.90%)"
+    },
+    {
+        "name": "Cardinal Health Inc",
+        "symbol": "CAH",
+        "weight": "0.08%",
+        "price": "206.05",
+        "change": "1.13",
+        "changePercent": "(0.55%)"
+    },
+    {
+        "name": "Nucor Corp",
+        "symbol": "NUE",
+        "weight": "0.07%",
+        "price": "209.38",
+        "change": "1.32",
+        "changePercent": "(0.64%)"
+    },
+    {
+        "name": "Exelon Corp",
+        "symbol": "EXC",
+        "weight": "0.07%",
+        "price": "46.57",
+        "change": "0.30",
+        "changePercent": "(0.66%)"
+    },
+    {
+        "name": "eBay Inc",
+        "symbol": "EBAY",
+        "weight": "0.07%",
+        "price": "105.45",
+        "change": "0.05",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "DR Horton Inc",
+        "symbol": "DHI",
+        "weight": "0.07%",
+        "price": "162.00",
+        "change": "-0.20",
+        "changePercent": "(-0.12%)"
+    },
+    {
+        "name": "Old Dominion Freight Line Inc",
+        "symbol": "ODFL",
+        "weight": "0.07%",
+        "price": "224.44",
+        "change": "0.02",
+        "changePercent": "(0.01%)"
+    },
+    {
+        "name": "Fifth Third Bancorp",
+        "symbol": "FITB",
+        "weight": "0.07%",
+        "price": "51.47",
+        "change": "0.37",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Chipotle Mexican Grill Inc",
+        "symbol": "CMG",
+        "weight": "0.07%",
+        "price": "35.78",
+        "change": "-0.27",
+        "changePercent": "(-0.75%)"
+    },
+    {
+        "name": "Rockwell Automation Inc",
+        "symbol": "ROK",
+        "weight": "0.07%",
+        "price": "413.65",
+        "change": "3.61",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "Delta Air Lines Inc",
+        "symbol": "DAL",
+        "weight": "0.07%",
+        "price": "70.73",
+        "change": "0.51",
+        "changePercent": "(0.73%)"
+    },
+    {
+        "name": "Edwards Lifesciences Corp",
+        "symbol": "EW",
+        "weight": "0.07%",
+        "price": "79.81",
+        "change": "0.11",
+        "changePercent": "(0.13%)"
+    },
+    {
+        "name": "PayPal Holdings Inc",
+        "symbol": "PYPL",
+        "weight": "0.07%",
+        "price": "51.12",
+        "change": "0.24",
+        "changePercent": "(0.47%)"
+    },
+    {
+        "name": "Datadog Inc",
+        "symbol": "DDOG",
+        "weight": "0.07%",
+        "price": "129.91",
+        "change": "0.63",
+        "changePercent": "(0.48%)"
+    },
+    {
+        "name": "IDEXX Laboratories Inc",
+        "symbol": "IDXX",
+        "weight": "0.07%",
+        "price": "572.14",
+        "change": "3.13",
+        "changePercent": "(0.55%)"
+    },
+    {
+        "name": "Becton Dickinson & Co",
+        "symbol": "BDX",
+        "weight": "0.07%",
+        "price": "158.02",
+        "change": "1.33",
+        "changePercent": "(0.85%)"
+    },
+    {
+        "name": "Microchip Technology Inc",
+        "symbol": "MCHP",
+        "weight": "0.07%",
+        "price": "82.08",
+        "change": "1.14",
+        "changePercent": "(1.41%)"
+    },
+    {
+        "name": "CBRE Group Inc",
+        "symbol": "CBRE",
+        "weight": "0.07%",
+        "price": "151.44",
+        "change": "1.59",
+        "changePercent": "(1.06%)"
+    },
+    {
+        "name": "Yum! Brands Inc",
+        "symbol": "YUM",
+        "weight": "0.07%",
+        "price": "160.61",
+        "change": "0.27",
+        "changePercent": "(0.17%)"
+    },
+    {
+        "name": "MSCI Inc",
+        "symbol": "MSCI",
+        "weight": "0.07%",
+        "price": "599.60",
+        "change": "2.21",
+        "changePercent": "(0.37%)"
+    },
+    {
+        "name": "Westinghouse Air Brake Technologies Corp",
+        "symbol": "WAB",
+        "weight": "0.07%",
+        "price": "255.38",
+        "change": "-2.25",
+        "changePercent": "(-0.88%)"
+    },
+    {
+        "name": "Block Inc",
+        "symbol": "XYZ",
+        "weight": "0.07%",
+        "price": "72.50",
+        "change": "0.75",
+        "changePercent": "(1.05%)"
+    },
+    {
+        "name": "State Street Corp",
+        "symbol": "STT",
+        "weight": "0.07%",
+        "price": "154.22",
+        "change": "0.65",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Kroger Co/The",
+        "symbol": "KR",
+        "weight": "0.07%",
+        "price": "68.65",
+        "change": "-0.16",
+        "changePercent": "(-0.23%)"
+    },
+    {
+        "name": "Ameriprise Financial Inc",
+        "symbol": "AMP",
+        "weight": "0.06%",
+        "price": "462.15",
+        "change": "1.07",
+        "changePercent": "(0.23%)"
+    },
+    {
+        "name": "American International Group Inc",
+        "symbol": "AIG",
+        "weight": "0.06%",
+        "price": "77.13",
+        "change": "-0.81",
+        "changePercent": "(-1.03%)"
+    },
+    {
+        "name": "Take-Two Interactive Software Inc",
+        "symbol": "TTWO",
+        "weight": "0.06%",
+        "price": "218.69",
+        "change": "1.04",
+        "changePercent": "(0.48%)"
+    },
+    {
+        "name": "Consolidated Edison Inc",
+        "symbol": "ED",
+        "weight": "0.06%",
+        "price": "108.60",
+        "change": "0.41",
+        "changePercent": "(0.38%)"
+    },
+    {
+        "name": "Public Service Enterprise Group Inc",
+        "symbol": "PEG",
+        "weight": "0.06%",
+        "price": "79.05",
+        "change": "0.49",
+        "changePercent": "(0.62%)"
+    },
+    {
+        "name": "Ventas Inc",
+        "symbol": "VTR",
+        "weight": "0.06%",
+        "price": "81.75",
+        "change": "-0.36",
+        "changePercent": "(-0.44%)"
+    },
+    {
+        "name": "Hewlett Packard Enterprise Co",
+        "symbol": "HPE",
+        "weight": "0.06%",
+        "price": "29.07",
+        "change": "0.31",
+        "changePercent": "(1.09%)"
+    },
+    {
+        "name": "EMCOR Group Inc",
+        "symbol": "EME",
+        "weight": "0.06%",
+        "price": "865.55",
+        "change": "27.54",
+        "changePercent": "(3.29%)"
+    },
+    {
+        "name": "Hershey Co/The",
+        "symbol": "HSY",
+        "weight": "0.06%",
+        "price": "189.29",
+        "change": "0.58",
+        "changePercent": "(0.31%)"
+    },
+    {
+        "name": "Vulcan Materials Co",
+        "symbol": "VMC",
+        "weight": "0.06%",
+        "price": "293.53",
+        "change": "2.81",
+        "changePercent": "(0.97%)"
+    },
+    {
+        "name": "Las Vegas Sands Corp",
+        "symbol": "LVS",
+        "weight": "0.06%",
+        "price": "57.60",
+        "change": "0.06",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Hartford Insurance Group Inc/The",
+        "symbol": "HIG",
+        "weight": "0.06%",
+        "price": "138.67",
+        "change": "-0.48",
+        "changePercent": "(-0.34%)"
+    },
+    {
+        "name": "Carnival Corp",
+        "symbol": "CCL",
+        "weight": "0.06%",
+        "price": "27.51",
+        "change": "0.15",
+        "changePercent": "(0.54%)"
+    },
+    {
+        "name": "PG&E Corp",
+        "symbol": "PCG",
+        "weight": "0.06%",
+        "price": "17.15",
+        "change": "0.17",
+        "changePercent": "(1.00%)"
+    },
+    {
+        "name": "Martin Marietta Materials Inc",
+        "symbol": "MLM",
+        "weight": "0.06%",
+        "price": "619.35",
+        "change": "4.86",
+        "changePercent": "(0.79%)"
+    },
+    {
+        "name": "WEC Energy Group Inc",
+        "symbol": "WEC",
+        "weight": "0.06%",
+        "price": "114.15",
+        "change": "0.57",
+        "changePercent": "(0.50%)"
+    },
+    {
+        "name": "Crown Castle Inc",
+        "symbol": "CCI",
+        "weight": "0.06%",
+        "price": "85.05",
+        "change": "0.13",
+        "changePercent": "(0.15%)"
+    },
+    {
+        "name": "Roper Technologies Inc",
+        "symbol": "ROP",
+        "weight": "0.06%",
+        "price": "361.92",
+        "change": "-1.01",
+        "changePercent": "(-0.28%)"
+    },
+    {
+        "name": "EchoStar",
+        "symbol": "SATS",
+        "weight": "0.06%",
+        "price": "127.03",
+        "change": "3.17",
+        "changePercent": "(2.56%)"
+    },
+    {
+        "name": "EQT Corp",
+        "symbol": "EQT",
+        "weight": "0.06%",
+        "price": "58.17",
+        "change": "1.20",
+        "changePercent": "(2.10%)"
+    },
+    {
+        "name": "Keurig Dr Pepper Inc",
+        "symbol": "KDP",
+        "weight": "0.06%",
+        "price": "26.63",
+        "change": "0.19",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Live Nation Entertainment Inc",
+        "symbol": "LYV",
+        "weight": "0.06%",
+        "price": "154.00",
+        "change": "0.63",
+        "changePercent": "(0.41%)"
+    },
+    {
+        "name": "Sysco Corp",
+        "symbol": "SYY",
+        "weight": "0.06%",
+        "price": "75.40",
+        "change": "0.61",
+        "changePercent": "(0.81%)"
+    },
+    {
+        "name": "Jabil Inc",
+        "symbol": "JBL",
+        "weight": "0.05%",
+        "price": "336.50",
+        "change": "2.82",
+        "changePercent": "(0.85%)"
+    },
+    {
+        "name": "Iron Mountain Inc",
+        "symbol": "IRM",
+        "weight": "0.05%",
+        "price": "118.23",
+        "change": "0.40",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "Arch Capital Group Ltd",
+        "symbol": "ACGL",
+        "weight": "0.05%",
+        "price": "98.19",
+        "change": "-0.66",
+        "changePercent": "(-0.67%)"
+    },
+    {
+        "name": "ON Semiconductor Corp",
+        "symbol": "ON",
+        "weight": "0.05%",
+        "price": "88.81",
+        "change": "1.91",
+        "changePercent": "(2.19%)"
+    },
+    {
+        "name": "Interactive Brokers Group Inc",
+        "symbol": "IBKR",
+        "weight": "0.05%",
+        "price": "77.97",
+        "change": "-1.65",
+        "changePercent": "(-2.07%)"
+    },
+    {
+        "name": "Huntington Bancshares Inc/OH",
+        "symbol": "HBAN",
+        "weight": "0.05%",
+        "price": "17.05",
+        "change": "0.09",
+        "changePercent": "(0.50%)"
+    },
+    {
+        "name": "Agilent Technologies Inc",
+        "symbol": "A",
+        "weight": "0.05%",
+        "price": "122.75",
+        "change": "0.66",
+        "changePercent": "(0.54%)"
+    },
+    {
+        "name": "Expedia Group Inc",
+        "symbol": "EXPE",
+        "weight": "0.05%",
+        "price": "277.50",
+        "change": "3.70",
+        "changePercent": "(1.35%)"
+    },
+    {
+        "name": "Archer-Daniels-Midland Co",
+        "symbol": "ADM",
+        "weight": "0.05%",
+        "price": "70.40",
+        "change": "0.57",
+        "changePercent": "(0.82%)"
+    },
+    {
+        "name": "Fiserv Inc",
+        "symbol": "FISV",
+        "weight": "0.05%",
+        "price": "63.49",
+        "change": "0.23",
+        "changePercent": "(0.36%)"
+    },
+    {
+        "name": "Paychex Inc",
+        "symbol": "PAYX",
+        "weight": "0.05%",
+        "price": "94.02",
+        "change": "0.34",
+        "changePercent": "(0.37%)"
+    },
+    {
+        "name": "Workday Inc",
+        "symbol": "WDAY",
+        "weight": "0.05%",
+        "price": "130.75",
+        "change": "1.59",
+        "changePercent": "(1.23%)"
+    },
+    {
+        "name": "Ingersoll Rand Inc",
+        "symbol": "IR",
+        "weight": "0.05%",
+        "price": "85.45",
+        "change": "0.64",
+        "changePercent": "(0.76%)"
+    },
+    {
+        "name": "Kenvue Inc",
+        "symbol": "KVUE",
+        "weight": "0.05%",
+        "price": "17.32",
+        "change": "0.02",
+        "changePercent": "(0.12%)"
+    },
+    {
+        "name": "GE HealthCare Technologies Inc",
+        "symbol": "GEHC",
+        "weight": "0.05%",
+        "price": "72.84",
+        "change": "0.58",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Waters Corp",
+        "symbol": "WAT",
+        "weight": "0.05%",
+        "price": "337.50",
+        "change": "2.27",
+        "changePercent": "(0.68%)"
+    },
+    {
+        "name": "Axon Enterprise Inc",
+        "symbol": "AXON",
+        "weight": "0.05%",
+        "price": "409.63",
+        "change": "4.70",
+        "changePercent": "(1.16%)"
+    },
+    {
+        "name": "Copart Inc",
+        "symbol": "CPRT",
+        "weight": "0.05%",
+        "price": "33.97",
+        "change": "0.23",
+        "changePercent": "(0.68%)"
+    },
+    {
+        "name": "Steel Dynamics Inc",
+        "symbol": "STLD",
+        "weight": "0.05%",
+        "price": "226.00",
+        "change": "5.79",
+        "changePercent": "(2.63%)"
+    },
+    {
+        "name": "Prudential Financial Inc",
+        "symbol": "PRU",
+        "weight": "0.05%",
+        "price": "93.24",
+        "change": "-3.21",
+        "changePercent": "(-3.33%)"
+    },
+    {
+        "name": "Halliburton Co",
+        "symbol": "HAL",
+        "weight": "0.05%",
+        "price": "38.81",
+        "change": "0.66",
+        "changePercent": "(1.73%)"
+    },
+    {
+        "name": "ResMed Inc",
+        "symbol": "RMD",
+        "weight": "0.05%",
+        "price": "221.48",
+        "change": "0.26",
+        "changePercent": "(0.12%)"
+    },
+    {
+        "name": "M&T Bank Corp",
+        "symbol": "MTB",
+        "weight": "0.05%",
+        "price": "219.39",
+        "change": "0.49",
+        "changePercent": "(0.22%)"
+    },
+    {
+        "name": "Kimberly-Clark Corp",
+        "symbol": "KMB",
+        "weight": "0.05%",
+        "price": "96.98",
+        "change": "0.39",
+        "changePercent": "(0.40%)"
+    },
+    {
+        "name": "NRG Energy Inc",
+        "symbol": "NRG",
+        "weight": "0.05%",
+        "price": "150.71",
+        "change": "0.84",
+        "changePercent": "(0.56%)"
+    },
+    {
+        "name": "Northern Trust Corp",
+        "symbol": "NTRS",
+        "weight": "0.05%",
+        "price": "172.20",
+        "change": "0.46",
+        "changePercent": "(0.27%)"
+    },
+    {
+        "name": "Cboe Global Markets Inc",
+        "symbol": "CBOE",
+        "weight": "0.05%",
+        "price": "301.00",
+        "change": "1.75",
+        "changePercent": "(0.58%)"
+    },
+    {
+        "name": "United Airlines Holdings Inc",
+        "symbol": "UAL",
+        "weight": "0.05%",
+        "price": "95.87",
+        "change": "-1.26",
+        "changePercent": "(-1.30%)"
+    },
+    {
+        "name": "Tapestry Inc",
+        "symbol": "TPR",
+        "weight": "0.05%",
+        "price": "153.44",
+        "change": "2.94",
+        "changePercent": "(1.96%)"
+    },
+    {
+        "name": "Teledyne Technologies Inc",
+        "symbol": "TDY",
+        "weight": "0.05%",
+        "price": "670.43",
+        "change": "27.64",
+        "changePercent": "(4.30%)"
+    },
+    {
+        "name": "Ameren Corp",
+        "symbol": "AEE",
+        "weight": "0.05%",
+        "price": "110.33",
+        "change": "0.37",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "Otis Worldwide Corp",
+        "symbol": "OTIS",
+        "weight": "0.05%",
+        "price": "79.03",
+        "change": "0.16",
+        "changePercent": "(0.20%)"
+    },
+    {
+        "name": "Raymond James Financial Inc",
+        "symbol": "RJF",
+        "weight": "0.05%",
+        "price": "154.52",
+        "change": "-0.02",
+        "changePercent": "(-0.01%)"
+    },
+    {
+        "name": "VICI Properties Inc",
+        "symbol": "VICI",
+        "weight": "0.05%",
+        "price": "28.47",
+        "change": "0.05",
+        "changePercent": "(0.18%)"
+    },
+    {
+        "name": "Extra Space Storage Inc",
+        "symbol": "EXR",
+        "weight": "0.05%",
+        "price": "144.07",
+        "change": "0.43",
+        "changePercent": "(0.30%)"
+    },
+    {
+        "name": "Texas Pacific Land Corp",
+        "symbol": "TPL",
+        "weight": "0.05%",
+        "price": "441.23",
+        "change": "3.51",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Charter Communications Inc",
+        "symbol": "CHTR",
+        "weight": "0.05%",
+        "price": "243.88",
+        "change": "1.94",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Atmos Energy Corp",
+        "symbol": "ATO",
+        "weight": "0.05%",
+        "price": "183.65",
+        "change": "0.72",
+        "changePercent": "(0.39%)"
+    },
+    {
+        "name": "DTE Energy Co",
+        "symbol": "DTE",
+        "weight": "0.05%",
+        "price": "143.57",
+        "change": "0.10",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "Dover Corp",
+        "symbol": "DOV",
+        "weight": "0.05%",
+        "price": "220.93",
+        "change": "0.65",
+        "changePercent": "(0.29%)"
+    },
+    {
+        "name": "IQVIA Holdings Inc",
+        "symbol": "IQV",
+        "weight": "0.05%",
+        "price": "176.56",
+        "change": "0.88",
+        "changePercent": "(0.50%)"
+    },
+    {
+        "name": "Hubbell Inc",
+        "symbol": "HUBB",
+        "weight": "0.05%",
+        "price": "554.88",
+        "change": "5.76",
+        "changePercent": "(1.05%)"
+    },
+    {
+        "name": "Casey's General Stores",
+        "symbol": "CASY",
+        "weight": "0.04%",
+        "price": "786.50",
+        "change": "4.68",
+        "changePercent": "(0.60%)"
+    },
+    {
+        "name": "Xylem Inc/NY",
+        "symbol": "XYL",
+        "weight": "0.04%",
+        "price": "120.13",
+        "change": "0.14",
+        "changePercent": "(0.12%)"
+    },
+    {
+        "name": "PPL Corp",
+        "symbol": "PPL",
+        "weight": "0.04%",
+        "price": "38.35",
+        "change": "0.14",
+        "changePercent": "(0.37%)"
+    },
+    {
+        "name": "Cognizant Technology Solutions Corp",
+        "symbol": "CTSH",
+        "weight": "0.04%",
+        "price": "60.27",
+        "change": "-0.18",
+        "changePercent": "(-0.29%)"
+    },
+    {
+        "name": "Qnity Electronics Inc",
+        "symbol": "Q",
+        "weight": "0.04%",
+        "price": "136.25",
+        "change": "1.41",
+        "changePercent": "(1.04%)"
+    },
+    {
+        "name": "Devon Energy Corp",
+        "symbol": "DVN",
+        "weight": "0.04%",
+        "price": "45.78",
+        "change": "0.18",
+        "changePercent": "(0.41%)"
+    },
+    {
+        "name": "Citizens Financial Group Inc",
+        "symbol": "CFG",
+        "weight": "0.04%",
+        "price": "66.08",
+        "change": "0.78",
+        "changePercent": "(1.19%)"
+    },
+    {
+        "name": "FirstEnergy Corp",
+        "symbol": "FE",
+        "weight": "0.04%",
+        "price": "48.62",
+        "change": "0.11",
+        "changePercent": "(0.24%)"
+    },
+    {
+        "name": "Willis Towers Watson PLC",
+        "symbol": "WTW",
+        "weight": "0.04%",
+        "price": "297.40",
+        "change": "-0.44",
+        "changePercent": "(-0.15%)"
+    },
+    {
+        "name": "CenterPoint Energy Inc",
+        "symbol": "CNP",
+        "weight": "0.04%",
+        "price": "42.55",
+        "change": "0.30",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Biogen Inc",
+        "symbol": "BIIB",
+        "weight": "0.04%",
+        "price": "189.65",
+        "change": "3.70",
+        "changePercent": "(1.99%)"
+    },
+    {
+        "name": "Estee Lauder Cos Inc/The",
+        "symbol": "EL",
+        "weight": "0.04%",
+        "price": "76.38",
+        "change": "0.52",
+        "changePercent": "(0.68%)"
+    },
+    {
+        "name": "Dollar General Corp",
+        "symbol": "DG",
+        "weight": "0.04%",
+        "price": "125.05",
+        "change": "0.94",
+        "changePercent": "(0.76%)"
+    },
+    {
+        "name": "Dow Inc",
+        "symbol": "DOW",
+        "weight": "0.04%",
+        "price": "38.11",
+        "change": "-0.20",
+        "changePercent": "(-0.51%)"
+    },
+    {
+        "name": "Ares Management Corp",
+        "symbol": "ARES",
+        "weight": "0.04%",
+        "price": "122.10",
+        "change": "2.26",
+        "changePercent": "(1.89%)"
+    },
+    {
+        "name": "Constellation Brands Inc",
+        "symbol": "STZ",
+        "weight": "0.04%",
+        "price": "157.13",
+        "change": "0.18",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Edison International",
+        "symbol": "EIX",
+        "weight": "0.04%",
+        "price": "70.36",
+        "change": "0.63",
+        "changePercent": "(0.90%)"
+    },
+    {
+        "name": "Mettler-Toledo International Inc",
+        "symbol": "MTD",
+        "weight": "0.04%",
+        "price": "1332.51",
+        "change": "8.24",
+        "changePercent": "(0.62%)"
+    },
+    {
+        "name": "Rollins Inc",
+        "symbol": "ROL",
+        "weight": "0.04%",
+        "price": "54.81",
+        "change": "0.10",
+        "changePercent": "(0.19%)"
+    },
+    {
+        "name": "Cincinnati Financial Corp",
+        "symbol": "CINF",
+        "weight": "0.04%",
+        "price": "169.18",
+        "change": "2.72",
+        "changePercent": "(1.63%)"
+    },
+    {
+        "name": "Humana Inc",
+        "symbol": "HUM",
+        "weight": "0.04%",
+        "price": "219.10",
+        "change": "1.74",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Synchrony Financial",
+        "symbol": "SYF",
+        "weight": "0.04%",
+        "price": "77.52",
+        "change": "-0.11",
+        "changePercent": "(-0.14%)"
+    },
+    {
+        "name": "Kraft Heinz Co/The",
+        "symbol": "KHC",
+        "weight": "0.04%",
+        "price": "22.01",
+        "change": "0.03",
+        "changePercent": "(0.14%)"
+    },
+    {
+        "name": "American Water Works Co Inc",
+        "symbol": "AWK",
+        "weight": "0.04%",
+        "price": "132.12",
+        "change": "0.07",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "Eversource Energy",
+        "symbol": "ES",
+        "weight": "0.04%",
+        "price": "67.44",
+        "change": "0.62",
+        "changePercent": "(0.93%)"
+    },
+    {
+        "name": "W R Berkley Corp",
+        "symbol": "WRB",
+        "weight": "0.04%",
+        "price": "67.17",
+        "change": "1.77",
+        "changePercent": "(2.70%)"
+    },
+    {
+        "name": "Ulta Beauty Inc",
+        "symbol": "ULTA",
+        "weight": "0.04%",
+        "price": "574.22",
+        "change": "4.06",
+        "changePercent": "(0.71%)"
+    },
+    {
+        "name": "PPG Industries Inc",
+        "symbol": "PPG",
+        "weight": "0.04%",
+        "price": "111.95",
+        "change": "1.03",
+        "changePercent": "(0.93%)"
+    },
+    {
+        "name": "Fair Isaac Corp",
+        "symbol": "FICO",
+        "weight": "0.04%",
+        "price": "1050.18",
+        "change": "13.48",
+        "changePercent": "(1.30%)"
+    },
+    {
+        "name": "VeriSign Inc",
+        "symbol": "VRSN",
+        "weight": "0.04%",
+        "price": "272.75",
+        "change": "2.97",
+        "changePercent": "(1.10%)"
+    },
+    {
+        "name": "PulteGroup Inc",
+        "symbol": "PHM",
+        "weight": "0.04%",
+        "price": "129.30",
+        "change": "0.66",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "Fidelity National Information Services Inc",
+        "symbol": "FIS",
+        "weight": "0.04%",
+        "price": "48.01",
+        "change": "0.32",
+        "changePercent": "(0.67%)"
+    },
+    {
+        "name": "KeyCorp",
+        "symbol": "KEY",
+        "weight": "0.04%",
+        "price": "22.50",
+        "change": "0.40",
+        "changePercent": "(1.83%)"
+    },
+    {
+        "name": "Bunge Global SA",
+        "symbol": "BG",
+        "weight": "0.04%",
+        "price": "126.19",
+        "change": "0.36",
+        "changePercent": "(0.29%)"
+    },
+    {
+        "name": "Regions Financial Corp",
+        "symbol": "RF",
+        "weight": "0.04%",
+        "price": "28.50",
+        "change": "0.14",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "Dexcom Inc",
+        "symbol": "DXCM",
+        "weight": "0.04%",
+        "price": "63.05",
+        "change": "0.45",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Coterra Energy Inc",
+        "symbol": "CTRA",
+        "weight": "0.04%",
+        "price": "31.98",
+        "change": "0.13",
+        "changePercent": "(0.39%)"
+    },
+    {
+        "name": "AvalonBay Communities Inc",
+        "symbol": "AVB",
+        "weight": "0.04%",
+        "price": "173.52",
+        "change": "1.38",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Williams-Sonoma Inc",
+        "symbol": "WSM",
+        "weight": "0.04%",
+        "price": "202.80",
+        "change": "0.52",
+        "changePercent": "(0.26%)"
+    },
+    {
+        "name": "JB Hunt Transport Services Inc",
+        "symbol": "JBHT",
+        "weight": "0.04%",
+        "price": "254.73",
+        "change": "3.64",
+        "changePercent": "(1.45%)"
+    },
+    {
+        "name": "Verisk Analytics Inc",
+        "symbol": "VRSK",
+        "weight": "0.04%",
+        "price": "182.13",
+        "change": "0.04",
+        "changePercent": "(0.02%)"
+    },
+    {
+        "name": "CMS Energy Corp",
+        "symbol": "CMS",
+        "weight": "0.04%",
+        "price": "77.00",
+        "change": "1.42",
+        "changePercent": "(1.88%)"
+    },
+    {
+        "name": "Albemarle Corp",
+        "symbol": "ALB",
+        "weight": "0.04%",
+        "price": "198.95",
+        "change": "0.53",
+        "changePercent": "(0.27%)"
+    },
+    {
+        "name": "Brown & Brown Inc",
+        "symbol": "BRO",
+        "weight": "0.04%",
+        "price": "69.03",
+        "change": "0.08",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Ralph Lauren Corp",
+        "symbol": "RL",
+        "weight": "0.04%",
+        "price": "387.16",
+        "change": "0.39",
+        "changePercent": "(0.10%)"
+    },
+    {
+        "name": "Lennar Corp",
+        "symbol": "LEN",
+        "weight": "0.04%",
+        "price": "94.83",
+        "change": "0.02",
+        "changePercent": "(0.02%)"
+    },
+    {
+        "name": "Equity Residential",
+        "symbol": "EQR",
+        "weight": "0.04%",
+        "price": "61.88",
+        "change": "0.03",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "Equifax Inc",
+        "symbol": "EFX",
+        "weight": "0.04%",
+        "price": "193.78",
+        "change": "1.36",
+        "changePercent": "(0.71%)"
+    },
+    {
+        "name": "LyondellBasell Industries NV",
+        "symbol": "LYB",
+        "weight": "0.04%",
+        "price": "71.50",
+        "change": "0.08",
+        "changePercent": "(0.11%)"
+    },
+    {
+        "name": "Expand Energy Corp",
+        "symbol": "EXE",
+        "weight": "0.04%",
+        "price": "95.09",
+        "change": "0.83",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "SBA Communications Corp",
+        "symbol": "SBAC",
+        "weight": "0.04%",
+        "price": "215.50",
+        "change": "2.40",
+        "changePercent": "(1.13%)"
+    },
+    {
+        "name": "Loews Corp",
+        "symbol": "L",
+        "weight": "0.04%",
+        "price": "110.87",
+        "change": "-0.62",
+        "changePercent": "(-0.56%)"
+    },
+    {
+        "name": "Tyson Foods Inc",
+        "symbol": "TSN",
+        "weight": "0.04%",
+        "price": "64.50",
+        "change": "-0.07",
+        "changePercent": "(-0.11%)"
+    },
+    {
+        "name": "NiSource Inc",
+        "symbol": "NI",
+        "weight": "0.04%",
+        "price": "47.42",
+        "change": "0.49",
+        "changePercent": "(1.04%)"
+    },
+    {
+        "name": "Quest Diagnostics Inc",
+        "symbol": "DGX",
+        "weight": "0.04%",
+        "price": "204.17",
+        "change": "-0.87",
+        "changePercent": "(-0.42%)"
+    },
+    {
+        "name": "Darden Restaurants Inc",
+        "symbol": "DRI",
+        "weight": "0.03%",
+        "price": "196.81",
+        "change": "-0.14",
+        "changePercent": "(-0.07%)"
+    },
+    {
+        "name": "Labcorp Holdings Inc",
+        "symbol": "LH",
+        "weight": "0.03%",
+        "price": "273.58",
+        "change": "0.16",
+        "changePercent": "(0.06%)"
+    },
+    {
+        "name": "NetApp Inc",
+        "symbol": "NTAP",
+        "weight": "0.03%",
+        "price": "113.35",
+        "change": "1.55",
+        "changePercent": "(1.39%)"
+    },
+    {
+        "name": "Church & Dwight Co Inc",
+        "symbol": "CHD",
+        "weight": "0.03%",
+        "price": "94.09",
+        "change": "0.89",
+        "changePercent": "(0.95%)"
+    },
+    {
+        "name": "Omnicom Group Inc",
+        "symbol": "OMC",
+        "weight": "0.03%",
+        "price": "77.43",
+        "change": "-0.64",
+        "changePercent": "(-0.82%)"
+    },
+    {
+        "name": "Veralto Corp",
+        "symbol": "VLTO",
+        "weight": "0.03%",
+        "price": "89.48",
+        "change": "-0.20",
+        "changePercent": "(-0.22%)"
+    },
+    {
+        "name": "Moderna Inc",
+        "symbol": "MRNA",
+        "weight": "0.03%",
+        "price": "55.37",
+        "change": "1.14",
+        "changePercent": "(2.10%)"
+    },
+    {
+        "name": "Corpay Inc",
+        "symbol": "CPAY",
+        "weight": "0.03%",
+        "price": "330.19",
+        "change": "0.26",
+        "changePercent": "(0.08%)"
+    },
+    {
+        "name": "T Rowe Price Group Inc",
+        "symbol": "TROW",
+        "weight": "0.03%",
+        "price": "100.01",
+        "change": "0.87",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "CH Robinson Worldwide Inc",
+        "symbol": "CHRW",
+        "weight": "0.03%",
+        "price": "184.56",
+        "change": "0.92",
+        "changePercent": "(0.50%)"
+    },
+    {
+        "name": "Smurfit WestRock PLC",
+        "symbol": "SW",
+        "weight": "0.03%",
+        "price": "41.42",
+        "change": "0.20",
+        "changePercent": "(0.49%)"
+    },
+    {
+        "name": "STERIS PLC",
+        "symbol": "STE",
+        "weight": "0.03%",
+        "price": "218.56",
+        "change": "-0.88",
+        "changePercent": "(-0.40%)"
+    },
+    {
+        "name": "Tractor Supply Co",
+        "symbol": "TSCO",
+        "weight": "0.03%",
+        "price": "39.64",
+        "change": "0.07",
+        "changePercent": "(0.19%)"
+    },
+    {
+        "name": "Dollar Tree Inc",
+        "symbol": "DLTR",
+        "weight": "0.03%",
+        "price": "105.40",
+        "change": "1.57",
+        "changePercent": "(1.51%)"
+    },
+    {
+        "name": "Principal Financial Group Inc",
+        "symbol": "PFG",
+        "weight": "0.03%",
+        "price": "95.81",
+        "change": "0.08",
+        "changePercent": "(0.09%)"
+    },
+    {
+        "name": "First Solar Inc",
+        "symbol": "FSLR",
+        "weight": "0.03%",
+        "price": "188.76",
+        "change": "2.15",
+        "changePercent": "(1.15%)"
+    },
+    {
+        "name": "Expeditors International of Washington Inc",
+        "symbol": "EXPD",
+        "weight": "0.03%",
+        "price": "151.86",
+        "change": "0.88",
+        "changePercent": "(0.59%)"
+    },
+    {
+        "name": "Southwest Airlines Co",
+        "symbol": "LUV",
+        "weight": "0.03%",
+        "price": "40.94",
+        "change": "0.02",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "Global Payments Inc",
+        "symbol": "GPN",
+        "weight": "0.03%",
+        "price": "72.74",
+        "change": "1.15",
+        "changePercent": "(1.61%)"
+    },
+    {
+        "name": "Snap-on Inc",
+        "symbol": "SNA",
+        "weight": "0.03%",
+        "price": "380.69",
+        "change": "-2.89",
+        "changePercent": "(-0.75%)"
+    },
+    {
+        "name": "West Pharmaceutical Services Inc",
+        "symbol": "WST",
+        "weight": "0.03%",
+        "price": "274.61",
+        "change": "-0.12",
+        "changePercent": "(-0.04%)"
+    },
+    {
+        "name": "Leidos Holdings Inc",
+        "symbol": "LDOS",
+        "weight": "0.03%",
+        "price": "154.55",
+        "change": "1.35",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "Lululemon Athletica Inc",
+        "symbol": "LULU",
+        "weight": "0.03%",
+        "price": "168.03",
+        "change": "1.33",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "HP Inc",
+        "symbol": "HPQ",
+        "weight": "0.03%",
+        "price": "21.18",
+        "change": "0.09",
+        "changePercent": "(0.43%)"
+    },
+    {
+        "name": "Centene Corp",
+        "symbol": "CNC",
+        "weight": "0.03%",
+        "price": "39.26",
+        "change": "0.12",
+        "changePercent": "(0.30%)"
+    },
+    {
+        "name": "DuPont de Nemours Inc",
+        "symbol": "DD",
+        "weight": "0.03%",
+        "price": "47.05",
+        "change": "0.34",
+        "changePercent": "(0.73%)"
+    },
+    {
+        "name": "Amcor PLC",
+        "symbol": "AMCR",
+        "weight": "0.03%",
+        "price": "41.59",
+        "change": "0.49",
+        "changePercent": "(1.19%)"
+    },
+    {
+        "name": "Incyte Corp",
+        "symbol": "INCY",
+        "weight": "0.03%",
+        "price": "96.49",
+        "change": "0.27",
+        "changePercent": "(0.28%)"
+    },
+    {
+        "name": "Broadridge Financial Solutions Inc",
+        "symbol": "BR",
+        "weight": "0.03%",
+        "price": "164.00",
+        "change": "2.13",
+        "changePercent": "(1.32%)"
+    },
+    {
+        "name": "Fortive Corp",
+        "symbol": "FTV",
+        "weight": "0.03%",
+        "price": "61.34",
+        "change": "0.31",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "International Paper Co",
+        "symbol": "IP",
+        "weight": "0.03%",
+        "price": "35.59",
+        "change": "0.15",
+        "changePercent": "(0.43%)"
+    },
+    {
+        "name": "General Mills Inc",
+        "symbol": "GIS",
+        "weight": "0.03%",
+        "price": "35.28",
+        "change": "0.23",
+        "changePercent": "(0.67%)"
+    },
+    {
+        "name": "NVR Inc",
+        "symbol": "NVR",
+        "weight": "0.03%",
+        "price": "6772.68",
+        "change": "-160.82",
+        "changePercent": "(-2.32%)"
+    },
+    {
+        "name": "Packaging Corp of America",
+        "symbol": "PKG",
+        "weight": "0.03%",
+        "price": "210.22",
+        "change": "-0.31",
+        "changePercent": "(-0.15%)"
+    },
+    {
+        "name": "International Flavors & Fragrances Inc",
+        "symbol": "IFF",
+        "weight": "0.03%",
+        "price": "73.17",
+        "change": "0.75",
+        "changePercent": "(1.03%)"
+    },
+    {
+        "name": "CF Industries Holdings Inc",
+        "symbol": "CF",
+        "weight": "0.03%",
+        "price": "121.50",
+        "change": "0.19",
+        "changePercent": "(0.16%)"
+    },
+    {
+        "name": "Evergy Inc",
+        "symbol": "EVRG",
+        "weight": "0.03%",
+        "price": "80.50",
+        "change": "0.15",
+        "changePercent": "(0.18%)"
+    },
+    {
+        "name": "CDW Corp/DE",
+        "symbol": "CDW",
+        "weight": "0.03%",
+        "price": "144.30",
+        "change": "2.89",
+        "changePercent": "(2.04%)"
+    },
+    {
+        "name": "Alliant Energy Corp",
+        "symbol": "LNT",
+        "weight": "0.03%",
+        "price": "71.32",
+        "change": "0.18",
+        "changePercent": "(0.25%)"
+    },
+    {
+        "name": "Weyerhaeuser Co",
+        "symbol": "WY",
+        "weight": "0.03%",
+        "price": "24.90",
+        "change": "0.01",
+        "changePercent": "(0.04%)"
+    },
+    {
+        "name": "F5 Inc",
+        "symbol": "FFIV",
+        "weight": "0.03%",
+        "price": "316.89",
+        "change": "1.33",
+        "changePercent": "(0.42%)"
+    },
+    {
+        "name": "Zimmer Biomet Holdings Inc",
+        "symbol": "ZBH",
+        "weight": "0.03%",
+        "price": "92.39",
+        "change": "-0.30",
+        "changePercent": "(-0.33%)"
+    },
+    {
+        "name": "Super Micro Computer Inc",
+        "symbol": "SMCI",
+        "weight": "0.03%",
+        "price": "28.89",
+        "change": "0.46",
+        "changePercent": "(1.62%)"
+    },
+    {
+        "name": "Lennox International Inc",
+        "symbol": "LII",
+        "weight": "0.03%",
+        "price": "496.03",
+        "change": "3.34",
+        "changePercent": "(0.68%)"
+    },
+    {
+        "name": "Viatris Inc",
+        "symbol": "VTRS",
+        "weight": "0.03%",
+        "price": "14.77",
+        "change": "0.04",
+        "changePercent": "(0.27%)"
+    },
+    {
+        "name": "Ball Corp",
+        "symbol": "BALL",
+        "weight": "0.03%",
+        "price": "63.92",
+        "change": "0.56",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "PTC Inc",
+        "symbol": "PTC",
+        "weight": "0.03%",
+        "price": "141.50",
+        "change": "0.56",
+        "changePercent": "(0.40%)"
+    },
+    {
+        "name": "CoStar Group Inc",
+        "symbol": "CSGP",
+        "weight": "0.03%",
+        "price": "39.10",
+        "change": "0.19",
+        "changePercent": "(0.48%)"
+    },
+    {
+        "name": "Essex Property Trust Inc",
+        "symbol": "ESS",
+        "weight": "0.03%",
+        "price": "251.40",
+        "change": "-1.76",
+        "changePercent": "(-0.70%)"
+    },
+    {
+        "name": "Trimble Inc",
+        "symbol": "TRMB",
+        "weight": "0.02%",
+        "price": "69.48",
+        "change": "0.51",
+        "changePercent": "(0.74%)"
+    },
+    {
+        "name": "Invitation Homes Inc",
+        "symbol": "INVH",
+        "weight": "0.02%",
+        "price": "26.89",
+        "change": "-0.05",
+        "changePercent": "(-0.19%)"
+    },
+    {
+        "name": "Textron Inc",
+        "symbol": "TXT",
+        "weight": "0.02%",
+        "price": "92.02",
+        "change": "1.23",
+        "changePercent": "(1.36%)"
+    },
+    {
+        "name": "Kimco Realty Corp",
+        "symbol": "KIM",
+        "weight": "0.02%",
+        "price": "23.71",
+        "change": "0.02",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "Genuine Parts Co",
+        "symbol": "GPC",
+        "weight": "0.02%",
+        "price": "115.23",
+        "change": "0.23",
+        "changePercent": "(0.20%)"
+    },
+    {
+        "name": "Nordson Corp",
+        "symbol": "NDSN",
+        "weight": "0.02%",
+        "price": "283.68",
+        "change": "0.96",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "Deckers Outdoor Corp",
+        "symbol": "DECK",
+        "weight": "0.02%",
+        "price": "110.80",
+        "change": "0.63",
+        "changePercent": "(0.57%)"
+    },
+    {
+        "name": "Jacobs Solutions Inc",
+        "symbol": "J",
+        "weight": "0.02%",
+        "price": "130.04",
+        "change": "0.53",
+        "changePercent": "(0.41%)"
+    },
+    {
+        "name": "IDEX Corp",
+        "symbol": "IEX",
+        "weight": "0.02%",
+        "price": "205.50",
+        "change": "0.72",
+        "changePercent": "(0.35%)"
+    },
+    {
+        "name": "Masco Corp",
+        "symbol": "MAS",
+        "weight": "0.02%",
+        "price": "74.89",
+        "change": "8.13",
+        "changePercent": "(12.17%)"
+    },
+    {
+        "name": "Huntington Ingalls Industries Inc",
+        "symbol": "HII",
+        "weight": "0.02%",
+        "price": "382.16",
+        "change": "3.95",
+        "changePercent": "(1.04%)"
+    },
+    {
+        "name": "Akamai Technologies Inc",
+        "symbol": "AKAM",
+        "weight": "0.02%",
+        "price": "100.00",
+        "change": "1.92",
+        "changePercent": "(1.96%)"
+    },
+    {
+        "name": "Regency Centers Corp",
+        "symbol": "REG",
+        "weight": "0.02%",
+        "price": "80.11",
+        "change": "0.10",
+        "changePercent": "(0.13%)"
+    },
+    {
+        "name": "Mid-America Apartment Communities Inc",
+        "symbol": "MAA",
+        "weight": "0.02%",
+        "price": "125.97",
+        "change": "0.23",
+        "changePercent": "(0.18%)"
+    },
+    {
+        "name": "Host Hotels & Resorts Inc",
+        "symbol": "HST",
+        "weight": "0.02%",
+        "price": "21.32",
+        "change": "0.20",
+        "changePercent": "(0.95%)"
+    },
+    {
+        "name": "Pentair PLC",
+        "symbol": "PNR",
+        "weight": "0.02%",
+        "price": "90.54",
+        "change": "0.55",
+        "changePercent": "(0.61%)"
+    },
+    {
+        "name": "Tyler Technologies Inc",
+        "symbol": "TYL",
+        "weight": "0.02%",
+        "price": "343.04",
+        "change": "1.58",
+        "changePercent": "(0.46%)"
+    },
+    {
+        "name": "Franklin Resources Inc",
+        "symbol": "BEN",
+        "weight": "0.02%",
+        "price": "27.71",
+        "change": "0.47",
+        "changePercent": "(1.74%)"
+    },
+    {
+        "name": "TKO Group Holdings Inc",
+        "symbol": "TKO",
+        "weight": "0.02%",
+        "price": "184.12",
+        "change": "1.02",
+        "changePercent": "(0.56%)"
+    },
+    {
+        "name": "McCormick & Co Inc/MD",
+        "symbol": "MKC",
+        "weight": "0.02%",
+        "price": "52.40",
+        "change": "0.42",
+        "changePercent": "(0.80%)"
+    },
+    {
+        "name": "Align Technology Inc",
+        "symbol": "ALGN",
+        "weight": "0.02%",
+        "price": "196.19",
+        "change": "0.99",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "Everest Group Ltd",
+        "symbol": "EG",
+        "weight": "0.02%",
+        "price": "349.99",
+        "change": "0.17",
+        "changePercent": "(0.05%)"
+    },
+    {
+        "name": "Insulet Corp",
+        "symbol": "PODD",
+        "weight": "0.02%",
+        "price": "194.62",
+        "change": "2.29",
+        "changePercent": "(1.19%)"
+    },
+    {
+        "name": "Best Buy Co Inc",
+        "symbol": "BBY",
+        "weight": "0.02%",
+        "price": "63.89",
+        "change": "-2.70",
+        "changePercent": "(-4.05%)"
+    },
+    {
+        "name": "APA Corp",
+        "symbol": "APA",
+        "weight": "0.02%",
+        "price": "37.73",
+        "change": "0.13",
+        "changePercent": "(0.33%)"
+    },
+    {
+        "name": "Brown-Forman Corp",
+        "symbol": "BF.B",
+        "weight": "0.02%",
+        "price": "28.96",
+        "change": "0.21",
+        "changePercent": "(0.73%)"
+    },
+    {
+        "name": "Erie Indemnity Co",
+        "symbol": "ERIE",
+        "weight": "0.02%",
+        "price": "253.18",
+        "change": "-0.67",
+        "changePercent": "(-0.27%)"
+    },
+    {
+        "name": "Cooper Cos Inc/The",
+        "symbol": "COO",
+        "weight": "0.02%",
+        "price": "67.79",
+        "change": "0.49",
+        "changePercent": "(0.72%)"
+    },
+    {
+        "name": "Aptiv PLC",
+        "symbol": "APTV",
+        "weight": "0.02%",
+        "price": "61.44",
+        "change": "0.64",
+        "changePercent": "(1.05%)"
+    },
+    {
+        "name": "Paramount Skydance Corp",
+        "symbol": "PSKY",
+        "weight": "0.02%",
+        "price": "11.71",
+        "change": "0.10",
+        "changePercent": "(0.88%)"
+    },
+    {
+        "name": "Avery Dennison Corp",
+        "symbol": "AVY",
+        "weight": "0.02%",
+        "price": "169.22",
+        "change": "-0.24",
+        "changePercent": "(-0.14%)"
+    },
+    {
+        "name": "Hasbro Inc",
+        "symbol": "HAS",
+        "weight": "0.02%",
+        "price": "91.91",
+        "change": "0.84",
+        "changePercent": "(0.92%)"
+    },
+    {
+        "name": "Fox Corp",
+        "symbol": "FOX",
+        "weight": "0.02%",
+        "price": "57.73",
+        "change": "0.10",
+        "changePercent": "(0.17%)"
+    },
+    {
+        "name": "Fox Corp",
+        "symbol": "FOXA",
+        "weight": "0.02%",
+        "price": "64.38",
+        "change": "0.06",
+        "changePercent": "(0.10%)"
+    },
+    {
+        "name": "Generac Holdings Inc",
+        "symbol": "GNRC",
+        "weight": "0.02%",
+        "price": "216.15",
+        "change": "2.30",
+        "changePercent": "(1.07%)"
+    },
+    {
+        "name": "Allegion plc",
+        "symbol": "ALLE",
+        "weight": "0.02%",
+        "price": "145.10",
+        "change": "1.63",
+        "changePercent": "(1.14%)"
+    },
+    {
+        "name": "Domino's Pizza Inc",
+        "symbol": "DPZ",
+        "weight": "0.02%",
+        "price": "369.98",
+        "change": "0.78",
+        "changePercent": "(0.21%)"
+    },
+    {
+        "name": "Pinnacle West Capital Corp",
+        "symbol": "PNW",
+        "weight": "0.02%",
+        "price": "101.04",
+        "change": "0.06",
+        "changePercent": "(0.06%)"
+    },
+    {
+        "name": "Solventum Corp",
+        "symbol": "SOLV",
+        "weight": "0.02%",
+        "price": "69.62",
+        "change": "0.65",
+        "changePercent": "(0.94%)"
+    },
+    {
+        "name": "Gen Digital Inc",
+        "symbol": "GEN",
+        "weight": "0.02%",
+        "price": "19.92",
+        "change": "0.01",
+        "changePercent": "(0.03%)"
+    },
+    {
+        "name": "Clorox Co/The",
+        "symbol": "CLX",
+        "weight": "0.02%",
+        "price": "99.16",
+        "change": "-0.45",
+        "changePercent": "(-0.46%)"
+    },
+    {
+        "name": "Stanley Black & Decker Inc",
+        "symbol": "SWK",
+        "weight": "0.02%",
+        "price": "76.64",
+        "change": "0.39",
+        "changePercent": "(0.51%)"
+    },
+    {
+        "name": "GoDaddy Inc",
+        "symbol": "GDDY",
+        "weight": "0.02%",
+        "price": "88.96",
+        "change": "0.36",
+        "changePercent": "(0.41%)"
+    },
+    {
+        "name": "Globe Life Inc",
+        "symbol": "GL",
+        "weight": "0.02%",
+        "price": "150.96",
+        "change": "0.04",
+        "changePercent": "(0.03%)"
+    },
+    {
+        "name": "Hormel Foods Corp",
+        "symbol": "HRL",
+        "weight": "0.02%",
+        "price": "21.32",
+        "change": "0.07",
+        "changePercent": "(0.35%)"
+    },
+    {
+        "name": "Zebra Technologies Corp",
+        "symbol": "ZBRA",
+        "weight": "0.02%",
+        "price": "240.25",
+        "change": "3.58",
+        "changePercent": "(1.51%)"
+    },
+    {
+        "name": "Assurant Inc",
+        "symbol": "AIZ",
+        "weight": "0.02%",
+        "price": "233.00",
+        "change": "4.04",
+        "changePercent": "(1.76%)"
+    },
+    {
+        "name": "UDR Inc",
+        "symbol": "UDR",
+        "weight": "0.02%",
+        "price": "35.01",
+        "change": "0.03",
+        "changePercent": "(0.09%)"
+    },
+    {
+        "name": "Healthpeak Properties Inc",
+        "symbol": "DOC",
+        "weight": "0.02%",
+        "price": "16.52",
+        "change": "0.05",
+        "changePercent": "(0.33%)"
+    },
+    {
+        "name": "Wynn Resorts Ltd",
+        "symbol": "WYNN",
+        "weight": "0.02%",
+        "price": "108.81",
+        "change": "1.15",
+        "changePercent": "(1.06%)"
+    },
+    {
+        "name": "Invesco Ltd",
+        "symbol": "IVZ",
+        "weight": "0.02%",
+        "price": "25.23",
+        "change": "0.26",
+        "changePercent": "(1.04%)"
+    },
+    {
+        "name": "Jack Henry & Associates Inc",
+        "symbol": "JKHY",
+        "weight": "0.02%",
+        "price": "155.19",
+        "change": "-0.31",
+        "changePercent": "(-0.20%)"
+    },
+    {
+        "name": "Trade Desk Inc/The",
+        "symbol": "TTD",
+        "weight": "0.02%",
+        "price": "23.44",
+        "change": "0.24",
+        "changePercent": "(1.05%)"
+    },
+    {
+        "name": "Universal Health Services Inc",
+        "symbol": "UHS",
+        "weight": "0.02%",
+        "price": "180.32",
+        "change": "1.77",
+        "changePercent": "(0.99%)"
+    },
+    {
+        "name": "Gartner Inc",
+        "symbol": "IT",
+        "weight": "0.02%",
+        "price": "159.97",
+        "change": "1.00",
+        "changePercent": "(0.63%)"
+    },
+    {
+        "name": "Camden Property Trust",
+        "symbol": "CPT",
+        "weight": "0.02%",
+        "price": "102.94",
+        "change": "0.45",
+        "changePercent": "(0.44%)"
+    },
+    {
+        "name": "Revvity Inc",
+        "symbol": "RVTY",
+        "weight": "0.02%",
+        "price": "95.28",
+        "change": "1.01",
+        "changePercent": "(1.07%)"
+    },
+    {
+        "name": "J M Smucker Co/The",
+        "symbol": "SJM",
+        "weight": "0.02%",
+        "price": "96.93",
+        "change": "1.19",
+        "changePercent": "(1.24%)"
+    },
+    {
+        "name": "AES Corp/The",
+        "symbol": "AES",
+        "weight": "0.02%",
+        "price": "14.49",
+        "change": "0.05",
+        "changePercent": "(0.34%)"
+    },
+    {
+        "name": "MGM Resorts International",
+        "symbol": "MGM",
+        "weight": "0.02%",
+        "price": "39.48",
+        "change": "0.37",
+        "changePercent": "(0.96%)"
+    },
+    {
+        "name": "DaVita Inc",
+        "symbol": "DVA",
+        "weight": "0.02%",
+        "price": "149.75",
+        "change": "-0.15",
+        "changePercent": "(-0.10%)"
+    },
+    {
+        "name": "Builders FirstSource Inc",
+        "symbol": "BLDR",
+        "weight": "0.02%",
+        "price": "91.00",
+        "change": "1.23",
+        "changePercent": "(1.38%)"
+    },
+    {
+        "name": "News Corp",
+        "symbol": "NWSA",
+        "weight": "0.02%",
+        "price": "26.55",
+        "change": "0.13",
+        "changePercent": "(0.47%)"
+    },
+    {
+        "name": "Baxter International Inc",
+        "symbol": "BAX",
+        "weight": "0.01%",
+        "price": "18.69",
+        "change": "0.20",
+        "changePercent": "(1.08%)"
+    },
+    {
+        "name": "Federal Realty Investment Trust",
+        "symbol": "FRT",
+        "weight": "0.01%",
+        "price": "110.90",
+        "change": "-0.23",
+        "changePercent": "(-0.21%)"
+    },
+    {
+        "name": "Bio-Techne Corp",
+        "symbol": "TECH",
+        "weight": "0.01%",
+        "price": "60.83",
+        "change": "1.16",
+        "changePercent": "(1.95%)"
+    },
+    {
+        "name": "BXP Inc",
+        "symbol": "BXP",
+        "weight": "0.01%",
+        "price": "58.82",
+        "change": "0.32",
+        "changePercent": "(0.55%)"
+    },
+    {
+        "name": "Skyworks Solutions Inc",
+        "symbol": "SWKS",
+        "weight": "0.01%",
+        "price": "61.55",
+        "change": "1.61",
+        "changePercent": "(2.69%)"
+    },
+    {
+        "name": "A O Smith Corp",
+        "symbol": "AOS",
+        "weight": "0.01%",
+        "price": "66.16",
+        "change": "1.17",
+        "changePercent": "(1.79%)"
+    },
+    {
+        "name": "Henry Schein Inc",
+        "symbol": "HSIC",
+        "weight": "0.01%",
+        "price": "78.99",
+        "change": "0.15",
+        "changePercent": "(0.19%)"
+    },
+    {
+        "name": "Charles River Laboratories International Inc",
+        "symbol": "CRL",
+        "weight": "0.01%",
+        "price": "182.92",
+        "change": "-0.18",
+        "changePercent": "(-0.10%)"
+    },
+    {
+        "name": "Norwegian Cruise Line Holdings Ltd",
+        "symbol": "NCLH",
+        "weight": "0.01%",
+        "price": "19.51",
+        "change": "0.18",
+        "changePercent": "(0.93%)"
+    },
+    {
+        "name": "FactSet Research Systems Inc",
+        "symbol": "FDS",
+        "weight": "0.01%",
+        "price": "242.92",
+        "change": "2.60",
+        "changePercent": "(1.08%)"
+    },
+    {
+        "name": "Pool Corp",
+        "symbol": "POOL",
+        "weight": "0.01%",
+        "price": "233.29",
+        "change": "0.16",
+        "changePercent": "(0.07%)"
+    },
+    {
+        "name": "Alexandria Real Estate Equities Inc",
+        "symbol": "ARE",
+        "weight": "0.01%",
+        "price": "48.14",
+        "change": "0.33",
+        "changePercent": "(0.69%)"
+    },
+    {
+        "name": "Molson Coors Beverage Co",
+        "symbol": "TAP",
+        "weight": "0.01%",
+        "price": "43.76",
+        "change": "0.17",
+        "changePercent": "(0.39%)"
+    },
+    {
+        "name": "Mosaic Co/The",
+        "symbol": "MOS",
+        "weight": "0.01%",
+        "price": "24.46",
+        "change": "0.26",
+        "changePercent": "(1.09%)"
+    },
+    {
+        "name": "Conagra Brands Inc",
+        "symbol": "CAG",
+        "weight": "0.01%",
+        "price": "14.70",
+        "change": "0.03",
+        "changePercent": "(0.21%)"
+    },
+    {
+        "name": "EPAM Systems Inc",
+        "symbol": "EPAM",
+        "weight": "0.01%",
+        "price": "132.29",
+        "change": "0.17",
+        "changePercent": "(0.13%)"
+    },
+    {
+        "name": "Campbell's Company/The",
+        "symbol": "CPB",
+        "weight": "0.01%",
+        "price": "20.95",
+        "change": "0.04",
+        "changePercent": "(0.22%)"
+    },
+    {
+        "name": "News Corp",
+        "symbol": "NWS",
+        "weight": "0.01%",
+        "price": "30.57",
+        "change": "0.15",
+        "changePercent": "(0.50%)"
+    }
+]

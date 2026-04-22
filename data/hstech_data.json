@@ -1,0 +1,91 @@
+[ {
+        "code" : "20",
+        "constituentName" : "商汤 - W"
+      }, {
+        "code" : "241",
+        "constituentName" : "阿里健康"
+      }, {
+        "code" : "268",
+        "constituentName" : "金蝶国际"
+      }, {
+        "code" : "285",
+        "constituentName" : "比亚迪电子"
+      }, {
+        "code" : "300",
+        "constituentName" : "美的集团"
+      }, {
+        "code" : "700",
+        "constituentName" : "腾讯控股"
+      }, {
+        "code" : "780",
+        "constituentName" : "同程旅行"
+      }, {
+        "code" : "981",
+        "constituentName" : "中芯国际"
+      }, {
+        "code" : "992",
+        "constituentName" : "联想集团"
+      }, {
+        "code" : "1024",
+        "constituentName" : "快手 - W"
+      }, {
+        "code" : "1211",
+        "constituentName" : "比亚迪股份"
+      }, {
+        "code" : "1347",
+        "constituentName" : "华虹半导体"
+      }, {
+        "code" : "1698",
+        "constituentName" : "腾讯音乐 - SW"
+      }, {
+        "code" : "1810",
+        "constituentName" : "小米集团 - W"
+      }, {
+        "code" : "2015",
+        "constituentName" : "理想汽车 - W"
+      }, {
+        "code" : "2382",
+        "constituentName" : "舜宇光学科技"
+      }, {
+        "code" : "3690",
+        "constituentName" : "美团 - W"
+      }, {
+        "code" : "3888",
+        "constituentName" : "金山软件"
+      }, {
+        "code" : "6618",
+        "constituentName" : "京东健康"
+      }, {
+        "code" : "6690",
+        "constituentName" : "海尔智家"
+      }, {
+        "code" : "9618",
+        "constituentName" : "京东集团 - SW"
+      }, {
+        "code" : "9626",
+        "constituentName" : "哔哩哔哩 - W"
+      }, {
+        "code" : "9660",
+        "constituentName" : "地平线机器人 - W"
+      }, {
+        "code" : "9863",
+        "constituentName" : "零跑汽车"
+      }, {
+        "code" : "9866",
+        "constituentName" : "蔚来 - SW"
+      }, {
+        "code" : "9868",
+        "constituentName" : "小鹏集团 - W"
+      }, {
+        "code" : "9888",
+        "constituentName" : "百度集团 - SW"
+      }, {
+        "code" : "9961",
+        "constituentName" : "携程集团 - S"
+      }, {
+        "code" : "9988",
+        "constituentName" : "阿里巴巴 - W"
+      }, {
+        "code" : "9999",
+        "constituentName" : "网易 - S"
+      } ]

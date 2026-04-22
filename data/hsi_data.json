@@ -1,0 +1,722 @@
+[
+    {
+        "code": "5",
+        "constituentName": "汇丰控股"
+    },
+    {
+        "code": "388",
+        "constituentName": "香港交易所"
+    },
+    {
+        "code": "939",
+        "constituentName": "建设银行"
+    },
+    {
+        "code": "1299",
+        "constituentName": "友邦保险"
+    },
+    {
+        "code": "1398",
+        "constituentName": "工商银行"
+    },
+    {
+        "code": "2318",
+        "constituentName": "中国平安"
+    },
+    {
+        "code": "2388",
+        "constituentName": "中银香港"
+    },
+    {
+        "code": "2628",
+        "constituentName": "中国人寿"
+    },
+    {
+        "code": "3968",
+        "constituentName": "招商银行"
+    },
+    {
+        "code": "3988",
+        "constituentName": "中国银行"
+    },
+    {
+        "code": "2",
+        "constituentName": "中电控股"
+    },
+    {
+        "code": "3",
+        "constituentName": "香港中华煤气"
+    },
+    {
+        "code": "6",
+        "constituentName": "电能实业"
+    },
+    {
+        "code": "836",
+        "constituentName": "华润电力"
+    },
+    {
+        "code": "1038",
+        "constituentName": "长江基建集团"
+    },
+    {
+        "code": "2688",
+        "constituentName": "新奥能源"
+    },
+    {
+        "code": "12",
+        "constituentName": "恒基地产"
+    },
+    {
+        "code": "16",
+        "constituentName": "新鸿基地产"
+    },
+    {
+        "code": "101",
+        "constituentName": "恒隆地产"
+    },
+    {
+        "code": "688",
+        "constituentName": "中国海外发展"
+    },
+    {
+        "code": "823",
+        "constituentName": "领展房产基金"
+    },
+    {
+        "code": "960",
+        "constituentName": "龙湖集团"
+    },
+    {
+        "code": "1109",
+        "constituentName": "华润置地"
+    },
+    {
+        "code": "1113",
+        "constituentName": "长实集团"
+    },
+    {
+        "code": "1209",
+        "constituentName": "华润万象生活"
+    },
+    {
+        "code": "1997",
+        "constituentName": "九龙仓置业"
+    },
+    {
+        "code": "1",
+        "constituentName": "长和"
+    },
+    {
+        "code": "27",
+        "constituentName": "银河娱乐"
+    },
+    {
+        "code": "66",
+        "constituentName": "港铁公司"
+    },
+    {
+        "code": "175",
+        "constituentName": "吉利汽车"
+    },
+    {
+        "code": "241",
+        "constituentName": "阿里健康"
+    },
+    {
+        "code": "267",
+        "constituentName": "中信股份"
+    },
+    {
+        "code": "285",
+        "constituentName": "比亚迪电子"
+    },
+    {
+        "code": "288",
+        "constituentName": "万洲国际"
+    },
+    {
+        "code": "291",
+        "constituentName": "华润啤酒"
+    },
+    {
+        "code": "300",
+        "constituentName": "美的集团"
+    },
+    {
+        "code": "316",
+        "constituentName": "东方海外国际"
+    },
+    {
+        "code": "322",
+        "constituentName": "康师傅控股"
+    },
+    {
+        "code": "386",
+        "constituentName": "中国石油化工股份"
+    },
+    {
+        "code": "669",
+        "constituentName": "创科实业"
+    },
+    {
+        "code": "700",
+        "constituentName": "腾讯控股"
+    },
+    {
+        "code": "728",
+        "constituentName": "中国电信"
+    },
+    {
+        "code": "762",
+        "constituentName": "中国联通"
+    },
+    {
+        "code": "857",
+        "constituentName": "中国石油股份"
+    },
+    {
+        "code": "868",
+        "constituentName": "信义玻璃"
+    },
+    {
+        "code": "883",
+        "constituentName": "中国海洋石油"
+    },
+    {
+        "code": "941",
+        "constituentName": "中国移动"
+    },
+    {
+        "code": "968",
+        "constituentName": "信义光能"
+    },
+    {
+        "code": "981",
+        "constituentName": "中芯国际"
+    },
+    {
+        "code": "992",
+        "constituentName": "联想集团"
+    },
+    {
+        "code": "1024",
+        "constituentName": "快手 - W"
+    },
+    {
+        "code": "1044",
+        "constituentName": "恒安国际"
+    },
+    {
+        "code": "1088",
+        "constituentName": "中国神华"
+    },
+    {
+        "code": "1093",
+        "constituentName": "石药集团"
+    },
+    {
+        "code": "1099",
+        "constituentName": "国药控股"
+    },
+    {
+        "code": "1177",
+        "constituentName": "中国生物制药"
+    },
+    {
+        "code": "1211",
+        "constituentName": "比亚迪股份"
+    },
+    {
+        "code": "1378",
+        "constituentName": "中国宏桥"
+    },
+    {
+        "code": "1801",
+        "constituentName": "信达生物"
+    },
+    {
+        "code": "1810",
+        "constituentName": "小米集团 - W"
+    },
+    {
+        "code": "1876",
+        "constituentName": "百威亚太"
+    },
+    {
+        "code": "1928",
+        "constituentName": "金沙中国有限公司"
+    },
+    {
+        "code": "1929",
+        "constituentName": "周大福"
+    },
+    {
+        "code": "2015",
+        "constituentName": "理想汽车 - W"
+    },
+    {
+        "code": "2020",
+        "constituentName": "安踏体育"
+    },
+    {
+        "code": "2057",
+        "constituentName": "中通快递 - W"
+    },
+    {
+        "code": "2269",
+        "constituentName": "药明生物"
+    },
+    {
+        "code": "2313",
+        "constituentName": "申洲国际"
+    },
+    {
+        "code": "2319",
+        "constituentName": "蒙牛乳业"
+    },
+    {
+        "code": "2331",
+        "constituentName": "李宁"
+    },
+    {
+        "code": "2359",
+        "constituentName": "药明康德"
+    },
+    {
+        "code": "2382",
+        "constituentName": "舜宇光学科技"
+    },
+    {
+        "code": "2618",
+        "constituentName": "京东物流"
+    },
+    {
+        "code": "2899",
+        "constituentName": "紫金矿业"
+    },
+    {
+        "code": "3690",
+        "constituentName": "美团 - W"
+    },
+    {
+        "code": "3692",
+        "constituentName": "翰森制药"
+    },
+    {
+        "code": "3750",
+        "constituentName": "宁德时代"
+    },
+    {
+        "code": "3993",
+        "constituentName": "洛阳钼业"
+    },
+    {
+        "code": "6181",
+        "constituentName": "老铺黄金"
+    },
+    {
+        "code": "6618",
+        "constituentName": "京东健康"
+    },
+    {
+        "code": "6690",
+        "constituentName": "海尔智家"
+    },
+    {
+        "code": "6862",
+        "constituentName": "海底捞"
+    },
+    {
+        "code": "9618",
+        "constituentName": "京东集团 - SW"
+    },
+    {
+        "code": "9633",
+        "constituentName": "农夫山泉"
+    },
+    {
+        "code": "9888",
+        "constituentName": "百度集团 - SW"
+    },
+    {
+        "code": "9901",
+        "constituentName": "新东方 - S"
+    },
+    {
+        "code": "9961",
+        "constituentName": "携程集团 - S"
+    },
+    {
+        "code": "9988",
+        "constituentName": "阿里巴巴 - W"
+    },
+    {
+        "code": "9992",
+        "constituentName": "泡泡玛特"
+    },
+    {
+        "code": "9999",
+        "constituentName": "网易 - S"
+    },
+    {
+        "code": "1",
+        "constituentName": "长和"
+    },
+    {
+        "code": "2",
+        "constituentName": "中电控股"
+    },
+    {
+        "code": "3",
+        "constituentName": "香港中华煤气"
+    },
+    {
+        "code": "5",
+        "constituentName": "汇丰控股"
+    },
+    {
+        "code": "6",
+        "constituentName": "电能实业"
+    },
+    {
+        "code": "12",
+        "constituentName": "恒基地产"
+    },
+    {
+        "code": "16",
+        "constituentName": "新鸿基地产"
+    },
+    {
+        "code": "27",
+        "constituentName": "银河娱乐"
+    },
+    {
+        "code": "66",
+        "constituentName": "港铁公司"
+    },
+    {
+        "code": "101",
+        "constituentName": "恒隆地产"
+    },
+    {
+        "code": "175",
+        "constituentName": "吉利汽车"
+    },
+    {
+        "code": "241",
+        "constituentName": "阿里健康"
+    },
+    {
+        "code": "267",
+        "constituentName": "中信股份"
+    },
+    {
+        "code": "285",
+        "constituentName": "比亚迪电子"
+    },
+    {
+        "code": "288",
+        "constituentName": "万洲国际"
+    },
+    {
+        "code": "291",
+        "constituentName": "华润啤酒"
+    },
+    {
+        "code": "300",
+        "constituentName": "美的集团"
+    },
+    {
+        "code": "316",
+        "constituentName": "东方海外国际"
+    },
+    {
+        "code": "322",
+        "constituentName": "康师傅控股"
+    },
+    {
+        "code": "386",
+        "constituentName": "中国石油化工股份"
+    },
+    {
+        "code": "388",
+        "constituentName": "香港交易所"
+    },
+    {
+        "code": "669",
+        "constituentName": "创科实业"
+    },
+    {
+        "code": "688",
+        "constituentName": "中国海外发展"
+    },
+    {
+        "code": "700",
+        "constituentName": "腾讯控股"
+    },
+    {
+        "code": "728",
+        "constituentName": "中国电信"
+    },
+    {
+        "code": "762",
+        "constituentName": "中国联通"
+    },
+    {
+        "code": "823",
+        "constituentName": "领展房产基金"
+    },
+    {
+        "code": "836",
+        "constituentName": "华润电力"
+    },
+    {
+        "code": "857",
+        "constituentName": "中国石油股份"
+    },
+    {
+        "code": "868",
+        "constituentName": "信义玻璃"
+    },
+    {
+        "code": "883",
+        "constituentName": "中国海洋石油"
+    },
+    {
+        "code": "939",
+        "constituentName": "建设银行"
+    },
+    {
+        "code": "941",
+        "constituentName": "中国移动"
+    },
+    {
+        "code": "960",
+        "constituentName": "龙湖集团"
+    },
+    {
+        "code": "968",
+        "constituentName": "信义光能"
+    },
+    {
+        "code": "981",
+        "constituentName": "中芯国际"
+    },
+    {
+        "code": "992",
+        "constituentName": "联想集团"
+    },
+    {
+        "code": "1024",
+        "constituentName": "快手 - W"
+    },
+    {
+        "code": "1038",
+        "constituentName": "长江基建集团"
+    },
+    {
+        "code": "1044",
+        "constituentName": "恒安国际"
+    },
+    {
+        "code": "1088",
+        "constituentName": "中国神华"
+    },
+    {
+        "code": "1093",
+        "constituentName": "石药集团"
+    },
+    {
+        "code": "1099",
+        "constituentName": "国药控股"
+    },
+    {
+        "code": "1109",
+        "constituentName": "华润置地"
+    },
+    {
+        "code": "1113",
+        "constituentName": "长实集团"
+    },
+    {
+        "code": "1177",
+        "constituentName": "中国生物制药"
+    },
+    {
+        "code": "1209",
+        "constituentName": "华润万象生活"
+    },
+    {
+        "code": "1211",
+        "constituentName": "比亚迪股份"
+    },
+    {
+        "code": "1299",
+        "constituentName": "友邦保险"
+    },
+    {
+        "code": "1378",
+        "constituentName": "中国宏桥"
+    },
+    {
+        "code": "1398",
+        "constituentName": "工商银行"
+    },
+    {
+        "code": "1801",
+        "constituentName": "信达生物"
+    },
+    {
+        "code": "1810",
+        "constituentName": "小米集团 - W"
+    },
+    {
+        "code": "1876",
+        "constituentName": "百威亚太"
+    },
+    {
+        "code": "1928",
+        "constituentName": "金沙中国有限公司"
+    },
+    {
+        "code": "1929",
+        "constituentName": "周大福"
+    },
+    {
+        "code": "1997",
+        "constituentName": "九龙仓置业"
+    },
+    {
+        "code": "2015",
+        "constituentName": "理想汽车 - W"
+    },
+    {
+        "code": "2020",
+        "constituentName": "安踏体育"
+    },
+    {
+        "code": "2057",
+        "constituentName": "中通快递 - W"
+    },
+    {
+        "code": "2269",
+        "constituentName": "药明生物"
+    },
+    {
+        "code": "2313",
+        "constituentName": "申洲国际"
+    },
+    {
+        "code": "2318",
+        "constituentName": "中国平安"
+    },
+    {
+        "code": "2319",
+        "constituentName": "蒙牛乳业"
+    },
+    {
+        "code": "2331",
+        "constituentName": "李宁"
+    },
+    {
+        "code": "2359",
+        "constituentName": "药明康德"
+    },
+    {
+        "code": "2382",
+        "constituentName": "舜宇光学科技"
+    },
+    {
+        "code": "2388",
+        "constituentName": "中银香港"
+    },
+    {
+        "code": "2618",
+        "constituentName": "京东物流"
+    },
+    {
+        "code": "2628",
+        "constituentName": "中国人寿"
+    },
+    {
+        "code": "2688",
+        "constituentName": "新奥能源"
+    },
+    {
+        "code": "2899",
+        "constituentName": "紫金矿业"
+    },
+    {
+        "code": "3690",
+        "constituentName": "美团 - W"
+    },
+    {
+        "code": "3692",
+        "constituentName": "翰森制药"
+    },
+    {
+        "code": "3750",
+        "constituentName": "宁德时代"
+    },
+    {
+        "code": "3968",
+        "constituentName": "招商银行"
+    },
+    {
+        "code": "3988",
+        "constituentName": "中国银行"
+    },
+    {
+        "code": "3993",
+        "constituentName": "洛阳钼业"
+    },
+    {
+        "code": "6181",
+        "constituentName": "老铺黄金"
+    },
+    {
+        "code": "6618",
+        "constituentName": "京东健康"
+    },
+    {
+        "code": "6690",
+        "constituentName": "海尔智家"
+    },
+    {
+        "code": "6862",
+        "constituentName": "海底捞"
+    },
+    {
+        "code": "9618",
+        "constituentName": "京东集团 - SW"
+    },
+    {
+        "code": "9633",
+        "constituentName": "农夫山泉"
+    },
+    {
+        "code": "9888",
+        "constituentName": "百度集团 - SW"
+    },
+    {
+        "code": "9901",
+        "constituentName": "新东方 - S"
+    },
+    {
+        "code": "9961",
+        "constituentName": "携程集团 - S"
+    },
+    {
+        "code": "9988",
+        "constituentName": "阿里巴巴 - W"
+    },
+    {
+        "code": "9992",
+        "constituentName": "泡泡玛特"
+    },
+    {
+        "code": "9999",
+        "constituentName": "网易 - S"
+    }
+]
