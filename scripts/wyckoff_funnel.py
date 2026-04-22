@@ -310,17 +310,77 @@ def _job_end_calendar_day() -> date:
     return resolve_end_calendar_day_for_market(market)
 
 
-def _expected_trade_dates(window, market: str) -> list[date]:
+def _extract_trade_dates_from_df(df: pd.DataFrame | None) -> list[date]:
+    if df is None or df.empty or "date" not in df.columns:
+        return []
+    s = pd.to_datetime(df["date"], errors="coerce").dropna()
+    if s.empty:
+        return []
+    return sorted(set(x.date() for x in s.tolist()))
+
+
+def _infer_expected_trade_dates_from_frames(
+    df_map: dict[str, pd.DataFrame],
+    window,
+) -> list[date]:
+    if not df_map:
+        return []
+    counter: Counter[date] = Counter()
+    for df in df_map.values():
+        for d in _extract_trade_dates_from_df(df):
+            if window.start_trade_date <= d <= window.end_trade_date:
+                counter[d] += 1
+    if not counter:
+        return []
+    max_count = max(counter.values())
+    # 选择覆盖率最高的一层日期作为市场真实交易日，避免个别股票停牌扰动。
+    threshold = max(1, int(max_count * 0.8))
+    return sorted(d for d, count in counter.items() if count >= threshold)
+
+
+def _expected_trade_dates(
+    window,
+    market: str,
+    *,
+    bench_df: pd.DataFrame | None = None,
+    smallcap_df: pd.DataFrame | None = None,
+    df_map: dict[str, pd.DataFrame] | None = None,
+) -> tuple[list[date], str]:
     market_norm = str(market or "cn").strip().lower()
     if market_norm == "cn":
         all_dates = list(_trade_dates_cached())
-        return [
-            d for d in all_dates if window.start_trade_date <= d <= window.end_trade_date
+        return (
+            [
+                d
+                for d in all_dates
+                if window.start_trade_date <= d <= window.end_trade_date
+            ],
+            "cn_trade_calendar",
+        )
+
+    for label, frame in (
+        ("main_benchmark", bench_df),
+        ("smallcap_benchmark", smallcap_df),
+    ):
+        dates = [
+            d
+            for d in _extract_trade_dates_from_df(frame)
+            if window.start_trade_date <= d <= window.end_trade_date
         ]
-    return pd.bdate_range(
-        start=window.start_trade_date,
-        end=window.end_trade_date,
-    ).date.tolist()
+        if dates:
+            return (dates, label)
+
+    inferred = _infer_expected_trade_dates_from_frames(df_map or {}, window)
+    if inferred:
+        return (inferred, "inferred_from_symbol_hist")
+
+    return (
+        pd.bdate_range(
+            start=window.start_trade_date,
+            end=window.end_trade_date,
+        ).date.tolist(),
+        "business_day_fallback",
+    )
 
 
 def _summarize_rejections(
@@ -1601,7 +1661,13 @@ def run_funnel_job(
             f"[funnel] 交易日对齐检查: mismatch={fetch_date_mismatch}, "
             f"spot_patched={fetch_spot_patched}, target_trade_date={window.end_trade_date}"
         )
-    expected_dates = _expected_trade_dates(window, market)
+    expected_dates, expected_dates_source = _expected_trade_dates(
+        window,
+        market,
+        bench_df=bench_df,
+        smallcap_df=smallcap_df,
+        df_map=all_df_map,
+    )
     integrity_policy = DataIntegrityPolicy(
         min_coverage_200=INTEGRITY_MIN_COVERAGE_200,
         min_coverage_20=INTEGRITY_MIN_COVERAGE_20,
@@ -1622,7 +1688,8 @@ def run_funnel_job(
     all_df_map = qualified_df_map
     print(
         f"[funnel] 数据完整性检查: 通过={len(all_df_map)}, 跳过={integrity_fail}, "
-        f"阈值[cov200>={INTEGRITY_MIN_COVERAGE_200:.0%}, cov20>={INTEGRITY_MIN_COVERAGE_20:.0%}, recent{INTEGRITY_STRICT_RECENT_DAYS}=full]"
+        f"阈值[cov200>={INTEGRITY_MIN_COVERAGE_200:.0%}, cov20>={INTEGRITY_MIN_COVERAGE_20:.0%}, recent{INTEGRITY_STRICT_RECENT_DAYS}=full], "
+        f"expected_dates={len(expected_dates)} source={expected_dates_source}"
     )
     if integrity_examples:
         suffix = "..." if integrity_fail > len(integrity_examples) else ""
@@ -1771,6 +1838,8 @@ def run_funnel_job(
         "fetch_spot_patched": fetch_spot_patched,
         "integrity_pass": len(all_df_map),
         "integrity_fail": integrity_fail,
+        "integrity_expected_dates": len(expected_dates),
+        "integrity_expected_dates_source": expected_dates_source,
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
         "layer1_rejections": l1_rejections,
