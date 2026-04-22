@@ -249,7 +249,7 @@ Agent 的武器库 — 12 个量价工具 + 4 个通用能力：
 | `GITHUB_ACTIONS_TOKEN` | 是 | GitHub API Token，用于触发 `workflow_dispatch` 并读取 Actions 运行结果 artifact |
 | `GITHUB_ACTIONS_REPO_OWNER` | 否 | 默认 `YoungCan-Wang` |
 | `GITHUB_ACTIONS_REPO_NAME` | 否 | 默认 `Wyckoff-Analysis` |
-| `GITHUB_ACTIONS_REF` | 否 | 默认 `main` |
+| `GITHUB_ACTIONS_REF` | 否 | 默认 `wxjer` |
 | `GITHUB_ACTIONS_WORKFLOW_FILE` | 否 | 默认 `web_quant_jobs.yml` |
 | `GITHUB_ACTIONS_ALLOWED_USER_IDS` | 否 | 逗号分隔的用户 ID 白名单；配置后仅白名单账号可在页面里触发后台任务 |
 

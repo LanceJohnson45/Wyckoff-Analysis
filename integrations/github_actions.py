@@ -12,7 +12,7 @@ import requests
 
 DEFAULT_OWNER = "YoungCan-Wang"
 DEFAULT_REPO = "Wyckoff-Analysis"
-DEFAULT_REF = "main"
+DEFAULT_REF = "wxjer"
 DEFAULT_WORKFLOW_FILE = "web_quant_jobs.yml"
 
 
@@ -125,7 +125,7 @@ def trigger_web_job(job_kind: str, payload: dict[str, Any]) -> str:
         if resp.status_code == 422 and "No ref found" in (resp.text or ""):
             raise RuntimeError(
                 "触发 GitHub Actions 失败：目标分支不存在。"
-                f"当前 ref={cfg['ref']}，请在环境变量或 Streamlit secrets 中设置 GITHUB_ACTIONS_REF 为有效分支（如 main）。"
+                f"当前 ref={cfg['ref']}，请在环境变量或 Streamlit secrets 中设置 GITHUB_ACTIONS_REF 为有效分支（如 wxjer）。"
             )
         raise RuntimeError(
             f"触发 GitHub Actions 失败: HTTP {resp.status_code} {resp.text[:300]}"
