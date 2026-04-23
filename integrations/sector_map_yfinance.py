@@ -149,16 +149,24 @@ def clear_legacy_sector_cache() -> bool:
 
 
 def sector_map_from_cache() -> dict[str, str]:
+    return classification_map_from_cache(field="sector")
+
+
+def industry_map_from_cache() -> dict[str, str]:
+    return classification_map_from_cache(field="industry")
+
+
+def classification_map_from_cache(*, field: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for symbol, row in load_sector_cache().items():
         market = str(row.get("market", "") or "").strip().lower()
-        sector = str(row.get("sector", "") or "").strip()
-        if not sector:
+        value = str(row.get(field, "") or "").strip()
+        if not value:
             continue
         if market == "cn":
-            out[symbol.split(".")[0]] = sector
+            out[symbol.split(".")[0]] = value
         else:
-            out[symbol] = sector
+            out[symbol] = value
     return out
 
 
