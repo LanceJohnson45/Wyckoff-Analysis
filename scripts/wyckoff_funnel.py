@@ -1509,7 +1509,7 @@ def run_funnel_job(
     )
     if market == "cn":
         print(f"[funnel] 加载市值数据...")
-        market_cap_map = fetch_market_cap_map()
+        market_cap_map = fetch_market_cap_map(market=market)
         print(f"[funnel] 市值映射加载结果: {len(market_cap_map)}")
         if not market_cap_map:
             print(
@@ -1520,12 +1520,16 @@ def run_funnel_job(
                 "[funnel] ⚠️ 行业映射为空（仅缓存模式下可能尚未准备好），Top行业/板块轮动将不可用"
             )
     else:
-        market_cap_map = {}
+        print(f"[funnel] 加载市值数据...")
+        market_cap_map = fetch_market_cap_map(market=market)
+        print(f"[funnel] 市值映射加载结果: {len(market_cap_map)}")
         if not classification_map:
             print(
                 "[funnel] ⚠️ Yahoo 行业映射为空，Top行业/板块轮动将不可用"
             )
-        print("[funnel] 非CN模式暂不加载市值映射，按价格/量能结构筛选")
+        if not market_cap_map:
+            print("[funnel] ⚠️ Yahoo 市值映射为空，Layer1 市值过滤将被跳过")
+        print("[funnel] 非CN模式按统一行业口径筛选")
     print(f"[funnel] 加载股票名称...")
     name_map = _stock_name_map(market)
 

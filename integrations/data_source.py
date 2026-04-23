@@ -1399,10 +1399,26 @@ def fetch_industry_map() -> dict[str, str]:
     return {}
 
 
-def fetch_market_cap_map() -> dict[str, float]:
+def fetch_market_cap_map(*, market: str = "cn") -> dict[str, float]:
     """
-    全市场 code->总市值(亿元)。仅使用本地缓存，不再调用 tushare 刷新。
+    市值映射（单位：CNY 亿元等价值）。
+    CN 优先 Yahoo 统一缓存，缺失时回退旧本地缓存；
+    HK/US 使用 Yahoo 统一缓存。
     """
+    market_norm = str(market or "cn").strip().lower()
+    if market_norm in {"cn", "hk", "us"}:
+        try:
+            from integrations.sector_map_yfinance import market_cap_map_from_cache
+
+            yahoo_map = market_cap_map_from_cache(market=market_norm)
+            if yahoo_map or market_norm != "cn":
+                return yahoo_map
+        except Exception as e:
+            _debug_source_fail("market_cap_yahoo_cache_read", e)
+
+    if market_norm != "cn":
+        return {}
+
     try:
         if (
             _MARKET_CAP_CACHE.exists()

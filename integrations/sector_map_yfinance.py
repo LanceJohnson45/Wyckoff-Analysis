@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -26,6 +27,9 @@ class YahooSectorRecord:
     sector_key: str
     industry: str
     industry_key: str
+    market_cap: float | None
+    market_cap_currency: str
+    market_cap_yi: float | None
     source: str
     updated_at: str
 
@@ -91,6 +95,26 @@ def _normalize_target_symbol(symbol: str, market: str) -> str:
     if market_norm == "us":
         return text.replace(".", "-").replace("/", "-")
     return ""
+
+
+def _currency_to_cny_rate(currency: str) -> float:
+    cur = str(currency or "").strip().upper()
+    if cur in {"CNY", "CNH", "RMB"}:
+        return 1.0
+    if cur == "HKD":
+        try:
+            return float(os.getenv("HKD_CNY_RATE", "0.92"))
+        except Exception:
+            return 0.92
+    if cur == "USD":
+        try:
+            return float(os.getenv("USD_CNY_RATE", "7.20"))
+        except Exception:
+            return 7.20
+    try:
+        return float(os.getenv(f"{cur}_CNY_RATE", "1.0"))
+    except Exception:
+        return 1.0
 
 
 def _all_targets_for_market(market: str) -> list[str]:
@@ -170,6 +194,27 @@ def classification_map_from_cache(*, field: str) -> dict[str, str]:
     return out
 
 
+def market_cap_map_from_cache(*, market: str = "cn") -> dict[str, float]:
+    market_norm = str(market or "cn").strip().lower()
+    out: dict[str, float] = {}
+    for symbol, row in load_sector_cache().items():
+        row_market = str(row.get("market", "") or "").strip().lower()
+        if row_market != market_norm:
+            continue
+        raw = row.get("market_cap_yi")
+        try:
+            value = float(raw)
+        except Exception:
+            continue
+        if value <= 0:
+            continue
+        if market_norm == "cn":
+            out[symbol.split(".")[0]] = value
+        else:
+            out[symbol] = value
+    return out
+
+
 def missing_symbols_from_cache(symbols: list[str], market: str) -> list[str]:
     cache = load_sector_cache()
     market_norm = str(market or "").strip().lower()
@@ -180,7 +225,13 @@ def missing_symbols_from_cache(symbols: list[str], market: str) -> list[str]:
             continue
         row = cache.get(yf_symbol)
         sector = str((row or {}).get("sector", "") or "").strip()
-        if not sector:
+        industry = str((row or {}).get("industry", "") or "").strip()
+        market_cap_yi = (row or {}).get("market_cap_yi")
+        try:
+            market_cap_ok = float(market_cap_yi) > 0
+        except Exception:
+            market_cap_ok = False
+        if not sector or not industry or not market_cap_ok:
             out.append(yf_symbol)
     return out
 
@@ -190,6 +241,15 @@ def _probe_symbol(yf, symbol: str, market: str) -> dict[str, Any]:
     info = ticker.info
     if not isinstance(info, dict):
         info = {}
+    currency = str(info.get("currency") or "").strip().upper()
+    market_cap = info.get("marketCap")
+    try:
+        market_cap_f = float(market_cap)
+    except Exception:
+        market_cap_f = None
+    market_cap_yi = None
+    if market_cap_f is not None and market_cap_f > 0:
+        market_cap_yi = market_cap_f * _currency_to_cny_rate(currency) / 1e8
     return {
         "symbol": symbol,
         "market": market,
@@ -197,6 +257,9 @@ def _probe_symbol(yf, symbol: str, market: str) -> dict[str, Any]:
         "sector_key": str(info.get("sectorKey") or "").strip(),
         "industry": str(info.get("industry") or "").strip(),
         "industry_key": str(info.get("industryKey") or "").strip(),
+        "market_cap": market_cap_f,
+        "market_cap_currency": currency,
+        "market_cap_yi": market_cap_yi,
         "source": "yfinance.info",
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }

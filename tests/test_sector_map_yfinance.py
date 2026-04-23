@@ -59,3 +59,30 @@ def test_industry_map_from_cache_converts_cn_keys(monkeypatch):
     assert out["600519"] == "Beverages - Wineries & Distilleries"
     assert out["0700.HK"] == "Internet Content & Information"
     assert out["MSFT"] == "Software - Infrastructure"
+
+
+def test_market_cap_map_from_cache_by_market(monkeypatch):
+    monkeypatch.setattr(
+        mod,
+        "load_sector_cache",
+        lambda: {
+            "600519.SS": {
+                "market": "cn",
+                "market_cap_yi": 21000.5,
+            },
+            "0700.HK": {
+                "market": "hk",
+                "market_cap_yi": 31500.0,
+            },
+            "MSFT": {
+                "market": "us",
+                "market_cap_yi": 220000.0,
+            },
+        },
+    )
+    cn = mod.market_cap_map_from_cache(market="cn")
+    hk = mod.market_cap_map_from_cache(market="hk")
+    us = mod.market_cap_map_from_cache(market="us")
+    assert cn["600519"] == 21000.5
+    assert hk["0700.HK"] == 31500.0
+    assert us["MSFT"] == 220000.0

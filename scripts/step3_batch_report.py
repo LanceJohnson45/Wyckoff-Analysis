@@ -775,7 +775,7 @@ def run(
     sector_map = fetch_sector_map()
     industry_map = fetch_industry_map()
     classification_map = industry_map or sector_map
-    market_cap_map = fetch_market_cap_map() if market_norm == "cn" else {}
+    market_cap_map = fetch_market_cap_map(market=market_norm)
     benchmark_ret_10: float | None = None
     try:
         if market_norm == "cn":

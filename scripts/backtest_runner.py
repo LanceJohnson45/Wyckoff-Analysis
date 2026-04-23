@@ -724,10 +724,7 @@ def run_backtest(
             )
         else:
             sector_map = fetch_industry_map() or fetch_sector_map()
-            if market_norm == "cn":
-                market_cap_map = fetch_market_cap_map()
-            else:
-                market_cap_map = {}
+            market_cap_map = fetch_market_cap_map(market=market_norm)
             print(
                 "[backtest] ⚠️ 使用当前截面市值/行业映射（会引入 look-ahead bias）"
             )

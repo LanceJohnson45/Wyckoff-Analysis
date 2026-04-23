@@ -70,8 +70,29 @@ def _pick_info_fields(info: dict[str, Any]) -> dict[str, Any]:
         "industryDisp",
         "country",
         "currency",
+        "marketCap",
     ]
     return {key: _jsonable(info.get(key)) for key in wanted if key in info}
+
+
+def _currency_to_cny_rate(currency: str) -> float:
+    cur = str(currency or "").strip().upper()
+    if cur in {"CNY", "CNH", "RMB"}:
+        return 1.0
+    if cur == "HKD":
+        try:
+            return float(os.getenv("HKD_CNY_RATE", "0.92"))
+        except Exception:
+            return 0.92
+    if cur == "USD":
+        try:
+            return float(os.getenv("USD_CNY_RATE", "7.20"))
+        except Exception:
+            return 7.20
+    try:
+        return float(os.getenv(f"{cur}_CNY_RATE", "1.0"))
+    except Exception:
+        return 1.0
 
 
 def _probe_sector_or_industry(obj: Any, *, kind: str) -> dict[str, Any]:
@@ -115,8 +136,20 @@ def _probe_symbol(symbol: str) -> dict[str, Any]:
 
     sector_key = str(info.get("sectorKey") or "").strip()
     industry_key = str(info.get("industryKey") or "").strip()
+    currency = str(info.get("currency") or "").strip().upper()
+    market_cap = info.get("marketCap")
+    try:
+        market_cap_float = float(market_cap)
+    except Exception:
+        market_cap_float = None
+    market_cap_yi = None
+    if market_cap_float is not None and market_cap_float > 0:
+        market_cap_yi = market_cap_float * _currency_to_cny_rate(currency) / 1e8
     out["sector_key"] = sector_key or None
     out["industry_key"] = industry_key or None
+    out["market_cap"] = market_cap_float
+    out["market_cap_currency"] = currency or None
+    out["market_cap_yi"] = market_cap_yi
 
     try:
         hist = ticker.history(period="1mo", auto_adjust=True)
