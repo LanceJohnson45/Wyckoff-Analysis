@@ -1,12 +1,8 @@
 name: Intraday Position Monitor
 
 on:
-  schedule:
-    # UTC → 北京: 02:00→10:00, 03:00→11:00, 05:30→13:30, 06:30→14:30
-    - cron: "0 2 * * 1-5"
-    - cron: "0 3 * * 1-5"
-    - cron: "30 5 * * 1-5"
-    - cron: "30 6 * * 1-5"
+  # Disabled automatic intraday monitoring because it requires TickFlow
+  # real-time quotes and intraday bars. Keep manual dispatch for future use.
   workflow_dispatch:
 
 concurrency:
