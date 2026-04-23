@@ -8,12 +8,17 @@ import pytest
 from core.wyckoff_engine import (
     DataIntegrityPolicy,
     FunnelConfig,
+    L2Metrics,
     _latest_trade_date,
     _sorted_if_needed,
     assess_hist_integrity,
     layer1_filter,
     layer2_strength_detailed,
     run_funnel,
+    score_track_a,
+    score_track_b,
+    score_track_c,
+    select_l2_decision,
 )
 
 
@@ -168,6 +173,120 @@ class TestIntegrityPolicy:
         )
         assert ok is False
         assert stats["missing_recent"] == 1
+
+
+class TestL2CLiteDecision:
+    def _metrics(self, **overrides) -> L2Metrics:
+        base = dict(
+            symbol="000001",
+            market="cn",
+            close=120.0,
+            ma20=115.0,
+            ma50=110.0,
+            ma200=100.0,
+            bias_200=0.20,
+            rs_long=4.0,
+            rs_short=2.0,
+            rps_fast=86.0,
+            rps_slow=82.0,
+            rps_slope=0.8,
+            ret_5=3.0,
+            ret_10=6.0,
+            ret_20=12.0,
+            breakout_proximity_20=98.0,
+            breakout_proximity_60=96.0,
+            volume_expansion=1.4,
+            price_from_250d_low=0.32,
+            range_60_pct=18.0,
+            dry_volume_ratio=0.55,
+            ma_gap_pct=10.0,
+            old_channels={
+                "momentum": True,
+                "ambush": False,
+                "accum": False,
+                "dry_vol": False,
+                "rs_div": False,
+                "sos": False,
+            },
+        )
+        base.update(overrides)
+        return L2Metrics(**base)
+
+    def test_selects_one_primary_track(self):
+        cfg = FunnelConfig()
+        metrics = self._metrics()
+        details = {
+            "A": score_track_a(metrics, cfg, "cn"),
+            "B": score_track_b(metrics, cfg, "cn"),
+            "C": score_track_c(metrics, cfg, "cn"),
+        }
+
+        decision = select_l2_decision("000001", metrics, details, cfg, "cn")
+
+        assert decision.passed is True
+        assert decision.selected_track in {"A", "B"}
+        assert isinstance(decision.track_scores, dict)
+
+    def test_us_profile_disables_accumulation_track(self):
+        cfg = FunnelConfig.for_market("us")
+        metrics = self._metrics(
+            market="us",
+            close=40.0,
+            ma20=42.0,
+            ma50=45.0,
+            ma200=55.0,
+            bias_200=-0.27,
+            rs_long=-1.0,
+            rs_short=-0.5,
+            rps_fast=35.0,
+            rps_slow=45.0,
+            rps_slope=-0.2,
+            ret_20=-3.0,
+            price_from_250d_low=0.12,
+            ma_gap_pct=-18.0,
+            old_channels={
+                "momentum": False,
+                "ambush": False,
+                "accum": True,
+                "dry_vol": True,
+                "rs_div": True,
+                "sos": False,
+            },
+        )
+        details = {
+            "A": score_track_a(metrics, cfg, "us"),
+            "B": score_track_b(metrics, cfg, "us"),
+            "C": score_track_c(metrics, cfg, "us"),
+        }
+
+        decision = select_l2_decision("AAPL", metrics, details, cfg, "us")
+
+        assert details["C"].required_passed is False
+        assert decision.selected_track != "C"
+
+    def test_accumulation_track_rejects_severe_downtrend(self):
+        cfg = FunnelConfig()
+        metrics = self._metrics(
+            close=80.0,
+            ma20=82.0,
+            ma50=90.0,
+            ma200=120.0,
+            ret_20=-12.0,
+            price_from_250d_low=0.10,
+            old_channels={
+                "momentum": False,
+                "ambush": False,
+                "accum": True,
+                "dry_vol": True,
+                "rs_div": False,
+                "sos": False,
+            },
+        )
+
+        detail = score_track_c(metrics, cfg, "cn")
+
+        assert detail.required_passed is False
+        assert detail.reasons["severe_downtrend"] is True
 
 
 class TestRunFunnelDiagnostics:

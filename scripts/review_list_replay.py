@@ -97,7 +97,7 @@ def _explain_l2_fail(
         channel = channel_map.get(code, "未知通道")
         return f"引擎判定通过L2[{channel}]，应在L3或后续层被淘汰"
 
-    return "六通道均未通过（主升/潜伏/吸筹/地量蓄势/暗中护盘/点火破局）"
+    return "C-lite 三轨均未通过（主升确认/启动确认/吸筹改善）"
 
 
 def _build_hit_map(triggers: dict[str, list[tuple[str, float]]]) -> dict[str, list[str]]:

@@ -86,8 +86,8 @@ class HoldingDiagnostic:
 
 # ── 通道 → 轨道映射 ──
 
-_TREND_CHANNELS = {"主升通道", "点火破局"}
-_ACCUM_CHANNELS = {"潜伏通道", "吸筹通道", "地量蓄势", "暗中护盘"}
+_TREND_CHANNELS = {"主升通道", "点火破局", "主升确认", "启动确认"}
+_ACCUM_CHANNELS = {"潜伏通道", "吸筹通道", "地量蓄势", "暗中护盘", "吸筹改善"}
 
 
 def _classify_track(channel: str) -> str:

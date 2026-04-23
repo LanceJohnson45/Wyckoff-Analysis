@@ -3,7 +3,7 @@
 Wyckoff Funnel 5 层漏斗筛选引擎
 
 Layer 1: 剥离垃圾（ST / 北交所 / 科创板 / 市值 / 成交额）
-Layer 2: 六通道甄选（主升/潜伏/吸筹/地量/暗中护盘/点火破局）
+Layer 2: C-lite 三轨甄选（主升确认/启动确认/吸筹改善）
 Layer 2.5: Markup 加速检测
 Layer 3: 板块共振（行业分布 Top-N + RPS 动量）
 Layer 4: 威科夫狙击（Spring / SOS / LPS / Effort vs Result）
@@ -83,6 +83,53 @@ class SymbolFeatureBundle:
     ma_short: pd.Series
     ma_long: pd.Series
     ma_hold: pd.Series
+
+
+@dataclass(frozen=True)
+class L2Metrics:
+    symbol: str
+    market: str
+    close: float | None
+    ma20: float | None
+    ma50: float | None
+    ma200: float | None
+    bias_200: float | None
+    rs_long: float | None
+    rs_short: float | None
+    rps_fast: float | None
+    rps_slow: float | None
+    rps_slope: float | None
+    ret_5: float | None
+    ret_10: float | None
+    ret_20: float | None
+    breakout_proximity_20: float | None
+    breakout_proximity_60: float | None
+    volume_expansion: float | None
+    price_from_250d_low: float | None
+    range_60_pct: float | None
+    dry_volume_ratio: float | None
+    ma_gap_pct: float | None
+    old_channels: dict[str, bool]
+
+
+@dataclass(frozen=True)
+class TrackScoreDetail:
+    track: str
+    required_passed: bool
+    score: float
+    reasons: dict[str, object]
+    penalties: dict[str, float]
+
+
+@dataclass(frozen=True)
+class L2Decision:
+    symbol: str
+    passed: bool
+    selected_track: str | None
+    selected_score: float
+    track_scores: dict[str, float]
+    old_channels: dict[str, bool]
+    reasons: dict[str, object]
 
 
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
@@ -332,6 +379,24 @@ class FunnelConfig:
     rs_div_bench_ref_window: int = 60  # 大盘新低对比的参考窗口（近 60 日）
     rs_div_price_from_low_max: float = 0.50  # 位阶保护：现价 <= 年内低点 +50%
 
+    # Layer 2 C-lite 三轨决策：复用上方指标，重构最终通过逻辑。
+    enable_track_momentum: bool = True
+    enable_track_early_strength: bool = True
+    enable_track_accumulation: bool = True
+    track_a_min_score: float = 70.0
+    track_b_min_score: float = 62.0
+    track_c_min_score: float = 58.0
+    track_a_rps_fast_min: float = 75.0
+    track_a_rps_slow_min: float = 70.0
+    track_a_rs_long_min: float = 2.0
+    track_a_rps_slope_min: float = 0.5
+    track_a_bias_200_max: float = 0.25
+    track_b_rps_fast_min: float = 60.0
+    track_b_rs_short_min: float = 0.0
+    track_b_breakout_proximity_min: float = 70.0
+    track_c_price_from_low_max: float = 0.40
+    track_c_severe_downtrend_ret20_min: float = -8.0
+
     # Layer 3
     # 行业共振过滤：按”行业样本数分位阈值 + 最小样本数”动态过滤，避免固定 TopN 误杀。
     top_n_sectors: int = 5
@@ -530,6 +595,16 @@ _PROFILE_OVERRIDES: dict[str, ConfigOverride] = {
         "sector_count_quantile": 0.60,
         "sector_super_strength_quantile": 0.88,
         "enable_ambush_channel": False,
+        "track_a_min_score": 76.0,
+        "track_a_rps_fast_min": 80.0,
+        "track_a_rps_slow_min": 72.0,
+        "track_a_rs_long_min": 2.0,
+        "track_a_rps_slope_min": 0.45,
+        "track_b_min_score": 62.0,
+        "track_b_rps_fast_min": 58.0,
+        "track_b_breakout_proximity_min": 68.0,
+        "track_c_min_score": 58.0,
+        "track_c_price_from_low_max": 0.45,
         "ambush_rps_fast_max": 50.0,
         "ambush_rps_slow_min": 62.0,
         "ambush_rs_long_min": -3.0,
@@ -598,6 +673,16 @@ _PROFILE_OVERRIDES: dict[str, ConfigOverride] = {
         "enable_accumulation_channel": False,
         "enable_dry_vol_channel": False,
         "enable_rs_divergence_channel": False,
+        "enable_track_accumulation": False,
+        "track_a_min_score": 74.0,
+        "track_b_min_score": 64.0,
+        "track_a_rps_fast_min": 85.0,
+        "track_a_rps_slow_min": 80.0,
+        "track_a_rs_long_min": 4.0,
+        "track_a_rps_slope_min": 0.75,
+        "track_b_rps_fast_min": 65.0,
+        "track_b_rs_short_min": 1.0,
+        "track_b_breakout_proximity_min": 72.0,
         "ambush_rps_fast_max": 55.0,
         "ambush_rps_slow_min": 65.0,
         "ambush_rs_long_min": -4.0,
@@ -847,6 +932,300 @@ def layer1_filter(
 # Layer 2: 强弱甄别
 
 
+_MARKET_ALLOWED_TRACKS: dict[str, tuple[str, ...]] = {
+    "cn": ("A", "B", "C"),
+    "us": ("A", "B"),
+    "hk": ("B", "C", "A"),
+}
+
+_TRACK_LABELS: dict[str, str] = {
+    "A": "主升确认",
+    "B": "启动确认",
+    "C": "吸筹改善",
+}
+
+
+def _clamp_score(value: float | None, low: float = 0.0, high: float = 100.0) -> float:
+    if value is None or pd.isna(value):
+        return 0.0
+    if high <= low:
+        return 0.0
+    raw = (float(value) - low) / (high - low) * 100.0
+    return max(0.0, min(100.0, raw))
+
+
+def _score_inverse_ratio(value: float | None, max_value: float) -> float:
+    if value is None or pd.isna(value) or max_value <= 0:
+        return 0.0
+    ratio = max(float(value), 0.0) / max_value
+    return max(0.0, min(100.0, (1.0 - ratio) * 100.0))
+
+
+def _resolve_l2_market(cfg: FunnelConfig) -> str:
+    market = str(getattr(cfg, "market_template", "") or getattr(cfg, "profile", "cn"))
+    market_norm = _PROFILE_ALIASES.get(_normalize_template_key(market), market)
+    return market_norm if market_norm in {"cn", "us", "hk"} else "cn"
+
+
+def _market_allowed_tracks(cfg: FunnelConfig, market: str) -> tuple[str, ...]:
+    allowed = list(_MARKET_ALLOWED_TRACKS.get(market, ("A", "B", "C")))
+    if not getattr(cfg, "enable_track_momentum", True):
+        allowed = [x for x in allowed if x != "A"]
+    if not getattr(cfg, "enable_track_early_strength", True):
+        allowed = [x for x in allowed if x != "B"]
+    if not getattr(cfg, "enable_track_accumulation", True):
+        allowed = [x for x in allowed if x != "C"]
+    return tuple(allowed)
+
+
+def _l2_component_scores(metrics: L2Metrics, cfg: FunnelConfig) -> dict[str, float]:
+    ma_alignment_score = 0.0
+    if (
+        metrics.ma50 is not None
+        and metrics.ma200 is not None
+        and metrics.close is not None
+        and metrics.ma200 > 0
+    ):
+        ma_gap = (metrics.ma50 - metrics.ma200) / metrics.ma200
+        if metrics.ma50 > metrics.ma200 and metrics.close >= metrics.ma50:
+            ma_alignment_score = 100.0
+        elif abs(ma_gap) <= getattr(cfg, "accum_ma_gap_max", 0.06) and metrics.close >= min(
+            metrics.ma50, metrics.ma200
+        ):
+            ma_alignment_score = 65.0
+        elif metrics.close >= metrics.ma50:
+            ma_alignment_score = 45.0
+        else:
+            ma_alignment_score = 20.0
+
+    rps_fast_score = _clamp_score(metrics.rps_fast)
+    rps_slow_score = _clamp_score(metrics.rps_slow)
+    rs_long_score = _clamp_score(metrics.rs_long, -5.0, 10.0)
+    rs_short_score = _clamp_score(metrics.rs_short, -3.0, 6.0)
+    rps_slope_score = _clamp_score(metrics.rps_slope, -1.0, 2.0)
+    breakout_score = max(
+        _clamp_score(metrics.breakout_proximity_20, 80.0, 100.0),
+        _clamp_score(metrics.breakout_proximity_60, 75.0, 100.0),
+    )
+    recent_return_score = max(
+        _clamp_score(metrics.ret_5, -5.0, 8.0),
+        _clamp_score(metrics.ret_10, -8.0, 12.0),
+    )
+    volume_expansion_score = _clamp_score(metrics.volume_expansion, 0.8, 1.8)
+
+    old = metrics.old_channels
+    accumulation_channel_score = 100.0 if old.get("accum") else 0.0
+    dry_volume_score = 100.0 if old.get("dry_vol") else 0.0
+    rs_divergence_score = 100.0 if old.get("rs_div") else 0.0
+    low_position_score = _score_inverse_ratio(
+        metrics.price_from_250d_low, getattr(cfg, "track_c_price_from_low_max", 0.40)
+    )
+    ma_convergence_score = _score_inverse_ratio(
+        abs(metrics.ma_gap_pct) if metrics.ma_gap_pct is not None else None,
+        getattr(cfg, "accum_ma_gap_max", 0.06) * 100.0,
+    )
+
+    trend_maturity_score = (
+        0.30 * ma_alignment_score
+        + 0.25 * rps_fast_score
+        + 0.20 * rps_slow_score
+        + 0.15 * rs_long_score
+        + 0.10 * rs_short_score
+    )
+    early_strength_score = (
+        0.30 * rs_short_score
+        + 0.25 * rps_slope_score
+        + 0.20 * breakout_score
+        + 0.15 * recent_return_score
+        + 0.10 * volume_expansion_score
+    )
+    accum_readiness_score = (
+        0.30 * accumulation_channel_score
+        + 0.25 * dry_volume_score
+        + 0.20 * rs_divergence_score
+        + 0.15 * low_position_score
+        + 0.10 * ma_convergence_score
+    )
+    return {
+        "ma_alignment_score": ma_alignment_score,
+        "rps_fast_score": rps_fast_score,
+        "rps_slow_score": rps_slow_score,
+        "rs_long_score": rs_long_score,
+        "rs_short_score": rs_short_score,
+        "rps_slope_score": rps_slope_score,
+        "breakout_score": breakout_score,
+        "recent_return_score": recent_return_score,
+        "volume_expansion_score": volume_expansion_score,
+        "accum_readiness_score": accum_readiness_score,
+        "trend_maturity_score": trend_maturity_score,
+        "early_strength_score": early_strength_score,
+    }
+
+
+def score_track_a(metrics: L2Metrics, cfg: FunnelConfig, market: str) -> TrackScoreDetail:
+    c = _l2_component_scores(metrics, cfg)
+    bias_max = float(getattr(cfg, "track_a_bias_200_max", getattr(cfg, "momentum_bias_200_max", 0.25)))
+    required = (
+        bool(getattr(cfg, "enable_track_momentum", True))
+        and metrics.ma50 is not None
+        and metrics.ma200 is not None
+        and metrics.close is not None
+        and metrics.ma50 > metrics.ma200
+        and metrics.close >= metrics.ma50
+        and (metrics.rps_fast is not None and metrics.rps_fast >= cfg.track_a_rps_fast_min)
+        and (metrics.rps_slow is not None and metrics.rps_slow >= cfg.track_a_rps_slow_min)
+        and (metrics.rs_long is None or metrics.rs_long >= cfg.track_a_rs_long_min)
+        and (metrics.rps_slope is None or metrics.rps_slope >= cfg.track_a_rps_slope_min)
+        and (metrics.bias_200 is None or metrics.bias_200 <= bias_max)
+    )
+    markup_score = 100.0 if metrics.old_channels.get("momentum") else 0.0
+    sos_score = 100.0 if metrics.old_channels.get("sos") else 0.0
+    overextended_penalty = 0.0
+    if metrics.bias_200 is not None and metrics.bias_200 > bias_max * 0.8:
+        overextended_penalty = min(20.0, max(0.0, (metrics.bias_200 / bias_max - 0.8) * 50.0))
+    score = (
+        0.55 * c["trend_maturity_score"]
+        + 0.25 * c["early_strength_score"]
+        + 0.10 * markup_score
+        + 0.10 * sos_score
+        - overextended_penalty
+    )
+    return TrackScoreDetail(
+        track="A",
+        required_passed=bool(required),
+        score=round(max(0.0, min(100.0, score)), 2),
+        reasons={"components": c, "market": market, "required": bool(required)},
+        penalties={"overextended": round(overextended_penalty, 2)},
+    )
+
+
+def score_track_b(metrics: L2Metrics, cfg: FunnelConfig, market: str) -> TrackScoreDetail:
+    c = _l2_component_scores(metrics, cfg)
+    breakout_proximity = max(
+        metrics.breakout_proximity_20 or 0.0,
+        metrics.breakout_proximity_60 or 0.0,
+    )
+    close_near_ma = False
+    if metrics.close is not None:
+        close_near_ma = (
+            (metrics.ma20 is not None and metrics.close >= metrics.ma20)
+            or (metrics.ma50 is not None and metrics.close >= metrics.ma50)
+        )
+    required = (
+        bool(getattr(cfg, "enable_track_early_strength", True))
+        and (metrics.rps_fast is not None and metrics.rps_fast >= cfg.track_b_rps_fast_min)
+        and (metrics.rs_short is None or metrics.rs_short > cfg.track_b_rs_short_min)
+        and (metrics.rps_slope is None or metrics.rps_slope > 0)
+        and close_near_ma
+        and breakout_proximity >= cfg.track_b_breakout_proximity_min
+    )
+    volume_confirmation_score = c["volume_expansion_score"]
+    failed_breakout_penalty = 0.0
+    if metrics.ret_5 is not None and metrics.ret_5 < -5 and breakout_proximity >= 95:
+        failed_breakout_penalty = 12.0
+    score = (
+        0.35 * c["trend_maturity_score"]
+        + 0.45 * c["early_strength_score"]
+        + 0.10 * c["breakout_score"]
+        + 0.10 * volume_confirmation_score
+        - failed_breakout_penalty
+    )
+    return TrackScoreDetail(
+        track="B",
+        required_passed=bool(required),
+        score=round(max(0.0, min(100.0, score)), 2),
+        reasons={"components": c, "market": market, "required": bool(required)},
+        penalties={"failed_breakout": round(failed_breakout_penalty, 2)},
+    )
+
+
+def score_track_c(metrics: L2Metrics, cfg: FunnelConfig, market: str) -> TrackScoreDetail:
+    c = _l2_component_scores(metrics, cfg)
+    old = metrics.old_channels
+    has_left_signal = bool(old.get("accum") or old.get("dry_vol") or old.get("rs_div"))
+    severe_downtrend = False
+    if metrics.close is not None and metrics.ma50 is not None and metrics.ma200 is not None:
+        severe_downtrend = (
+            metrics.close < metrics.ma50 < metrics.ma200
+            and metrics.ret_20 is not None
+            and metrics.ret_20 <= cfg.track_c_severe_downtrend_ret20_min
+        )
+    required = (
+        bool(getattr(cfg, "enable_track_accumulation", True))
+        and metrics.price_from_250d_low is not None
+        and metrics.price_from_250d_low <= cfg.track_c_price_from_low_max
+        and has_left_signal
+        and not severe_downtrend
+    )
+    support_resilience_score = 100.0 if old.get("rs_div") else max(0.0, c["rs_short_score"] * 0.5)
+    downtrend_continuation_penalty = 18.0 if severe_downtrend else 0.0
+    score = (
+        0.15 * c["trend_maturity_score"]
+        + 0.20 * c["early_strength_score"]
+        + 0.55 * c["accum_readiness_score"]
+        + 0.10 * support_resilience_score
+        - downtrend_continuation_penalty
+    )
+    return TrackScoreDetail(
+        track="C",
+        required_passed=bool(required),
+        score=round(max(0.0, min(100.0, score)), 2),
+        reasons={
+            "components": c,
+            "market": market,
+            "required": bool(required),
+            "severe_downtrend": bool(severe_downtrend),
+            "has_left_signal": bool(has_left_signal),
+        },
+        penalties={"downtrend_continuation": round(downtrend_continuation_penalty, 2)},
+    )
+
+
+def select_l2_decision(
+    symbol: str,
+    metrics: L2Metrics,
+    track_details: dict[str, TrackScoreDetail],
+    cfg: FunnelConfig,
+    market: str,
+) -> L2Decision:
+    allowed_tracks = _market_allowed_tracks(cfg, market)
+    allowed = set(allowed_tracks)
+    min_scores = {
+        "A": float(getattr(cfg, "track_a_min_score", 70.0)),
+        "B": float(getattr(cfg, "track_b_min_score", 62.0)),
+        "C": float(getattr(cfg, "track_c_min_score", 58.0)),
+    }
+    valid = [
+        d
+        for d in track_details.values()
+        if d.track in allowed
+        and d.required_passed
+        and d.score >= min_scores.get(d.track, 0.0)
+    ]
+    selected = max(valid, key=lambda d: d.score) if valid else None
+    return L2Decision(
+        symbol=symbol,
+        passed=selected is not None,
+        selected_track=selected.track if selected else None,
+        selected_score=float(selected.score) if selected else 0.0,
+        track_scores={k: float(v.score) for k, v in track_details.items()},
+        old_channels=dict(metrics.old_channels),
+        reasons={
+            "allowed_tracks": allowed_tracks,
+            "min_scores": min_scores,
+            "track_details": {
+                k: {
+                    "required_passed": v.required_passed,
+                    "score": v.score,
+                    "reasons": v.reasons,
+                    "penalties": v.penalties,
+                }
+                for k, v in track_details.items()
+            },
+        },
+    )
+
+
 def layer2_strength_detailed(
     symbols: list[str],
     df_map: dict[str, pd.DataFrame],
@@ -856,6 +1235,7 @@ def layer2_strength_detailed(
     rps_universe: list[str] | None = None,
     feature_map: dict[str, SymbolFeatureBundle] | None = None,
     return_rejections: bool = False,
+    return_decisions: bool = False,
 ) -> (
     tuple[list[str], dict[str, str]]
     | tuple[
@@ -863,15 +1243,22 @@ def layer2_strength_detailed(
         dict[str, str],
         dict[str, dict[str, float | str | bool | None]],
     ]
+    | tuple[
+        list[str],
+        dict[str, str],
+        dict[str, dict[str, float | str | bool | None]],
+        dict[str, L2Decision],
+    ]
 ):
     """
-    Layer2 双通道：
-    1) 主升通道：MA50>MA200（或大盘连跌时守住MA20）+ RS/RPS 强势过滤
-    2) 潜伏通道：长强短弱（RPS120高、RPS50低）且回到年线附近
+    Layer2 C-lite 三轨决策：
+    1) Track A 主升确认：趋势成熟 + RS/RPS 强势 + 不过度乖离
+    2) Track B 启动确认：短期转强 + 接近突破 + 仍有结构余量
+    3) Track C 吸筹改善：低位改善 + 吸筹/地量/拒绝新低证据
 
     返回：
     - passed: 通过 Layer2 的股票
-    - channel_map: code -> 主升通道/潜伏通道/双通道
+    - channel_map: code -> 唯一主 Track 标签
     """
 
     def _cum_return_pct_from_series(pct_series: pd.Series) -> float | None:
@@ -914,6 +1301,7 @@ def layer2_strength_detailed(
     bench_dropping = False
     bench_sorted: pd.DataFrame | None = None
     bench_latest_date = None
+    market = _resolve_l2_market(cfg)
     if bench_df is not None and not bench_df.empty:
         bench_sorted = _sorted_if_needed(bench_df)
         bench_latest_date = _latest_trade_date(bench_sorted)
@@ -962,6 +1350,7 @@ def layer2_strength_detailed(
     passed: list[str] = []
     channel_map: dict[str, str] = {}
     rejected: dict[str, dict[str, float | str | bool | None]] = {}
+    decision_map: dict[str, L2Decision] = {}
     for sym in symbols:
         bundle = feature_map.get(sym) if feature_map else None
         df = bundle.df if bundle is not None else df_map.get(sym)
@@ -1038,6 +1427,7 @@ def layer2_strength_detailed(
         ambush_rps_ok = True
 
         # 计算 RPS 斜率：判断 RPS 是否还在上升
+        rps_slope = None
         rps_slope_ok = True
         if (
             cfg.enable_rps_filter
@@ -1065,6 +1455,7 @@ def layer2_strength_detailed(
                     x = np.arange(len(cum_returns))
                     y = np.array(cum_returns)
                     slope = np.polyfit(x, y, 1)[0]
+                    rps_slope = float(slope)
                     rps_slope_ok = slope >= cfg.rps_slope_min
 
         if cfg.enable_rps_filter and rps_filter_active:
@@ -1083,6 +1474,7 @@ def layer2_strength_detailed(
             )
 
         momentum_bias_ok = True
+        bias_200 = None
         if pd.notna(last_ma_long) and float(last_ma_long) > 0 and pd.notna(last_close):
             bias_200 = (float(last_close) - float(last_ma_long)) / float(last_ma_long)
             momentum_bias_ok = bias_200 <= getattr(cfg, "momentum_bias_200_max", 0.25)
@@ -1312,28 +1704,120 @@ def layer2_strength_detailed(
             if sos_score is not None:
                 sos_ok = True
 
-        if momentum_ok or ambush_ok or accum_ok or dry_vol_ok or rs_div_ok or sos_ok:
-            passed.append(sym)
-            labels: list[str] = []
-            if momentum_ok:
-                labels.append("主升通道")
-            if ambush_ok:
-                labels.append("潜伏通道")
-            if accum_ok:
-                labels.append("吸筹通道")
-            if dry_vol_ok:
-                labels.append("地量蓄势")
-            if rs_div_ok:
-                labels.append("暗中护盘")
-            if sos_ok:
-                labels.append("点火破局")
+        def _latest_ma_value(series: pd.Series) -> float | None:
+            try:
+                val = series.iloc[-1]
+                return float(val) if pd.notna(val) else None
+            except Exception:
+                return None
 
-            if not labels:
-                labels.append("点火破局")
-            channel_map[sym] = "+".join(labels)
+        def _breakout_proximity(window: int) -> float | None:
+            if len(df_sorted) < max(int(window), 2):
+                return None
+            high_series = pd.to_numeric(df_sorted.get("high"), errors="coerce")
+            recent_high = high_series.tail(int(window)).max()
+            if pd.isna(recent_high) or float(recent_high) <= 0 or pd.isna(last_close):
+                return None
+            return max(0.0, min(100.0, float(last_close) / float(recent_high) * 100.0))
+
+        ma_hold = bundle.ma_hold if bundle is not None else close.rolling(cfg.ma_hold).mean()
+        last_ma_hold = _latest_ma_value(ma_hold)
+        ret_5 = _close_return_pct(close, 5)
+        ret_10 = _close_return_pct(close, 10)
+        ret_20 = _close_return_pct(close, 20)
+
+        volume_expansion = None
+        dry_volume_ratio = None
+        vol = (
+            bundle.volume
+            if bundle is not None
+            else pd.to_numeric(df_sorted.get("volume"), errors="coerce")
+        )
+        if isinstance(vol, pd.Series) and len(vol) >= 40:
+            recent_vol_mean = float(vol.tail(5).mean())
+            ref_vol_mean = float(vol.tail(40).iloc[:-5].mean())
+            if ref_vol_mean > 0:
+                volume_expansion = recent_vol_mean / ref_vol_mean
+        if isinstance(vol, pd.Series) and len(vol) >= max(cfg.accum_vol_dry_ref_window, cfg.accum_vol_dry_window + 1):
+            dw = max(int(cfg.accum_vol_dry_window), 2)
+            rfw = max(int(cfg.accum_vol_dry_ref_window), dw + 1)
+            recent_dry_mean = float(vol.tail(dw).mean())
+            ref_dry_mean = float(vol.tail(rfw).iloc[:-dw].mean())
+            if ref_dry_mean > 0:
+                dry_volume_ratio = recent_dry_mean / ref_dry_mean
+
+        price_from_250d_low = None
+        lookback_low = min(max(int(cfg.accum_lookback_days), 2), len(close))
+        period_low_for_metrics = float(close.tail(lookback_low).min())
+        if period_low_for_metrics > 0 and pd.notna(last_close):
+            price_from_250d_low = float(last_close) / period_low_for_metrics - 1.0
+
+        range_60_pct = None
+        if len(df_sorted) >= 60:
+            range_zone = df_sorted.tail(60)
+            range_high = pd.to_numeric(range_zone.get("high"), errors="coerce").max()
+            range_low = pd.to_numeric(range_zone.get("low"), errors="coerce").min()
+            if pd.notna(range_high) and pd.notna(range_low) and float(range_low) > 0:
+                range_60_pct = (float(range_high) - float(range_low)) / float(range_low) * 100.0
+
+        ma_gap_pct = None
+        if pd.notna(last_ma_short) and pd.notna(last_ma_long) and float(last_ma_long) > 0:
+            ma_gap_pct = (float(last_ma_short) - float(last_ma_long)) / float(last_ma_long) * 100.0
+
+        metrics = L2Metrics(
+            symbol=sym,
+            market=market,
+            close=round(float(last_close), 4) if pd.notna(last_close) else None,
+            ma20=last_ma_hold,
+            ma50=round(float(last_ma_short), 4) if pd.notna(last_ma_short) else None,
+            ma200=round(float(last_ma_long), 4) if pd.notna(last_ma_long) else None,
+            bias_200=float(bias_200)
+            if bias_200 is not None and pd.notna(bias_200)
+            else None,
+            rs_long=float(rs_long) if rs_long is not None else None,
+            rs_short=float(rs_short) if rs_short is not None else None,
+            rps_fast=float(rps_fast) if rps_fast is not None else None,
+            rps_slow=float(rps_slow) if rps_slow is not None else None,
+            rps_slope=rps_slope,
+            ret_5=ret_5,
+            ret_10=ret_10,
+            ret_20=ret_20,
+            breakout_proximity_20=_breakout_proximity(20),
+            breakout_proximity_60=_breakout_proximity(60),
+            volume_expansion=volume_expansion,
+            price_from_250d_low=price_from_250d_low,
+            range_60_pct=range_60_pct,
+            dry_volume_ratio=dry_volume_ratio,
+            ma_gap_pct=ma_gap_pct,
+            old_channels={
+                "momentum": bool(momentum_ok),
+                "ambush": bool(ambush_ok),
+                "accum": bool(accum_ok),
+                "dry_vol": bool(dry_vol_ok),
+                "rs_div": bool(rs_div_ok),
+                "sos": bool(sos_ok),
+            },
+        )
+        track_details = {
+            "A": score_track_a(metrics, cfg, market),
+            "B": score_track_b(metrics, cfg, market),
+            "C": score_track_c(metrics, cfg, market),
+        }
+        decision = select_l2_decision(sym, metrics, track_details, cfg, market)
+        decision_map[sym] = decision
+
+        if decision.passed and decision.selected_track:
+            passed.append(sym)
+            channel_map[sym] = _TRACK_LABELS.get(decision.selected_track, decision.selected_track)
         else:
-            rejection_reason = "no_channel_triggered"
-            if not bullish_alignment and not holding_ma20:
+            rejection_reason = "no_track_passed"
+            if not any(metrics.old_channels.values()):
+                rejection_reason = "no_channel_evidence"
+            elif not bullish_alignment and not holding_ma20 and not (
+                metrics.old_channels.get("accum")
+                or metrics.old_channels.get("dry_vol")
+                or metrics.old_channels.get("rs_div")
+            ):
                 rejection_reason = "trend_alignment_failed"
             elif cfg.enable_rs_filter and not momentum_rs_ok and not ambush_rs_ok:
                 rejection_reason = "rs_filter_failed"
@@ -1371,17 +1855,18 @@ def layer2_strength_detailed(
                 "last_ma_long": round(float(last_ma_long), 4)
                 if pd.notna(last_ma_long)
                 else None,
-                "candidate_channels": {
-                    "momentum": bool(momentum_ok),
-                    "ambush": bool(ambush_ok),
-                    "accum": bool(accum_ok),
-                    "dry_vol": bool(dry_vol_ok),
-                    "rs_div": bool(rs_div_ok),
-                    "sos": bool(sos_ok),
-                },
+                "selected_track": decision.selected_track,
+                "selected_score": decision.selected_score,
+                "track_scores": decision.track_scores,
+                "candidate_channels": metrics.old_channels,
+                "layer2_decision": decision.reasons,
             }
+    if return_rejections and return_decisions:
+        return passed, channel_map, rejected, decision_map
     if return_rejections:
         return passed, channel_map, rejected
+    if return_decisions:
+        return passed, channel_map, {}, decision_map
     return passed, channel_map
 
 
@@ -2409,7 +2894,7 @@ def run_funnel(
         feature_map=feature_map,
         return_rejections=True,
     )
-    l2, channel_map, l2_rejections = layer2_strength_detailed(
+    l2, channel_map, l2_rejections, l2_decisions = layer2_strength_detailed(
         l1,
         prepared_df_map,
         bench_df,
@@ -2417,6 +2902,7 @@ def run_funnel(
         rps_universe=list(prepared_df_map.keys()),
         feature_map=feature_map,
         return_rejections=True,
+        return_decisions=True,
     )
     l3, top_sectors = layer3_sector_resonance(
         l2,
@@ -2478,6 +2964,18 @@ def run_funnel(
             "layer1_rejection": l1_rejections.get(sym),
             "layer2_rejection": l2_rejections.get(sym),
             "channel": str(channel_map.get(sym, "") or ""),
+            "layer2_decision": (
+                {
+                    "passed": l2_decisions[sym].passed,
+                    "selected_track": l2_decisions[sym].selected_track,
+                    "selected_score": l2_decisions[sym].selected_score,
+                    "track_scores": l2_decisions[sym].track_scores,
+                    "old_channels": l2_decisions[sym].old_channels,
+                    "reasons": l2_decisions[sym].reasons,
+                }
+                if sym in l2_decisions
+                else None
+            ),
             "stage": str(stage_map.get(sym, "") or ""),
             "triggers": trigger_by_symbol.get(sym, []),
             "exit_signal": (exit_signals.get(sym, {}) or {}).get("signal"),
@@ -2518,8 +3016,8 @@ def allocate_ai_candidates(
     max_trend_l3_fill = int(policy["max_trend_l3_fill"])
     max_accum_l3_fill = int(policy["max_accum_l3_fill"])
 
-    trend_channel_tags = {"主升通道", "点火破局"}
-    accum_channel_tags = {"潜伏通道", "吸筹通道", "地量蓄势", "暗中护盘"}
+    trend_channel_tags = {"主升通道", "点火破局", "主升确认", "启动确认"}
+    accum_channel_tags = {"潜伏通道", "吸筹通道", "地量蓄势", "暗中护盘", "吸筹改善"}
 
     def _channel_tags(code: str) -> set[str]:
         raw = str(result.channel_map.get(code, "")).strip()

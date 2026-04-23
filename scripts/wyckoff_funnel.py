@@ -3,7 +3,7 @@
 Wyckoff Funnel 定时任务：5 层漏斗筛选 → 多渠道推送
 
 Layer 1: 剥离垃圾（ST/北交所/科创板/市值/成交额）
-Layer 2: 六通道甄选（主升/潜伏/吸筹/地量/暗中护盘/点火破局）
+Layer 2: C-lite 三轨甄选（主升确认/启动确认/吸筹改善）
 Layer 2.5: Markup 加速检测
 Layer 3: 板块共振（行业 Top-N）
 Layer 4: 威科夫狙击（Spring / SOS / LPS / Effort vs Result）
@@ -1805,10 +1805,10 @@ def run_funnel_job(
     )
     l2_rejection_top, l2_rejection_summary = _summarize_rejections(l2_rejections)
     l2_rejection_samples = _sample_rejections(l2_rejections)
-    # 通道标签现在是多标签用 + 拼接，因此用 in 判断包含关系
-    l2_momentum = sum(1 for v in l2_channel_map.values() if "主升通道" in v)
-    l2_ambush = sum(1 for v in l2_channel_map.values() if "潜伏通道" in v)
-    l2_accum = sum(1 for v in l2_channel_map.values() if "吸筹通道" in v)
+    # C-lite 后 L2 输出唯一主 Track；兼容旧通道名做统计。
+    l2_momentum = sum(1 for v in l2_channel_map.values() if "主升通道" in v or "主升确认" in v)
+    l2_ambush = sum(1 for v in l2_channel_map.values() if "潜伏通道" in v or "启动确认" in v)
+    l2_accum = sum(1 for v in l2_channel_map.values() if "吸筹通道" in v or "吸筹改善" in v)
     l2_dry_vol = sum(1 for v in l2_channel_map.values() if "地量蓄势" in v)
     l2_rs_div = sum(1 for v in l2_channel_map.values() if "暗中护盘" in v)
     l2_sos = sum(1 for v in l2_channel_map.values() if "点火破局" in v)
@@ -2284,6 +2284,9 @@ def run(
     accum_l3_only = len(accum_selected) - accum_hit_selected
 
     channel_counts = {
+        "主升确认": 0,
+        "启动确认": 0,
+        "吸筹改善": 0,
         "主升通道": 0,
         "潜伏通道": 0,
         "吸筹通道": 0,
@@ -2423,6 +2426,9 @@ def run(
         " | ".join(
             f"{k}{channel_counts[k]}"
             for k in [
+                "主升确认",
+                "启动确认",
+                "吸筹改善",
                 "主升通道",
                 "潜伏通道",
                 "吸筹通道",
