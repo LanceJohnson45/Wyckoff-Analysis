@@ -115,12 +115,46 @@ class TestLayer1Filter:
         assert passed == []
         assert rejected["000001"]["reason"] == "avg_amount_below_threshold"
 
+    def test_partial_market_cap_map_does_not_reject_missing_cap(self):
+        cfg = FunnelConfig()
+        dates = pd.date_range("2024-01-01", periods=100, freq="B")
+        closes = [10 + i * 0.05 for i in range(100)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["amount"] = 1_000_000_000.0
+
+        result = layer1_filter(
+            ["000001", "000002"],
+            {"000001": "平安银行", "000002": "万科A"},
+            {"000001": 100.0},
+            {"000001": df.copy(), "000002": df.copy()},
+            cfg,
+        )
+
+        assert result == ["000001", "000002"]
+
 
 class TestConfigDefaults:
     def test_market_defaults_apply_for_us(self):
         cfg = FunnelConfig.for_market("us")
+        assert cfg.profile == "us"
         assert cfg.evr_min_turnover == 0.0
-        assert cfg.min_avg_amount_wan == 3000.0
+        assert cfg.min_avg_amount_wan == 0.0
+        assert cfg.enable_accumulation_channel is False
+        assert cfg.enable_dry_vol_channel is False
+
+    def test_hk_profile_uses_hk_value_params(self):
+        cfg = FunnelConfig.for_profile("hk")
+        assert cfg.market_template == "hk"
+        assert cfg.style_template == "hk_value"
+        assert cfg.min_avg_amount_wan == 4000.0
+        assert cfg.enable_ambush_channel is False
+        assert cfg.spring_support_window == 70
+        assert cfg.exit_stop_loss_pct == -9.0
+
+    def test_legacy_value_aliases_resolve_to_three_profiles(self):
+        assert FunnelConfig.for_profile("a_value").profile == "cn"
+        assert FunnelConfig.for_profile("hk_value").profile == "hk"
+        assert FunnelConfig.for_profile("us_value").profile == "us"
 
 
 class TestIntegrityPolicy:

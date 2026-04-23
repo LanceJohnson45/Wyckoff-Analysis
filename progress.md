@@ -16,3 +16,15 @@
 - Added workflow-level env knobs for US batch size / sleep / history windows and documented the full US S&P500 pipeline plus tuning guidance in `README.md` and `docs/DEPLOYMENT.md`.
 - Tightened US maintenance correctness: switched S&P500 source fetch to the MediaWiki API, fixed multi-ticker yfinance parsing, and made cache writes verifiable instead of counting prepared rows as success.
 - Added HK market pipeline support for scheduled jobs: `hk` market surface, HSI+HSTECH constituent snapshot parsing, HK bootstrap/monthly-sync/daily-refresh workflows, and HK funnel prewarm/funnel workflows.
+
+## 2026-04-23
+- Started Phase 6 yfinance enhancement: market-cap by shares cache, candidate-level fundamental factors, and news context for AI analysis.
+- Added `integrations/yfinance_enrichment.py` with shares cache, market-cap-from-close calculation, candidate fundamental factors, and news summaries.
+- Wired shares-based market cap into `scripts/wyckoff_funnel.py` before L1, and made L1 tolerate partial market-cap caches.
+- Wired Step3 candidate enrichment into AI payloads and Step4 candidate metadata.
+- Added targeted tests for yfinance enrichment and partial market-cap cache behavior.
+- Started Phase 7 FunnelConfig template split; reviewed A/HK/US strategy notes and mapped them into market/style template boundaries.
+- Implemented market/style template composition in `FunnelConfig`, added named profiles and env selection via `FUNNEL_CONFIG_PROFILE` / `FUNNEL_PROFILE`.
+- Added profile metadata to funnel metrics and benchmark tuning context.
+- Verified `tests/test_wyckoff_engine.py` with `.venv` pytest: 14 passed.
+- Simplified public profile surface to only `cn`, `hk`, and `us`; legacy `*_value` names now resolve to these canonical profiles.

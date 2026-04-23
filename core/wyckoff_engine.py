@@ -197,7 +197,9 @@ def assess_hist_integrity(
             },
         )
 
-    actual_dates = set(pd.to_datetime(df["date"], errors="coerce").dropna().dt.date.tolist())
+    actual_dates = set(
+        pd.to_datetime(df["date"], errors="coerce").dropna().dt.date.tolist()
+    )
     normalized_expected = [
         pd.to_datetime(x, errors="coerce").date()
         for x in expected_dates
@@ -261,6 +263,9 @@ def filter_symbols_by_integrity(
 
 @dataclass
 class FunnelConfig:
+    profile: str = "cn"
+    market_template: str = "cn"
+    style_template: str = "cn_value"
     trading_days: int = 320
 
     # Layer 1
@@ -336,7 +341,9 @@ class FunnelConfig:
 
     # Layer 4 - Spring
     spring_support_window: int = 60
-    spring_vol_ratio: float = 1.1  # 放宽以激活 Accum 轨（原 1.3 导致 Spring 几乎不触发）
+    spring_vol_ratio: float = (
+        1.1  # 放宽以激活 Accum 轨（原 1.3 导致 Spring 几乎不触发）
+    )
     spring_tr_max_range_pct: float = 30.0
     spring_tr_max_drift_pct: float = 12.0
     # Spring 动态振幅
@@ -409,12 +416,22 @@ class FunnelConfig:
 
     @classmethod
     def for_market(cls, market: str) -> "FunnelConfig":
-        cfg = cls()
         market_norm = str(market or "cn").strip().lower()
-        overrides = _MARKET_CONFIG_OVERRIDES.get(market_norm, {})
-        for key, value in overrides.items():
-            setattr(cfg, key, value)
-        return cfg
+        return cls.for_profile(_PROFILE_ALIASES.get(market_norm, "cn"))
+
+    @classmethod
+    def for_profile(cls, profile: str, *, market: str | None = None) -> "FunnelConfig":
+        """Build one of the three market profiles: cn, hk, or us."""
+        profile_key = _normalize_template_key(profile)
+        profile_key = _PROFILE_ALIASES.get(profile_key, profile_key)
+        if profile_key in _PROFILE_OVERRIDES:
+            cfg = cls()
+            _apply_config_overrides(cfg, _PROFILE_OVERRIDES[profile_key])
+            cfg.profile = profile_key
+            cfg.market_template = profile_key
+            cfg.style_template = f"{profile_key}_value"
+            return cfg
+        raise ValueError(f"unknown funnel profile: {profile}")
 
     @property
     def liquidity(self) -> LiquidityFilterConfig:
@@ -466,47 +483,169 @@ class FunnelConfig:
         )
 
 
-_MARKET_CONFIG_OVERRIDES: dict[str, dict[str, float | int | bool]] = {
+ConfigOverride = dict[str, float | int | bool]
+
+
+def _normalize_template_key(value: str) -> str:
+    return str(value or "").strip().lower().replace("-", "_")
+
+
+def _apply_config_overrides(cfg: FunnelConfig, overrides: ConfigOverride) -> None:
+    for key, value in overrides.items():
+        setattr(cfg, key, value)
+
+
+_PROFILE_ALIASES: dict[str, str] = {
+    "cn": "cn",
+    "hk": "hk",
+    "us": "us",
+    "a": "cn",
+    "ashare": "cn",
+    "a_value": "cn",
+    "cn_mainboard": "cn",
+    "hk_value": "hk",
+    "hk_mainboard": "hk",
+    "us_value": "us",
+    "us_trend_value": "us",
+}
+
+_PROFILE_OVERRIDES: dict[str, ConfigOverride] = {
     "cn": {},
-    "us": {
-        "min_market_cap_yi": 120.0,
-        "min_avg_amount_wan": 4000.0,
-        "sector_min_count": 1,
-        "spring_support_window": 80,
-        "spring_vol_ratio": 1.05,
-        "spring_tr_max_drift_pct": 15.0,
-        "spring_vol_expand_ratio": 1.08,
-        "enable_evr_trigger": True,
-        "evr_min_turnover": 0.0,
-        "evr_vol_ratio": 1.12,
-        "evr_max_drop": 2.5,
-        "sos_pct_min": 4.0,
-        "sos_vol_ratio": 1.8,
-        "sos_breakout_window": 30,
-        "sos_max_bias_200": 25.0,
-        "exit_stop_loss_pct": -10.0,
-        "exit_trailing_active_pct": 20.0,
-        "exit_trailing_drawdown_pct": -12.0,
-    },
     "hk": {
-        "min_market_cap_yi": 60.0,
-        "min_avg_amount_wan": 2500.0,
+        "min_market_cap_yi": 0.0,
+        "min_avg_amount_wan": 4000.0,
+        "bench_drop_threshold": -2.2,
+        "rs_window_long": 15,
+        "rs_window_short": 5,
+        "rs_min_long": 1.5,
+        "rs_min_short": 0.8,
+        "rps_window_fast": 40,
+        "rps_window_slow": 100,
+        "rps_fast_min": 70.0,
+        "rps_slow_min": 65.0,
+        "rps_slope_min": 0.45,
+        "momentum_bias_200_max": 0.27,
+        "top_n_sectors": 4,
         "sector_min_count": 1,
+        "sector_count_quantile": 0.60,
+        "sector_super_strength_quantile": 0.88,
+        "enable_ambush_channel": False,
+        "ambush_rps_fast_max": 50.0,
+        "ambush_rps_slow_min": 62.0,
+        "ambush_rs_long_min": -3.0,
+        "ambush_rs_short_min": -6.0,
+        "ambush_bias_200_abs_max": 0.10,
+        "ambush_ret20_max": -4.0,
+        "accum_price_from_low_max": 0.40,
+        "accum_range_window": 70,
+        "accum_range_max_pct": 32.0,
+        "accum_vol_dry_ratio": 0.72,
+        "accum_ma_gap_max": 0.08,
+        "dry_vol_lookback": 12,
+        "dry_vol_quantile": 0.08,
+        "dry_vol_price_from_low_max": 0.40,
+        "rs_div_price_from_low_max": 0.55,
         "spring_support_window": 70,
-        "spring_vol_ratio": 1.08,
+        "spring_vol_ratio": 1.12,
+        "spring_tr_max_range_pct": 35.0,
         "spring_tr_max_drift_pct": 14.0,
+        "spring_tr_atr_max_multiple": 4.5,
         "spring_vol_expand_ratio": 1.10,
+        "lps_lookback": 4,
+        "lps_ma_tolerance": 0.025,
+        "lps_vol_dry_ratio": 0.50,
         "enable_evr_trigger": True,
+        "evr_vol_ratio": 1.22,
         "evr_min_turnover": 0.0,
-        "evr_vol_ratio": 1.18,
-        "evr_max_drop": 2.5,
-        "sos_pct_min": 5.0,
-        "sos_vol_ratio": 2.0,
+        "evr_max_drop": 2.8,
+        "evr_max_bias_200": 45.0,
+        "evr_confirm_allow_break_pct": 0.5,
+        "sos_pct_min": 5.5,
+        "sos_vol_ratio": 2.2,
         "sos_breakout_window": 25,
-        "sos_max_bias_200": 25.0,
+        "sos_breakout_tolerance": 0.012,
+        "sos_max_bias_200": 26.0,
+        "sos_vol_quantile": 0.93,
+        "markup_ma_angle_min": 1.6,
+        "markup_rs_positive_min": 0.2,
+        "accum_c_max_drop_ratio": 0.035,
         "exit_stop_loss_pct": -9.0,
+        "exit_trailing_active_pct": 15.0,
+        "exit_trailing_drawdown_pct": -10.0,
+        "dist_high_threshold_pct": 32.0,
+        "dist_vol_dry_ratio": 0.55,
+    },
+    "us": {
+        "min_market_cap_yi": 0.0,
+        "min_avg_amount_wan": 0.0,
+        "bench_drop_threshold": -2.5,
+        "rs_window_long": 20,
+        "rs_window_short": 5,
+        "rs_min_long": 4.0,
+        "rs_min_short": 3.0,
+        "rps_window_fast": 50,
+        "rps_window_slow": 120,
+        "rps_fast_min": 85.0,
+        "rps_slow_min": 80.0,
+        "rps_slope_window": 12,
+        "rps_slope_min": 0.75,
+        "momentum_bias_200_max": 0.28,
+        "top_n_sectors": 20,
+        "sector_min_count": 1,
+        "sector_count_quantile": 0.50,
+        "sector_super_strength_quantile": 0.85,
+        "enable_ambush_channel": False,
+        "enable_accumulation_channel": False,
+        "enable_dry_vol_channel": False,
+        "enable_rs_divergence_channel": False,
+        "ambush_rps_fast_max": 55.0,
+        "ambush_rps_slow_min": 65.0,
+        "ambush_rs_long_min": -4.0,
+        "ambush_rs_short_min": -6.0,
+        "ambush_bias_200_abs_max": 0.12,
+        "ambush_ret20_max": -5.0,
+        "accum_price_from_low_max": 0.45,
+        "accum_range_window": 80,
+        "accum_range_max_pct": 35.0,
+        "accum_vol_dry_ratio": 0.75,
+        "accum_ma_gap_max": 0.10,
+        "dry_vol_lookback": 15,
+        "dry_vol_quantile": 0.10,
+        "dry_vol_price_from_low_max": 0.45,
+        "rs_div_price_from_low_max": 0.60,
+        "spring_support_window": 80,
+        "spring_vol_ratio": 1.2,
+        "spring_tr_max_range_pct": 28.0,
+        "spring_tr_max_drift_pct": 15.0,
+        "spring_tr_atr_max_multiple": 4.5,
+        "spring_vol_expand_ratio": 1.08,
+        "lps_lookback": 4,
+        "lps_ma_tolerance": 0.025,
+        "lps_vol_dry_ratio": 0.60,
+        "enable_evr_trigger": True,
+        "evr_vol_ratio": 1.3,
+        "evr_min_turnover": 0.0,
+        "evr_max_drop": 2.8,
+        "evr_max_bias_200": 35.0,
+        "evr_confirm_days": 2,
+        "evr_confirm_allow_break_pct": 0.5,
+        "sos_pct_min": 4.5,
+        "sos_vol_ratio": 2.5,
+        "sos_breakout_window": 30,
+        "sos_breakout_tolerance": 0.012,
+        "sos_max_bias_200": 22.0,
+        "sos_vol_quantile": 0.92,
+        "markup_ma_crossover_confirm_days": 6,
+        "markup_ma_angle_min": 1.4,
+        "markup_rs_positive_min": 0.1,
+        "accum_b_test_count": 2,
+        "accum_c_max_drop_ratio": 0.04,
+        "exit_stop_loss_pct": -8.0,
         "exit_trailing_active_pct": 18.0,
-        "exit_trailing_drawdown_pct": -11.0,
+        "exit_trailing_drawdown_pct": -10.0,
+        "dist_high_threshold_pct": 35.0,
+        "dist_vol_dry_ratio": 0.60,
+        "dist_confirm_days": 4,
     },
 }
 
@@ -664,8 +803,15 @@ def layer1_filter(
             rejected[sym] = {"reason": "st_flagged", "name": name}
             continue
         if cap_available:
-            cap = market_cap_map.get(sym, 0.0)
-            if cap < cfg.min_market_cap_yi:
+            cap_raw = market_cap_map.get(sym)
+            try:
+                cap = float(cap_raw) if cap_raw is not None else None
+            except Exception:
+                cap = None
+            # Partial market-cap caches are expected when sharesOutstanding is
+            # backfilled gradually. Missing caps should not reject otherwise
+            # valid symbols; only enforce the threshold for known cap values.
+            if cap is not None and cap < cfg.min_market_cap_yi:
                 rejected[sym] = {
                     "reason": "market_cap_below_threshold",
                     "market_cap_yi": float(cap),
@@ -677,8 +823,10 @@ def layer1_filter(
         if df is None or df.empty:
             rejected[sym] = {"reason": "missing_hist"}
             continue
-        amount_series = bundle.amount if bundle is not None else pd.to_numeric(
-            _sorted_if_needed(df).get("amount"), errors="coerce"
+        amount_series = (
+            bundle.amount
+            if bundle is not None
+            else pd.to_numeric(_sorted_if_needed(df).get("amount"), errors="coerce")
         )
         if isinstance(amount_series, pd.Series):
             avg_amt = amount_series.tail(cfg.amount_avg_window).mean()
@@ -708,11 +856,14 @@ def layer2_strength_detailed(
     rps_universe: list[str] | None = None,
     feature_map: dict[str, SymbolFeatureBundle] | None = None,
     return_rejections: bool = False,
-) -> tuple[list[str], dict[str, str]] | tuple[
-    list[str],
-    dict[str, str],
-    dict[str, dict[str, float | str | bool | None]],
-]:
+) -> (
+    tuple[list[str], dict[str, str]]
+    | tuple[
+        list[str],
+        dict[str, str],
+        dict[str, dict[str, float | str | bool | None]],
+    ]
+):
     """
     Layer2 双通道：
     1) 主升通道：MA50>MA200（或大盘连跌时守住MA20）+ RS/RPS 强势过滤
@@ -840,9 +991,7 @@ def layer2_strength_detailed(
             else close.rolling(cfg.ma_short).mean()
         )
         ma_long = (
-            bundle.ma_long
-            if bundle is not None
-            else close.rolling(cfg.ma_long).mean()
+            bundle.ma_long if bundle is not None else close.rolling(cfg.ma_long).mean()
         )
         last_ma_short = ma_short.iloc[-1]
         last_ma_long = ma_long.iloc[-1]
@@ -1188,7 +1337,12 @@ def layer2_strength_detailed(
                 rejection_reason = "trend_alignment_failed"
             elif cfg.enable_rs_filter and not momentum_rs_ok and not ambush_rs_ok:
                 rejection_reason = "rs_filter_failed"
-            elif cfg.enable_rps_filter and rps_filter_active and not momentum_rps_ok and not ambush_rps_ok:
+            elif (
+                cfg.enable_rps_filter
+                and rps_filter_active
+                and not momentum_rps_ok
+                and not ambush_rps_ok
+            ):
                 rejection_reason = "rps_filter_failed"
             elif not momentum_bias_ok:
                 rejection_reason = "momentum_bias_too_high"
@@ -1208,9 +1362,15 @@ def layer2_strength_detailed(
                 "rps_slow": round(float(rps_slow), 2) if rps_slow is not None else None,
                 "rs_long": round(float(rs_long), 2) if rs_long is not None else None,
                 "rs_short": round(float(rs_short), 2) if rs_short is not None else None,
-                "last_close": round(float(last_close), 4) if pd.notna(last_close) else None,
-                "last_ma_short": round(float(last_ma_short), 4) if pd.notna(last_ma_short) else None,
-                "last_ma_long": round(float(last_ma_long), 4) if pd.notna(last_ma_long) else None,
+                "last_close": round(float(last_close), 4)
+                if pd.notna(last_close)
+                else None,
+                "last_ma_short": round(float(last_ma_short), 4)
+                if pd.notna(last_ma_short)
+                else None,
+                "last_ma_long": round(float(last_ma_long), 4)
+                if pd.notna(last_ma_long)
+                else None,
                 "candidate_channels": {
                     "momentum": bool(momentum_ok),
                     "ambush": bool(ambush_ok),
@@ -1223,7 +1383,6 @@ def layer2_strength_detailed(
     if return_rejections:
         return passed, channel_map, rejected
     return passed, channel_map
-
 
 
 # Layer 3: 板块共振
@@ -1528,7 +1687,11 @@ def _detect_lps(
     if len(df) < max(cfg.lps_vol_ref_window, cfg.lps_ma) + cfg.lps_lookback:
         return None
     df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
-    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
+    close = (
+        bundle.close
+        if bundle is not None
+        else pd.to_numeric(df_s["close"], errors="coerce")
+    )
     ma = (
         bundle.ma_hold
         if bundle is not None and int(cfg.lps_ma) == int(cfg.ma_hold)
@@ -1577,10 +1740,26 @@ def _detect_evr(
         return None
     df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
 
-    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
-    low = bundle.low if bundle is not None else pd.to_numeric(df_s["low"], errors="coerce")
-    volume = bundle.volume if bundle is not None else pd.to_numeric(df_s["volume"], errors="coerce")
-    pct_chg = bundle.pct_chg if bundle is not None else pd.to_numeric(df_s["pct_chg"], errors="coerce")
+    close = (
+        bundle.close
+        if bundle is not None
+        else pd.to_numeric(df_s["close"], errors="coerce")
+    )
+    low = (
+        bundle.low
+        if bundle is not None
+        else pd.to_numeric(df_s["low"], errors="coerce")
+    )
+    volume = (
+        bundle.volume
+        if bundle is not None
+        else pd.to_numeric(df_s["volume"], errors="coerce")
+    )
+    pct_chg = (
+        bundle.pct_chg
+        if bundle is not None
+        else pd.to_numeric(df_s["pct_chg"], errors="coerce")
+    )
     if (
         close.isna().all()
         or low.isna().all()
@@ -1590,7 +1769,11 @@ def _detect_evr(
         return None
 
     # 位阶保护：高位放量优先按派发处理，避免 EVR 误判
-    ma200 = bundle.ma_long if bundle is not None and int(cfg.ma_long) == 200 else close.rolling(200).mean()
+    ma200 = (
+        bundle.ma_long
+        if bundle is not None and int(cfg.ma_long) == 200
+        else close.rolling(200).mean()
+    )
     ma200_last = ma200.iloc[-1]
     close_last = close.iloc[-1]
     if pd.notna(ma200_last) and pd.notna(close_last) and float(ma200_last) > 0:
@@ -1683,10 +1866,26 @@ def _detect_sos(
 
     df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
 
-    close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
-    volume = bundle.volume if bundle is not None else pd.to_numeric(df_s["volume"], errors="coerce")
-    pct_chg = bundle.pct_chg if bundle is not None else pd.to_numeric(df_s["pct_chg"], errors="coerce")
-    high = bundle.high if bundle is not None else pd.to_numeric(df_s["high"], errors="coerce")
+    close = (
+        bundle.close
+        if bundle is not None
+        else pd.to_numeric(df_s["close"], errors="coerce")
+    )
+    volume = (
+        bundle.volume
+        if bundle is not None
+        else pd.to_numeric(df_s["volume"], errors="coerce")
+    )
+    pct_chg = (
+        bundle.pct_chg
+        if bundle is not None
+        else pd.to_numeric(df_s["pct_chg"], errors="coerce")
+    )
+    high = (
+        bundle.high
+        if bundle is not None
+        else pd.to_numeric(df_s["high"], errors="coerce")
+    )
 
     if close.isna().all() or volume.isna().all() or pct_chg.isna().all():
         return None
@@ -1694,7 +1893,11 @@ def _detect_sos(
     # 位阶保护：高位爆量很大可能是 Buying Climax（派发），排除极大乖离
     close_last = close.iloc[-1]
     if len(close) >= 200:
-        ma200 = bundle.ma_long if bundle is not None and int(cfg.ma_long) == 200 else close.rolling(200).mean()
+        ma200 = (
+            bundle.ma_long
+            if bundle is not None and int(cfg.ma_long) == 200
+            else close.rolling(200).mean()
+        )
         ma200_last = ma200.iloc[-1]
         if pd.notna(ma200_last) and pd.notna(close_last) and float(ma200_last) > 0:
             bias_200 = (
@@ -1728,7 +1931,11 @@ def _detect_sos(
         return None
 
     # 结构突破要求：创N日新高，或强势穿透季线/半年线
-    ma50 = bundle.ma_short if bundle is not None and int(cfg.ma_short) == 50 else close.rolling(50).mean()
+    ma50 = (
+        bundle.ma_short
+        if bundle is not None and int(cfg.ma_short) == 50
+        else close.rolling(50).mean()
+    )
     ma50_last = ma50.iloc[-1] if not ma50.empty else None
 
     recent_highs = high.tail(cfg.sos_breakout_window + 1).iloc[:-1]
@@ -2079,9 +2286,21 @@ def layer5_exit_signals(
             continue
 
         df_s = bundle.df if bundle is not None else _sorted_if_needed(df)
-        close = bundle.close if bundle is not None else pd.to_numeric(df_s["close"], errors="coerce")
-        low = bundle.low if bundle is not None else pd.to_numeric(df_s["low"], errors="coerce")
-        high = bundle.high if bundle is not None else pd.to_numeric(df_s["high"], errors="coerce")
+        close = (
+            bundle.close
+            if bundle is not None
+            else pd.to_numeric(df_s["close"], errors="coerce")
+        )
+        low = (
+            bundle.low
+            if bundle is not None
+            else pd.to_numeric(df_s["low"], errors="coerce")
+        )
+        high = (
+            bundle.high
+            if bundle is not None
+            else pd.to_numeric(df_s["high"], errors="coerce")
+        )
 
         if close.empty or low.empty or high.empty:
             continue

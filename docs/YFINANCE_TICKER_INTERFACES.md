@@ -305,6 +305,26 @@
 - 新闻：
   - `news`
 
+当前实现状态：
+
+- 已新增 `integrations/yfinance_enrichment.py`，集中处理 shares 缓存、市值补全、候选股基本面因子与新闻摘要。
+- L1 市值可通过 `sharesOutstanding * daily close * FX` 从已拉取日线实时计算，避免依赖 sector cache 是否带市值字段。
+- Step3 会对压缩后的候选股补充预期上修、收益 surprise、目标价偏离、财报事件风控和新闻摘要，作为 AI 判断吸筹/派筹阶段的上下文。
+- Step4 会继承 Step3 写入候选 metadata 的基本面上下文，辅助私人组合决策。
+
+相关缓存：
+
+- `data/yfinance_shares_cache.json`
+- `data/yfinance_candidate_enrichment_cache.json`
+
+关键环境变量：
+
+- `YFINANCE_SHARES_REFRESH_MAX_PER_RUN`：每次漏斗最多补齐多少只股票的 shares，默认 `80`。
+- `YFINANCE_SHARES_CACHE_TTL_SECONDS`：shares 缓存 TTL，默认 `7` 天。
+- `YFINANCE_CANDIDATE_ENRICH_ENABLED`：是否启用候选基本面增强，默认启用。
+- `YFINANCE_CANDIDATE_ENRICH_MAX_SYMBOLS`：每轮最多增强多少只候选股，默认 `25`。
+- `YFINANCE_ENRICH_CACHE_TTL_SECONDS`：候选基本面缓存 TTL，默认 `12` 小时。
+
 ### 第二层：按市场选择性接入
 
 - US / HK：

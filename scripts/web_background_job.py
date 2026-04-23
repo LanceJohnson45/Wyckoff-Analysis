@@ -47,6 +47,11 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
     market = str(payload.get("market", "") or "").strip().lower()
     if market in {"cn", "us", "hk"}:
         os.environ["FUNNEL_MARKET"] = market
+    profile = str(
+        payload.get("funnel_profile") or payload.get("profile") or ""
+    ).strip().lower()
+    if profile:
+        os.environ["FUNNEL_CONFIG_PROFILE"] = profile
 
     pool_mode = str(payload.get("pool_mode", "") or "").strip().lower()
     if pool_mode in {"manual", "board", "sp500", "hsi_hstech", "hsi_hstech_union"}:

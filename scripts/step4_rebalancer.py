@@ -203,6 +203,9 @@ class CandidateMeta:
     exit_signal: str = ""
     exit_price: float | None = None
     exit_reason: str = ""
+    fundamental_context: str = ""
+    fundamental_factors: dict | None = None
+    news_items: list | None = None
     source_type: str = ""
     market: str = "cn"
 
@@ -390,7 +393,15 @@ def _build_candidate_meta_map(
         if not isinstance(item, dict):
             continue
         code = _clean_text(item.get("code"))
-        if not re.fullmatch(r"\d{6}", code):
+        item_market = _normalize_market(item.get("market"), "cn")
+        if item_market == "us":
+            code = code.upper()
+            valid_code = bool(re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", code))
+        elif item_market == "hk":
+            valid_code = bool(re.fullmatch(r"\d{4}\.HK", code.upper()))
+        else:
+            valid_code = bool(re.fullmatch(r"\d{6}", code))
+        if not valid_code:
             continue
         meta_map[code] = CandidateMeta(
             code=code,
@@ -406,7 +417,11 @@ def _build_candidate_meta_map(
             exit_signal=_clean_text(item.get("exit_signal")),
             exit_price=_parse_float_like(item.get("exit_price")),
             exit_reason=_clean_text(item.get("exit_reason")),
+            fundamental_context=_clean_text(item.get("fundamental_context")),
+            fundamental_factors=item.get("fundamental_factors") if isinstance(item.get("fundamental_factors"), dict) else None,
+            news_items=item.get("news_items") if isinstance(item.get("news_items"), list) else None,
             source_type="external",
+            market=item_market,
         )
 
     for pos in positions:
@@ -1330,6 +1345,7 @@ def _process_one_candidate(
             exit_signal=_clean_text(item.get("exit_signal")) or None,
             exit_price=_parse_float_like(item.get("exit_price")),
             exit_reason=_clean_text(item.get("exit_reason")) or None,
+            fundamental_context=_clean_text(item.get("fundamental_context")) or None,
         )
         return (payload, "", latest_close, atr14)
     except Exception as e:

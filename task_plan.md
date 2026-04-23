@@ -29,6 +29,19 @@ Upgrade the repository from partial US-stock support to end-to-end CN/US support
 - Split or parameterize premarket risk evaluation so US semantics no longer depend on CN A50 assumptions.
 - Run targeted validation and summarize residual risk, especially any remaining CN-centric UI or workflow assumptions.
 
+### Phase 6 - yfinance market-cap and candidate enrichment [complete]
+- Add a shares/market-cap cache independent of sector cache.
+- Use `sharesOutstanding * latest close * FX` as a Layer1 market-cap fallback/source.
+- Enrich Step3/Step4 candidates with yfinance expectation, surprise, target-price, earnings-event, and news context.
+- Keep enrichment candidate-scoped to avoid full-market Yahoo rate-limit pressure.
+- Run targeted unit/static checks and document residual risk.
+
+### Phase 7 - FunnelConfig market/style templates [complete]
+- Convert A/HK/US value notes into three first-class strategy profiles: `cn`, `hk`, `us`.
+- Keep legacy aliases like `a_value`, `hk_value`, and `us_value` resolving to the three canonical profiles.
+- Wire the funnel job to select a profile via environment while keeping `for_market()` compatibility.
+- Add focused tests for profile resolution and market defaults.
+
 ## Phase 1 First Slice
 1. Persist planning files.
 2. Patch `scripts/wyckoff_funnel.py` to include `market` in `symbols_for_report`.

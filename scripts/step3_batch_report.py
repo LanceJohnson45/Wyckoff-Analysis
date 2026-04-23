@@ -31,6 +31,10 @@ from integrations.data_source import (
     fetch_market_cap_map,
     fetch_sector_map,
 )
+from integrations.yfinance_enrichment import (
+    build_market_cap_map_from_shares,
+    enrich_candidates,
+)
 from utils.feishu import send_feishu_notification
 from utils.notify import send_wecom_notification, send_dingtalk_notification
 from utils.trading_clock import CN_TZ, resolve_end_calendar_day_for_market
@@ -876,6 +880,7 @@ def run(
                 {
                     "code": code,
                     "name": name,
+                    "market": item_market,
                     "input_order": item_order,
                     "tag": tag,
                     "track": str(item.get("track", "")).strip(),
@@ -1100,6 +1105,73 @@ def run(
             f"- 原因: {rag_skip_reason}\n\n---\n"
         )
 
+    if not selected_df.empty:
+        selected_symbols = [str(x).strip() for x in selected_df["code"].tolist()]
+        try:
+            enriched_cap_map, cap_stats = build_market_cap_map_from_shares(
+                symbols=selected_symbols,
+                market=market_norm,
+                df_map=code_to_df,
+                base_map=market_cap_map,
+                refresh_missing=True,
+            )
+            if enriched_cap_map:
+                selected_df["market_cap_yi"] = selected_df["code"].astype(str).map(
+                    lambda c: enriched_cap_map.get(c, pd.NA)
+                ).where(
+                    selected_df["code"].astype(str).map(lambda c: c in enriched_cap_map),
+                    selected_df.get("market_cap_yi", pd.NA),
+                )
+                print(
+                    "[step3][yfinance] shares市值补全: "
+                    f"computed={cap_stats.get('computed')}, refreshed={cap_stats.get('refreshed')}, "
+                    f"total={cap_stats.get('total')}"
+                )
+        except Exception as e:
+            print(f"[step3][yfinance] shares市值补全跳过: {e}")
+
+        try:
+            enrichment_inputs = [
+                {
+                    "code": str(row.get("code", "")).strip(),
+                    "market": str(row.get("market", market_norm) or market_norm).strip().lower(),
+                }
+                for _, row in selected_df.iterrows()
+            ]
+            enrich_map, enrich_stats = enrich_candidates(
+                enrichment_inputs,
+                market=market_norm,
+            )
+            print(
+                "[step3][yfinance] 候选基本面增强: "
+                f"returned={enrich_stats.get('returned', 0)}, fetched={enrich_stats.get('fetched', 0)}, "
+                f"cache_hits={enrich_stats.get('cache_hits', 0)}, errors={enrich_stats.get('errors', 0)}"
+            )
+            if enrich_map:
+                selected_df["fundamental_context"] = selected_df["code"].astype(str).map(
+                    lambda c: str((enrich_map.get(c) or {}).get("context", "") or "")
+                )
+                selected_df["fundamental_factors"] = selected_df["code"].astype(str).map(
+                    lambda c: (enrich_map.get(c) or {}).get("factors", {})
+                )
+                selected_df["news_items"] = selected_df["code"].astype(str).map(
+                    lambda c: (enrich_map.get(c) or {}).get("news", [])
+                )
+                item_by_code = {
+                    str(item.get("code", "")).strip(): item
+                    for item in items
+                    if isinstance(item, dict)
+                }
+                for code, enriched in enrich_map.items():
+                    item = item_by_code.get(code)
+                    if not item:
+                        continue
+                    item["fundamental_context"] = str(enriched.get("context", "") or "")
+                    item["fundamental_factors"] = enriched.get("factors", {})
+                    item["news_items"] = enriched.get("news", [])
+        except Exception as e:
+            print(f"[step3][yfinance] 候选基本面增强跳过: {e}")
+
     selected_codes = [str(x) for x in selected_df["code"].tolist()]
     if not selected_codes:
         report = (
@@ -1179,6 +1251,7 @@ def run(
             exit_signal=_exit_sig,
             exit_price=_exit_price,
             exit_reason=_exit_reason,
+            fundamental_context=str(row.get("fundamental_context", "") or "").strip() or None,
         )
         payloads_by_track.setdefault(track_key, []).append(payload)
         df_by_track[track_key] = pd.concat(

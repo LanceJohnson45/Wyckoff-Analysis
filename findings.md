@@ -30,3 +30,15 @@
 - The previous US funnel path depended on `FUNNEL_POOL_MANUAL_SYMBOLS`; this was replaced with an `sp500` pool mode resolved from a maintained constituent snapshot or a fresh fetch.
 - `integrations/data_source.fetch_index_hist()` only supported CN indexes before this session; US benchmark support required a yfinance-backed index path so SPY/IWM can drive US funnel and step3 relative-strength context.
 - A durable cross-run S&P500 diff store does not exist in the current repo. The implemented scripts still behave correctly on cold runners because daily refresh/funnel fetch the current constituent set directly, but the monthly added/removed diff is most informative when the snapshot file persists between runs.
+
+## 2026-04-23 yfinance enrichment findings
+- Layer1 already consumes `market_cap_map` in CNY 亿元, but sector cache may be missing market-cap fields. A separate shares cache lets L1 compute market cap from `sharesOutstanding * latest daily close * FX` after OHLCV is fetched.
+- Missing market cap in a partial cache should not reject a symbol; only known cap values should enforce the threshold. Otherwise gradual shares backfill would falsely drop most of the universe.
+- Candidate-level yfinance enrichment is safer after Step3 compression/RAG narrowing because all-market financial/news calls would create Yahoo rate-limit and runtime risk.
+- Step3/Step4 can use yfinance factors as context and ranking evidence, but they should not override Wyckoff structure directly until observed over several runs.
+
+## 2026-04-23 FunnelConfig template findings
+- User confirmed current HK/US universes are already fixed index unions rather than separate size/style pools, so public profiles should stay at the market level: `cn`, `hk`, and `us`.
+- `data/a_value.md` mostly matches the current default engine and is best treated as the CN mainboard value baseline.
+- `data/hk_value.md` improves the existing HK override by explicitly disabling ambush, allowing wider accumulation/range behavior, relaxing RS/RPS for slower HK turnover, and keeping a nonzero amount filter as a bad-liquidity guard.
+- `data/us_value.md` is materially different from current US overrides: it is a right-side trend profile that disables ambush/accumulation/dry-volume/RS-divergence entries and weakens L3 by allowing broad sector coverage.

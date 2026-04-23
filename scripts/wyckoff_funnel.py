@@ -69,6 +69,7 @@ from integrations.data_source import (
     fetch_sector_map,
     fetch_market_cap_map,
 )
+from integrations.yfinance_enrichment import build_market_cap_map_from_shares
 from integrations.hk_index_universe import get_hk_index_union
 from integrations.us_sp500_universe import get_sp500_constituents
 from utils.feishu import send_feishu_notification
@@ -1114,6 +1115,9 @@ def _analyze_benchmark_and_tune_cfg(
             "repair_triggered": bool(repair_reasons),
             "repair_reasons": repair_reasons,
             "tuned": {
+                "profile": getattr(cfg, "profile", ""),
+                "market_template": getattr(cfg, "market_template", ""),
+                "style_template": getattr(cfg, "style_template", ""),
                 "min_avg_amount_wan": cfg.min_avg_amount_wan,
                 "rs_min_long": cfg.rs_min_long,
                 "rs_min_short": cfg.rs_min_short,
@@ -1459,7 +1463,16 @@ def run_funnel_job(
 ) -> tuple[dict[str, list[tuple[str, float]]], dict]:
     """执行 Wyckoff Funnel，返回 (triggers, metrics)。"""
     market = _resolve_funnel_market()
-    cfg = FunnelConfig.for_market(market)
+    profile = str(
+        os.getenv("FUNNEL_CONFIG_PROFILE")
+        or os.getenv("FUNNEL_PROFILE")
+        or ""
+    ).strip()
+    cfg = (
+        FunnelConfig.for_profile(profile, market=market)
+        if profile
+        else FunnelConfig.for_market(market)
+    )
     cfg.trading_days = TRADING_DAYS
     _apply_funnel_cfg_overrides(cfg)
     if market == "us":
@@ -1708,6 +1721,23 @@ def run_funnel_job(
     if integrity_examples:
         suffix = "..." if integrity_fail > len(integrity_examples) else ""
         print(f"[funnel] 数据完整性跳过样例: {', '.join(integrity_examples)}{suffix}")
+
+    market_cap_map, market_cap_runtime_stats = build_market_cap_map_from_shares(
+        symbols=list(all_df_map.keys()),
+        market=market,
+        df_map=all_df_map,
+        base_map=market_cap_map,
+        refresh_missing=True,
+    )
+    print(
+        "[funnel] shares市值补全: "
+        f"computed={market_cap_runtime_stats.get('computed')}, "
+        f"refreshed={market_cap_runtime_stats.get('refreshed')}, "
+        f"missing_shares={market_cap_runtime_stats.get('missing_shares')}, "
+        f"missing_close={market_cap_runtime_stats.get('missing_close')}, "
+        f"total={market_cap_runtime_stats.get('total')}"
+    )
+
     snapshot_dir = _dump_full_fetch_snapshot(
         df_map=all_df_map,
         all_symbols=all_symbols,
@@ -1839,6 +1869,9 @@ def run_funnel_job(
     )
     metrics = {
         "market": market,
+        "funnel_profile": getattr(cfg, "profile", ""),
+        "market_template": getattr(cfg, "market_template", ""),
+        "style_template": getattr(cfg, "style_template", ""),
         "total_symbols": len(all_symbols),
         "pool_mode": str(pool_stats.get("pool_mode", "") or ""),
         "pool_main": len(main_items),
@@ -1854,6 +1887,7 @@ def run_funnel_job(
         "integrity_fail": integrity_fail,
         "integrity_expected_dates": len(expected_dates),
         "integrity_expected_dates_source": expected_dates_source,
+        "market_cap_runtime_stats": market_cap_runtime_stats,
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
         "layer1_rejections": l1_rejections,
