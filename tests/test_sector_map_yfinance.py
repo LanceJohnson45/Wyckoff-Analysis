@@ -34,3 +34,28 @@ def test_sector_map_from_cache_converts_cn_keys(monkeypatch):
     assert out["600519"] == "Consumer Defensive"
     assert out["0700.HK"] == "Communication Services"
     assert out["MSFT"] == "Technology"
+
+
+def test_industry_map_from_cache_converts_cn_keys(monkeypatch):
+    monkeypatch.setattr(
+        mod,
+        "load_sector_cache",
+        lambda: {
+            "600519.SS": {
+                "market": "cn",
+                "industry": "Beverages - Wineries & Distilleries",
+            },
+            "0700.HK": {
+                "market": "hk",
+                "industry": "Internet Content & Information",
+            },
+            "MSFT": {
+                "market": "us",
+                "industry": "Software - Infrastructure",
+            },
+        },
+    )
+    out = mod.industry_map_from_cache()
+    assert out["600519"] == "Beverages - Wineries & Distilleries"
+    assert out["0700.HK"] == "Internet Content & Information"
+    assert out["MSFT"] == "Software - Infrastructure"

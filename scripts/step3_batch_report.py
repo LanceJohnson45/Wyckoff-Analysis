@@ -27,6 +27,7 @@ from integrations.rag_veto import (
 )
 from integrations.data_source import (
     fetch_index_hist,
+    fetch_industry_map,
     fetch_market_cap_map,
     fetch_sector_map,
 )
@@ -772,6 +773,8 @@ def run(
     sector_rotation_ctx = (benchmark_context or {}).get("sector_rotation", {}) or {}
     sector_rotation_map = sector_rotation_ctx.get("state_map", {}) or {}
     sector_map = fetch_sector_map()
+    industry_map = fetch_industry_map()
+    classification_map = industry_map or sector_map
     market_cap_map = fetch_market_cap_map() if market_norm == "cn" else {}
     benchmark_ret_10: float | None = None
     try:
@@ -794,7 +797,11 @@ def run(
         code = item["code"]
         name = item.get("name", code)
         tag = item.get("tag", "")
-        industry = str(item.get("industry") or sector_map.get(code, "未知行业") or "未知行业").strip()
+        industry = str(
+            item.get("industry")
+            or classification_map.get(code, "未知行业")
+            or "未知行业"
+        ).strip()
         rotation_info = sector_rotation_map.get(industry, {}) or {}
         sector_state_code = str(
             item.get("sector_state_code")

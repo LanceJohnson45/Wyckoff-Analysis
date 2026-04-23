@@ -39,7 +39,7 @@ from core.wyckoff_engine import (
     FunnelResult,
 )
 from core.sector_rotation import analyze_sector_rotation
-from integrations.data_source import fetch_index_hist, fetch_market_cap_map, fetch_sector_map, fetch_stock_hist
+from integrations.data_source import fetch_index_hist, fetch_industry_map, fetch_market_cap_map, fetch_sector_map, fetch_stock_hist
 from integrations.fetch_a_share_csv import get_stocks_by_board, _normalize_symbols
 from core.funnel_pipeline import (
     analyze_benchmark_and_tune_cfg as _tune_cfg_by_regime,
@@ -723,7 +723,7 @@ def run_backtest(
                 f"[backtest] 元数据从快照加载: sector_map={len(sector_map)}, market_cap_map={len(market_cap_map)}"
             )
         else:
-            sector_map = fetch_sector_map()
+            sector_map = fetch_industry_map() or fetch_sector_map()
             if market_norm == "cn":
                 market_cap_map = fetch_market_cap_map()
             else:

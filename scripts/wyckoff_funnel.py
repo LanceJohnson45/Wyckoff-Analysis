@@ -64,6 +64,7 @@ from core.sector_rotation import (
 )
 from integrations.data_source import (
     fetch_index_hist,
+    fetch_industry_map,
     fetch_stock_spot_snapshot,
     fetch_sector_map,
     fetch_market_cap_map,
@@ -1496,10 +1497,16 @@ def run_funnel_job(
 
     # 批量元数据
     sector_map: dict[str, str]
+    industry_map: dict[str, str]
+    classification_map: dict[str, str]
     market_cap_map: dict[str, float]
     print(f"[funnel] 加载行业映射...")
     sector_map = fetch_sector_map()
-    print(f"[funnel] 行业映射加载结果: {len(sector_map)}")
+    industry_map = fetch_industry_map()
+    classification_map = industry_map or sector_map
+    print(
+        f"[funnel] 行业映射加载结果: industry={len(industry_map)}, sector={len(sector_map)}, effective={len(classification_map)}"
+    )
     if market == "cn":
         print(f"[funnel] 加载市值数据...")
         market_cap_map = fetch_market_cap_map()
@@ -1508,13 +1515,13 @@ def run_funnel_job(
             print(
                 "[funnel] ⚠️ 市值数据为空（仅缓存模式下可能尚未准备好），Layer1 将跳过市值过滤"
             )
-        if not sector_map:
+        if not classification_map:
             print(
                 "[funnel] ⚠️ 行业映射为空（仅缓存模式下可能尚未准备好），Top行业/板块轮动将不可用"
             )
     else:
         market_cap_map = {}
-        if not sector_map:
+        if not classification_map:
             print(
                 "[funnel] ⚠️ Yahoo 行业映射为空，Top行业/板块轮动将不可用"
             )
@@ -1775,14 +1782,14 @@ def run_funnel_job(
     # Layer 3 (Sector Resonance)
     l3_passed, top_sectors = layer3_sector_resonance(
         l2_passed,
-        sector_map,
+        classification_map,
         cfg,
         base_symbols=l1_passed,
         df_map=all_df_map,
     )
     sector_rotation = analyze_sector_rotation(
         all_df_map,
-        sector_map,
+        classification_map,
         universe_symbols=list(all_df_map.keys()),
         focus_sectors=top_sectors,
     )
@@ -1820,7 +1827,7 @@ def run_funnel_job(
     ranked_l3_symbols, l3_score_map = _rank_l3_candidates(
         l3_symbols=l3_passed,
         df_map=all_df_map,
-        sector_map=sector_map,
+        sector_map=classification_map,
         triggers=triggers,
         top_sectors=top_sectors,
         l2_channel_map=l2_channel_map,
@@ -1883,7 +1890,8 @@ def run_funnel_job(
             "all_symbols": all_symbols,
             "name_map": name_map,
             "market_cap_map": market_cap_map,
-            "sector_map": sector_map,
+            "sector_map": classification_map,
+            "industry_map": industry_map,
             "bench_df": bench_df,
             "all_df_map": all_df_map,
             "layer1_symbols": l1_passed,
@@ -1923,6 +1931,9 @@ def run(
     market = str(metrics.get("market", "cn") or "cn").strip().lower()
     name_map = _stock_name_map(market)
     sector_map = fetch_sector_map()
+    industry_map = fetch_industry_map()
+    classification_map = industry_map or sector_map
+    sector_map = classification_map
     latest_close_map = metrics.get("latest_close_map", {}) or {}
     if latest_close_map:
         benchmark_context["latest_close_map"] = latest_close_map
@@ -2146,11 +2157,11 @@ def run(
                 "selection_source": "l4_hit",
                 "selection_is_fill": False,
                 "initial_price": float(latest_close_map.get(c, 0.0) or 0.0),
-                "industry": str(sector_map.get(c, "") or "未知行业"),
+                "industry": str(classification_map.get(c, "") or "未知行业"),
                 "sector_state_code": str(
                     (
                         sector_rotation_map.get(
-                            str(sector_map.get(c, "") or "未知行业"), {}
+                            str(classification_map.get(c, "") or "未知行业"), {}
                         )
                         or {}
                     ).get("state", "")
@@ -2158,7 +2169,7 @@ def run(
                 "sector_state": str(
                     (
                         sector_rotation_map.get(
-                            str(sector_map.get(c, "") or "未知行业"), {}
+                            str(classification_map.get(c, "") or "未知行业"), {}
                         )
                         or {}
                     ).get(
@@ -2169,7 +2180,7 @@ def run(
                 "sector_note": str(
                     (
                         sector_rotation_map.get(
-                            str(sector_map.get(c, "") or "未知行业"), {}
+                            str(classification_map.get(c, "") or "未知行业"), {}
                         )
                         or {}
                     ).get("note", "")
@@ -2177,7 +2188,7 @@ def run(
                 "sector_guidance": str(
                     (
                         sector_rotation_map.get(
-                            str(sector_map.get(c, "") or "未知行业"), {}
+                            str(classification_map.get(c, "") or "未知行业"), {}
                         )
                         or {}
                     ).get("guidance", "")
@@ -2476,7 +2487,7 @@ def run(
             name = name_map.get(code, code)
             trigger_reason = "、".join(code_to_reasons.get(code, []))
             channel = str(l2_channel_map.get(code, "")).strip()
-            industry = str(sector_map.get(code, "") or "未知行业")
+            industry = str(classification_map.get(code, "") or "未知行业")
             sector_info = sector_rotation_map.get(industry, {}) or {}
             sector_state_label = str(
                 sector_info.get(
@@ -2570,11 +2581,11 @@ def run(
             "selection_source": _selection_source(c),
             "selection_is_fill": _selection_source(c) == "l3_fill",
             "initial_price": float(latest_close_map.get(c, 0.0) or 0.0),
-            "industry": str(sector_map.get(c, "") or "未知行业"),
+            "industry": str(classification_map.get(c, "") or "未知行业"),
             "sector_state_code": str(
                 (
                     sector_rotation_map.get(
-                        str(sector_map.get(c, "") or "未知行业"), {}
+                        str(classification_map.get(c, "") or "未知行业"), {}
                     )
                     or {}
                 ).get("state", "")
@@ -2582,7 +2593,7 @@ def run(
             "sector_state": str(
                 (
                     sector_rotation_map.get(
-                        str(sector_map.get(c, "") or "未知行业"), {}
+                        str(classification_map.get(c, "") or "未知行业"), {}
                     )
                     or {}
                 ).get(
@@ -2593,7 +2604,7 @@ def run(
             "sector_note": str(
                 (
                     sector_rotation_map.get(
-                        str(sector_map.get(c, "") or "未知行业"), {}
+                        str(classification_map.get(c, "") or "未知行业"), {}
                     )
                     or {}
                 ).get("note", "")
@@ -2601,7 +2612,7 @@ def run(
             "sector_guidance": str(
                 (
                     sector_rotation_map.get(
-                        str(sector_map.get(c, "") or "未知行业"), {}
+                        str(classification_map.get(c, "") or "未知行业"), {}
                     )
                     or {}
                 ).get("guidance", "")

@@ -1385,6 +1385,20 @@ def fetch_sector_map() -> dict[str, str]:
     return {}
 
 
+def fetch_industry_map() -> dict[str, str]:
+    """
+    全市场 symbol/code -> Yahoo 统一细分行业映射。仅使用本地缓存。
+    CN 返回 6 位代码键；HK/US 返回 Yahoo 符号键。
+    """
+    try:
+        from integrations.sector_map_yfinance import industry_map_from_cache
+
+        return industry_map_from_cache()
+    except Exception as e:
+        _debug_source_fail("industry_cache_read", e)
+    return {}
+
+
 def fetch_market_cap_map() -> dict[str, float]:
     """
     全市场 code->总市值(亿元)。仅使用本地缓存，不再调用 tushare 刷新。
