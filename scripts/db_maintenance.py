@@ -49,6 +49,11 @@ def _is_statement_timeout_error(err: object) -> bool:
     return "statement timeout" in text or "57014" in text
 
 
+def _is_missing_table_error(err: object) -> bool:
+    text = str(err).lower()
+    return "pgrst205" in text or "could not find the table" in text
+
+
 def _cleanup_stock_hist_cache_before_cutoff(
     client,
     cutoff_iso: str,
@@ -133,6 +138,8 @@ def cleanup_table(
         client.table(table).delete().lt(date_col, cutoff).execute()
         return "ok", None
     except Exception as e:
+        if _is_missing_table_error(e):
+            return "skip_missing_table", None
         # stock_hist_cache 全表删除在数据量大时容易触发 statement timeout，降级为按 symbol 分批
         if (
             table == TABLE_STOCK_HIST_CACHE
