@@ -1,10 +1,11 @@
-# -*- coding: utf-8 -*-
 """
 TickFlow 行情客户端（带重试与超时控制）。
 """
+
 from __future__ import annotations
 
 import os
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -12,14 +13,70 @@ from typing import Any
 import pandas as pd
 import requests
 
-TICKFLOW_BASE_URL = os.getenv("TICKFLOW_BASE_URL", "https://api.tickflow.org").strip().rstrip("/")
+from integrations.tickflow_notice import (
+    TICKFLOW_LIMIT_HINT,
+    is_tickflow_rate_limited_error,
+    record_tickflow_limit_event,
+)
+
+TICKFLOW_BASE_URL = "https://api.tickflow.org"
 TICKFLOW_TIMEOUT_SECONDS = max(int(os.getenv("TICKFLOW_TIMEOUT_SECONDS", "12")), 3)
 TICKFLOW_MAX_RETRIES = max(int(os.getenv("TICKFLOW_MAX_RETRIES", "3")), 1)
 TICKFLOW_RETRY_BACKOFF_SECONDS = max(float(os.getenv("TICKFLOW_RETRY_BACKOFF_SECONDS", "1.5")), 0.1)
+TICKFLOW_RATE_LIMIT_MAX_SLEEP_SECONDS = max(float(os.getenv("TICKFLOW_RATE_LIMIT_MAX_SLEEP_SECONDS", "90")), 1.0)
 
 _PERIOD_SET = {"1m", "5m", "10m", "15m", "30m", "60m", "1d", "1w", "1M", "1Q", "1Y"}
 _CN_TZ = "Asia/Shanghai"
-_ADJUST_SET = {"none", "forward", "backward"}
+_ADJUST_SET = {"none", "forward", "backward", "forward_additive", "backward_additive"}
+_RATE_LIMIT_WAIT_RE = re.compile(r"请\s*(\d+(?:\.\d+)?)\s*(ms|毫秒|s|秒)?\s*后重试", re.IGNORECASE)
+_TICKFLOW_LOG_VERBOSE = os.getenv("TICKFLOW_LOG_VERBOSE", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+
+
+def _tf_log(msg: str, *, always: bool = False) -> None:
+    if always or _TICKFLOW_LOG_VERBOSE:
+        print(f"[tickflow] {msg}", flush=True)
+
+
+def _summarize_params(params: dict[str, Any] | None) -> str:
+    if not params:
+        return "-"
+    out: list[str] = []
+    for key, value in params.items():
+        if key == "symbols":
+            items = [x.strip() for x in str(value or "").split(",") if x.strip()]
+            head = ",".join(items[:3])
+            suffix = "..." if len(items) > 3 else ""
+            out.append(f"symbols={len(items)}[{head}{suffix}]")
+            continue
+        text = str(value)
+        if len(text) > 80:
+            text = text[:77] + "..."
+        out.append(f"{key}={text}")
+    return "; ".join(out)
+
+
+def _rate_limit_delay_seconds(body: str, retry_after: str | None) -> float | None:
+    if retry_after:
+        try:
+            seconds = float(retry_after)
+        except ValueError:
+            seconds = 0.0
+        if seconds > 0:
+            return min(max(seconds, 0.1), TICKFLOW_RATE_LIMIT_MAX_SLEEP_SECONDS)
+
+    match = _RATE_LIMIT_WAIT_RE.search(body)
+    if not match:
+        return None
+    value = float(match.group(1))
+    unit = str(match.group(2) or "ms").lower()
+    if unit in {"ms", "毫秒"}:
+        value /= 1000.0
+    return min(max(value + 0.5, 0.1), TICKFLOW_RATE_LIMIT_MAX_SLEEP_SECONDS)
 
 
 def normalize_cn_symbol(raw: str) -> str:
@@ -88,13 +145,15 @@ class TickFlowClient:
         self.max_retries = max(int(self.max_retries), 1)
         self.retry_backoff_seconds = max(float(self.retry_backoff_seconds), 0.1)
         if not self.api_key:
-            raise ValueError("TICKFLOW_API_KEY 未配置")
+            raise ValueError("TICKFLOW_API_KEY 未配置，购买: https://tickflow.org/auth/register?ref=5N4NKTCPL4")
 
     def _request(self, path: str, *, params: dict[str, Any] | None = None) -> dict[str, Any]:
         last_err: Exception | None = None
         url = f"{self.base_url}{path}"
         headers = {"x-api-key": self.api_key}
+        params_summary = _summarize_params(params)
         for attempt in range(1, self.max_retries + 1):
+            started = time.monotonic()
             try:
                 resp = requests.get(
                     url,
@@ -103,20 +162,67 @@ class TickFlowClient:
                     timeout=self.timeout_seconds,
                 )
                 if resp.status_code == 200:
+                    elapsed = (time.monotonic() - started) * 1000
+                    prefix = (
+                        f"recover ok path={path} attempt={attempt}/{self.max_retries}"
+                        if attempt > 1
+                        else f"ok path={path}"
+                    )
+                    _tf_log(f"{prefix} elapsed_ms={elapsed:.0f} params={params_summary}", always=attempt > 1)
                     return resp.json()
                 # Cloudflare 1010 / 临时网关错误等，走重试
                 body = (resp.text or "").strip()
-                if attempt < self.max_retries and (
-                    resp.status_code >= 500 or "error code: 1010" in body.lower()
-                ):
+                if resp.status_code == 429 or "rate_limited" in body.lower():
+                    record_tickflow_limit_event(body)
+                    _tf_log(
+                        f"rate_limited path={path} attempt={attempt}/{self.max_retries} "
+                        f"params={params_summary} body={body[:160]}",
+                        always=True,
+                    )
+                    err = RuntimeError(f"TickFlow HTTP 429: {body[:200]}（{TICKFLOW_LIMIT_HINT}）")
+                    last_err = err
+                    delay = _rate_limit_delay_seconds(body, resp.headers.get("Retry-After"))
+                    if attempt < self.max_retries and delay is not None:
+                        _tf_log(
+                            f"rate_limited_sleep path={path} attempt={attempt}/{self.max_retries} "
+                            f"sleep_s={delay:.1f} params={params_summary}",
+                            always=True,
+                        )
+                        time.sleep(delay)
+                        continue
+                    raise err
+                if attempt < self.max_retries and (resp.status_code >= 500 or "error code: 1010" in body.lower()):
+                    _tf_log(
+                        f"retryable_http path={path} status={resp.status_code} "
+                        f"attempt={attempt}/{self.max_retries} params={params_summary}",
+                        always=True,
+                    )
                     time.sleep(self.retry_backoff_seconds * attempt)
                     continue
+                _tf_log(
+                    f"http_fail path={path} status={resp.status_code} "
+                    f"attempt={attempt}/{self.max_retries} params={params_summary} "
+                    f"body={body[:160]}",
+                    always=True,
+                )
                 raise RuntimeError(f"TickFlow HTTP {resp.status_code}: {body[:200]}")
             except Exception as e:  # requests.Timeout / requests.ConnectionError / RuntimeError
+                if is_tickflow_rate_limited_error(e):
+                    record_tickflow_limit_event(e)
+                _tf_log(
+                    f"request_error path={path} attempt={attempt}/{self.max_retries} "
+                    f"params={params_summary} err={type(e).__name__}: {e}",
+                    always=True,
+                )
                 last_err = e
                 if attempt >= self.max_retries:
                     break
                 time.sleep(self.retry_backoff_seconds * attempt)
+        _tf_log(
+            f"request_fail_final path={path} retries={self.max_retries} "
+            f"params={params_summary} err={type(last_err).__name__ if last_err else 'Unknown'}: {last_err}",
+            always=True,
+        )
         raise RuntimeError(f"TickFlow 请求失败: {last_err}")
 
     def get_klines(
@@ -157,6 +263,52 @@ class TickFlowClient:
     def get_intraday(self, symbol: str, *, period: str = "1m", count: int = 500) -> pd.DataFrame:
         return self.get_klines(symbol, period=period, count=count, intraday=True)
 
+    def get_klines_batch(
+        self,
+        symbols: list[str],
+        *,
+        period: str = "1d",
+        count: int = 300,
+        start_time_ms: int | None = None,
+        end_time_ms: int | None = None,
+        adjust: str | None = None,
+    ) -> dict[str, pd.DataFrame]:
+        """批量查询历史 K 线，返回 {symbol: DataFrame}。"""
+        p = str(period or "1d").strip()
+        if p not in _PERIOD_SET:
+            raise ValueError(f"不支持的 period: {p}")
+        clean = [normalize_cn_symbol(x) for x in symbols if str(x or "").strip()]
+        clean = sorted(set(x for x in clean if x))
+        if not clean:
+            _tf_log("get_klines_batch skip: no valid symbols", always=True)
+            return {}
+        params: dict[str, Any] = {
+            "symbols": ",".join(clean),
+            "period": p,
+            "count": max(int(count), 1),
+        }
+        if start_time_ms is not None:
+            params["start_time"] = int(start_time_ms)
+        if end_time_ms is not None:
+            params["end_time"] = int(end_time_ms)
+        if adjust is not None:
+            adj = str(adjust or "").strip().lower()
+            if adj not in _ADJUST_SET:
+                raise ValueError(f"不支持的 adjust: {adjust}")
+            params["adjust"] = adj
+        payload = self._request("/v1/klines/batch", params=params)
+        raw = payload.get("data") if isinstance(payload, dict) else None
+        if not isinstance(raw, dict):
+            _tf_log("get_klines_batch empty payload", always=True)
+            return {}
+        out: dict[str, pd.DataFrame] = {}
+        for sym, kline_payload in raw.items():
+            symbol = normalize_cn_symbol(str(sym or "").strip())
+            if symbol and isinstance(kline_payload, dict):
+                out[symbol] = parse_ohlcv_payload({"data": kline_payload})
+        _tf_log(f"get_klines_batch done: received={len(out)}/{len(clean)}", always=True)
+        return out
+
     def get_intraday_batch(
         self,
         symbols: list[str],
@@ -175,7 +327,12 @@ class TickFlowClient:
         clean = [normalize_cn_symbol(x) for x in symbols if str(x or "").strip()]
         clean = sorted(set(x for x in clean if x))
         if not clean:
+            _tf_log("get_intraday_batch skip: no valid symbols", always=True)
             return {}
+        _tf_log(
+            f"get_intraday_batch request symbols={len(clean)} period={p} count={max(int(count), 1)}",
+            always=True,
+        )
 
         payload = self._request(
             "/v1/klines/intraday/batch",
@@ -187,6 +344,7 @@ class TickFlowClient:
         )
         raw = payload.get("data") if isinstance(payload, dict) else None
         if not isinstance(raw, dict):
+            _tf_log("get_intraday_batch empty payload", always=True)
             return {}
 
         out: dict[str, pd.DataFrame] = {}
@@ -196,16 +354,63 @@ class TickFlowClient:
                 continue
             df = parse_ohlcv_payload({"data": kline_payload})
             out[symbol] = df
+        _tf_log(f"get_intraday_batch done: received={len(out)}/{len(clean)}", always=True)
         return out
 
-    def get_quotes(self, symbols: list[str]) -> dict[str, dict[str, Any]]:
-        clean = [normalize_cn_symbol(x) for x in symbols if str(x or "").strip()]
-        clean = [x for x in clean if x]
-        if not clean:
+    def get_depth(self, symbol: str) -> dict[str, Any]:
+        """获取单个标的五档行情。返回 {bid_prices, bid_volumes, ask_prices, ask_volumes, timestamp}"""
+        sym = normalize_cn_symbol(str(symbol or "").strip())
+        if not sym:
             return {}
+        resp = self._request("/v1/depth", params={"symbol": sym})
+        return resp.get("data", {}) if isinstance(resp, dict) else {}
+
+    def get_financial_metrics(self, symbols: list[str], *, latest: bool = True) -> dict[str, list[dict]]:
+        """批量获取核心财务指标。返回 {symbol: [MetricsRecord]}"""
+        clean = [normalize_cn_symbol(x) for x in symbols if str(x or "").strip()]
+        clean = sorted(set(x for x in clean if x))
+        if not clean:
+            _tf_log("get_financial_metrics skip: no valid symbols", always=True)
+            return {}
+        _tf_log(
+            f"get_financial_metrics request symbols={len(clean)} latest={latest}",
+            always=True,
+        )
+        resp = self._request(
+            "/v1/financials/metrics",
+            params={"symbols": ",".join(clean), "latest": "true" if latest else "false"},
+        )
+        data = resp.get("data") if isinstance(resp, dict) else None
+        if not isinstance(data, dict):
+            _tf_log("get_financial_metrics empty payload", always=True)
+            return {}
+        out: dict[str, list[dict]] = {}
+        for sym, records in data.items():
+            key = normalize_cn_symbol(str(sym).strip())
+            if key and isinstance(records, list):
+                out[key] = records
+        _tf_log(f"get_financial_metrics done: received={len(out)}/{len(clean)}", always=True)
+        return out
+
+    def get_quotes(
+        self,
+        symbols: list[str] | None = None,
+        *,
+        universes: list[str] | None = None,
+    ) -> dict[str, dict[str, Any]]:
+        clean = [normalize_cn_symbol(x) for x in symbols or [] if str(x or "").strip()]
+        clean = sorted(set(x for x in clean if x))
+        universe_ids = sorted(set(str(x).strip() for x in universes or [] if str(x).strip()))
+        if not clean and not universe_ids:
+            return {}
+        params: dict[str, Any] = {}
+        if clean:
+            params["symbols"] = ",".join(clean)
+        if universe_ids:
+            params["universes"] = ",".join(universe_ids)
         payload = self._request(
             "/v1/quotes",
-            params={"symbols": ",".join(sorted(set(clean)))},
+            params=params,
         )
         data = payload.get("data") if isinstance(payload, dict) else None
         if not isinstance(data, list):

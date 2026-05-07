@@ -17,11 +17,11 @@ on:
       top_n:
         description: "每日选股 TopN"
         required: true
-        default: "3"
+        default: "2"
       board:
         description: "股票池"
         required: true
-        default: "all"
+        default: "main_chinext"
       sample_size:
         description: "股票池采样，0 表示全量"
         required: true
@@ -39,12 +39,15 @@ concurrency:
   group: backtest-grid-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 env:
   # BT_START / BT_END 留空时由各 job 的 compute-dates 步骤动态计算
   BT_START: ${{ inputs.start }}
   BT_END: ${{ inputs.end }}
   BT_TOP_N: ${{ inputs.top_n || '3' }}
-  BT_BOARD: ${{ inputs.board || 'all' }}
+  BT_BOARD: ${{ inputs.board || 'main_chinext' }}
   BT_SAMPLE_SIZE: ${{ inputs.sample_size || '0' }}
   BT_TRADING_DAYS: ${{ inputs.trading_days || '320' }}
   BT_TRAILING_STOP: ${{ inputs.trailing_stop || '0' }}
@@ -64,6 +67,9 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       TZ: Asia/Shanghai
       FUNNEL_EXPORT_FULL_FETCH: "1"
+      # 默认仅走 Supabase 缓存，避免个别外部源慢调用拖垮整轮 fetch
+      BACKTEST_SNAPSHOT_ALLOW_NETWORK_FALLBACK: "0"
+      BACKTEST_SNAPSHOT_WORKERS: "6"
     steps:
       - name: Compute date defaults
         run: |
@@ -91,211 +97,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # 用 backtest_runner 的一个轻量调用拉取全量数据并导出快照
-          # --hold-days 1 + --top-n 0 => 只做数据拉取，不真正回测
-          # 但 backtest_runner 没有 export 功能，所以我们用 wyckoff_funnel 做一次 dry-run
-          # 来获得快照。更直接的方式：写一个小脚本只做数据拉取。
-          python -u -c "
-          import os, sys, time, json
-          sys.path.insert(0, '.')
-
-          from datetime import timedelta, datetime
-          from pathlib import Path
-          from concurrent.futures import ThreadPoolExecutor, as_completed
-          from threading import Lock
-
-          import pandas as pd
-
-          from integrations.data_source import fetch_index_hist, fetch_stock_hist
-          from integrations.stock_hist_repository import get_stock_hist as get_stock_hist_cached
-          from integrations.fetch_a_share_csv import get_stocks_by_board, _normalize_symbols
-          from core.wyckoff_engine import normalize_hist_from_fetch
-
-          start_s = '${BT_START}'.replace('-', '')
-          end_s = '${BT_END}'.replace('-', '')
-          board = '${BT_BOARD}'
-          sample_size = int('${BT_SAMPLE_SIZE}')
-          trading_days = int('${BT_TRADING_DAYS}')
-
-          end_dt = datetime.strptime(end_s, '%Y%m%d').date()
-          start_dt = datetime.strptime(start_s, '%Y%m%d').date()
-          # 回看窗口：从回测起始日再往前 trading_days*2 自然日，确保 MA200 有足够预热
-          prefetch_start = (start_dt - timedelta(days=int(trading_days * 2))).strftime('%Y%m%d')
-
-          print(f'[snapshot] 数据区间: {prefetch_start} -> {end_s}')
-
-          raw_pool = get_stocks_by_board(board)
-          if raw_pool and isinstance(raw_pool[0], dict):
-              raw_codes = [str(item.get('code', '')).strip() for item in raw_pool]
-          else:
-              raw_codes = [str(item).strip() for item in raw_pool]
-          symbols = sorted(set(_normalize_symbols(raw_codes)))
-          if not symbols:
-              print('[snapshot] 严重错误: 股票池为空，请检查 board 参数或行情源可用性')
-              sys.exit(1)
-          if sample_size > 0 and sample_size < len(symbols):
-              import random; random.seed(42)
-              symbols = random.sample(symbols, sample_size)
-          print(f'[snapshot] 股票池: {len(symbols)} symbols, sample={symbols[:5]}')
-
-          # ---- 速率控制：tushare 500次/分钟，留 20% 余量 → 400次/分钟 ----
-          RATE_LIMIT = 400
-          _call_times = []
-          _call_times_lock = Lock()
-
-          def rate_limited_fetch(sym):
-              # 简单滑动窗口限流
-              while True:
-                  with _call_times_lock:
-                      now = time.monotonic()
-                      _call_times[:] = [t for t in _call_times if now - t < 60]
-                      if len(_call_times) < RATE_LIMIT:
-                          _call_times.append(now)
-                          break
-                      sleep_for = 60 - (now - _call_times[0]) + 0.1
-                  time.sleep(max(0.05, sleep_for))
-
-              try:
-                  raw = None
-                  # 1) Supabase 缓存优先（cache_only：不触发 tushare 补缺口）
-                  try:
-                      raw = get_stock_hist_cached(
-                          sym, prefetch_start, end_s,
-                          adjust='qfq', context='background', cache_only=True,
-                      )
-                  except Exception:
-                      pass
-                  # 2) 缓存无数据才 fallback 到 tushare（新股/首次入库）
-                  if raw is None or raw.empty:
-                      try:
-                          raw = fetch_stock_hist(sym, prefetch_start, end_s, adjust='qfq')
-                      except Exception:
-                          pass
-                  if raw is not None and not raw.empty:
-                      df = normalize_hist_from_fetch(raw)
-                      df['symbol'] = sym
-                      return sym, df, None
-              except Exception as e:
-                  return sym, None, str(e)
-              return sym, None, 'no_data'
-
-          # ---- 主拉取（2 线程 + 限流 + 1 轮重试） ----
-          all_frames = []
-          ok = 0
-          fail = 0
-          fail_samples = []
-
-          def batch_fetch(sym_list, label=''):
-              local_ok = 0
-              local_fail = 0
-              local_fails = []
-              local_fail_samples = []
-              with ThreadPoolExecutor(max_workers=2) as ex:
-                  futs = {ex.submit(rate_limited_fetch, s): s for s in sym_list}
-                  done = 0
-                  for ft in as_completed(futs):
-                      done += 1
-                      sym, df, err = ft.result()
-                      if df is not None:
-                          all_frames.append(df)
-                          local_ok += 1
-                      else:
-                          local_fail += 1
-                          local_fails.append(sym)
-                          if err and len(local_fail_samples) < 8:
-                              local_fail_samples.append(f'{sym}: {str(err)[:200]}')
-                      if done % 500 == 0 or done == len(futs):
-                          print(f'[snapshot{label}] {done}/{len(futs)} (ok={local_ok}, fail={local_fail})')
-              return local_fails, local_ok, local_fail, local_fail_samples
-
-          # 第一轮
-          round1_fails, round1_ok, round1_fail, round1_fail_samples = batch_fetch(symbols, ' round1')
-          ok = round1_ok
-          fail = round1_fail
-          fail_samples = list(round1_fail_samples)
-          print(f'[snapshot] 第一轮完成: ok={ok}, fail={fail}, total={ok + fail}/{len(symbols)}')
-
-          # 重试失败的（等 30 秒让限流窗口过去）
-          if round1_fails:
-              print(f'[snapshot] 重试 {len(round1_fails)} 只失败股票...')
-              time.sleep(30)
-              retry_fails, retry_ok, retry_fail, retry_fail_samples = batch_fetch(round1_fails, ' retry')
-              ok += retry_ok
-              fail = retry_fail  # 最终仍失败数 = 重试后仍失败的数量
-              fail_samples = list(retry_fail_samples)  # 只保留最终失败样本，避免与第一轮重复
-              print(f'[snapshot] 重试完成: ok={ok}, fail={fail}, total={ok + fail}/{len(symbols)}')
-              if retry_fails:
-                  print(f'[snapshot] 仍失败股票数: {len(retry_fails)}')
-
-          if fail_samples:
-              print('[snapshot] 失败样本:')
-              for item in fail_samples[:10]:
-                  print(f'  - {item}')
-
-          # 基准指数（akshare 优先 → tushare 兜底）
-          bench_main = None
-          try:
-              from integrations.data_source import _fetch_index_akshare
-              bench_main = _fetch_index_akshare('000001', prefetch_start, end_s)
-              print(f'[snapshot] 大盘指数 via akshare: {len(bench_main)} rows')
-          except Exception as e1:
-              print(f'[snapshot] akshare 大盘失败: {e1}, fallback fetch_index_hist')
-              try:
-                  bench_main = fetch_index_hist('000001', prefetch_start, end_s)
-              except Exception as e2:
-                  print(f'[snapshot] 大盘指数全部失败（不阻塞）: {e2}')
-
-          # 导出快照
-          snap_dir = Path('snapshot_data')
-          snap_dir.mkdir(exist_ok=True)
-
-          if not all_frames:
-              print('[snapshot] 严重错误: 没有成功拉取任何股票数据!')
-              sys.exit(1)
-
-          if ok < len(symbols) * 0.1:
-              print(f'[snapshot] 严重错误: 成功率仅 {ok}/{len(symbols)} ({100*ok/len(symbols):.1f}%)，低于 10% 阈值')
-              sys.exit(1)
-
-          full_df = pd.concat(all_frames, ignore_index=True)
-          full_df.to_csv(snap_dir / 'hist_full.csv.gz', index=False, compression='gzip')
-          print(f'[snapshot] hist_full.csv.gz: {len(full_df)} rows')
-
-          if bench_main is not None and not bench_main.empty:
-              bench_main.to_csv(snap_dir / 'benchmark_main.csv', index=False)
-              print(f'[snapshot] benchmark_main.csv: {len(bench_main)} rows')
-
-          # ---- 导出元数据：name_map / sector_map / market_cap_map ----
-          # 让 Phase 2 grid job 完全无需网络调用
-          name_map = {}
-          for item in raw_pool:
-              if isinstance(item, dict):
-                  c = str(item.get('code', '')).strip()
-                  n = str(item.get('name', '')).strip()
-                  if c:
-                      name_map[c] = n
-          (snap_dir / 'name_map.json').write_text(json.dumps(name_map, ensure_ascii=False))
-          print(f'[snapshot] name_map.json: {len(name_map)} entries')
-
-          from integrations.data_source import fetch_sector_map, fetch_market_cap_map
-          try:
-              sm = fetch_sector_map()
-              (snap_dir / 'sector_map.json').write_text(json.dumps(sm, ensure_ascii=False))
-              print(f'[snapshot] sector_map.json: {len(sm)} entries')
-          except Exception as e:
-              print(f'[snapshot] sector_map 拉取失败（不阻塞）: {e}')
-
-          try:
-              cm = fetch_market_cap_map()
-              (snap_dir / 'market_cap_map.json').write_text(json.dumps(cm, ensure_ascii=False))
-              print(f'[snapshot] market_cap_map.json: {len(cm)} entries')
-          except Exception as e:
-              print(f'[snapshot] market_cap_map 拉取失败（不阻塞）: {e}')
-
-          meta = {'symbols': len(symbols), 'ok': ok, 'fail': fail, 'start': prefetch_start, 'end': end_s}
-          (snap_dir / 'metadata.json').write_text(json.dumps(meta))
-          print(f'[snapshot] Done! 成功率: {ok}/{len(symbols)} ({100*ok/len(symbols):.1f}%)')
-          "
+          python -u scripts/backtest_snapshot_fetch.py \
+            --start "$BT_START" \
+            --end "$BT_END" \
+            --board "$BT_BOARD" \
+            --sample-size "$BT_SAMPLE_SIZE" \
+            --trading-days "$BT_TRADING_DAYS" \
+            --output-dir snapshot_data
 
       - name: Upload snapshot
         uses: actions/upload-artifact@v4
@@ -344,7 +152,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[wbt]"
 
       - name: Download snapshot
         uses: actions/download-artifact@v4
@@ -374,12 +182,16 @@ jobs:
             --board "${BT_BOARD}" \
             --sample-size "${BT_SAMPLE_SIZE}" \
             --trading-days "${BT_TRADING_DAYS}" \
+            --use-current-meta \
             --exit-mode sltp \
             --stop-loss "${STOP}" \
             --take-profit "${TP}" \
             --sltp-priority stop_first \
             --pending-mode both \
+            --pending-merge-order funnel_first \
             --trailing-stop "${TRAIL}" \
+            --metrics-engine auto \
+            --wbt-n-jobs 2 \
             --snapshot-dir snapshot_data \
             --output-dir "${OUT_DIR}" \
             | tee "${OUT_DIR}/run.log"
@@ -428,6 +240,24 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      - name: Update market backtest report
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 scripts/update_backtest_market_report.py \
+            --artifacts-dir artifacts \
+            --output docs/BACKTEST_MARKET_REPORT.md \
+            --run-url "$RUN_URL" \
+            --generated-at "$(TZ=Asia/Shanghai date '+%Y-%m-%d %H:%M:%S Asia/Shanghai')"
+
+      - name: Upload market backtest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-market-report-${{ github.run_number }}
+          path: docs/BACKTEST_MARKET_REPORT.md
+          retention-days: 30
+          if-no-files-found: error
+
       - name: Aggregate and notify
         shell: bash
         env:
@@ -460,7 +290,7 @@ jobs:
               print(f'send_backtest_card: {ok}')
               exit(0)
 
-          # --- 多单元 grid：用 column_set 原生组件 ---
+          # --- 多单元 grid：紧凑视觉卡片 ---
           def extract(content, keyword):
               for line in content.split('\n'):
                   if keyword in line:
@@ -496,6 +326,36 @@ jobs:
           def fmt(v, spec):
               return format(v, spec) if v is not None else '-'
 
+          def sharp_flag(v):
+              if v is None:
+                  return '⚪'
+              if v >= 0.6:
+                  return '🟢'
+              if v >= 0.2:
+                  return '🟡'
+              if v >= 0:
+                  return '🟠'
+              return '🔴'
+
+          def risk_comment(c):
+              if not c:
+                  return '无有效样本'
+              s = c.get('sharpe')
+              avg = c.get('avg')
+              mdd = c.get('mdd')
+              notes = []
+              if s is not None and s < 0:
+                  notes.append('风险收益比偏弱')
+              elif s is not None and s < 0.2:
+                  notes.append('边际优势较薄')
+              else:
+                  notes.append('风险收益尚可')
+              if avg is not None and avg < 0:
+                  notes.append('单笔期望为负')
+              if mdd is not None and mdd <= -15:
+                  notes.append('回撤较大')
+              return '；'.join(notes[:2]) if notes else '指标平衡'
+
           elements = []
           run_url = os.environ.get('RUN_URL', '')
           bt_start = os.environ.get('BT_START', '?')
@@ -510,9 +370,15 @@ jobs:
               elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': '⚠️ 未找到回测结果文件'}})
           else:
               valid = [c for c in cells if c.get('sharpe') is not None]
-              best = max(valid, key=lambda c: c['sharpe']) if valid else None
+              if not valid:
+                  elements.append({'tag': 'hr'})
+                  elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': '⚠️ 结果文件存在，但未解析到有效夏普指标'}})
+              else:
+                  best = max(valid, key=lambda c: c['sharpe'])
+                  ranked = sorted(valid, key=lambda c: c['sharpe'], reverse=True)
+                  pos_cnt = sum(1 for c in valid if (c.get('sharpe') or 0) > 0)
+                  neg_cnt = sum(1 for c in valid if (c.get('sharpe') or 0) <= 0)
 
-              if best:
                   elements.append({'tag': 'hr'})
                   bs = best.get('sharpe', 0) or 0
                   tag = '🏆' if bs > 0 else '📌'
@@ -522,7 +388,7 @@ jobs:
                       'content': f'{tag} **最优参数**: 持有{best["hold"]}天 / SL-{best["sl"]}% / {tp_str} / {tr_str}'}})
 
                   cols = [
-                      ('**夏普**', f'{fmt(best.get("sharpe"), ".3f")}'),
+                      ('**夏普**', f'{sharp_flag(best.get("sharpe"))} {fmt(best.get("sharpe"), ".3f")}'),
                       ('**胜率**', f'{fmt(best.get("win"), ".1f")}%'),
                       ('**均收**', f'{fmt(best.get("avg"), "+.2f")}%'),
                       ('**回撤**', f'{fmt(best.get("mdd"), ".1f")}%'),
@@ -535,56 +401,101 @@ jobs:
                           ]} for label, val in cols
                       ]})
 
-              # Top-10 排行（用文本列表代替 pipe table）
-              elements.append({'tag': 'hr'})
-              ranked = sorted(valid, key=lambda c: c['sharpe'], reverse=True)[:10]
-              rank_lines = ['**夏普 Top-10 参数组合**', '']
-              for i, c in enumerate(ranked, 1):
-                  is_best = best and c['hold'] == best['hold'] and c['sl'] == best['sl'] and c['tp'] == best.get('tp') and c['tr'] == best.get('tr')
-                  mark = ' 🏆' if is_best else ''
-                  tp_s = f'TP{c["tp"]}%' if c['tp'] else '无TP'
-                  tr_s = f'Trail-{c["tr"]}%' if c['tr'] else '无Trail'
-                  rank_lines.append(
-                      f'{i}. **{c["hold"]}天/SL-{c["sl"]}%/{tp_s}/{tr_s}**{mark}\n'
-                      f'    夏普{fmt(c.get("sharpe"), ".3f")}  胜率{fmt(c.get("win"), ".1f")}%  '
-                      f'均收{fmt(c.get("avg"), "+.2f")}%  回撤{fmt(c.get("mdd"), ".1f")}%  '
-                      f'{int(c.get("trades") or 0)}笔')
-              elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': '\n'.join(rank_lines)}})
-
-              # 夏普矩阵（用 column_set 模拟）
-              holds = sorted(set(c['hold'] for c in cells))
-              sls = sorted(set(c['sl'] for c in cells))
-              agg = {}
-              for c in cells:
-                  key = (c['hold'], c['sl'])
-                  if c.get('sharpe') is not None:
-                      if key not in agg or c['sharpe'] > agg[key]['sharpe']:
-                          agg[key] = c
-
-              if len(holds) > 1 and len(sls) > 1:
-                  elements.append({'tag': 'hr'})
                   elements.append({'tag': 'div', 'text': {'tag': 'lark_md',
-                      'content': '**最优夏普矩阵** (每格取 TP/Trail 最优)'}})
-                  # Header row
-                  hdr_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
-                      {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '**持有\\\\SL**'}}]}]
-                  for s in sls:
-                      hdr_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
-                          {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**-{s}%**'}}]})
-                  elements.append({'tag': 'column_set', 'flex_mode': 'stretch',
-                      'background_style': 'grey', 'columns': hdr_cols})
-                  # Data rows
-                  for h in holds:
-                      row_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
-                          {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**{h}天**'}}]}]
+                      'content': f'**策略体检**: {risk_comment(best)}  ·  正夏普组合 {pos_cnt} / 负夏普组合 {neg_cnt}'}})
+
+                  # 参数梯队（完整表格：展示全部组合）
+                  elements.append({'tag': 'hr'})
+                  elements.append({'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**参数梯队表（共 {len(ranked)} 组）**'}})
+
+                  header_cols = [
+                      ('**#**', 1),
+                      ('**参数组合**', 4),
+                      ('**夏普**', 2),
+                      ('**胜率**', 2),
+                      ('**均收**', 2),
+                      ('**回撤**', 2),
+                      ('**样本**', 2),
+                  ]
+                  elements.append({
+                      'tag': 'column_set',
+                      'flex_mode': 'stretch',
+                      'background_style': 'grey',
+                      'columns': [
+                          {
+                              'tag': 'column',
+                              'width': 'weighted',
+                              'weight': w,
+                              'elements': [{'tag': 'div', 'text': {'tag': 'lark_md', 'content': t}}],
+                          }
+                          for t, w in header_cols
+                      ],
+                  })
+
+                  for i, c in enumerate(ranked, 1):
+                      is_best = c['hold'] == best['hold'] and c['sl'] == best['sl'] and c['tp'] == best.get('tp') and c['tr'] == best.get('tr')
+                      mark = '🏆' if is_best else ''
+                      tp_s = f'TP{c["tp"]}%' if c['tp'] else '无TP'
+                      tr_s = f'Trail-{c["tr"]}%' if c['tr'] else '无Trail'
+                      combo = f'{c["hold"]}天 / SL-{c["sl"]}% / {tp_s} / {tr_s}'
+                      sharpe_v = f'{sharp_flag(c.get("sharpe"))} {fmt(c.get("sharpe"), ".3f")}{(" " + mark) if mark else ""}'
+                      row = [
+                          (str(i), 1),
+                          (combo, 4),
+                          (sharpe_v, 2),
+                          (f'{fmt(c.get("win"), ".1f")}%', 2),
+                          (f'{fmt(c.get("avg"), "+.2f")}%', 2),
+                          (f'{fmt(c.get("mdd"), ".1f")}%', 2),
+                          (f'{int(c.get("trades") or 0)}笔', 2),
+                      ]
+                      elements.append({
+                          'tag': 'column_set',
+                          'flex_mode': 'stretch',
+                          'columns': [
+                              {
+                                  'tag': 'column',
+                                  'width': 'weighted',
+                                  'weight': w,
+                                  'elements': [{'tag': 'div', 'text': {'tag': 'lark_md', 'content': txt}}],
+                              }
+                              for txt, w in row
+                          ],
+                      })
+
+                  # 夏普矩阵（每格取 TP/Trail 最优）
+                  holds = sorted(set(c['hold'] for c in cells))
+                  sls = sorted(set(c['sl'] for c in cells))
+                  agg = {}
+                  for c in cells:
+                      key = (c['hold'], c['sl'])
+                      if c.get('sharpe') is not None:
+                          if key not in agg or c['sharpe'] > agg[key]['sharpe']:
+                              agg[key] = c
+
+                  if len(holds) > 1 and len(sls) > 1:
+                      elements.append({'tag': 'hr'})
+                      elements.append({'tag': 'div', 'text': {'tag': 'lark_md',
+                          'content': '**最优夏普矩阵** (每格取 TP/Trail 最优)'}})
+                      # Header row
+                      hdr_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                          {'tag': 'div', 'text': {'tag': 'lark_md', 'content': '**持有\\\\SL**'}}]}]
                       for s in sls:
-                          c = agg.get((h, s))
-                          v = fmt(c.get('sharpe') if c else None, '.3f')
-                          is_b = best and c and c.get('hold') == best.get('hold') and c.get('sl') == best.get('sl') and c.get('tp') == best.get('tp') and c.get('tr') == best.get('tr')
-                          cell_text = f'**{v}** 🏆' if is_b and v != '-' else v
-                          row_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
-                              {'tag': 'div', 'text': {'tag': 'lark_md', 'content': cell_text}}]})
-                      elements.append({'tag': 'column_set', 'flex_mode': 'stretch', 'columns': row_cols})
+                          hdr_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                              {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**-{s}%**'}}]})
+                      elements.append({'tag': 'column_set', 'flex_mode': 'stretch',
+                          'background_style': 'grey', 'columns': hdr_cols})
+                      # Data rows
+                      for h in holds:
+                          row_cols = [{'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                              {'tag': 'div', 'text': {'tag': 'lark_md', 'content': f'**{h}天**'}}]}]
+                          for s in sls:
+                              c = agg.get((h, s))
+                              v = fmt(c.get('sharpe') if c else None, '.3f')
+                              is_b = c and c.get('hold') == best.get('hold') and c.get('sl') == best.get('sl') and c.get('tp') == best.get('tp') and c.get('tr') == best.get('tr')
+                              cell_text = f'**{v}** 🏆' if is_b and v != '-' else v
+                              row_cols.append({'tag': 'column', 'width': 'weighted', 'weight': 1, 'elements': [
+                                  {'tag': 'div', 'text': {'tag': 'lark_md', 'content': cell_text}}]})
+                          elements.append({'tag': 'column_set', 'flex_mode': 'stretch', 'columns': row_cols})
 
           template = 'blue' if (best and (best.get('sharpe') or 0) > 0) else 'orange' if cells else 'red'
           payload = {
@@ -597,6 +508,19 @@ jobs:
           resp = requests.post(webhook, json=payload, timeout=15)
           print(f'飞书通知: status={resp.status_code}, body={resp.text[:200]}')
           PYEOF
+
+      - name: Commit market backtest report
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/BACKTEST_MARKET_REPORT.md
+          if git diff --cached --quiet; then
+            echo "Backtest market report unchanged"
+          else
+            git commit -m "docs: update backtest market report"
+            git push
+          fi
 
       - name: Notify on failure
         if: failure()

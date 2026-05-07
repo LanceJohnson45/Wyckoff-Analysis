@@ -1938,7 +1938,7 @@ def run_funnel_job(
         }
     print(
         f"[funnel] L1={metrics['layer1']}, L2={metrics['layer2']}, "
-        f"(主升={l2_momentum}, 启动={l2_ambush}, 吸筹={l2_accum}, 地量={l2_dry_vol}, 护盘={l2_rs_div}, 点火={l2_sos}), "
+        f"(主升={l2_momentum}, 潜伏/启动={l2_ambush}, 吸筹={l2_accum}, 地量={l2_dry_vol}, 护盘={l2_rs_div}, 点火={l2_sos}), "
         f"L3={metrics['layer3']}, 命中={total_hits}, "
         f"Top行业={top_sectors}, 各触发={metrics['by_trigger']}"
     )
@@ -2483,7 +2483,7 @@ def run(
         f"- **L2 主要卡点**：{l2_rejection_summary}",
         "",
         "## L2 通道与阶段",
-        f"- **L2 通道分布**：主升{l2_momentum} | 启动{l2_ambush} | 吸筹{l2_accum} | 地量{l2_dry_vol} | 护盘{l2_rs_div} | 点火{l2_sos}",
+        f"- **L2 通道分布**：主升{l2_momentum} | 潜伏/启动{l2_ambush} | 吸筹{l2_accum} | 地量{l2_dry_vol} | 护盘{l2_rs_div} | 点火{l2_sos}",
         f"- **威科夫阶段**：Markup{markup_count} | Accum_A{accum_a_count} | Accum_B{accum_b_count} | Accum_C{accum_c_count}",
         f"- **板块轮动状态**：分歧{int((sector_rotation.get('counts', {}) or {}).get('DISAGREEMENT_PULLBACK', 0))} | 健康{int((sector_rotation.get('counts', {}) or {}).get('HEALTHY_MAINLINE', 0))} | 高潮{int((sector_rotation.get('counts', {}) or {}).get('CONSENSUS_CLIMAX', 0))} | 退潮{int((sector_rotation.get('counts', {}) or {}).get('DISTRIBUTION_RISK', 0))}",
         "",

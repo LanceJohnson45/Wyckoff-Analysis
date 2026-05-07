@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 并行 OHLCV 批量拉取工具。
 
@@ -8,6 +7,7 @@
 - 批次并行 + 超时终止
 - Spot 实时行情补丁（参数化 env_prefix 支持 FUNNEL/STEP3/STEP4 配置隔离）
 """
+
 from __future__ import annotations
 
 import os
@@ -16,8 +16,10 @@ import time
 from concurrent.futures import (
     ProcessPoolExecutor,
     ThreadPoolExecutor,
-    TimeoutError as FuturesTimeoutError,
     as_completed,
+)
+from concurrent.futures import (
+    TimeoutError as FuturesTimeoutError,
 )
 from datetime import date, datetime
 
@@ -81,9 +83,7 @@ def _run_with_timeout(sym: str, window, timeout_s: int) -> pd.DataFrame:
         signal.signal(signal.SIGALRM, old)
 
 
-def fetch_one_with_retry(
-    sym: str, window, max_retries: int = MAX_RETRIES
-) -> tuple[str, pd.DataFrame | None]:
+def fetch_one_with_retry(sym: str, window, max_retries: int = MAX_RETRIES) -> tuple[str, pd.DataFrame | None]:
     """在子进程中执行，单票硬超时 + 重试，避免个别数据源卡死拖慢整批。"""
     socket.setdefaulttimeout(SOCKET_TIMEOUT)
     for attempt in range(max_retries):
@@ -97,9 +97,7 @@ def fetch_one_with_retry(
     return (sym, None)
 
 
-def fetch_one_with_retry_thread(
-    sym: str, window, max_retries: int = MAX_RETRIES
-) -> tuple[str, pd.DataFrame | None]:
+def fetch_one_with_retry_thread(sym: str, window, max_retries: int = MAX_RETRIES) -> tuple[str, pd.DataFrame | None]:
     """
     线程模式：避免 signal，依赖数据源请求超时与重试。
     """
@@ -152,7 +150,10 @@ def append_spot_bar_if_needed(
         False → 沿用前一日 volume/amount 或 NaN（funnel 行为）
     """
     enable = os.getenv(f"{env_prefix}_ENABLE_SPOT_PATCH", "1").strip().lower() in {
-        "1", "true", "yes", "on",
+        "1",
+        "true",
+        "yes",
+        "on",
     }
     if not enable or df is None or df.empty:
         return (df, False)
@@ -280,10 +281,13 @@ def fetch_all_ohlcv(
         f"(executor={executor_mode}, batch_size={batch_size}, max_workers={max_workers}, "
         f"batch_timeout={batch_timeout}s, fetch_timeout={FETCH_TIMEOUT}s, retries={MAX_RETRIES})"
     )
+    from cli.progress import report_progress
+
+    report_progress("拉取日线", f"共{len(symbols)}只, {total_batches}批", 0.0)
     total_fetch_started = time.monotonic()
     for i in range(0, len(symbols), batch_size):
         batch_no = i // batch_size + 1
-        batch = symbols[i: i + batch_size]
+        batch = symbols[i : i + batch_size]
         batch_ok = 0
         batch_fail = 0
         batch_started = time.monotonic()
@@ -291,9 +295,7 @@ def fetch_all_ohlcv(
 
         use_process = executor_mode == "process"
         ex = (
-            ProcessPoolExecutor(max_workers=max_workers)
-            if use_process
-            else ThreadPoolExecutor(max_workers=max_workers)
+            ProcessPoolExecutor(max_workers=max_workers) if use_process else ThreadPoolExecutor(max_workers=max_workers)
         )
         fetch_fn = fetch_one_with_retry if use_process else fetch_one_with_retry_thread
         futures = {ex.submit(fetch_fn, s, window): s for s in batch}
@@ -312,7 +314,9 @@ def fetch_all_ohlcv(
                         ltd = latest_trade_date_from_hist(df)
                         if ltd != window.end_trade_date:
                             df, patched = append_spot_bar_if_needed(
-                                sym, df, window.end_trade_date,
+                                sym,
+                                df,
+                                window.end_trade_date,
                             )
                             if patched:
                                 ltd = latest_trade_date_from_hist(df)
@@ -361,6 +365,7 @@ def fetch_all_ohlcv(
             f"[funnel] 批次#{batch_no} 完成: 成功={batch_ok}, 失败={batch_fail}, "
             f"耗时={batch_elapsed:.1f}s, qps={batch_qps:.2f}, 累计成功={fetch_ok}, 累计失败={fetch_fail}"
         )
+        report_progress("拉取日线", f"批次#{batch_no}/{total_batches}", batch_no / total_batches)
         if i + batch_size < len(symbols) and batch_sleep > 0:
             time.sleep(batch_sleep)
 
@@ -370,6 +375,7 @@ def fetch_all_ohlcv(
         f"[funnel] 日线拉取完成: 成功={fetch_ok}, 失败={fetch_fail}, "
         f"总耗时={total_fetch_elapsed:.1f}s, 平均qps={overall_qps:.2f}"
     )
+    report_progress("拉取完成", f"成功={fetch_ok}, 失败={fetch_fail}", 1.0)
     if enforce_target_trade_date:
         print(
             f"[funnel] 交易日对齐检查: mismatch={fetch_date_mismatch}, "

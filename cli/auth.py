@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """CLI 认证 — 复用 Supabase Auth，session 持久化到 ~/.wyckoff/session.json。"""
+
 from __future__ import annotations
 
 import json
@@ -12,12 +12,13 @@ logger = logging.getLogger(__name__)
 SESSION_DIR = Path.home() / ".wyckoff"
 SESSION_FILE = SESSION_DIR / "session.json"
 
-from core.constants import SUPABASE_ANON_URL as _SUPABASE_URL, SUPABASE_ANON_KEY as _SUPABASE_KEY
-
+from core.constants import SUPABASE_ANON_KEY as _SUPABASE_KEY
+from core.constants import SUPABASE_ANON_URL as _SUPABASE_URL
 
 # ---------------------------------------------------------------------------
 # Session 文件读写
 # ---------------------------------------------------------------------------
+
 
 def _save_session(data: dict[str, Any]) -> None:
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
@@ -44,9 +45,11 @@ def _clear_session() -> None:
 # 登录 / 登出 / 恢复
 # ---------------------------------------------------------------------------
 
+
 def _create_client():
     """用内置的 anon key 创建 Supabase 客户端（不依赖 .env）。"""
     from supabase import create_client
+
     return create_client(_SUPABASE_URL, _SUPABASE_KEY)
 
 
@@ -159,7 +162,8 @@ def _load_config() -> dict[str, Any]:
 def _save_config(data: dict[str, Any]) -> None:
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text(
-        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8",
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
     )
 
 
@@ -243,7 +247,29 @@ def set_default_model(model_id: str) -> None:
         _save_config(data)
 
 
+def load_fallback_model_id() -> str:
+    """返回 fallback 模型 id（空字符串表示未设置）。"""
+    data = _ensure_models_format(_load_config())
+    fb = data.get("fallback", "")
+    models = data.get("models", [])
+    if fb and any(m["id"] == fb for m in models):
+        return fb
+    return ""
+
+
+def set_fallback_model(model_id: str) -> None:
+    """设置 fallback 模型。空字符串清除设置。"""
+    data = _ensure_models_format(_load_config())
+    if model_id:
+        models = data.get("models", [])
+        if not any(m["id"] == model_id for m in models):
+            return
+    data["fallback"] = model_id
+    _save_config(data)
+
+
 # --- 向后兼容 ---
+
 
 def save_model_config(config: dict[str, Any]) -> None:
     """将模型配置合并写入 wyckoff.json（向后兼容）。"""

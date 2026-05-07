@@ -3,7 +3,7 @@
 Wyckoff Funnel 5 层漏斗筛选引擎
 
 Layer 1: 剥离垃圾（ST / 北交所 / 科创板 / 市值 / 成交额）
-Layer 2: C-lite 三轨甄选（主升确认/启动确认/吸筹改善）
+Layer 2: A股六通道甄选；HK/US C-lite 三轨甄选
 Layer 2.5: Markup 加速检测
 Layer 3: 板块共振（行业分布 Top-N + RPS 动量）
 Layer 4: 威科夫狙击（Spring / SOS / LPS / Effort vs Result）
@@ -336,6 +336,8 @@ class FunnelConfig:
     rps_window_slow: int = 120
     rps_fast_min: float = 75.0
     rps_slow_min: float = 70.0
+    rps_slow_strong_bypass: float = 80.0
+    rps_fast_bypass_min: float = 50.0
     rps_slope_window: int = 10  # 计算 RPS 斜率的窗口（交易日）
     rps_slope_min: float = 0.5  # RPS 斜率最小值（%/day），用于判断 RPS 是否还在上升
     require_bench_latest_alignment: bool = False
@@ -1251,14 +1253,13 @@ def layer2_strength_detailed(
     ]
 ):
     """
-    Layer2 C-lite 三轨决策：
-    1) Track A 主升确认：趋势成熟 + RS/RPS 强势 + 不过度乖离
-    2) Track B 启动确认：短期转强 + 接近突破 + 仍有结构余量
-    3) Track C 吸筹改善：低位改善 + 吸筹/地量/拒绝新低证据
+    Layer2 多市场决策：
+    - CN: 六通道甄选（主升/点火/潜伏/吸筹/地量/护盘）
+    - HK/US: C-lite 三轨（主升确认/启动确认/吸筹改善）
 
     返回：
     - passed: 通过 Layer2 的股票
-    - channel_map: code -> 唯一主 Track 标签
+    - channel_map: code -> 通道标签
     """
 
     def _cum_return_pct_from_series(pct_series: pd.Series) -> float | None:
@@ -1459,12 +1460,21 @@ def layer2_strength_detailed(
                     rps_slope_ok = slope >= cfg.rps_slope_min
 
         if cfg.enable_rps_filter and rps_filter_active:
-            momentum_rps_ok = (
+            momentum_rps_core_ok = (
                 rps_fast is not None
                 and rps_slow is not None
                 and rps_fast >= cfg.rps_fast_min
                 and rps_slow >= cfg.rps_slow_min
-                and rps_slope_ok  # 加入 RPS 斜率判断
+                and rps_slope_ok
+            )
+            momentum_rps_strong_bypass_ok = (
+                rps_fast is not None
+                and rps_slow is not None
+                and rps_slow >= getattr(cfg, "rps_slow_strong_bypass", 80.0)
+                and rps_fast >= getattr(cfg, "rps_fast_bypass_min", 50.0)
+            )
+            momentum_rps_ok = (
+                momentum_rps_core_ok or momentum_rps_strong_bypass_ok
             )
             ambush_rps_ok = (
                 rps_fast is not None
@@ -1798,6 +1808,71 @@ def layer2_strength_detailed(
                 "sos": bool(sos_ok),
             },
         )
+        if market == "cn":
+            legacy_labels: list[str] = []
+            if momentum_ok:
+                legacy_labels.append("主升通道")
+            if sos_ok:
+                legacy_labels.append("点火破局")
+            if ambush_ok:
+                legacy_labels.append("潜伏通道")
+            if accum_ok:
+                legacy_labels.append("吸筹通道")
+            if dry_vol_ok:
+                legacy_labels.append("地量蓄势")
+            if rs_div_ok:
+                legacy_labels.append("暗中护盘")
+
+            if legacy_labels:
+                passed.append(sym)
+                channel_map[sym] = "+".join(legacy_labels)
+                continue
+
+            rejection_reason = "no_channel_evidence"
+            if not bullish_alignment and not holding_ma20 and not (
+                accum_ok or dry_vol_ok or rs_div_ok
+            ):
+                rejection_reason = "trend_alignment_failed"
+            elif cfg.enable_rs_filter and not momentum_rs_ok and not ambush_rs_ok:
+                rejection_reason = "rs_filter_failed"
+            elif (
+                cfg.enable_rps_filter
+                and rps_filter_active
+                and not momentum_rps_ok
+                and not ambush_rps_ok
+            ):
+                rejection_reason = "rps_filter_failed"
+            elif not momentum_bias_ok:
+                rejection_reason = "momentum_bias_too_high"
+
+            rejected[sym] = {
+                "reason": rejection_reason,
+                "bullish_alignment": bool(bullish_alignment),
+                "holding_ma20": bool(holding_ma20),
+                "momentum_rs_ok": bool(momentum_rs_ok),
+                "ambush_rs_ok": bool(ambush_rs_ok),
+                "momentum_rps_ok": bool(momentum_rps_ok),
+                "ambush_rps_ok": bool(ambush_rps_ok),
+                "momentum_bias_ok": bool(momentum_bias_ok),
+                "rps_filter_active": bool(rps_filter_active),
+                "bench_dropping": bool(bench_dropping),
+                "rps_fast": round(float(rps_fast), 2) if rps_fast is not None else None,
+                "rps_slow": round(float(rps_slow), 2) if rps_slow is not None else None,
+                "rs_long": round(float(rs_long), 2) if rs_long is not None else None,
+                "rs_short": round(float(rs_short), 2) if rs_short is not None else None,
+                "last_close": round(float(last_close), 4)
+                if pd.notna(last_close)
+                else None,
+                "last_ma_short": round(float(last_ma_short), 4)
+                if pd.notna(last_ma_short)
+                else None,
+                "last_ma_long": round(float(last_ma_long), 4)
+                if pd.notna(last_ma_long)
+                else None,
+                "candidate_channels": metrics.old_channels,
+            }
+            continue
+
         track_details = {
             "A": score_track_a(metrics, cfg, market),
             "B": score_track_b(metrics, cfg, market),

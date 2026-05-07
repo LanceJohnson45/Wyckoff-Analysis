@@ -1,9 +1,10 @@
-# -*- coding: utf-8 -*-
 """OpenAI Provider — openai SDK 实现。"""
+
 from __future__ import annotations
 
 import json
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
 
 import httpx
 import openai
@@ -42,16 +43,22 @@ class OpenAIProvider(LLMProvider):
         kwargs: dict[str, Any] = {
             "model": self._model,
             "messages": oai_messages,
+            "frequency_penalty": 0.3,
         }
         if oai_tools:
             kwargs["tools"] = oai_tools
+            kwargs["tool_choice"] = "auto"
 
         response = self._client.chat.completions.create(**kwargs)
         result = self._parse_response(response)
         if hasattr(response, "usage") and response.usage:
+            p_details = getattr(response.usage, "prompt_tokens_details", None)
+            c_details = getattr(response.usage, "completion_tokens_details", None)
             result["usage"] = {
                 "input_tokens": response.usage.prompt_tokens or 0,
                 "output_tokens": response.usage.completion_tokens or 0,
+                "cache_read_tokens": (getattr(p_details, "cached_tokens", 0) or 0) if p_details else 0,
+                "cache_write_tokens": (getattr(c_details, "cached_tokens", 0) or 0) if c_details else 0,
             }
         return result
 
@@ -69,26 +76,41 @@ class OpenAIProvider(LLMProvider):
             "messages": oai_messages,
             "stream": True,
             "stream_options": {"include_usage": True},
+            "frequency_penalty": 0.3,
         }
         if oai_tools:
             kwargs["tools"] = oai_tools
+            kwargs["tool_choice"] = "auto"
 
         tool_map: dict[int, dict] = {}  # index → {id, name, args_json}
         text_buf = ""
         input_tokens = 0
         output_tokens = 0
+        cache_read = 0
+        cache_write = 0
 
         try:
             stream = self._client.chat.completions.create(**kwargs)
         except Exception:
-            # 某些第三方端点不支持 stream_options，去掉后重试
+            # 某些第三方端点不支持 stream_options 或 tool_choice/frequency_penalty，逐个去掉后重试
             kwargs.pop("stream_options", None)
-            stream = self._client.chat.completions.create(**kwargs)
+            try:
+                stream = self._client.chat.completions.create(**kwargs)
+            except Exception:
+                kwargs.pop("tool_choice", None)
+                kwargs.pop("frequency_penalty", None)
+                stream = self._client.chat.completions.create(**kwargs)
 
         for chunk in stream:
             if not chunk.choices and chunk.usage:
                 input_tokens = chunk.usage.prompt_tokens or 0
                 output_tokens = chunk.usage.completion_tokens or 0
+                details = getattr(chunk.usage, "prompt_tokens_details", None)
+                if details:
+                    cache_read = getattr(details, "cached_tokens", 0) or 0
+                comp_details = getattr(chunk.usage, "completion_tokens_details", None)
+                if comp_details:
+                    cache_write = getattr(comp_details, "cached_tokens", 0) or 0
                 continue
 
             if not chunk.choices:
@@ -125,9 +147,11 @@ class OpenAIProvider(LLMProvider):
         # 兜底：某些模型（如 kimi-k2 via NVIDIA）会把 tool call 输出为文本标签
         if not tool_map and "<tool_call>" in text_buf:
             import re
+
             for m in re.finditer(
                 r"<tool_call>\s*\{.*?\"name\"\s*:\s*\"([^\"]+)\".*?\"arguments\"\s*:\s*(\{.*?\})\s*\}\s*</tool_call>",
-                text_buf, re.DOTALL,
+                text_buf,
+                re.DOTALL,
             ):
                 fname, fargs_str = m.group(1), m.group(2)
                 try:
@@ -154,7 +178,13 @@ class OpenAIProvider(LLMProvider):
                 tool_calls.append({"id": entry["id"], "name": entry["name"], "args": args})
             yield {"type": "tool_calls", "tool_calls": tool_calls, "text": text_buf}
 
-        yield {"type": "usage", "input_tokens": input_tokens, "output_tokens": output_tokens}
+        yield {
+            "type": "usage",
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read_tokens": cache_read,
+            "cache_write_tokens": cache_write,
+        }
 
     def _build_messages(self, messages: list[dict], system_prompt: str) -> list[dict]:
         """将统一消息格式转为 OpenAI messages 格式。"""
@@ -172,6 +202,8 @@ class OpenAIProvider(LLMProvider):
                 oai_msg: dict[str, Any] = {"role": "assistant"}
                 if msg.get("content"):
                     oai_msg["content"] = msg["content"]
+                if msg.get("reasoning_content"):
+                    oai_msg["reasoning_content"] = msg["reasoning_content"]
                 if msg.get("tool_calls"):
                     oai_msg["tool_calls"] = [
                         {
@@ -190,11 +222,13 @@ class OpenAIProvider(LLMProvider):
                 result = msg["content"]
                 if not isinstance(result, str):
                     result = json.dumps(result, ensure_ascii=False)
-                oai_msgs.append({
-                    "role": "tool",
-                    "tool_call_id": msg.get("tool_call_id", ""),
-                    "content": result,
-                })
+                oai_msgs.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": msg.get("tool_call_id", ""),
+                        "content": result,
+                    }
+                )
 
         return oai_msgs
 
@@ -224,11 +258,13 @@ class OpenAIProvider(LLMProvider):
                     args = json.loads(tc.function.arguments)
                 except (json.JSONDecodeError, TypeError):
                     args = {}
-                tool_calls.append({
-                    "id": tc.id,
-                    "name": tc.function.name,
-                    "args": args,
-                })
+                tool_calls.append(
+                    {
+                        "id": tc.id,
+                        "name": tc.function.name,
+                        "args": args,
+                    }
+                )
             return {
                 "type": "tool_calls",
                 "tool_calls": tool_calls,

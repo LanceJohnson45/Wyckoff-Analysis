@@ -73,10 +73,11 @@ _LEGACY_REPORT_STYLES = {
 }
 STEP3_USE_LEGACY_REPORT = STEP3_REPORT_STYLE in _LEGACY_REPORT_STYLES
 if STEP3_USE_LEGACY_REPORT:
-    raise RuntimeError(
-        "STEP3_REPORT_STYLE legacy 口径已禁用。"
-        "请改为 v3_three_camp（或任意非 legacy 样式）以启用三阵营输出。"
+    print(
+        "[step3] STEP3_REPORT_STYLE legacy 口径已禁用，已自动切换为 v3_three_camp"
     )
+    STEP3_REPORT_STYLE = "v3_three_camp"
+    STEP3_USE_LEGACY_REPORT = False
 STEP3_MAX_AI_INPUT = int(
     os.getenv("STEP3_MAX_AI_INPUT", "0")
 )

@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
 """FallbackProvider — 多模型自动降级。"""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Generator
+from typing import Any
 
 from cli.providers.base import LLMProvider
 
@@ -28,6 +28,7 @@ def _is_retriable(exc: Exception) -> bool:
     # google-genai ServerError
     try:
         from google.genai import errors as genai_errors
+
         if isinstance(exc, genai_errors.ServerError):
             return True
     except ImportError:
@@ -38,6 +39,7 @@ def _is_retriable(exc: Exception) -> bool:
     # httpx（openai/anthropic 底层）
     try:
         import httpx
+
         if isinstance(exc, (httpx.ConnectError, httpx.TimeoutException)):
             return True
     except ImportError:
@@ -48,9 +50,13 @@ def _is_retriable(exc: Exception) -> bool:
 class FallbackProvider(LLMProvider):
     """按优先级依次尝试多个 provider，可恢复错误自动 fallback。"""
 
-    def __init__(self, configs: list[dict[str, Any]], default_id: str):
-        # default 排第一，其余保持原序
-        self._configs = sorted(configs, key=lambda c: c["id"] != default_id)
+    def __init__(self, configs: list[dict[str, Any]], default_id: str, fallback_id: str = ""):
+        if fallback_id:
+            ids = [default_id, fallback_id]
+            self._configs = [c for c in configs if c["id"] in ids]
+            self._configs.sort(key=lambda c: ids.index(c["id"]))
+        else:
+            self._configs = sorted(configs, key=lambda c: c["id"] != default_id)
         self._providers: dict[str, LLMProvider] = {}
         self._active_id = self._configs[0]["id"]
         self.last_fallback_msg: str | None = None
@@ -74,9 +80,12 @@ class FallbackProvider(LLMProvider):
         if model_id not in self._providers:
             cfg = next(c for c in self._configs if c["id"] == model_id)
             from cli.__main__ import _create_provider
+
             provider, err = _create_provider(
-                cfg["provider_name"], cfg["api_key"],
-                cfg.get("model", ""), cfg.get("base_url", ""),
+                cfg["provider_name"],
+                cfg["api_key"],
+                cfg.get("model", ""),
+                cfg.get("base_url", ""),
             )
             if err:
                 raise RuntimeError(err)

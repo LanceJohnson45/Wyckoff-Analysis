@@ -8,6 +8,10 @@
 - Step3 批量 AI 研报：`scripts/step3_batch_report.py` (LLM 三阵营战报构建)
 - Step4 私人再平衡 OMS：`scripts/step4_rebalancer.py` (持仓管理与实盘风控阻断)
 
+文档边界：
+- 本文只解释策略引擎与交易流程。
+- 当前架构、数据表、Actions 与缓存口径见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)。
+
 ## 0. 核心概念与技术术语
 
 > **完整术语速查手册请参阅 [`GLOSSARY.md`](GLOSSARY.md)**，涵盖回测指标、Wyckoff 方法论、漏斗管线、板块轮动、大盘水温、watch_score 评分公式、OMS 风控等全部概念。
@@ -31,7 +35,7 @@
 
 ### 1.1 定时与环境对齐
 - 由 GitHub Actions 在工作日自动化调度（同分支并发互斥机制避免任务重叠）。
-- 从 `v2.0.0` 起，Web 端的 `Wyckoff Funnel` 与批量 `AI 分析` 也统一改为 **Streamlit 前台触发 + GitHub Actions 后台执行**。页面只负责提交参数、查看状态、读取结果 artifact，不再在 Streamlit 进程内重算全量漏斗。
+- Web 端的 `Wyckoff Funnel` 与批量 `AI 分析` 采用 **前台触发 + GitHub Actions 后台执行** 架构。页面只负责提交参数、查看状态、读取结果 artifact，不在前端进程内重算全量漏斗。
 - 统一切换目标交易日（T / T-1）：由 `utils/trading_clock.py` 判定，严格依据盘后及盘中时间节点切分。
 - **窗口口径统一：** 漏斗、Step3、Step4、回测与导出默认回看窗口统一为 **320 个交易日**，单股大师模式同样按近 320 个交易日输入，确保 MA200 计算稳定且跨模块一致。
 - **单股超时口径：** 单股分析默认 `LLM_REQUEST_TIMEOUT=90s`、`LLM_TOTAL_TIMEOUT=240s`，减少复杂输入下的误超时中断。
@@ -44,7 +48,7 @@
 - **偏差声明（强制）**：回测器默认关闭“当前截面市值/行业映射过滤”（可用 `--use-current-meta` 显式开启旧口径），以降低 look-ahead bias；但仍存在幸存者偏差（股票池基于当前在市样本）。
 
 ### 1.3 盘前风控预警 (Premarket Risk)
-- **大盘情绪温度计**：在每日实际开盘前（07:55），独立调度风控任务（`scripts/premarket_risk_job.py`）。
+- **大盘情绪温度计**：在每日实际开盘前（当前 GitHub Actions 为北京时间 08:20），独立调度风控任务（`scripts/premarket_risk_job.py`）。
 - **监控标的**：富时 A50 期指（反映 A 股核心资产开盘意愿）与 VIX 恐慌指数（多级降级保障，反映全球高风险避险情绪）。
 - **四档盘前风险**：结合 A50 与 VIX，将隔夜外部冲击分为 `NORMAL / CAUTION / RISK_OFF / BLACK_SWAN` 四档。其中 `CAUTION` 表示情绪扰动已经出现，但尚未达到黑天鹅级别；这时允许更轻仓位的试探，不支持激进重仓。
 - **物理熔断前哨**：当盘前风险进入 `RISK_OFF` 或 `BLACK_SWAN` 时，系统会优先向“先防守、后进攻”的方向收缩，从宏观面尽量避免在情绪崩溃日盲目开仓。
@@ -102,6 +106,7 @@
 
 ### 3.3 RAG 舆情防雷
 - 结合外部检索引擎实施最后一公里负面信息扫清，一票否决违规、立案等高风险舆情标的。
+- 防雷结果会进入飞书/Telegram 推送，让用户看到“剔除的是谁、为什么剔除”；Web 端不额外展示新闻检索过程，避免把研报页面变成新闻流。
 
 ---
 
@@ -111,7 +116,6 @@ OMS 层是保证这套系统不出致命灾难的“最终刹车片”。
 
 补充说明：
 - Web 端的后台漏斗与后台批量研报，当前使用 GitHub Actions artifact 作为轻量结果承载，不额外引入新数据库表。
-- 这样可以在没有独立服务器的前提下，把高内存链路从 Streamlit Community Cloud 挪走，同时保留页面内的交互入口。
 
 ### 4.1 独立决策权与系统性物理熔断
 - **边界划分：** LLM 输出的文字一律视为“建议”，真正挂单的执行权被全权接管在 Python OMS 里。

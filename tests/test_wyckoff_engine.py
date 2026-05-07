@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
 """core/wyckoff_engine.py 冒烟测试。"""
+
 from __future__ import annotations
 
 import pandas as pd
-import pytest
 
 from core.wyckoff_engine import (
     DataIntegrityPolicy,
@@ -289,6 +288,34 @@ class TestL2CLiteDecision:
 
         assert detail.required_passed is False
         assert detail.reasons["severe_downtrend"] is True
+
+    def test_cn_layer2_uses_legacy_six_channel_labels(self):
+        cfg = FunnelConfig.for_market("cn")
+        cfg.momentum_bias_200_max = 0.5
+        cfg.rs_min_short = 0.5
+        dates = pd.date_range("2024-01-01", periods=240, freq="B")
+        closes = [10 + i * 0.05 for i in range(240)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["pct_chg"] = pd.Series(df["close"]).pct_change() * 100.0
+        df["amount"] = 100_000_000.0
+        bench = _make_df(
+            dates.strftime("%Y-%m-%d").tolist(),
+            [100.0 for _ in range(240)],
+        )
+        bench["pct_chg"] = pd.Series(bench["close"]).pct_change() * 100.0
+
+        passed, channel_map, rejected = layer2_strength_detailed(
+            ["000001"],
+            {"000001": df},
+            bench,
+            cfg,
+            rps_universe=["000001"],
+            return_rejections=True,
+        )
+
+        assert passed == ["000001"]
+        assert "主升通道" in channel_map["000001"]
+        assert rejected == {}
 
 
 class TestAICandidateAllocation:

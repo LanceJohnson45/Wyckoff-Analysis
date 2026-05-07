@@ -192,11 +192,7 @@ def _list_run_artifacts(run_id: int) -> list[dict[str, Any]]:
 def load_result_json_for_run(run_id: int) -> dict[str, Any] | None:
     artifacts = _list_run_artifacts(run_id)
     target = next(
-        (
-            item
-            for item in artifacts
-            if str(item.get("name", "")).startswith("web-job-result-")
-        ),
+        (item for item in artifacts if str(item.get("name", "")).startswith("web-job-result-")),
         None,
     )
     if not target:

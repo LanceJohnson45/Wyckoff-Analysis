@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 统一 LLM 调用层：支持 Gemini，可选 OpenAI 兼容接口。
 入参：provider、model、api_key、system_prompt、user_message；可选 base_url（OpenAI 兼容）。
@@ -8,19 +7,24 @@
   - 所有现有调用方（step3, step4, single_stock_logic, rag_veto）零改动自动切换
   - images 参数暂不支持 LiteLLM 路径，带 images 时自动降级为原生实现
 """
+
 from __future__ import annotations
 
 import logging
 import os
 import time
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 # 多厂商：Gemini + OpenAI 兼容（OpenAI/智谱/Minimax/DeepSeek/Qwen/火山引擎）
 SUPPORTED_PROVIDERS = (
+    "1route",
     "gemini",
     "openai",
+    "openrouter",
+    "longcat",
+    "efficiency",
+    "openai_compatible",
     "zhipu",
     "minimax",
     "deepseek",
@@ -29,7 +33,12 @@ SUPPORTED_PROVIDERS = (
 )
 # OpenAI 兼容接口的默认 base_url（可被调用方 base_url 覆盖）
 OPENAI_COMPATIBLE_BASE_URLS = {
+    "1route": "https://www.1route.dev/v1",
     "openai": "https://api.openai.com/v1",
+    "openrouter": "https://openrouter.ai/api/v1",
+    "longcat": "https://api.longcat.chat/openai",
+    "efficiency": "",
+    "openai_compatible": "",
     "zhipu": "https://open.bigmodel.cn/api/paas/v4",
     "minimax": "https://api.minimax.chat/v1",
     "deepseek": "https://api.deepseek.com/v1",
@@ -49,8 +58,13 @@ GEMINI_RETRY_DELAY = 2.0
 
 # 供应商展示名（供 UI selectbox 的 format_func 使用）
 PROVIDER_LABELS: dict[str, str] = {
+    "1route": "1Route（推荐）",
     "gemini": "Gemini",
     "openai": "OpenAI",
+    "openrouter": "OpenRouter",
+    "longcat": "LongCat",
+    "efficiency": "Efficiency（OpenAI兼容）",
+    "openai_compatible": "OpenAI兼容",
     "zhipu": "智谱",
     "minimax": "Minimax",
     "deepseek": "DeepSeek",
@@ -69,23 +83,21 @@ def get_provider_credentials(provider: str) -> tuple[str, str, str]:
 
     key_suffix = provider.lower()
     env_prefix = key_suffix.upper()
-    api_key = (
-        (st.session_state.get(f"{key_suffix}_api_key") or "").strip()
-        or os.getenv(f"{env_prefix}_API_KEY", "").strip()
-    )
-    model = (
-        (st.session_state.get(f"{key_suffix}_model") or "").strip()
-        or os.getenv(f"{env_prefix}_MODEL", "").strip()
-    )
-    base_url = (
-        (st.session_state.get(f"{key_suffix}_base_url") or "").strip()
-        or os.getenv(f"{env_prefix}_BASE_URL", "").strip()
-    )
+    api_key = (st.session_state.get(f"{key_suffix}_api_key") or "").strip() or os.getenv(
+        f"{env_prefix}_API_KEY", ""
+    ).strip()
+    model = (st.session_state.get(f"{key_suffix}_model") or "").strip() or os.getenv(f"{env_prefix}_MODEL", "").strip()
+    base_url = (st.session_state.get(f"{key_suffix}_base_url") or "").strip() or os.getenv(
+        f"{env_prefix}_BASE_URL", ""
+    ).strip()
     if not base_url and provider in OPENAI_COMPATIBLE_BASE_URLS:
         base_url = (OPENAI_COMPATIBLE_BASE_URLS.get(provider, "") or "").strip()
     if not model and provider == "gemini":
         model = st.session_state.get("gemini_model") or DEFAULT_GEMINI_MODEL
+    if not model and provider == "1route":
+        model = "gpt-5.5"
     return (api_key, model or "", base_url)
+
 
 # Gemini finish_reason 在不同 SDK/模型下可能是字符串或数字枚举，这里统一兜底识别“输出被截断”。
 _GEMINI_TRUNCATION_REASONS = {
@@ -104,10 +116,11 @@ def call_llm(
     system_prompt: str,
     user_message: str,
     *,
-    images: Optional[list] = None,
-    base_url: Optional[str] = None,
+    images: list | None = None,
+    base_url: str | None = None,
     timeout: int = 120,
-    max_output_tokens: Optional[int] = None,
+    max_output_tokens: int | None = None,
+    allow_truncated_text: bool = False,
 ) -> str:
     """
     调用大模型，返回回复文本。
@@ -121,6 +134,7 @@ def call_llm(
         images: 可选图片列表（PIL Image 或 bytes），仅部分模型支持。
         base_url: 可选代理地址，Gemini 和 OpenAI 兼容均支持。
         timeout: 请求超时秒数。
+        allow_truncated_text: 当供应商返回“输出被截断”但已有非空文本时，是否直接返回文本。
 
     Returns:
         模型回复的纯文本。
@@ -141,9 +155,11 @@ def call_llm(
         if not images:
             try:
                 from integrations.llm_adapter import call_llm_via_litellm
+
                 logger.info(
                     "[llm] LITELLM_ENABLED=1, routing to LiteLLM: provider=%s model=%s",
-                    provider, model,
+                    provider,
+                    model,
                 )
                 return call_llm_via_litellm(
                     provider=provider,
@@ -154,15 +170,12 @@ def call_llm(
                     base_url=base_url,
                     timeout=timeout,
                     max_output_tokens=max_output_tokens,
+                    allow_truncated_text=allow_truncated_text,
                 )
             except ImportError:
-                logger.warning(
-                    "[llm] LiteLLM not installed, falling back to native implementation"
-                )
+                logger.warning("[llm] LiteLLM not installed, falling back to native implementation")
         else:
-            logger.info(
-                "[llm] LITELLM_ENABLED=1 but images present, using native Gemini implementation"
-            )
+            logger.info("[llm] LITELLM_ENABLED=1 but images present, using native Gemini implementation")
     # ── /Phase 2 ────────────────────────────────────────────────
 
     if provider == "gemini":
@@ -174,6 +187,7 @@ def call_llm(
             images=images,
             timeout=timeout,
             max_output_tokens=max_output_tokens,
+            allow_truncated_text=allow_truncated_text,
             base_url=(base_url or "").strip(),
         )
     if provider in OPENAI_COMPATIBLE_BASE_URLS:
@@ -199,7 +213,7 @@ def _call_openai_compatible(
     system_prompt: str,
     user_message: str,
     timeout: int,
-    max_output_tokens: Optional[int],
+    max_output_tokens: int | None,
 ) -> str:
     """通过 OpenAI 兼容的 /chat/completions 接口调用（OpenAI/智谱/DeepSeek/Qwen 等）。"""
     import requests
@@ -238,9 +252,10 @@ def _call_gemini(
     api_key: str,
     system_prompt: str,
     user_message: str,
-    images: Optional[list],
+    images: list | None,
     timeout: int,
-    max_output_tokens: Optional[int],
+    max_output_tokens: int | None,
+    allow_truncated_text: bool,
     base_url: str = "",
 ) -> str:
     from google import genai
@@ -251,13 +266,9 @@ def _call_gemini(
     if base_url:
         http_opts["base_url"] = base_url.rstrip("/")
     client = genai.Client(api_key=api_key, http_options=http_opts)
-    
-    resolved_max_tokens = (
-        int(max_output_tokens)
-        if max_output_tokens is not None
-        else GEMINI_MAX_OUTPUT_TOKENS_DEFAULT
-    )
-    
+
+    resolved_max_tokens = int(max_output_tokens) if max_output_tokens is not None else GEMINI_MAX_OUTPUT_TOKENS_DEFAULT
+
     config = types.GenerateContentConfig(
         system_instruction=system_prompt,
         temperature=0.4,
@@ -303,7 +314,7 @@ def _call_gemini(
                 if fr is not None:
                     # 枚举处理
                     finish_reason = getattr(fr, "name", str(fr))
-                    
+
             usage = getattr(response, "usage_metadata", None)
             prompt_tokens = getattr(usage, "prompt_token_count", None) if usage else None
             completion_tokens = getattr(usage, "candidates_token_count", None) if usage else None
@@ -320,6 +331,9 @@ def _call_gemini(
                 )
             )
             if finish_reason_norm in _GEMINI_TRUNCATION_REASONS:
+                if allow_truncated_text and text.strip():
+                    print("[llm] gemini truncation tolerated: using returned text because allow_truncated_text=1")
+                    return text
                 raise RuntimeError(
                     f"Gemini 输出被截断(finish_reason={finish_reason or 'unknown'})，请缩短输入或提升输出上限后重试"
                 )
