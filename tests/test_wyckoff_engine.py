@@ -8,9 +8,11 @@ import pytest
 from core.wyckoff_engine import (
     DataIntegrityPolicy,
     FunnelConfig,
+    FunnelResult,
     L2Metrics,
     _latest_trade_date,
     _sorted_if_needed,
+    allocate_ai_candidates,
     assess_hist_integrity,
     layer1_filter,
     layer2_strength_detailed,
@@ -287,6 +289,42 @@ class TestL2CLiteDecision:
 
         assert detail.required_passed is False
         assert detail.reasons["severe_downtrend"] is True
+
+
+class TestAICandidateAllocation:
+    def test_l3_trend_fill_respects_configured_limit(self, monkeypatch):
+        monkeypatch.setenv("FUNNEL_AI_TOTAL_CAP", "5")
+        monkeypatch.setenv("FUNNEL_AI_NEUTRAL_TREND", "5")
+        monkeypatch.setenv("FUNNEL_AI_NEUTRAL_ACCUM", "0")
+        monkeypatch.setenv("FUNNEL_AI_MAX_TREND_L3_FILL", "2")
+        monkeypatch.setenv("FUNNEL_AI_MAX_ACCUM_L3_FILL", "0")
+        result = FunnelResult(
+            layer1_symbols=["000001", "000002", "000003"],
+            layer2_symbols=["000001", "000002", "000003"],
+            layer3_symbols=["000001", "000002", "000003"],
+            top_sectors=["软件"],
+            triggers={"sos": [], "spring": [], "lps": [], "evr": []},
+            stage_map={},
+            markup_symbols=[],
+            exit_signals={},
+            channel_map={
+                "000001": "启动确认",
+                "000002": "启动确认",
+                "000003": "启动确认",
+            },
+        )
+
+        trend, accum, score_map = allocate_ai_candidates(
+            result,
+            ["000001", "000002", "000003"],
+            "NEUTRAL",
+            sector_map={"000001": "软件", "000002": "硬件", "000003": "服务"},
+            max_per_sector=0,
+        )
+
+        assert trend == ["000001", "000002"]
+        assert accum == []
+        assert set(score_map) == {"000001", "000002", "000003"}
 
 
 class TestRunFunnelDiagnostics:

@@ -3128,6 +3128,14 @@ def allocate_ai_candidates(
     ]
     sorted_codes = _dedup_order(sorted_codes)
 
+    l3_rank_order = {
+        str(code).strip(): idx for idx, code in enumerate(_dedup_order(l3_ranked_symbols))
+    }
+
+    def _l3_fill_score(code: str, base: float = 0.0) -> float:
+        rank_idx = l3_rank_order.get(str(code).strip(), len(l3_rank_order))
+        return base - float(rank_idx) / 1000.0
+
     for code in sorted_codes + l3_ranked_symbols:
         if not _is_trend_track(code) or _is_blocked_exit(code):
             continue
@@ -3138,7 +3146,10 @@ def allocate_ai_candidates(
                 (code, _calc_priority_score(code, True), False)
             )
             continue
-        # 移除 L3 filler 逻辑: 宁缺毋滥，如果只有几个好标的，就只送这几个给 AI
+        if max_trend_l3_fill > 0 and code in l3_rank_order:
+            trend_candidates_with_score.append(
+                (code, _l3_fill_score(code), True)
+            )
 
     accum_hit_candidates = result.triggers.get("spring", []) + result.triggers.get(
         "lps", []
@@ -3163,7 +3174,11 @@ def allocate_ai_candidates(
                 (code, _calc_priority_score(code, False), False)
             )
             continue
-        # 移除 L3 filler 逻辑: 宁缺毋滥
+        if max_accum_l3_fill > 0 and code in l3_rank_order:
+            stage_bonus = 8.0 if _stage_name(code) == "Accum_B" else 0.0
+            accum_candidates_with_score.append(
+                (code, _l3_fill_score(code, stage_bonus), True)
+            )
 
     trend_candidates_with_score.sort(key=lambda x: (-x[1], x[2]))
     accum_candidates_with_score.sort(key=lambda x: (-x[1], x[2]))
