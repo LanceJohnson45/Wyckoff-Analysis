@@ -8,6 +8,7 @@ import { AppLayout } from '@/routes/layout'
 import { LoginPage } from '@/routes/login'
 import { ChatPage } from '@/routes/chat'
 import { WyckoffLoading } from '@/components/loading'
+import { PreferencesProvider } from '@/lib/preferences'
 
 const PortfolioPage = lazy(() => import('@/routes/portfolio').then(m => ({ default: m.PortfolioPage })))
 const TrackingPage = lazy(() => import('@/routes/tracking').then(m => ({ default: m.TrackingPage })))
@@ -27,27 +28,29 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Suspense fallback={<WyckoffLoading />}>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route element={<AuthGuard />}>
-              <Route element={<AppLayout />}>
-                <Route index element={<Navigate to="/chat" replace />} />
-                <Route path="/chat" element={<ChatPage />} />
-                <Route path="/portfolio" element={<PortfolioPage />} />
-                <Route path="/tracking" element={<TrackingPage />} />
-                <Route path="/analysis" element={<AnalysisPage />} />
-                <Route path="/screener" element={<ScreenerPage />} />
-                <Route path="/tail-buy" element={<TailBuyPage />} />
-                <Route path="/export" element={<ExportPage />} />
-                <Route path="/guide" element={<FeatureGuidePage />} />
-                <Route path="/settings" element={<SettingsPage />} />
+      <PreferencesProvider>
+        <BrowserRouter>
+          <Suspense fallback={<WyckoffLoading />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route element={<AuthGuard />}>
+                <Route element={<AppLayout />}>
+                  <Route index element={<Navigate to="/chat" replace />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/portfolio" element={<PortfolioPage />} />
+                  <Route path="/tracking" element={<TrackingPage />} />
+                  <Route path="/analysis" element={<AnalysisPage />} />
+                  <Route path="/screener" element={<ScreenerPage />} />
+                  <Route path="/tail-buy" element={<TailBuyPage />} />
+                  <Route path="/export" element={<ExportPage />} />
+                  <Route path="/guide" element={<FeatureGuidePage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                </Route>
               </Route>
-            </Route>
-          </Routes>
-        </Suspense>
-      </BrowserRouter>
+            </Routes>
+          </Suspense>
+        </BrowserRouter>
+      </PreferencesProvider>
     </QueryClientProvider>
   </StrictMode>,
 )

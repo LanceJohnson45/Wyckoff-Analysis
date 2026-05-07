@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Filter, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { usePreferences } from '@/lib/preferences'
 
 interface ScreenerRow {
   code: number
@@ -36,6 +37,7 @@ async function fetchRows(date: number): Promise<ScreenerRow[]> {
 
 export function ScreenerPage() {
   const [selectedDate, setSelectedDate] = useState<number | null>(null)
+  const { t } = usePreferences()
 
   const { data: allDates = [] } = useQuery({
     queryKey: ['screener-dates'],
@@ -64,7 +66,7 @@ export function ScreenerPage() {
     <div className="flex h-full flex-col p-6">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold">漏斗选股</h1>
+          <h1 className="text-xl font-semibold">{t('screener.title')}</h1>
           <Filter size={18} className="text-muted-foreground" />
         </div>
         <button
@@ -73,14 +75,14 @@ export function ScreenerPage() {
           className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          刷新
+          {t('action.refresh')}
         </button>
       </div>
 
       {/* Date selector */}
       {allDates.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">选股日期：</span>
+          <span className="text-xs text-muted-foreground">{t('screener.date')}</span>
           {allDates.slice(0, 10).map((d) => (
             <button
               key={d}
@@ -102,11 +104,11 @@ export function ScreenerPage() {
         <div className="mb-4 flex items-center gap-6">
           <div className="rounded-lg bg-primary/5 px-4 py-2">
             <div className="text-2xl font-bold text-primary">{rows.length}</div>
-            <div className="text-xs text-muted-foreground">AI 候选</div>
+            <div className="text-xs text-muted-foreground">{t('screener.aiCandidates')}</div>
           </div>
           {latestDate && (
             <div className="text-xs text-muted-foreground">
-              最新选股日期: {fmtDate(latestDate)}
+              {t('screener.latestDate', { date: fmtDate(latestDate) })}
             </div>
           )}
         </div>
@@ -117,25 +119,25 @@ export function ScreenerPage() {
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-muted/30 text-xs text-muted-foreground">
             <tr>
-              <th className="px-4 py-2.5 text-left font-medium">代码</th>
-              <th className="px-4 py-2.5 text-left font-medium">名称</th>
-              <th className="px-4 py-2.5 text-right font-medium">漏斗分</th>
-              <th className="px-4 py-2.5 text-right font-medium">推荐价</th>
-              <th className="px-4 py-2.5 text-right font-medium">现价</th>
-              <th className="px-4 py-2.5 text-right font-medium">涨跌幅</th>
+              <th className="px-4 py-2.5 text-left font-medium">{t('common.code')}</th>
+              <th className="px-4 py-2.5 text-left font-medium">{t('common.name')}</th>
+              <th className="px-4 py-2.5 text-right font-medium">{t('screener.funnelScore')}</th>
+              <th className="px-4 py-2.5 text-right font-medium">{t('screener.recommendPrice')}</th>
+              <th className="px-4 py-2.5 text-right font-medium">{t('tracking.currentPrice')}</th>
+              <th className="px-4 py-2.5 text-right font-medium">{t('tracking.changePct')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {loading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                  加载中...
+                  {t('common.loading')}
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
-                  暂无选股结果
+                  {t('screener.empty')}
                 </td>
               </tr>
             ) : (
@@ -169,7 +171,7 @@ export function ScreenerPage() {
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        数据来源：CLI 每日自动运行漏斗选股，结果写入云端。此页面仅展示 AI 推荐候选。
+        {t('screener.source')}
       </p>
     </div>
   )

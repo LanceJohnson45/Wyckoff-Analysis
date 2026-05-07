@@ -10,6 +10,7 @@ const FORWARD_HEADERS = new Set([
   'content-type',
   'content-length',
   'accept',
+  'x-api-key',
 ])
 
 export const onRequest: PagesFunction = async (context) => {

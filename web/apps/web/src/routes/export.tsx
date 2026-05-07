@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
+import { usePreferences } from '@/lib/preferences'
 
 export function ExportPage() {
   const user = useAuthStore((s) => s.user)
+  const { t } = usePreferences()
   const [symbol, setSymbol] = useState('')
   const [days, setDays] = useState(320)
   const [adjust, setAdjust] = useState('qfq')
@@ -27,7 +29,7 @@ export function ExportPage() {
   async function handleExport() {
     const code = symbol.trim().replace(/\D/g, '')
     if (code.length !== 6) {
-      setError('请输入有效的 6 位股票代码')
+      setError(t('common.invalidStockCode'))
       return
     }
 
@@ -39,7 +41,7 @@ export function ExportPage() {
     try {
       const apiKey = await getTickFlowKey()
       if (!apiKey) {
-        setError('请先在设置页配置 TickFlow API Key')
+        setError(t('export.configureTickflow'))
         setLoading(false)
         return
       }
@@ -60,14 +62,14 @@ export function ExportPage() {
 
       if (!resp.ok) {
         const errBody = await resp.text()
-        throw new Error(`TickFlow API 错误 (${resp.status}): ${errBody.slice(0, 200)}`)
+        throw new Error(t('export.apiError', { status: resp.status, message: errBody.slice(0, 200) }))
       }
 
       const json = await resp.json()
       const rows: Record<string, string | number>[] = json.data || json.records || json || []
 
       if (!Array.isArray(rows) || rows.length === 0) {
-        throw new Error('未获取到有效数据，请检查股票代码或稍后重试')
+        throw new Error(t('export.noData'))
       }
 
       setPreview(rows.slice(0, 10))
@@ -77,7 +79,7 @@ export function ExportPage() {
       setCsvBlob(blob)
       setFileName(`${code}_ohlcv_${end}.csv`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '导出失败')
+      setError(err instanceof Error ? err.message : t('export.failed'))
     } finally {
       setLoading(false)
     }
@@ -95,24 +97,24 @@ export function ExportPage() {
 
   return (
     <div className="flex h-full flex-col p-6">
-      <h1 className="mb-6 text-xl font-semibold">数据导出</h1>
+      <h1 className="mb-6 text-xl font-semibold">{t('export.title')}</h1>
 
       {/* Form */}
       <div className="mb-6 flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1.5 block text-sm font-medium">股票代码</label>
+          <label className="mb-1.5 block text-sm font-medium">{t('common.stockCode')}</label>
           <input
             type="text"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
-            placeholder="例如：600519"
+            placeholder={t('common.exampleCode')}
             maxLength={6}
             className="w-40 rounded-lg border border-border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/20"
             onKeyDown={(e) => e.key === 'Enter' && handleExport()}
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium">回溯天数</label>
+          <label className="mb-1.5 block text-sm font-medium">{t('export.days')}</label>
           <input
             type="number"
             value={days}
@@ -123,15 +125,15 @@ export function ExportPage() {
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium">复权</label>
+          <label className="mb-1.5 block text-sm font-medium">{t('export.adjust')}</label>
           <select
             value={adjust}
             onChange={(e) => setAdjust(e.target.value)}
             className="rounded-lg border border-border px-3 py-2 text-sm"
           >
-            <option value="qfq">前复权</option>
-            <option value="hfq">后复权</option>
-            <option value="">不复权</option>
+            <option value="qfq">{t('export.qfq')}</option>
+            <option value="hfq">{t('export.hfq')}</option>
+            <option value="">{t('export.noneAdjust')}</option>
           </select>
         </div>
         <button
@@ -140,12 +142,12 @@ export function ExportPage() {
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-          {loading ? '获取中...' : '获取数据'}
+          {loading ? t('export.fetching') : t('export.fetch')}
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+        <div className="mb-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-200">
           {error}
           <a
             href="https://wyckoff-analysis-youngcanphoenix.streamlit.app/"
@@ -153,7 +155,7 @@ export function ExportPage() {
             rel="noopener noreferrer"
             className="ml-2 text-primary hover:underline"
           >
-            可移步 Streamlit 版本使用完整导出功能 →
+            {t('export.streamlitLink')}
           </a>
         </div>
       )}
@@ -166,10 +168,10 @@ export function ExportPage() {
             className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
           >
             <Download size={16} />
-            下载 CSV ({fileName})
+            {t('export.downloadCsv', { fileName })}
           </button>
           <span className="text-xs text-muted-foreground">
-            {preview ? `共 ${preview.length >= 10 ? '10+' : preview.length} 条（预览前 10 条）` : ''}
+            {preview ? (preview.length >= 10 ? t('export.previewCountMore') : t('export.previewCount', { count: preview.length })) : ''}
           </span>
         </div>
       )}
@@ -208,15 +210,15 @@ export function ExportPage() {
         <div className="flex flex-1 items-center justify-center text-muted-foreground">
           <div className="text-center">
             <div className="mb-3 text-4xl">📁</div>
-            <p className="text-sm">输入股票代码，导出历史行情 CSV</p>
-            <p className="mt-1 text-xs">基于 TickFlow API，支持前复权/后复权</p>
+            <p className="text-sm">{t('export.emptyTitle')}</p>
+            <p className="mt-1 text-xs">{t('export.emptySubtitle')}</p>
             <a
               href="https://wyckoff-analysis-youngcanphoenix.streamlit.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-block text-xs text-primary hover:underline"
             >
-              需要批量导出或自定义数据源？前往 Streamlit 版本 →
+              {t('export.needBatch')}
             </a>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { PROVIDERS, PROVIDER_LABELS, PROVIDER_BASE_URLS } from '@wyckoff/shared'
 import type { Provider } from '@wyckoff/shared'
+import { usePreferences } from '@/lib/preferences'
 
 interface ProviderConfig {
   api_key: string
@@ -13,6 +14,7 @@ interface ProviderConfig {
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user)
+  const { t } = usePreferences()
   const [chatProvider, setChatProvider] = useState<Provider>('1route')
   const [configs, setConfigs] = useState<Record<string, ProviderConfig>>({})
   const [tickflowKey, setTickflowKey] = useState('')
@@ -23,6 +25,7 @@ export function SettingsPage() {
   const [tgChatId, setTgChatId] = useState('')
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState('')
+  const [toastKind, setToastKind] = useState<'success' | 'error'>('success')
 
   useEffect(() => {
     if (!user) return
@@ -38,7 +41,8 @@ export function SettingsPage() {
 
     if (!data) return
 
-    setChatProvider((data.chat_provider as Provider) || '1route')
+    const savedProvider = data.chat_provider as Provider
+    setChatProvider(PROVIDERS.includes(savedProvider) ? savedProvider : '1route')
     setTickflowKey(data.tickflow_api_key || '')
     setFeishuWebhook(data.feishu_webhook || '')
     setWecomWebhook(data.wecom_webhook || '')
@@ -95,7 +99,7 @@ export function SettingsPage() {
     setToast('')
 
     const custom_providers: Record<string, object> = {}
-    for (const p of ['1route', 'zhipu', 'minimax', 'qwen', 'volcengine'] as const) {
+    for (const p of ['1route'] as const) {
       const c = configs[p]
       if (c) {
         custom_providers[p] = { apikey: c.api_key, model: c.model, baseurl: c.base_url }
@@ -125,34 +129,35 @@ export function SettingsPage() {
 
     const { error } = await supabase.from('user_settings').upsert(settings)
     setSaving(false)
-    setToast(error ? `保存失败: ${error.message}` : '已保存')
+    setToastKind(error ? 'error' : 'success')
+    setToast(error ? t('settings.saveFailed', { message: error.message }) : t('settings.saved'))
     setTimeout(() => setToast(''), 3000)
   }
 
   return (
     <div className="h-full overflow-auto p-6">
       <div className="mx-auto max-w-2xl">
-      <h1 className="mb-6 text-xl font-semibold">设置</h1>
+      <h1 className="mb-6 text-xl font-semibold">{t('settings.title')}</h1>
 
       {toast && (
-        <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${toast.includes('失败') ? 'bg-red-50 text-red-700' : 'bg-indigo-50 text-indigo-700'}`}>
+        <div className={`mb-4 rounded-lg px-4 py-2 text-sm ${toastKind === 'error' ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-200' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200'}`}>
           {toast}
         </div>
       )}
 
       {/* Data Sources */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">数据源</h2>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t('settings.dataSources')}</h2>
         <div className="space-y-3">
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800">
-            TickFlow 行情数据源（支持项目）
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+            {t('settings.tickflowPromo')}
             <a
               href="https://tickflow.org/auth/register?ref=5N4NKTCPL4"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 inline-flex items-center gap-1 font-medium text-emerald-900 hover:underline"
+              className="ml-1 inline-flex items-center gap-1 font-medium text-emerald-900 hover:underline dark:text-emerald-100"
             >
-              邀请链接
+              {t('settings.purchaseLink')}
               <ExternalLink size={12} />
             </a>
           </div>
@@ -162,21 +167,21 @@ export function SettingsPage() {
 
       {/* LLM Providers */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">模型配置</h2>
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800">
-          1Route 模型中转（支持项目）
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t('settings.modelConfig')}</h2>
+        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-xs text-indigo-800 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-200">
+          {t('settings.oneRoutePromo')}
           <a
             href="https://www.1route.dev/register?aff=359904261"
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-1 inline-flex items-center gap-1 font-medium text-indigo-900 hover:underline"
+            className="ml-1 inline-flex items-center gap-1 font-medium text-indigo-900 hover:underline dark:text-indigo-100"
           >
-            邀请链接
+            {t('settings.purchaseLink')}
             <ExternalLink size={12} />
           </a>
         </div>
         <div className="mb-4">
-          <label className="mb-1.5 block text-sm font-medium">读盘室供应商</label>
+          <label className="mb-1.5 block text-sm font-medium">{t('settings.provider')}</label>
           <select
             value={chatProvider}
             onChange={(e) => setChatProvider(e.target.value as Provider)}
@@ -196,34 +201,34 @@ export function SettingsPage() {
               </summary>
               <div className="space-y-3 border-t border-border px-4 py-3">
                 {p === '1route' && (
-                  <div className="rounded-md bg-indigo-50 px-2.5 py-2 text-xs text-indigo-700">
-                    还没有 1Route 账号？
+                  <div className="rounded-md bg-indigo-50 px-2.5 py-2 text-xs text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200">
+                    {t('settings.oneRouteNoAccount')}
                     <a
                       href="https://www.1route.dev/register?aff=359904261"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ml-1 inline-flex items-center gap-1 font-medium text-indigo-900 hover:underline"
+                      className="ml-1 inline-flex items-center gap-1 font-medium text-indigo-900 hover:underline dark:text-indigo-100"
                     >
-                      通过邀请链接开通
+                      {t('settings.oneRouteInvite')}
                       <ExternalLink size={12} />
                     </a>
                   </div>
                 )}
                 <Input
-                  label="API Key"
+                  label={t('settings.apiKey')}
                   type="password"
                   value={configs[p]?.api_key || ''}
                   onChange={(v) => updateConfig(p, 'api_key', v)}
                   placeholder="sk-..."
                 />
                 <Input
-                  label="模型"
+                  label={t('settings.model')}
                   value={configs[p]?.model || ''}
                   onChange={(v) => updateConfig(p, 'model', v)}
                   placeholder={p === '1route' ? 'gpt-5.5' : ''}
                 />
                 <Input
-                  label="Base URL"
+                  label={t('settings.baseUrl')}
                   value={configs[p]?.base_url || ''}
                   onChange={(v) => updateConfig(p, 'base_url', v)}
                   placeholder={PROVIDER_BASE_URLS[p]}
@@ -236,11 +241,11 @@ export function SettingsPage() {
 
       {/* Notifications */}
       <section className="mb-8">
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">通知推送</h2>
+        <h2 className="mb-3 text-sm font-medium text-muted-foreground">{t('settings.notifications')}</h2>
         <div className="space-y-3">
-          <Input label="飞书 Webhook" type="password" value={feishuWebhook} onChange={setFeishuWebhook} />
-          <Input label="企业微信 Webhook" type="password" value={wecomWebhook} onChange={setWecomWebhook} />
-          <Input label="钉钉 Webhook" type="password" value={dingtalkWebhook} onChange={setDingtalkWebhook} />
+          <Input label={t('settings.feishuWebhook')} type="password" value={feishuWebhook} onChange={setFeishuWebhook} />
+          <Input label={t('settings.wecomWebhook')} type="password" value={wecomWebhook} onChange={setWecomWebhook} />
+          <Input label={t('settings.dingtalkWebhook')} type="password" value={dingtalkWebhook} onChange={setDingtalkWebhook} />
           <Input label="Telegram Bot Token" type="password" value={tgBotToken} onChange={setTgBotToken} />
           <Input label="Telegram Chat ID" value={tgChatId} onChange={setTgChatId} />
         </div>
@@ -251,7 +256,7 @@ export function SettingsPage() {
         disabled={saving}
         className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
       >
-        {saving ? '保存中...' : '保存配置'}
+        {saving ? t('settings.saving') : t('settings.saveConfig')}
       </button>
       </div>
     </div>

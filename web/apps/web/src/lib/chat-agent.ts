@@ -62,6 +62,8 @@ export interface ModelOption {
   base_url: string
 }
 
+const RETIRED_PROVIDERS = new Set(['zhipu', 'minimax', 'qwen', 'volcengine'])
+
 export async function loadLLMConfig(userId: string): Promise<LLMConfig | null> {
   const { data } = await supabase
     .from('user_settings')
@@ -72,6 +74,7 @@ export async function loadLLMConfig(userId: string): Promise<LLMConfig | null> {
   if (!data) return null
 
   const provider = data.chat_provider || '1route'
+  if (RETIRED_PROVIDERS.has(provider)) return null
   let api_key = '', model = '', base_url = ''
 
   if (provider === 'gemini') {
@@ -111,17 +114,12 @@ export async function loadAllModels(userId: string): Promise<ModelOption[]> {
 
   const LABELS: Record<string, string> = {
     '1route': '1Route', gemini: 'Gemini', openai: 'OpenAI',
-    zhipu: '智谱', minimax: 'MiniMax', deepseek: 'DeepSeek',
-    qwen: '通义千问', volcengine: '火山引擎',
+    deepseek: 'DeepSeek',
   }
   const BASE_URLS: Record<string, string> = {
     '1route': 'https://www.1route.dev/v1',
     openai: 'https://api.openai.com/v1',
     deepseek: 'https://api.deepseek.com/v1',
-    zhipu: 'https://open.bigmodel.cn/api/paas/v4',
-    minimax: 'https://api.minimax.chat/v1',
-    qwen: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
-    volcengine: 'https://ark.cn-beijing.volces.com/api/v3',
   }
 
   const models: ModelOption[] = []
@@ -141,6 +139,7 @@ export async function loadAllModels(userId: string): Promise<ModelOption[]> {
     ? JSON.parse(data.custom_providers || '{}')
     : (data.custom_providers || {})
   for (const [p, info] of Object.entries(custom) as [string, Record<string, string>][]) {
+    if (RETIRED_PROVIDERS.has(p)) continue
     const key = info.apikey || info.api_key
     const m = info.model
     if (key && m) {

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { WyckoffLoading } from '@/components/loading'
+import { usePreferences } from '@/lib/preferences'
 
 interface TailBuyRecord {
   code: string
@@ -23,6 +24,7 @@ async function fetchTailBuy(): Promise<TailBuyRecord[]> {
 }
 
 export function TailBuyPage() {
+  const { t } = usePreferences()
   const { data = [], isLoading } = useQuery({
     queryKey: ['tail-buy'],
     queryFn: fetchTailBuy,
@@ -35,16 +37,16 @@ export function TailBuyPage() {
   return (
     <div className="flex h-full flex-col p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">尾盘记录</h1>
-        <span className="text-xs text-muted-foreground">共 {data.length} 条</span>
+        <h1 className="text-xl font-semibold">{t('tailBuy.title')}</h1>
+        <span className="text-xs text-muted-foreground">{t('tailBuy.total', { count: data.length })}</span>
       </div>
 
       {data.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-muted-foreground">
           <div className="text-center">
             <div className="mb-3 text-4xl">🌙</div>
-            <p className="text-sm">暂无尾盘买入记录</p>
-            <p className="mt-1 text-xs">等待下一次尾盘策略执行后刷新</p>
+            <p className="text-sm">{t('tailBuy.empty')}</p>
+            <p className="mt-1 text-xs">{t('tailBuy.emptySubtitle')}</p>
           </div>
         </div>
       ) : (
@@ -53,14 +55,14 @@ export function TailBuyPage() {
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-muted/80 backdrop-blur">
                 <tr>
-                  <th className="px-3 py-2.5 text-left font-medium">代码</th>
-                  <th className="px-3 py-2.5 text-left font-medium">名称</th>
-                  <th className="px-3 py-2.5 text-right font-medium">日期</th>
-                  <th className="px-3 py-2.5 text-center font-medium">信号</th>
-                  <th className="px-3 py-2.5 text-right font-medium">规则分</th>
-                  <th className="px-3 py-2.5 text-right font-medium">优先级分</th>
-                  <th className="px-3 py-2.5 text-center font-medium">LLM决策</th>
-                  <th className="px-3 py-2.5 text-left font-medium">理由</th>
+                  <th className="px-3 py-2.5 text-left font-medium">{t('common.code')}</th>
+                  <th className="px-3 py-2.5 text-left font-medium">{t('common.name')}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t('common.date')}</th>
+                  <th className="px-3 py-2.5 text-center font-medium">{t('tailBuy.signal')}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t('tailBuy.ruleScore')}</th>
+                  <th className="px-3 py-2.5 text-right font-medium">{t('tailBuy.priorityScore')}</th>
+                  <th className="px-3 py-2.5 text-center font-medium">{t('tailBuy.llmDecision')}</th>
+                  <th className="px-3 py-2.5 text-left font-medium">{t('tailBuy.reason')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -70,7 +72,7 @@ export function TailBuyPage() {
                     <td className="px-3 py-2">{r.name}</td>
                     <td className="px-3 py-2 text-right text-muted-foreground">{r.run_date}</td>
                     <td className="px-3 py-2 text-center">
-                      <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
                         {r.signal_type || '-'}
                       </span>
                     </td>
@@ -79,7 +81,7 @@ export function TailBuyPage() {
                     <td className="px-3 py-2 text-center">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                         r.llm_decision === 'BUY'
-                          ? 'bg-red-50 text-red-700'
+                          ? 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-200'
                           : 'bg-muted text-muted-foreground'
                       }`}>
                         {r.llm_decision || '-'}

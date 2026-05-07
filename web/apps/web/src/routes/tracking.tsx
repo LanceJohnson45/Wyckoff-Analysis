@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { WyckoffLoading } from '@/components/loading'
+import { usePreferences } from '@/lib/preferences'
 
 interface Recommendation {
   code: number
@@ -113,14 +114,16 @@ export function TrackingPage() {
 }
 
 function TrackingHeader({ latestDate, oldestDate }: { latestDate: number | null; oldestDate: number | null }) {
+  const { t } = usePreferences()
+
   return (
     <div className="mb-5">
-      <h1 className="text-xl font-semibold">推荐跟踪</h1>
+      <h1 className="text-xl font-semibold">{t('tracking.title')}</h1>
       <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-        此页仅展示推荐表中最新 30 个推荐交易日的数据；这 30 个日期按数据库实际存在的推荐日计算，不按连续自然日补齐。
+        {t('tracking.description')}
         {latestDate && oldestDate && (
           <span className="ml-1">
-            当前保留范围：{formatDate(oldestDate)} 至 {formatDate(latestDate)}。
+            {t('tracking.range', { oldest: formatDate(oldestDate), latest: formatDate(latestDate) })}
           </span>
         )}
       </p>
@@ -143,10 +146,12 @@ function DateWindowFilter({
   selectedWindow: RecommendationWindow
   onWindowChange: (value: RecommendationWindow) => void
 }) {
+  const { t } = usePreferences()
+
   return (
     <div className="mb-4 flex flex-wrap items-center gap-3">
       <label className="flex items-center gap-2 text-sm">
-        <span className="text-muted-foreground">推荐交易日窗口</span>
+        <span className="text-muted-foreground">{t('tracking.window')}</span>
         <select
           value={selectedWindow}
           onChange={(event) => onWindowChange(Number(event.target.value) as RecommendationWindow)}
@@ -154,15 +159,19 @@ function DateWindowFilter({
         >
           {AVG_WINDOWS.map((size) => (
             <option key={size} value={size}>
-              近{size}个推荐交易日
+              {t('tracking.windowOption', { size })}
             </option>
           ))}
         </select>
       </label>
       {latestDate && activeOldestDate && (
         <span className="text-xs text-muted-foreground">
-          当前窗口：{formatDate(activeOldestDate)} 至 {formatDate(latestDate)}，{activeDateCount} 个推荐交易日，
-          {rawCount} 条推荐记录
+          {t('tracking.currentWindow', {
+            oldest: formatDate(activeOldestDate),
+            latest: formatDate(latestDate),
+            count: activeDateCount,
+            rows: rawCount,
+          })}
         </span>
       )}
     </div>
@@ -170,13 +179,15 @@ function DateWindowFilter({
 }
 
 function SummaryCards({ selectedWindow, stats }: { selectedWindow: RecommendationWindow; stats: SummaryStats }) {
+  const { t } = usePreferences()
+
   return (
     <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
-      <StatCard label="覆盖股票数" value={`${stats.count} 支`} />
-      <StatCard label={`近${selectedWindow}个推荐交易日平均涨幅`} value={formatPct(stats.avg)} color={pctColor(stats.avg)} />
-      <StatCard label="最高涨幅" value={formatPct(stats.best)} color={pctColor(stats.best)} />
-      <StatCard label="最大跌幅" value={formatPct(stats.worst)} color={pctColor(stats.worst)} />
-      <StatCard label="总推荐次数" value={`${stats.totalRecommendations} 次`} />
+      <StatCard label={t('tracking.coveredStocks')} value={`${stats.count} ${t('common.stocks')}`} />
+      <StatCard label={t('tracking.avgChange', { size: selectedWindow })} value={formatPct(stats.avg)} color={pctColor(stats.avg)} />
+      <StatCard label={t('tracking.bestChange')} value={formatPct(stats.best)} color={pctColor(stats.best)} />
+      <StatCard label={t('tracking.worstChange')} value={formatPct(stats.worst)} color={pctColor(stats.worst)} />
+      <StatCard label={t('tracking.totalRecommendations')} value={`${stats.totalRecommendations} ${t('tracking.times')}`} />
     </div>
   )
 }
@@ -200,13 +211,15 @@ function TrackingFilters({
   onSearchChange: (value: string) => void
   onSortByChange: (value: SortBy) => void
 }) {
+  const { t } = usePreferences()
+
   return (
     <div className="mb-4 flex items-center gap-3">
       <input
         type="text"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="搜索代码或名称..."
+        placeholder={t('tracking.searchPlaceholder')}
         className="rounded-lg border border-border px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring/20"
       />
       <label className="flex items-center gap-1.5 text-sm">
@@ -216,38 +229,40 @@ function TrackingFilters({
           onChange={(event) => onOnlyAIChange(event.target.checked)}
           className="rounded"
         />
-        只看 AI 推荐
+        {t('tracking.onlyAI')}
       </label>
       <select
         value={sortBy}
         onChange={(event) => onSortByChange(event.target.value as SortBy)}
         className="rounded-lg border border-border px-2 py-1.5 text-sm"
       >
-        <option value="date">按日期</option>
-        <option value="change">按涨幅</option>
-        <option value="score">按评分</option>
+        <option value="date">{t('tracking.sortDate')}</option>
+        <option value="change">{t('tracking.sortChange')}</option>
+        <option value="score">{t('tracking.sortScore')}</option>
       </select>
       <span className="text-xs text-muted-foreground">
-        {filteredCount} / {visibleCount} 支
+        {filteredCount} / {visibleCount} {t('common.stocks')}
       </span>
     </div>
   )
 }
 
 function TrackingTable({ rows }: { rows: Recommendation[] }) {
+  const { t } = usePreferences()
+
   return (
     <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
       <div className="h-full overflow-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-muted/80 backdrop-blur">
             <tr>
-              <th className="px-3 py-2 text-left font-medium">代码</th>
-              <th className="px-3 py-2 text-left font-medium">名称</th>
-              <th className="px-3 py-2 text-right font-medium">推荐日</th>
-              <th className="px-3 py-2 text-right font-medium">初始价</th>
-              <th className="px-3 py-2 text-right font-medium">现价</th>
-              <th className="px-3 py-2 text-right font-medium">涨跌幅</th>
-              <th className="px-3 py-2 text-right font-medium">评分</th>
+              <th className="px-3 py-2 text-left font-medium">{t('common.code')}</th>
+              <th className="px-3 py-2 text-left font-medium">{t('common.name')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('tracking.recommendDate')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('tracking.initialPrice')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('tracking.currentPrice')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('tracking.changePct')}</th>
+              <th className="px-3 py-2 text-right font-medium">{t('tracking.score')}</th>
               <th className="px-3 py-2 text-center font-medium">AI</th>
             </tr>
           </thead>
@@ -255,7 +270,7 @@ function TrackingTable({ rows }: { rows: Recommendation[] }) {
             {rows.length === 0 ? (
               <tr className="border-t border-border">
                 <td colSpan={8} className="px-3 py-8 text-center text-muted-foreground">
-                  暂无推荐记录
+                  {t('tracking.empty')}
                 </td>
               </tr>
             ) : (

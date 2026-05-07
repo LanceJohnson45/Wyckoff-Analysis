@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { usePreferences, type TranslationKey } from '@/lib/preferences'
 
 interface MarketSignal {
   benchmark_regime: string
@@ -17,20 +18,20 @@ interface MarketSignal {
   vix_date: string
 }
 
-const REGIME_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  RISK_ON: { bg: 'bg-red-50', text: 'text-red-700', label: '偏强' },
-  NEUTRAL: { bg: 'bg-blue-50', text: 'text-blue-700', label: '中性' },
-  RISK_OFF: { bg: 'bg-purple-50', text: 'text-purple-700', label: '偏弱' },
-  CRASH: { bg: 'bg-orange-50', text: 'text-orange-700', label: '极弱' },
-  BLACK_SWAN: { bg: 'bg-red-100', text: 'text-red-800', label: '恶劣' },
+const REGIME_COLORS: Record<string, { className: string; labelKey: TranslationKey }> = {
+  RISK_ON: { className: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-200', labelKey: 'market.riskOn' },
+  NEUTRAL: { className: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200', labelKey: 'market.neutral' },
+  RISK_OFF: { className: 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-200', labelKey: 'market.riskOff' },
+  CRASH: { className: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-200', labelKey: 'market.crash' },
+  BLACK_SWAN: { className: 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-100', labelKey: 'market.blackSwan' },
 }
 
-const TONE_COLORS: Record<string, string> = {
-  '乐观': 'bg-sky-50 text-sky-700',
-  '谨慎乐观': 'bg-cyan-50 text-cyan-700',
-  '谨慎': 'bg-blue-50 text-blue-700',
-  '保守': 'bg-amber-50 text-amber-700',
-  '恶劣': 'bg-red-50 text-red-700',
+const TONE_META: Record<string, { className: string; labelKey: TranslationKey }> = {
+  '乐观': { className: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-200', labelKey: 'market.optimistic' },
+  '谨慎乐观': { className: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-200', labelKey: 'market.cautiouslyOptimistic' },
+  '谨慎': { className: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200', labelKey: 'market.cautious' },
+  '保守': { className: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200', labelKey: 'market.defensive' },
+  '恶劣': { className: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-200', labelKey: 'market.blackSwan' },
 }
 
 function mergeRows(data: Record<string, unknown>[]): { merged: Record<string, unknown>; mainDate: string; a50Date: string; vixDate: string } {
@@ -91,6 +92,7 @@ async function fetchSignal(): Promise<MarketSignal | null> {
 }
 
 export function MarketBar() {
+  const { t } = usePreferences()
   const { data: signal } = useQuery({
     queryKey: ['market-signal'],
     queryFn: fetchSignal,
@@ -100,25 +102,25 @@ export function MarketBar() {
   if (!signal) return null
 
   const regime = REGIME_COLORS[signal.benchmark_regime] || REGIME_COLORS.NEUTRAL!
-  const toneClass = TONE_COLORS[signal.banner_tone] || 'bg-blue-50 text-blue-700'
+  const tone = TONE_META[signal.banner_tone] || TONE_META['谨慎']!
 
   const fmtPct = (v: number) => v ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}%` : '--'
   const fmtDate = (d: string) => d ? d.slice(5).replace('-', '/') : ''
 
   return (
-    <div className="border-b border-border bg-white px-6 py-2.5">
+    <div className="border-b border-border bg-background px-6 py-2.5">
       <div className="flex flex-wrap items-center gap-4">
-        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${toneClass}`}>
-          {signal.banner_tone}
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.className}`}>
+          {t(tone.labelKey)}
         </span>
 
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ${regime.bg} ${regime.text}`}>
-          {regime.label}
+        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] ${regime.className}`}>
+          {t(regime.labelKey)}
         </span>
 
         {signal.main_index_close > 0 && (
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground">上证</span>
+            <span className="text-xs text-muted-foreground">{t('market.mainIndex')}</span>
             <span className="text-sm font-medium">{signal.main_index_close.toFixed(0)}</span>
             <span className={`text-xs font-medium ${signal.main_index_today_pct >= 0 ? 'text-up' : 'text-down'}`}>
               {fmtPct(signal.main_index_today_pct)}

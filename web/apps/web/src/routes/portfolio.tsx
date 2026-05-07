@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { WyckoffLoading } from '@/components/loading'
+import { usePreferences } from '@/lib/preferences'
 
 interface Position {
   code: string
@@ -29,6 +30,7 @@ async function fetchPortfolio(userId: string): Promise<Portfolio> {
 export function PortfolioPage() {
   const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
+  const { t } = usePreferences()
   const [editingCash, setEditingCash] = useState(false)
   const [cashInput, setCashInput] = useState('')
 
@@ -72,20 +74,20 @@ export function PortfolioPage() {
 
   return (
     <div className="h-full p-6">
-      <h1 className="mb-6 text-xl font-semibold">持仓管理</h1>
+      <h1 className="mb-6 text-xl font-semibold">{t('portfolio.title')}</h1>
 
       {/* Summary Cards */}
       <div className="mb-6 grid grid-cols-3 gap-4">
-        <SummaryCard label="总资产（成本）" value={`¥${totalAssets.toLocaleString()}`} />
+        <SummaryCard label={t('portfolio.totalAssets')} value={`¥${totalAssets.toLocaleString()}`} />
         <SummaryCard
-          label="可用资金"
+          label={t('portfolio.freeCash')}
           value={`¥${(portfolio?.free_cash || 0).toLocaleString()}`}
           onClick={() => {
             setEditingCash(true)
             setCashInput(String(portfolio?.free_cash || 0))
           }}
         />
-        <SummaryCard label="持仓数" value={String(portfolio?.positions.length || 0)} />
+        <SummaryCard label={t('portfolio.positionCount')} value={String(portfolio?.positions.length || 0)} />
       </div>
 
       {/* Cash Edit Modal */}
@@ -98,27 +100,27 @@ export function PortfolioPage() {
             className="flex-1 rounded-lg border border-border px-3 py-1.5 text-sm outline-none"
             autoFocus
           />
-          <button onClick={saveCash} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground">保存</button>
-          <button onClick={() => setEditingCash(false)} className="rounded-lg border border-border px-3 py-1.5 text-sm">取消</button>
+          <button onClick={saveCash} className="rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground">{t('action.save')}</button>
+          <button onClick={() => setEditingCash(false)} className="rounded-lg border border-border px-3 py-1.5 text-sm">{t('action.cancel')}</button>
         </div>
       )}
 
       {/* Positions Table */}
       {portfolio?.positions.length === 0 ? (
         <div className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">
-          暂无持仓，可通过 CLI 或读盘室 Agent 添加
+          {t('portfolio.empty')}
         </div>
       ) : (
         <div className="overflow-hidden rounded-lg border border-border">
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="px-4 py-2.5 text-left font-medium">代码</th>
-                <th className="px-4 py-2.5 text-left font-medium">名称</th>
-                <th className="px-4 py-2.5 text-right font-medium">数量</th>
-                <th className="px-4 py-2.5 text-right font-medium">成本价</th>
-                <th className="px-4 py-2.5 text-right font-medium">建仓日</th>
-                <th className="px-4 py-2.5 text-right font-medium">操作</th>
+                <th className="px-4 py-2.5 text-left font-medium">{t('common.code')}</th>
+                <th className="px-4 py-2.5 text-left font-medium">{t('common.name')}</th>
+                <th className="px-4 py-2.5 text-right font-medium">{t('portfolio.shares')}</th>
+                <th className="px-4 py-2.5 text-right font-medium">{t('portfolio.costPrice')}</th>
+                <th className="px-4 py-2.5 text-right font-medium">{t('portfolio.buyDate')}</th>
+                <th className="px-4 py-2.5 text-right font-medium">{t('portfolio.action')}</th>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +136,7 @@ export function PortfolioPage() {
                       onClick={() => deletePosition(p.code)}
                       className="text-xs text-destructive hover:underline"
                     >
-                      删除
+                      {t('action.delete')}
                     </button>
                   </td>
                 </tr>

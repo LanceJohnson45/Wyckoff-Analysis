@@ -3,19 +3,20 @@ import { Send, RotateCcw, ChevronDown, ChevronRight, Wrench, Brain } from 'lucid
 import { useAuthStore } from '@/stores/auth'
 import { loadLLMConfig, loadAllModels, runChatAgentStream, type LLMConfig, type ModelOption, type StepInfo } from '@/lib/chat-agent'
 import { MarkdownContent } from '@/components/markdown'
+import { usePreferences, type TranslationKey } from '@/lib/preferences'
 
-const TOOL_LABELS: Record<string, string> = {
-  search_stock: '搜索股票',
-  view_portfolio: '查看持仓',
-  market_overview: '大盘水温',
-  query_recommendations: '推荐跟踪',
-  query_tail_buy: '尾盘记录',
-  plan_portfolio_update: '调仓方案',
-  execute_portfolio_update: '执行调仓',
-  analyze_stock: '个股诊断',
-  screen_stocks: '漏斗选股',
-  generate_ai_report: 'AI 研报',
-  generate_strategy_decision: '策略建议',
+const TOOL_LABEL_KEYS: Record<string, TranslationKey> = {
+  search_stock: 'tool.search_stock',
+  view_portfolio: 'tool.view_portfolio',
+  market_overview: 'tool.market_overview',
+  query_recommendations: 'tool.query_recommendations',
+  query_tail_buy: 'tool.query_tail_buy',
+  plan_portfolio_update: 'tool.plan_portfolio_update',
+  execute_portfolio_update: 'tool.execute_portfolio_update',
+  analyze_stock: 'tool.analyze_stock',
+  screen_stocks: 'tool.screen_stocks',
+  generate_ai_report: 'tool.generate_ai_report',
+  generate_strategy_decision: 'tool.generate_strategy_decision',
 }
 
 interface Message {
@@ -27,13 +28,14 @@ interface Message {
 
 function StepsCollapsible({ steps }: { steps: StepInfo[] }) {
   const [expanded, setExpanded] = useState(false)
+  const { t } = usePreferences()
 
   if (steps.length === 0) return null
 
   const toolCalls = steps.filter((s) => s.type === 'tool_call')
   const summary = toolCalls.length > 0
-    ? `${toolCalls.length} 个工具调用`
-    : `${steps.length} 个推理步骤`
+    ? t('chat.toolCalls', { count: toolCalls.length })
+    : t('chat.reasoningSteps', { count: steps.length })
 
   return (
     <div className="mb-2">
@@ -51,7 +53,7 @@ function StepsCollapsible({ steps }: { steps: StepInfo[] }) {
               {step.type === 'tool_call' ? (
                 <>
                   <Wrench size={10} className="text-amber-500" />
-                  <span>{TOOL_LABELS[step.toolName!] || step.toolName}</span>
+                  <span>{formatToolName(step.toolName, t)}</span>
                 </>
               ) : (
                 <>
@@ -75,7 +77,7 @@ const MessageBubble = memo(function MessageBubble({ msg }: { msg: Message }) {
           msg.role === 'user'
             ? 'bg-primary text-primary-foreground whitespace-pre-wrap'
             : msg.isError
-              ? 'bg-red-50 text-red-700 border border-red-200'
+              ? 'border border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200'
               : 'bg-muted text-foreground'
         }`}
       >
@@ -94,6 +96,7 @@ const MessageBubble = memo(function MessageBubble({ msg }: { msg: Message }) {
 
 export function ChatPage() {
   const user = useAuthStore((s) => s.user)
+  const { t } = usePreferences()
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -139,7 +142,7 @@ export function ChatPage() {
     if (!input.trim() || loading) return
 
     if (!llmConfig) {
-      setError('请先在设置页配置 LLM API Key')
+      setError(t('chat.configureLLM'))
       return
     }
 
@@ -185,7 +188,7 @@ export function ChatPage() {
           setLoading(false)
         },
         onError: (err) => {
-          const msg = err.message || '请求失败'
+          const msg = err.message || t('chat.requestFailed')
           setError(msg)
           setMessages((prev) => [...prev, { role: 'assistant', content: `⚠️ ${msg}`, isError: true }])
           setStreamingText('')
@@ -209,12 +212,12 @@ export function ChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-6 py-3">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold">读盘室</h1>
+          <h1 className="text-lg font-semibold">{t('chat.title')}</h1>
           {llmConfig && (
             <div className="relative" ref={pickerRef}>
               <button
                 onClick={() => setShowModelPicker(!showModelPicker)}
-                className="flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] text-indigo-700 hover:bg-indigo-100 transition-colors"
+                className="flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] text-indigo-700 transition-colors hover:bg-indigo-100 dark:bg-indigo-500/10 dark:text-indigo-200 dark:hover:bg-indigo-500/20"
               >
                 {llmConfig.model}
                 <ChevronDown size={10} />
@@ -241,8 +244,8 @@ export function ChatPage() {
             </div>
           )}
           {!llmConfig && user && (
-            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
-              未配置 API Key
+            <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+              {t('chat.noApiKey')}
             </span>
           )}
         </div>
@@ -251,7 +254,7 @@ export function ChatPage() {
           className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted/50"
         >
           <RotateCcw size={14} />
-          新对话
+          {t('chat.newChat')}
         </button>
       </div>
 
@@ -260,10 +263,17 @@ export function ChatPage() {
         {messages.length === 0 && !loading ? (
           <div className="flex h-full flex-col items-center justify-center text-muted-foreground">
             <div className="mb-4 text-4xl">📈</div>
-            <p className="text-sm font-medium">我是威科夫，只看供需和主力行为</p>
-            <p className="mt-2 text-xs text-muted-foreground">试试问我：</p>
+            <p className="text-sm font-medium">{t('chat.emptyTitle')}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t('chat.tryAsk')}</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
-              {['我有什么持仓', '大盘怎么样', '最近推荐了什么', '帮我搜一下宁德时代', '帮我选股', '给个操作建议'].map((q) => (
+              {[
+                t('chat.prompt.portfolio'),
+                t('chat.prompt.market'),
+                t('chat.prompt.recent'),
+                t('chat.prompt.search'),
+                t('chat.prompt.screen'),
+                t('chat.prompt.strategy'),
+              ].map((q) => (
                 <button
                   key={q}
                   onClick={() => setInput(q)}
@@ -275,9 +285,9 @@ export function ChatPage() {
             </div>
             <div className="mt-8 rounded-lg border border-dashed border-border/60 px-4 py-2.5 text-center">
               <p className="text-[11px] text-muted-foreground/70">
-                网页版暂不支持会话历史、Agent 记忆与后台任务 ·{' '}
+                {t('chat.fullVersionPrefix')} ·{' '}
                 <code className="rounded bg-muted px-1 py-0.5 text-[10px]">curl -fsSL https://raw.githubusercontent.com/YoungCan-Wang/Wyckoff-Analysis/main/install.sh | bash</code>{' '}
-                解锁完整能力
+                {t('chat.unlockFull')}
               </p>
             </div>
           </div>
@@ -298,7 +308,7 @@ export function ChatPage() {
                           {step.type === 'tool_call' ? (
                             <>
                               <Wrench size={10} className="text-amber-500" />
-                              <span>✓ {TOOL_LABELS[step.toolName!] || step.toolName}</span>
+                              <span>✓ {formatToolName(step.toolName, t)}</span>
                             </>
                           ) : (
                             <>
@@ -315,7 +325,7 @@ export function ChatPage() {
                   ) : (
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                      <span>{liveSteps.length > 0 ? '生成回复中…' : '思考中…'}</span>
+                      <span>{liveSteps.length > 0 ? t('chat.generating') : t('chat.thinking')}</span>
                     </div>
                   )}
                 </div>
@@ -327,7 +337,7 @@ export function ChatPage() {
 
       {/* Error */}
       {error && (
-        <div className="mx-6 mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</div>
+        <div className="mx-6 mb-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-500/10 dark:text-red-200">{error}</div>
       )}
 
       {/* Input */}
@@ -337,7 +347,7 @@ export function ChatPage() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="输入消息..."
+            placeholder={t('chat.placeholder')}
             className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring/20"
           />
           <button
@@ -351,4 +361,13 @@ export function ChatPage() {
       </div>
     </div>
   )
+}
+
+function formatToolName(
+  toolName: string | undefined,
+  t: (key: TranslationKey) => string,
+): string {
+  if (!toolName) return ''
+  const labelKey = TOOL_LABEL_KEYS[toolName]
+  return labelKey ? t(labelKey) : toolName
 }

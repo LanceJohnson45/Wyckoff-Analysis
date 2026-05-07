@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-background: #ffffff;
   --color-foreground: #1a1a2e;
@@ -22,9 +24,32 @@
 }
 
 @layer base {
+  html.dark {
+    --color-background: #0d1117;
+    --color-foreground: #e6edf3;
+    --color-muted: #1f2937;
+    --color-muted-foreground: #9aa4b2;
+    --color-border: #303946;
+    --color-primary: #8aa4ff;
+    --color-primary-foreground: #09111f;
+    --color-accent: #1b2740;
+    --color-accent-foreground: #b8c7ff;
+    --color-destructive: #fb7185;
+    --color-success: #8aa4ff;
+    --color-warning: #fbbf24;
+    --color-ring: #8aa4ff;
+    --color-sidebar: #111827;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+  }
+
+  input,
+  select,
+  textarea {
+    @apply bg-background text-foreground;
   }
 }
 

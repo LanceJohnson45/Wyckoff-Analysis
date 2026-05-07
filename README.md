@@ -322,7 +322,7 @@ tickflow → tushare → akshare → baostock → efinance
 
 **CLI**：Gemini / Claude / OpenAI，`/model` 一键切换，支持任意 OpenAI 兼容端点。
 
-**Web / Pipeline**：1Route / Gemini / OpenAI / 智谱 / Minimax / DeepSeek / Qwen / 火山引擎；Kimi 等 OpenAI 兼容服务可通过自定义 `base_url` 或 `custom_providers` 接入。
+**Web / Pipeline**：1Route / Gemini / OpenAI / DeepSeek；Kimi 等 OpenAI 兼容服务可通过自定义 `base_url` 或 `custom_providers` 接入。
 
 ## 配置
 
