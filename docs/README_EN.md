@@ -7,8 +7,7 @@
 [![PyPI](https://img.shields.io/pypi/v/youngcan-wyckoff-analysis?color=blue)](https://pypi.org/project/youngcan-wyckoff-analysis/)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-green.svg)](../LICENSE)
-[![Web App](https://img.shields.io/badge/Web-React%20App-0ea5e9.svg)](https://wyckoff-analysis.pages.dev/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B.svg)](https://wyckoff-analysis-youngcanphoenix.streamlit.app/)
+[![Streamlit](https://img.shields.io/badge/demo-Streamlit-FF4B4B.svg)](https://wyckoff-analysis-youngcanphoenix.streamlit.app/)
 
 [中文](../README.md) | [日本語](README_JA.md) | [Español](README_ES.md) | [한국어](README_KO.md) | [Architecture](ARCHITECTURE.md)
 
@@ -16,107 +15,26 @@
 
 ---
 
-Talk to a Wyckoff master in natural language. He commands 10 professional tools + 5 general capabilities, chains multi-step reasoning, and tells you whether to strike.
+Talk to a Wyckoff master in natural language. He commands 10 quantitative tools, chains multi-step reasoning, and tells you whether to strike.
 
-Web + CLI + MCP triple channel, Gemini / Claude / OpenAI / DeepSeek multi-model switching, GitHub Actions for fully automated daily runs.
-
-Project homepage: **[youngcan-wang.github.io/wyckoff-homepage](https://youngcan-wang.github.io/wyckoff-homepage/)**
-
-Keyword entries: **[Trading Agent](https://youngcan-wang.github.io/wyckoff-homepage/trading-agent/)** · **[Wyckoff Trading Agent](https://youngcan-wang.github.io/wyckoff-homepage/wyckoff-trading-agent/)** · **[AI Trading Agent](https://youngcan-wang.github.io/wyckoff-homepage/ai-trading-agent/)** · **[Stock Screener Agent](https://youngcan-wang.github.io/wyckoff-homepage/stock-screener-agent/)**
-
-> Risk disclosure: WyckoffAgent is for educational, research, and informational use. It does not provide investment advice, does not account for every personal financial circumstance, and does not guarantee future performance.
-
-## Documentation
-
-| Topic | Where to Read |
-|---|---|
-| Usage, deployment, configuration | This README |
-| Architecture, Actions, data tables, cache policy | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Funnel, AI reports, OMS, backtesting logic | [../README_STRATEGY.md](../README_STRATEGY.md) |
-| Terms and concepts | [../GLOSSARY.md](../GLOSSARY.md) |
-| Research notes and operations | [../wiki_repo_new/Home.md](../wiki_repo_new/Home.md) |
-
-## Special Thanks
-
-<table>
-  <tr>
-    <td width="150" align="center">
-      <a href="https://tickflow.org/auth/register?ref=5N4NKTCPL4">
-        <img src="../attach/tickflow-logo.png" alt="TickFlow" width="120" />
-      </a>
-    </td>
-    <td>
-      <strong><a href="https://tickflow.org/auth/register?ref=5N4NKTCPL4">TickFlow</a></strong><br />
-      Thanks to TickFlow for high-quality A-share / US stock / Hong Kong stock market data support for WyckoffAgent.
-    </td>
-  </tr>
-</table>
-
-## Online Usage
-
-No installation required.
-
-**React Web App**: **[wyckoff-analysis.pages.dev](https://wyckoff-analysis.pages.dev/)**
-
-Modern React SPA with AI Agent chat, portfolio management, funnel screening, recommendation tracking, data export, streaming output, and tool-call visualization.
-
-| Chat Room | Funnel Screener |
-|:---:|:---:|
-| <img src="screenshots/web-chat.png" width="450" /> | <img src="screenshots/web-screen.png" width="450" /> |
-
-| Recommendation Tracking | Portfolio |
-|:---:|:---:|
-| <img src="screenshots/web-track.png" width="450" /> | <img src="screenshots/web-portfolio.png" width="450" /> |
-
-**Streamlit Maintenance Portal**: **[wyckoff-analysis-youngcanphoenix.streamlit.app](https://wyckoff-analysis-youngcanphoenix.streamlit.app/)**
-
-Streamlit powered the early MVP and remains available for data export, single-stock analysis, and settings.
-
-| Chat Room | Data Export |
-|:---:|:---:|
-| <img src="../attach/web-chat.png" width="450" /> | <img src="../attach/web-export.png" width="450" /> |
+Web + CLI dual channel, Gemini / Claude / OpenAI pick one, GitHub Actions for fully automated daily runs.
 
 ## Features
 
 | Capability | Description |
 |---|---|
-| Conversational Agent | Trigger diagnosis, screening, and reports in plain language; the LLM orchestrates tools autonomously; also reads/writes files, executes commands, and fetches web pages |
-| Skills | Built-in slash commands (`/screen`, `/checkup`, `/report`, `/strategy`, `/backtest`) for one-tap complex workflows; user-extensible via `~/.wyckoff/skills/*.md` |
+| Conversational Agent | Trigger diagnosis, screening, and reports in plain language; the LLM orchestrates tool calls autonomously |
 | Five-Layer Funnel | Full market ~4 500 stocks -> ~30 candidates via six channels + sector resonance + micro triggers |
 | AI Three-Camp Report | Logic Bankrupt / Reserve Camp / Springboard — LLM renders an independent verdict |
 | Portfolio Diagnosis | Batch health check: MA structure, accumulation phase, trigger signals, stop-loss status |
 | Private Rebalance | Synthesizes holdings + candidates, outputs EXIT / TRIM / HOLD / PROBE / ATTACK orders, pushes to Telegram |
-| Tail-Buy Strategy | Executes at 13:50, two-stage evaluation (rule scoring + LLM review) for end-of-day entries |
 | Signal Confirmation Pool | L4 trigger signals must pass 1-3 day price confirmation before becoming actionable |
 | Recommendation Tracking | Historical picks auto-sync closing prices and compute cumulative returns |
 | Daily-Bar Backtest | Replays post-funnel N-day returns; reports win rate / Sharpe / max drawdown |
 | Pre-Market Risk | A50 futures + VIX monitoring with four alert levels |
-| Local Dashboard | `wyckoff dashboard` — recommendations, signals, portfolio, agent memory, chat logs; dark/light theme, bilingual CN/EN |
-| Agent Memory | Cross-session memory: auto-extracts session conclusions, injects relevant context on next query |
-| Context Compaction | Dynamic threshold (25% of model context window) auto-compresses long conversations, smart tool result summarization preserves key data |
-| Tool Confirmation | `exec_command`, `write_file`, `update_portfolio` require user approval before execution |
-| General Agent Capabilities | Execute commands, read/write files, fetch web pages — send a CSV path and it will analyze it |
-| MCP Server | 10 tools exposed via MCP protocol — plug into Claude Code / Cursor / any MCP client |
 | Multi-Channel Notifications | Feishu / WeCom / DingTalk / Telegram |
 
-## Data Sources
-
-Daily bar auto-fallback chain:
-
-```
-tickflow → tushare → akshare → baostock → efinance
-```
-
-When any source is unavailable the system silently falls back to the next — zero intervention required.
-
-> **Recommended: connect TickFlow for stronger A-share / US stock / Hong Kong stock real-time and intraday capabilities**
-> Register: [TickFlow Registration](https://tickflow.org/auth/register?ref=5N4NKTCPL4)
-
-## Local Usage
-
-### CLI — Recommended
-
-Native terminal workflow with the most complete feature set. Supports background tasks, memory, Skills, MCP Server, and local SQLite storage.
+## Quick Start
 
 ### One-line Install (recommended)
 
@@ -141,11 +59,10 @@ uv pip install youngcan-wyckoff-analysis
 wyckoff
 ```
 
-### Start Using — One-Click Agent Setup
-
-Just two steps after launch:
-1. `/model` — choose a model (Gemini / Claude / OpenAI) and enter your API key
-2. Start asking questions — no registration needed, portfolio data stored locally
+Once inside:
+- `/model` — choose a model (Gemini / Claude / OpenAI) and enter your API key
+- `/login` — sign in to sync cloud portfolio
+- Start asking questions
 
 ```
 > Compare 000001 and 600519 — which one is the better buy?
@@ -153,51 +70,9 @@ Just two steps after launch:
 > What's the market temperature right now?
 ```
 
-> Optional: `/login` to sync portfolio to cloud for multi-device access. All features work without login.
-
 Upgrade: `wyckoff update`
 
-| Launch Screen | Portfolio Query |
-|:---:|:---:|
-| <img src="../attach/cli-home.png" width="450" /> | <img src="../attach/cli-running.png" width="450" /> |
-
-| Diagnosis Report | Action Instructions |
-|:---:|:---:|
-| <img src="../attach/cli-analysis.png" width="450" /> | <img src="../attach/cli-result.png" width="450" /> |
-
-### Local Dashboard
-
-```bash
-wyckoff dashboard
-```
-
-Starts a local HTTP dashboard (default port 8765) and opens the browser automatically. All data stays in local SQLite.
-
-Pages include recommendations, signals, portfolio, agent memory, configuration, chat logs, agent logs, and sync status. Dark/light theme and CN/EN bilingual UI are supported.
-
-| Overview | Chat Logs | Trace Detail |
-|:---:|:---:|:---:|
-| <img src="../attach/dashboard-overview.png" width="300" /> | <img src="../attach/dashboard-chatlog.png" width="300" /> | <img src="../attach/dashboard-chatlog-trace.png" width="300" /> |
-
-### Backtest Grid
-
-18 parameter combos run in parallel, outputs optimal parameters, Sharpe matrix, and strategy health check:
-
-| Optimal Params & Ranking | Parameter Matrix |
-|:---:|:---:|
-| <img src="../attach/backtest-grid-1.png" width="450" /> | <img src="../attach/backtest-grid-2.png" width="450" /> |
-
-### Local Web
-
-React SPA local deployment, sharing the same local SQLite data with the CLI:
-
-```bash
-cd web/apps/web
-pnpm install
-pnpm dev
-```
-
-Legacy Streamlit local run:
+### Web
 
 ```bash
 git clone https://github.com/YoungCan-Wang/Wyckoff-Analysis.git
@@ -207,33 +82,26 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
 
-Web App: **[wyckoff-analysis.pages.dev](https://wyckoff-analysis.pages.dev/)**
+Live demo: **[wyckoff-analysis-youngcanphoenix.streamlit.app](https://wyckoff-analysis-youngcanphoenix.streamlit.app/)**
 
-Streamlit: **[wyckoff-analysis-youngcanphoenix.streamlit.app](https://wyckoff-analysis-youngcanphoenix.streamlit.app/)**
+## 10 Tools
 
-## Tools
-
-The agent's arsenal — 10 quant tools + 5 general capabilities:
+The agent's arsenal — each one wired to a real volume-price engine:
 
 | Tool | Capability |
 |---|---|
 | `search_stock_by_name` | Fuzzy search by name, ticker, or pinyin |
-| `analyze_stock` | Wyckoff diagnosis / recent OHLCV quotes (mode switch) |
-| `portfolio` | View holdings / batch portfolio health scan (mode switch) |
-| `update_portfolio` | Add / modify / delete holdings, set available cash, delete tracking records |
+| `diagnose_stock` | Structured Wyckoff diagnosis for a single stock |
+| `diagnose_portfolio` | Batch portfolio health scan |
+| `get_stock_price` | Recent OHLCV quotes |
 | `get_market_overview` | Broad market temperature overview |
-| `screen_stocks` | Five-layer funnel full-market screening (⚡background) |
-| `generate_ai_report` | Three-camp AI deep research report (⚡background) |
-| `generate_strategy_decision` | Hold/exit existing positions + new buy decisions (⚡background) |
-| `query_history` | Historical recommendations / signal pool / tail-buy records |
-| `run_backtest` | Funnel strategy historical backtest (⚡background) |
-| `check_background_tasks` | Background task progress query |
-| `exec_command` | Execute local shell commands |
-| `read_file` | Read local files (CSV/Excel auto-parsed) |
-| `write_file` | Write files (export reports/data) |
-| `web_fetch` | Fetch web content (financial news/announcements) |
+| `screen_stocks` | Five-layer funnel full-market screening |
+| `generate_ai_report` | Three-camp AI deep research report |
+| `generate_strategy_decision` | Hold/exit existing positions + new buy decisions |
+| `get_recommendation_tracking` | Historical recommendations and follow-up performance |
+| `get_signal_pending` | Query the signal confirmation pool |
 
-Tool call order and frequency are decided by the LLM at runtime — no pre-choreography needed. Send a CSV path and it reads it; say "install a package" and it executes.
+Tool call order and frequency are decided by the LLM at runtime — no pre-choreography needed.
 
 ## Five-Layer Funnel
 
@@ -252,91 +120,45 @@ Built-in GitHub Actions cron jobs:
 | Task | Schedule (Beijing Time) | Description |
 |---|---|---|
 | Funnel + AI Report + Rebalance | Sun–Thu 18:25 | Fully automated; results pushed to Feishu / Telegram |
-| Tail-Buy Strategy | Mon–Fri 13:50 | Rule scoring + LLM review, end-of-day entry screening |
 | Pre-Market Risk | Mon–Fri 08:20 | A50 + VIX alert |
 | Limit-Up Review | Mon–Fri 19:25 | Review stocks that rose >= 8% today |
 | Recommendation Reprice | Sun–Thu 23:00 | Sync closing prices |
-| Backtest Grid | 1st & 15th monthly 04:00 | 18 parallel parameter combos → aggregated report |
-| DB Maintenance | Daily 23:05 | Purge stale quotes, orders, signals, market signals, and other rolling-window data |
+| Cache Maintenance | Daily 23:05 | Purge stale quote caches |
 
 ## Model Support
 
-**CLI**: Gemini / Claude / OpenAI — switch with `/model`; any OpenAI-compatible endpoint works (DeepSeek, Qwen, Kimi, etc.).
+**CLI**: Gemini / Claude / OpenAI — switch with `/model`; any OpenAI-compatible endpoint works.
 
-**Web / Pipeline**: 1Route / Gemini / OpenAI / Zhipu / Minimax / DeepSeek / Qwen / Volcengine. Kimi and other OpenAI-compatible providers can be configured via custom `base_url` / `custom_providers`.
+**Web / Pipeline**: Gemini / OpenAI / DeepSeek / Qwen / Kimi / Zhipu / Volcengine / Minimax — 8 providers total.
+
+## Data Sources
+
+Daily bar auto-fallback chain:
+
+```
+tickflow → tushare → akshare → baostock → efinance
+```
+
+When any source is unavailable the system silently falls back to the next — zero intervention required.
 
 ## Configuration
 
-**Zero config to get started** — just launch and `/model add` any LLM API key. Portfolio data is stored locally by default.
+Copy `.env.example` to `.env`. Minimum required:
 
-Advanced configuration (`.env` file or GitHub Actions Secrets):
+| Variable | Purpose |
+|---|---|
+| `SUPABASE_URL` / `SUPABASE_KEY` | Auth and cloud sync |
+| `GEMINI_API_KEY` (or another provider's key) | Powers the LLM |
 
-| Variable | Purpose | Required? |
-|---|---|---|
-| LLM API Key | Configure via `/model add` interactively | Yes |
-| `TUSHARE_TOKEN` | Stock market data (`/config set tushare_token`) | Yes |
-| `SUPABASE_URL` / `SUPABASE_KEY` | Cloud portfolio sync (multi-device) | Optional |
-| `TICKFLOW_API_KEY` | TickFlow real-time / intraday data | Optional |
-| `FEISHU_WEBHOOK_URL` | Feishu push notifications | Optional |
-| `TG_BOT_TOKEN` + `TG_CHAT_ID` | Telegram push notifications | Optional |
-
-> Data source: [TickFlow →](https://tickflow.org/auth/register?ref=5N4NKTCPL4) | LLM API: [1Route →](https://www.1route.dev/register?aff=359904261)
+Optional: `TICKFLOW_API_KEY` (TickFlow real-time/intraday), `TUSHARE_TOKEN` (premium data), `FEISHU_WEBHOOK_URL` (Feishu push), `TG_BOT_TOKEN` + `TG_CHAT_ID` (Telegram push).
 
 See the [Architecture doc](ARCHITECTURE.md) for the full config reference and GitHub Actions Secrets setup.
-
-## MCP Server
-
-Expose Wyckoff analysis capabilities via the [MCP protocol](https://modelcontextprotocol.io/), enabling Claude Code / Cursor / any MCP client to call 10 tools directly.
-
-```bash
-# Install MCP dependency
-uv pip install youngcan-wyckoff-analysis[mcp]
-
-# Register with Claude Code
-claude mcp add wyckoff -- wyckoff-mcp
-```
-
-Or add manually in your MCP client config:
-
-```json
-{
-  "mcpServers": {
-    "wyckoff": {
-      "command": "wyckoff-mcp",
-      "env": {
-        "TUSHARE_TOKEN": "your_token",
-        "TICKFLOW_API_KEY": "your_key"
-      }
-    }
-  }
-}
-```
-
-Once registered, just ask "diagnose 000001" in Claude Code / Cursor to invoke Wyckoff tools.
 
 ## Wyckoff Skills
 
 Lightweight reuse of the Wyckoff analysis capability: [`YoungCan-Wang/wyckoff_skill`](https://github.com/YoungCan-Wang/wyckoff_skill.git)
 
 Ideal for giving any AI assistant a quick "Wyckoff lens."
-
-## Community
-
-| Feishu Group | QQ Group | Feishu Contact |
-|:---:|:---:|:---:|
-| <img src="../attach/飞书群二维码.png" width="200" /> | <img src="../attach/QQ群二维码.jpg" width="200" /><br/>Group: 761348919 | <img src="../attach/飞书个人二维码.png" width="200" /> |
-
-## Sponsor
-
-If this project helps, a GitHub Star is appreciated. If it helps you make money, buy the author a burger.
-
-| Alipay | WeChat |
-|:---:|:---:|
-| <img src="../attach/支付宝收款码.jpg" width="200" /> | <img src="../attach/微信收款码.png" width="200" /> |
-
-## Disclaimer
-
-> **This tool identifies potential based on historical volume-price patterns. Past performance does not guarantee future results. All screening, recommendation, and backtest outputs do not constitute investment advice. Invest at your own risk.**
 
 ## License
 

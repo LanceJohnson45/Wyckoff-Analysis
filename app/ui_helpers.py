@@ -1,4 +1,5 @@
 import html
+import textwrap
 
 import streamlit as st
 
@@ -12,7 +13,7 @@ def inject_custom_css():
         .stApp {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
         }
-
+        
         /* 按钮样式优化 */
         .stButton button {
             border-radius: 8px;

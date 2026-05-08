@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 读盘室 Agent 端到端提示词效果测试。
 
@@ -16,18 +17,19 @@
     # 直接运行（更详细输出）
     .venv/bin/python tests/test_chat_agent_e2e.py
 """
-
 from __future__ import annotations
 
+import json
 import os
 import sys
+from unittest.mock import MagicMock, patch
 
 import pytest
+
 
 # ── 加载 .env & 确定使用的 LLM ──
 try:
     from dotenv import load_dotenv
-
     load_dotenv()
 except ImportError:
     pass
@@ -103,51 +105,11 @@ MOCK_PRICE_RESULT = {
     "latest_close": 1688.0,
     "latest_date": "2026-04-11",
     "data": [
-        {
-            "date": "2026-04-07",
-            "open": 1670.0,
-            "high": 1685.0,
-            "low": 1665.0,
-            "close": 1680.0,
-            "volume": 25000,
-            "pct_chg": 0.5,
-        },
-        {
-            "date": "2026-04-08",
-            "open": 1680.0,
-            "high": 1690.0,
-            "low": 1675.0,
-            "close": 1685.0,
-            "volume": 28000,
-            "pct_chg": 0.3,
-        },
-        {
-            "date": "2026-04-09",
-            "open": 1685.0,
-            "high": 1695.0,
-            "low": 1680.0,
-            "close": 1690.0,
-            "volume": 30000,
-            "pct_chg": 0.3,
-        },
-        {
-            "date": "2026-04-10",
-            "open": 1690.0,
-            "high": 1700.0,
-            "low": 1682.0,
-            "close": 1695.0,
-            "volume": 32000,
-            "pct_chg": 0.3,
-        },
-        {
-            "date": "2026-04-11",
-            "open": 1695.0,
-            "high": 1698.0,
-            "low": 1680.0,
-            "close": 1688.0,
-            "volume": 27000,
-            "pct_chg": -0.4,
-        },
+        {"date": "2026-04-07", "open": 1670.0, "high": 1685.0, "low": 1665.0, "close": 1680.0, "volume": 25000, "pct_chg": 0.5},
+        {"date": "2026-04-08", "open": 1680.0, "high": 1690.0, "low": 1675.0, "close": 1685.0, "volume": 28000, "pct_chg": 0.3},
+        {"date": "2026-04-09", "open": 1685.0, "high": 1695.0, "low": 1680.0, "close": 1690.0, "volume": 30000, "pct_chg": 0.3},
+        {"date": "2026-04-10", "open": 1690.0, "high": 1700.0, "low": 1682.0, "close": 1695.0, "volume": 32000, "pct_chg": 0.3},
+        {"date": "2026-04-11", "open": 1695.0, "high": 1698.0, "low": 1680.0, "close": 1688.0, "volume": 27000, "pct_chg": -0.4},
     ],
 }
 
@@ -158,8 +120,9 @@ def _make_mock_tool(name: str, return_value):
     关键：复制原函数的 __doc__、__annotations__、__module__ 和 __globals__，
     这样 typing.get_type_hints() 能正确解析 ToolContext 等前向引用。
     """
-
     import agents.chat_tools as ct
+    from google.adk.tools import ToolContext
+    import types
 
     original = getattr(ct, name, None)
 
@@ -170,7 +133,6 @@ def _make_mock_tool(name: str, return_value):
     # 构建一个与原函数签名一致的 wrapper
     if original:
         import inspect
-
         sig = inspect.signature(original)
         params = []
         for pname, param in sig.parameters.items():
@@ -184,15 +146,13 @@ def _make_mock_tool(name: str, return_value):
 
         code = f"def {name}({param_str}):\n"
         code += f'    """{original.__doc__}"""\n' if original.__doc__ else ""
-        code += "    return _return_value\n"
+        code += f"    return _return_value\n"
 
         exec(code, func_globals)
         mock_fn = func_globals[name]
     else:
-
         def mock_fn(**kwargs):
             return return_value
-
         mock_fn.__name__ = name
         mock_fn.__qualname__ = name
 
@@ -212,8 +172,8 @@ class AgentTestHarness:
         provider: str = "gemini",
         base_url: str = "",
     ):
-        from agents.session_manager import ChatSessionManager
         from agents.wyckoff_chat_agent import create_agent
+        from agents.session_manager import ChatSessionManager
 
         self.provider = provider
         self.model = model
@@ -236,21 +196,19 @@ class AgentTestHarness:
     def _install_mock_tools(self):
         """用 mock 工具替换 agent 的真实工具。"""
         from google.adk.tools import FunctionTool
+        import agents.chat_tools as ct
 
         mock_map = {
             "search_stock_by_name": MOCK_SEARCH_RESULT,
             "analyze_stock": MOCK_DIAGNOSE_RESULT,
-            "portfolio": {"message": "当前没有持仓数据", "positions": []},
+            "diagnose_stock": MOCK_DIAGNOSE_RESULT,
+            "diagnose_portfolio": {"message": "当前没有持仓数据", "positions": []},
+            "get_stock_price": MOCK_PRICE_RESULT,
             "get_market_overview": MOCK_MARKET_OVERVIEW,
-            "screen_stocks": {
-                "ok": True,
-                "summary": {"total_scanned": 4500, "layer1_passed": 800, "layer2_passed": 200, "layer3_passed": 50},
-                "trigger_groups": {},
-                "symbols_for_report": [],
-            },
+            "screen_stocks": {"ok": True, "summary": {"total_scanned": 4500, "layer1_passed": 800, "layer2_passed": 200, "layer3_passed": 50}, "trigger_groups": {}, "symbols_for_report": []},
             "generate_ai_report": {"ok": True, "report_text": "测试报告", "stock_count": 1},
             "generate_strategy_decision": {"message": "策略分析完成"},
-            "query_history": {"message": "暂无推荐跟踪记录", "records": []},
+            "get_recommendation_tracking": {"message": "暂无推荐跟踪记录", "records": []},
         }
 
         mock_tools = []
@@ -293,9 +251,6 @@ class AgentTestHarness:
             elif event_type == "done":
                 result["response"] = data
             elif event_type == "error":
-                err = str(data)
-                if any(marker in err for marker in ("RateLimitError", "too_many_requests", "达到使用量上限", "429")):
-                    pytest.skip(f"Live model quota/rate limit: {err[:160]}")
                 result["response"] = f"ERROR: {data}"
 
         return result
@@ -311,10 +266,8 @@ class TestChatAgentRouting:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.harness = AgentTestHarness(
-            api_key=_api_key,
-            model=_model,
-            provider=_provider,
-            base_url=_base_url,
+            api_key=_api_key, model=_model,
+            provider=_provider, base_url=_base_url,
         )
 
     def test_search_routes_to_search_tool(self):
@@ -328,13 +281,10 @@ class TestChatAgentRouting:
     def test_diagnose_routes_to_analyze_stock(self):
         """'帮我看看 000001' → 应调 analyze_stock(mode=diagnose)"""
         r = self.harness.send("帮我看看 000001")
-        calls = r["tool_calls"]
-        tool_names = [tc["name"] for tc in calls]
+        tool_names = [tc["name"] for tc in r["tool_calls"]]
         assert "analyze_stock" in tool_names, f"Expected analyze_stock tool, got: {tool_names}"
-        diag_call = next(tc for tc in calls if tc["name"] == "analyze_stock")
-        assert diag_call["args"].get("mode", "diagnose") == "diagnose", (
-            f"Expected diagnose mode, got: {diag_call['args']}"
-        )
+        diag_call = next(tc for tc in r["tool_calls"] if tc["name"] == "analyze_stock")
+        assert diag_call["args"].get("mode", "diagnose") == "diagnose"
         print(f"[OK] Tool calls: {tool_names}")
 
     def test_market_routes_to_market_overview(self):
@@ -347,11 +297,10 @@ class TestChatAgentRouting:
     def test_price_routes_to_analyze_stock(self):
         """'600519 最近走势' → 应调 analyze_stock(mode=price)"""
         r = self.harness.send("600519 最近走势怎么样")
-        calls = r["tool_calls"]
-        tool_names = [tc["name"] for tc in calls]
+        tool_names = [tc["name"] for tc in r["tool_calls"]]
         assert "analyze_stock" in tool_names, f"Expected analyze_stock tool, got: {tool_names}"
-        price_call = next(tc for tc in calls if tc["name"] == "analyze_stock")
-        assert price_call["args"].get("mode") == "price", f"Expected price mode, got: {price_call['args']}"
+        price_call = next(tc for tc in r["tool_calls"] if tc["name"] == "analyze_stock")
+        assert price_call["args"].get("mode") == "price"
         print(f"[OK] Tool calls: {tool_names}")
 
 
@@ -362,10 +311,8 @@ class TestChatAgentPersona:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.harness = AgentTestHarness(
-            api_key=_api_key,
-            model=_model,
-            provider=_provider,
-            base_url=_base_url,
+            api_key=_api_key, model=_model,
+            provider=_provider, base_url=_base_url,
         )
 
     def test_wyckoff_persona_in_diagnose(self):
@@ -373,26 +320,9 @@ class TestChatAgentPersona:
         r = self.harness.send("帮我看看 000001")
         resp = r["response"]
         # 应包含至少一个威科夫/供需相关关键词
-        wyckoff_keywords = [
-            "吸筹",
-            "派发",
-            "主力",
-            "供需",
-            "综合人",
-            "Composite",
-            "SOS",
-            "Spring",
-            "LPS",
-            "Phase",
-            "支撑",
-            "阻力",
-            "量价",
-            "威科夫",
-            "Wyckoff",
-            "筹码",
-            "多头",
-            "空头",
-        ]
+        wyckoff_keywords = ["吸筹", "派发", "主力", "供需", "综合人", "Composite",
+                            "SOS", "Spring", "LPS", "Phase", "支撑", "阻力",
+                            "量价", "威科夫", "Wyckoff", "筹码", "多头", "空头"]
         found = [kw for kw in wyckoff_keywords if kw in resp]
         assert len(found) >= 2, f"Expected wyckoff terminology, found: {found}\nResponse: {resp[:500]}"
         print(f"[OK] Found Wyckoff terms: {found}")
@@ -402,8 +332,8 @@ class TestChatAgentPersona:
         r = self.harness.send("今天大盘水温怎么样")
         resp = r["response"]
         # 简单判断：中文字符占比应显著
-        chinese_chars = sum(1 for ch in resp if "\u4e00" <= ch <= "\u9fff")
-        total_alpha = sum(1 for ch in resp if ch.isalpha() or "\u4e00" <= ch <= "\u9fff")
+        chinese_chars = sum(1 for ch in resp if '\u4e00' <= ch <= '\u9fff')
+        total_alpha = sum(1 for ch in resp if ch.isalpha() or '\u4e00' <= ch <= '\u9fff')
         ratio = chinese_chars / max(total_alpha, 1)
         assert ratio > 0.3, f"Expected Chinese output, ratio={ratio:.2f}\nResponse: {resp[:300]}"
         print(f"[OK] Chinese ratio: {ratio:.2f}")
@@ -431,10 +361,8 @@ if __name__ == "__main__":
     print("=" * 60)
 
     harness = AgentTestHarness(
-        api_key=_api_key,
-        model=_model,
-        provider=_provider,
-        base_url=_base_url,
+        api_key=_api_key, model=_model,
+        provider=_provider, base_url=_base_url,
     )
 
     test_cases = [

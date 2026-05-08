@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 工具注册表 — 复用 agents/chat_tools.py 的 10 个函数，去除 ADK 依赖。
 
@@ -6,13 +7,12 @@
 2. 工具 JSON Schema 手动定义（比自动生成更可控）
 3. 凭证通过 .env 环境变量提供
 """
-
 from __future__ import annotations
 
 import inspect
+import json
 import logging
 import time
-from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -22,15 +22,11 @@ logger = logging.getLogger(__name__)
 # ToolContext shim — 替代 google.adk.tools.ToolContext
 # ---------------------------------------------------------------------------
 
-
 class ToolContext:
-    """最小化 ToolContext shim，提供 .state / .provider / .registry / .on_progress。"""
+    """最小化 ToolContext shim，只提供 .state 属性。"""
 
     def __init__(self, state: dict[str, Any] | None = None):
         self.state = state or {}
-        self.provider = None
-        self.registry = None
-        self.on_progress = None
 
 
 # ---------------------------------------------------------------------------
@@ -68,17 +64,23 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "portfolio",
-        "description": "查看或诊断用户持仓。mode='view' 返回持仓列表和资金；mode='diagnose' 对每只持仓做 Wyckoff 健康诊断。",
+        "name": "diagnose_portfolio",
+        "description": "诊断当前用户所有持仓的健康状况。从 Supabase 加载用户持仓，对每只股票运行 Wyckoff 健康诊断。",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    {
+        "name": "get_stock_price",
+        "description": "获取指定股票的近期行情数据（OHLCV + 涨跌幅）。",
         "parameters": {
             "type": "object",
             "properties": {
-                "mode": {
-                    "type": "string",
-                    "enum": ["view", "diagnose"],
-                    "description": "'view' 仅查看持仓数据；'diagnose' 做持仓诊断",
-                },
+                "code": {"type": "string", "description": "6 位股票代码"},
+                "days": {"type": "integer", "description": "获取天数，默认 30，最大 250"},
             },
+            "required": ["code"],
         },
     },
     {
@@ -126,34 +128,47 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         },
     },
     {
-        "name": "query_history",
-        "description": "查询历史记录：AI 推荐追踪、信号确认池或尾盘买入记录。",
+        "name": "get_recommendation_tracking",
+        "description": "查询最近的 AI 推荐记录及其后续涨跌幅表现。",
         "parameters": {
             "type": "object",
             "properties": {
-                "source": {
-                    "type": "string",
-                    "enum": ["recommendation", "signal", "tail_buy"],
-                    "description": "'recommendation' 推荐追踪；'signal' 信号确认池；'tail_buy' 尾盘买入",
-                },
-                "status": {"type": "string", "description": "仅 signal：'all'/'pending'/'confirmed'/'expired'"},
-                "run_date": {"type": "string", "description": "仅 tail_buy：按日期过滤 YYYY-MM-DD"},
-                "decision": {"type": "string", "description": "仅 tail_buy：按决策过滤 BUY/WATCH"},
-                "limit": {"type": "integer", "description": "返回记录数上限，默认 20"},
+                "limit": {"type": "integer", "description": "返回记录数，默认 20，最大 50"},
             },
-            "required": ["source"],
+        },
+    },
+    {
+        "name": "get_signal_pending",
+        "description": "查询信号确认池（signal_pending）。L4 触发信号经 1-3 天价格确认后变为 confirmed（可操作）或 expired（失效）。",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "筛选状态：'all'（全部）、'pending'（待确认）、'confirmed'（已确认）、'expired'（已过期），默认 'all'",
+                },
+                "limit": {"type": "integer", "description": "返回记录数，默认 30，最大 100"},
+            },
+        },
+    },
+    {
+        "name": "get_portfolio",
+        "description": "查看用户当前持仓列表和可用资金。仅返回原始数据，不做诊断分析。用户问'我有什么持仓''持仓列表'时调用此工具。",
+        "parameters": {
+            "type": "object",
+            "properties": {},
         },
     },
     {
         "name": "update_portfolio",
-        "description": "管理用户持仓或删除追踪记录。操作后返回最新状态。",
+        "description": "管理用户持仓：新增、修改、删除持仓，或设置可用资金。操作后返回最新持仓状态。",
         "parameters": {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["add", "update", "remove", "set_cash", "delete_records"],
-                    "description": "操作类型：add/update/remove/set_cash 管理持仓；delete_records 删除推荐或信号记录",
+                    "enum": ["add", "update", "remove", "set_cash"],
+                    "description": "操作类型：add（新增/加仓）、update（修改持仓信息）、remove（删除持仓）、set_cash（设置可用资金）",
                 },
                 "code": {"type": "string", "description": "6 位股票代码（add/update/remove 时必填）"},
                 "name": {"type": "string", "description": "股票名称（可选）"},
@@ -161,12 +176,6 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
                 "cost_price": {"type": "number", "description": "成本价"},
                 "buy_dt": {"type": "string", "description": "买入日期（YYYYMMDD 格式）"},
                 "free_cash": {"type": "number", "description": "可用资金（set_cash 时使用）"},
-                "table": {"type": "string", "description": "仅 delete_records：'recommendation' 或 'signal'"},
-                "codes": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "仅 delete_records：股票代码列表",
-                },
             },
             "required": ["action"],
         },
@@ -177,59 +186,6 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "parameters": {
             "type": "object",
             "properties": {},
-        },
-    },
-    {
-        "name": "run_backtest",
-        "description": "回测威科夫五层漏斗策略的历史表现。耗时 3-10 分钟，后台执行。用户问'帮我回测''跑个回测'时调用。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "start": {"type": "string", "description": "开始日期 YYYY-MM-DD，默认 6 个月前"},
-                "end": {"type": "string", "description": "结束日期 YYYY-MM-DD，默认昨天"},
-                "hold_days": {"type": "integer", "description": "最大持仓天数（5/10/15/30），默认 10"},
-                "top_n": {"type": "integer", "description": "每日最大候选数，默认 3"},
-                "board": {"type": "string", "description": "股票池：'main_chinext'/'main'/'chinext'/'all'"},
-                "stop_loss_pct": {"type": "number", "description": "止损百分比（负数），默认 -7.0"},
-                "take_profit_pct": {"type": "number", "description": "止盈百分比，默认 18.0"},
-            },
-        },
-    },
-    # ── 委派工具 ──
-    {
-        "name": "delegate_to_research",
-        "description": "委派研究员收集市场数据和情报。用于全市场扫描、信号查询、推荐记录、回测等数据收集任务。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "task": {"type": "string", "description": "研究任务描述"},
-                "context": {"type": "string", "description": "相关上下文信息（如持仓数据、大盘状态）"},
-            },
-            "required": ["task"],
-        },
-    },
-    {
-        "name": "delegate_to_analysis",
-        "description": "委派分析师做深度分析。用于个股诊断、持仓体检、AI 研报等需要 Wyckoff 框架深度分析的任务。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "task": {"type": "string", "description": "分析任务描述"},
-                "context": {"type": "string", "description": "相关上下文信息（如行情数据、大盘状态）"},
-            },
-            "required": ["task"],
-        },
-    },
-    {
-        "name": "delegate_to_trading",
-        "description": "委派交易员做去留决策。用于持仓去留判断、攻防指令、调仓执行等交易决策任务。",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "task": {"type": "string", "description": "交易决策任务描述"},
-                "context": {"type": "string", "description": "相关上下文信息（如持仓列表、诊断结果）"},
-            },
-            "required": ["task"],
         },
     },
     # ── Agent 标准工具 ──
@@ -283,94 +239,51 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
 ]
 
+# 后台执行的长任务工具
+BACKGROUND_TOOLS = {"screen_stocks", "generate_ai_report", "generate_strategy_decision"}
 
-@dataclass(frozen=True)
-class ToolSpec:
-    """Runtime behavior metadata for one tool."""
-
-    name: str
-    display_name: str
-    concurrency_safe: bool = False
-    requires_approval: bool = False
-    background: bool = False
-
-
-# 工具行为元数据：runtime / TUI / 执行器都从这里派生策略。
-TOOL_SPECS: dict[str, ToolSpec] = {
-    "search_stock_by_name": ToolSpec("search_stock_by_name", "搜索股票", concurrency_safe=True),
-    "analyze_stock": ToolSpec("analyze_stock", "个股分析", concurrency_safe=True),
-    "portfolio": ToolSpec("portfolio", "持仓", concurrency_safe=True),
-    "get_market_overview": ToolSpec("get_market_overview", "大盘水温", concurrency_safe=True),
-    "screen_stocks": ToolSpec("screen_stocks", "全市场扫描", background=True),
-    "generate_ai_report": ToolSpec("generate_ai_report", "深度审讯", background=True),
-    "generate_strategy_decision": ToolSpec("generate_strategy_decision", "攻防决策", background=True),
-    "query_history": ToolSpec("query_history", "历史查询", concurrency_safe=True),
-    "update_portfolio": ToolSpec("update_portfolio", "调仓操作", requires_approval=True),
-    "run_backtest": ToolSpec("run_backtest", "回测", background=True),
-    "check_background_tasks": ToolSpec("check_background_tasks", "任务状态"),
-    "exec_command": ToolSpec("exec_command", "执行命令", requires_approval=True),
-    "read_file": ToolSpec("read_file", "读取文件"),
-    "write_file": ToolSpec("write_file", "写入文件", requires_approval=True),
-    "web_fetch": ToolSpec("web_fetch", "抓取网页"),
-    "delegate_to_research": ToolSpec("delegate_to_research", "委派研究员"),
-    "delegate_to_analysis": ToolSpec("delegate_to_analysis", "委派分析师"),
-    "delegate_to_trading": ToolSpec("delegate_to_trading", "委派交易员"),
+# 工具中文显示名，用于终端展示
+TOOL_DISPLAY_NAMES: dict[str, str] = {
+    "search_stock_by_name": "搜索股票",
+    "analyze_stock": "个股分析",
+    "diagnose_stock": "读盘诊断",
+    "diagnose_portfolio": "持仓审判",
+    "get_stock_price": "调取行情",
+    "get_market_overview": "大盘水温",
+    "screen_stocks": "全市场扫描",
+    "generate_ai_report": "深度审讯",
+    "generate_strategy_decision": "攻防决策",
+    "get_recommendation_tracking": "战绩追踪",
+    "get_signal_pending": "信号确认池",
+    "get_portfolio": "查看持仓",
+    "update_portfolio": "调仓操作",
+    "check_background_tasks": "任务状态",
+    "exec_command": "执行命令",
+    "read_file": "读取文件",
+    "write_file": "写入文件",
+    "web_fetch": "抓取网页",
 }
-
-# 兼容旧调用点；新增代码优先使用 ToolSpec / ToolRegistry 方法。
-BACKGROUND_TOOLS = {name for name, spec in TOOL_SPECS.items() if spec.background}
-CONFIRM_TOOLS = {name for name, spec in TOOL_SPECS.items() if spec.requires_approval}
-CONCURRENCY_SAFE_TOOLS = {name for name, spec in TOOL_SPECS.items() if spec.concurrency_safe}
-TOOL_DISPLAY_NAMES: dict[str, str] = {name: spec.display_name for name, spec in TOOL_SPECS.items()}
-
-
-def tool_spec(name: str) -> ToolSpec | None:
-    """Return metadata for a registered tool name."""
-
-    return TOOL_SPECS.get(name)
-
-
-def is_concurrency_safe(name: str) -> bool:
-    """Return whether a tool can safely run in a concurrent batch."""
-
-    spec = tool_spec(name)
-    return bool(spec and spec.concurrency_safe)
 
 
 # ---------------------------------------------------------------------------
 # ToolRegistry — 管理工具注册和执行
 # ---------------------------------------------------------------------------
 
-
 class ToolRegistry:
     """工具注册表：注册、查询 schema、执行工具。"""
 
     def __init__(self, user_id: str = "", access_token: str = "", refresh_token: str = ""):
-        self._tool_context = ToolContext(
-            state={
-                "user_id": user_id,
-                "access_token": access_token,
-                "refresh_token": refresh_token,
-            }
-        )
-        self._tool_context.registry = self
+        self._tool_context = ToolContext(state={
+            "user_id": user_id,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        })
         self._tools = self._register_tools()
         self._bg_manager = None
         self._on_bg_complete = None
-        self._confirm_callback = None
-        self._always_allowed: set[str] = set()
-
-    def set_provider(self, provider):
-        """注入 LLM Provider，供委派工具启动 sub-agent。"""
-        self._tool_context.provider = provider
-
-    def set_confirm_callback(self, callback):
-        """注入确认回调，高风险工具执行前会调用。callback(name, args) -> dict。"""
-        self._confirm_callback = callback
 
     def set_background_manager(self, bg_manager, on_complete=None):
         from cli.background import BackgroundTaskManager
-
         self._bg_manager: BackgroundTaskManager = bg_manager
         self._on_bg_complete = on_complete
 
@@ -382,41 +295,38 @@ class ToolRegistry:
     def _register_tools(self) -> dict[str, callable]:
         """注册所有工具函数。"""
         from agents.chat_tools import (
+            search_stock_by_name,
             analyze_stock,
-            exec_command,
+            diagnose_stock,
+            diagnose_portfolio,
+            get_portfolio,
+            get_stock_price,
+            get_market_overview,
+            screen_stocks,
             generate_ai_report,
             generate_strategy_decision,
-            get_market_overview,
-            portfolio,
-            query_history,
-            read_file,
-            run_backtest,
-            screen_stocks,
-            search_stock_by_name,
+            get_recommendation_tracking,
+            get_signal_pending,
             update_portfolio,
-            web_fetch,
+            exec_command,
+            read_file,
             write_file,
+            web_fetch,
         )
-        from cli.sub_agents import (
-            delegate_to_analysis,
-            delegate_to_research,
-            delegate_to_trading,
-        )
-
         return {
             "search_stock_by_name": search_stock_by_name,
             "analyze_stock": analyze_stock,
-            "portfolio": portfolio,
+            "diagnose_stock": diagnose_stock,
+            "diagnose_portfolio": diagnose_portfolio,
+            "get_portfolio": get_portfolio,
+            "get_stock_price": get_stock_price,
             "get_market_overview": get_market_overview,
             "screen_stocks": screen_stocks,
             "generate_ai_report": generate_ai_report,
             "generate_strategy_decision": generate_strategy_decision,
-            "query_history": query_history,
+            "get_recommendation_tracking": get_recommendation_tracking,
+            "get_signal_pending": get_signal_pending,
             "update_portfolio": update_portfolio,
-            "run_backtest": run_backtest,
-            "delegate_to_research": delegate_to_research,
-            "delegate_to_analysis": delegate_to_analysis,
-            "delegate_to_trading": delegate_to_trading,
             "exec_command": exec_command,
             "read_file": read_file,
             "write_file": write_file,
@@ -439,17 +349,6 @@ class ToolRegistry:
         if fn is None:
             return {"error": f"未知工具: {name}"}
 
-        # 高风险工具确认
-        if self.requires_approval(name) and self._confirm_callback and name not in self._always_allowed:
-            confirm = self._confirm_callback(name, args)
-            action = confirm.get("action", "deny")
-            if action == "deny":
-                return {"error": "用户拒绝执行此操作"}
-            if action == "always":
-                self._always_allowed.add(name)
-            if action == "edit":
-                args = confirm.get("modified_args", args)
-
         # 用副本注入 tool_context，避免污染原始 args（会被序列化进 messages）
         call_args = dict(args)
         sig = inspect.signature(fn)
@@ -457,14 +356,11 @@ class ToolRegistry:
             call_args["tool_context"] = self._tool_context
 
         # 长任务提交后台
-        if self.is_background(name) and self._bg_manager is not None:
-            task_id = f"bg_{time.time_ns()}_{name}"
-            display = self.display_name(name)
+        if name in BACKGROUND_TOOLS and self._bg_manager is not None:
+            task_id = f"bg_{int(time.time())}_{name}"
+            display = TOOL_DISPLAY_NAMES.get(name, name)
             self._bg_manager.submit(
-                task_id,
-                name,
-                fn,
-                call_args,
+                task_id, name, fn, call_args,
                 on_complete=self._on_bg_complete,
             )
             return {
@@ -481,23 +377,4 @@ class ToolRegistry:
 
     def display_name(self, name: str) -> str:
         """返回工具的中文显示名。"""
-        spec = self.spec(name)
-        return spec.display_name if spec else name
-
-    def spec(self, name: str) -> ToolSpec | None:
-        """返回工具行为元数据。"""
-        return tool_spec(name)
-
-    def concurrency_safe(self, name: str) -> bool:
-        """返回工具是否可安全并行执行。"""
-        return is_concurrency_safe(name)
-
-    def requires_approval(self, name: str) -> bool:
-        """返回工具执行前是否需要用户确认。"""
-        spec = self.spec(name)
-        return bool(spec and spec.requires_approval)
-
-    def is_background(self, name: str) -> bool:
-        """返回工具是否应提交后台执行。"""
-        spec = self.spec(name)
-        return bool(spec and spec.background)
+        return TOOL_DISPLAY_NAMES.get(name, name)

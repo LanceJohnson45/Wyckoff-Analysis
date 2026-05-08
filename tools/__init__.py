@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 tools/ -- 可复用 Tool 函数层。
 

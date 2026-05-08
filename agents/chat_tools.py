@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 ADK 工具函数 — 将已有的 Wyckoff 引擎能力暴露给对话 Agent。
 
@@ -7,14 +8,13 @@ ADK 的 FunctionTool 会自动解析为工具 schema。
 用户凭据（API Key / Tushare Token 等）按需从 Supabase 实时获取，
 不依赖 st.session_state 或 os.environ 的长链传递。
 """
-
 from __future__ import annotations
 
 import logging
 import os
 import threading
 import time
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 try:
@@ -24,7 +24,6 @@ except ImportError:
     class ToolContext:  # type: ignore[no-redef]
         def __init__(self, state=None):
             self.state = state or {}
-
 
 logger = logging.getLogger(__name__)
 
@@ -37,59 +36,10 @@ def _code_to_name(code: str) -> str:
     if _NAME_MAP is None:
         try:
             from integrations.fetch_a_share_csv import get_all_stocks
-
             _NAME_MAP = {s["code"]: s["name"] for s in get_all_stocks()}
         except Exception:
             _NAME_MAP = {}
     return _NAME_MAP.get(code, code)
-
-
-def _collect_tickflow_limit_hints_from_df(df: Any) -> list[str]:
-    if df is None or not hasattr(df, "attrs"):
-        return []
-    attrs = getattr(df, "attrs", {}) or {}
-    hints = attrs.get("tickflow_limit_hints")
-    if isinstance(hints, list):
-        out: list[str] = []
-        for item in hints:
-            text = str(item or "").strip()
-            if text and text not in out:
-                out.append(text)
-        if out:
-            return out
-    one = str(attrs.get("tickflow_limit_hint", "") or "").strip()
-    return [one] if one else []
-
-
-def _hist_metadata(df: Any) -> dict[str, Any]:
-    """Return compact provenance metadata for model-facing tool results."""
-    if df is None or not hasattr(df, "attrs"):
-        return {}
-    attrs = getattr(df, "attrs", {}) or {}
-    meta: dict[str, Any] = {}
-    for key in ("source", "upstream_source", "cache_status", "cached_until"):
-        val = str(attrs.get(key, "") or "").strip()
-        if val:
-            meta[key] = val
-    upstream_sources = attrs.get("upstream_sources")
-    if isinstance(upstream_sources, list):
-        clean = [str(x) for x in upstream_sources if str(x or "").strip()]
-        if clean:
-            meta["upstream_sources"] = clean
-    try:
-        meta["row_count"] = int(len(df))
-    except Exception:
-        pass
-    return meta
-
-
-def _latest_hist_date(df: Any, date_col: str = "date") -> str:
-    if df is None or not hasattr(df, "empty") or df.empty:
-        return ""
-    try:
-        return str(df.iloc[-1].get(date_col, "") or "")
-    except Exception:
-        return ""
 
 
 # ---------------------------------------------------------------------------
@@ -118,7 +68,6 @@ def _load_user_credentials(user_id: str) -> dict[str, Any]:
 
     try:
         from integrations.supabase_portfolio import load_user_settings_admin
-
         row = load_user_settings_admin(user_id) or {}
     except Exception as e:
         logger.warning("_load_user_credentials failed for %s: %s", user_id, e)
@@ -130,23 +79,13 @@ def _load_user_credentials(user_id: str) -> dict[str, Any]:
     return row
 
 
-_LOCAL_USER_ID = "local"
-
-
 def _get_user_id(tool_context: ToolContext | None = None) -> str:
-    """从 tool_context 获取 user_id，未登录时降级为本地用户。"""
+    """从 ADK tool_context 的 session state 获取 user_id。"""
     if tool_context is not None:
         uid = tool_context.state.get("user_id", "")
         if uid:
             return str(uid)
-    return _LOCAL_USER_ID
-
-
-def _has_cloud(tool_context: ToolContext | None) -> bool:
-    """判断是否有 Supabase 云端写入能力。"""
-    if not tool_context:
-        return False
-    return bool(tool_context.state.get("access_token", ""))
+    return ""
 
 
 def _get_credential(tool_context: ToolContext | None, key: str, env_fallback: str = "") -> str:
@@ -167,7 +106,6 @@ def _get_credential(tool_context: ToolContext | None, key: str, env_fallback: st
     # 第二层：wyckoff.json 本地配置
     try:
         from cli.auth import load_config
-
         local_val = str(load_config().get(key, "") or "").strip()
         if local_val:
             return local_val
@@ -177,31 +115,6 @@ def _get_credential(tool_context: ToolContext | None, key: str, env_fallback: st
     if env_fallback:
         return os.getenv(env_fallback, "").strip()
     return ""
-
-
-def _resolve_llm_config(tool_context) -> tuple[str, str, str, str]:
-    """解析用户配置的 LLM 凭据：(provider, api_key, model, base_url)。
-
-    优先读 CLI 默认模型配置，其次 Supabase/env gemini 兜底。
-    """
-    try:
-        from cli.auth import load_default_model_id, load_model_configs
-
-        configs = load_model_configs()
-        default_id = load_default_model_id()
-        cfg = next((c for c in configs if c["id"] == default_id), None)
-        if cfg and cfg.get("api_key"):
-            prov = cfg.get("provider_name", "openai")
-            from integrations.llm_client import OPENAI_COMPATIBLE_BASE_URLS
-
-            base = cfg.get("base_url", "") or OPENAI_COMPATIBLE_BASE_URLS.get(prov, "")
-            return prov, cfg["api_key"], cfg.get("model", ""), base
-    except Exception:
-        pass
-    api_key = _get_credential(tool_context, "gemini_api_key", "GEMINI_API_KEY")
-    model = _get_credential(tool_context, "gemini_model", "GEMINI_MODEL") or "gemini-2.0-flash"
-    base_url = _get_credential(tool_context, "gemini_base_url", "")
-    return "gemini", api_key, model, base_url
 
 
 def _ensure_tushare_token(tool_context: ToolContext | None) -> None:
@@ -219,7 +132,6 @@ def _ensure_tushare_token(tool_context: ToolContext | None) -> None:
 # Tool 1: 股票搜索
 # ---------------------------------------------------------------------------
 
-
 def search_stock_by_name(keyword: str, tool_context: ToolContext) -> list[dict]:
     """根据关键词搜索 A 股股票，支持名称和代码双向模糊搜索。
 
@@ -227,7 +139,7 @@ def search_stock_by_name(keyword: str, tool_context: ToolContext) -> list[dict]:
         keyword: 搜索关键词，如 "宁德" 或 "300750" 或 "600519"
 
     Returns:
-        匹配的股票列表，每项包含 code、name、price、pct_chg、market_cap、news 字段。最多返回 10 条。
+        匹配的股票列表，每项包含 code、name 字段。最多返回 10 条。
     """
     try:
         from integrations.fetch_a_share_csv import get_all_stocks
@@ -246,134 +158,47 @@ def search_stock_by_name(keyword: str, tool_context: ToolContext) -> list[dict]:
                 if len(results) >= 10:
                     break
 
-        if not results:
-            return [{"message": f"未找到与 '{kw}' 匹配的股票"}]
-
-        _enrich_search_results(results[:3])
-        return results
+        return results if results else [{"message": f"未找到与 '{kw}' 匹配的股票"}]
     except Exception as e:
         logger.exception("search_stock_by_name error")
         return [{"error": str(e)}]
 
 
-def _enrich_search_results(items: list[dict]) -> None:
-    """为搜索结果前几条附加行情、市值、新闻。"""
-    from datetime import datetime
-
-    try:
-        from integrations.data_source import fetch_stock_spot_snapshot
-    except Exception:
-        fetch_stock_spot_snapshot = None  # type: ignore[assignment]
-
-    cap_map: dict[str, float] = {}
-    try:
-        from integrations.data_source import fetch_market_cap_map
-
-        cap_map = fetch_market_cap_map()
-    except Exception:
-        pass
-
-    for item in items:
-        code = item["code"]
-        if fetch_stock_spot_snapshot:
-            try:
-                snap = fetch_stock_spot_snapshot(code)
-                if snap:
-                    item["price"] = snap.get("close")
-                    item["pct_chg"] = snap.get("pct_chg")
-            except Exception:
-                pass
-        if cap_map:
-            item["market_cap_yi"] = cap_map.get(code)
-        try:
-            import akshare as ak
-            import pandas as pd
-
-            df = ak.stock_news_em(symbol=code)
-            cutoff = datetime.now() - timedelta(days=7)
-            df["发布时间"] = pd.to_datetime(df["发布时间"])
-            recent = df[df["发布时间"] >= cutoff]
-            item["news"] = recent["新闻标题"].head(5).tolist()
-        except Exception:
-            item["news"] = []
-
-
 # ---------------------------------------------------------------------------
-# Tool 2: 个股分析（合并原 diagnose_stock + get_stock_price）
+# Tool 2: 个股诊断
 # ---------------------------------------------------------------------------
 
+def diagnose_stock(code: str, cost: float = 0.0, tool_context: ToolContext = None) -> dict:
+    """对单只 A 股股票做 Wyckoff 结构化健康诊断。
 
-def analyze_stock(
-    code: str, mode: str = "diagnose", cost: float = 0.0, days: int = 30, tool_context: ToolContext = None
-) -> dict:
-    """分析单只 A 股股票：Wyckoff 健康诊断或近期行情查询。
+    诊断内容包括：均线结构、L2 通道分类、吸筹阶段、L4 触发信号（SOS/Spring/LPS/EVR）、
+    退出信号、止损状态、量能与振幅等。
 
     Args:
         code: 6 位股票代码，如 "000001" 或 "600519"
-        mode: "diagnose" 做 Wyckoff 结构化健康诊断；"price" 仅返回近期 OHLCV 行情数据
-        cost: 持仓成本价，仅 diagnose 模式使用，默认 0 表示未持仓
-        days: 获取天数，仅 price 模式使用，默认 30，最大 250
+        cost: 持仓成本价，默认 0 表示未持仓，仅做技术面诊断
 
     Returns:
-        诊断结果或行情数据 dict。
+        结构化诊断结果 dict。
     """
     try:
         _ensure_tushare_token(tool_context)
-        from core.stock_cache import _COL_MAP
         from integrations.stock_hist_repository import get_stock_hist
-
-        mode = (mode or "diagnose").strip().lower()
-        if mode not in ("diagnose", "price"):
-            return {"error": f"mode 参数无效: '{mode}'，可选值: diagnose, price"}
-        end_date = date.today()
-
-        if mode == "price":
-            days = min(max(days, 1), 250)
-            start_date = end_date - timedelta(days=int(days * 1.6))
-            df = get_stock_hist(code, start_date, end_date)
-            if df is None or df.empty:
-                return {"error": f"无法获取 {code} 的行情数据"}
-            hist_hints = _collect_tickflow_limit_hints_from_df(df)
-            hist_meta = _hist_metadata(df)
-            df = df.rename(columns=_COL_MAP)
-            df = df.tail(days)
-            latest = df.iloc[-1] if len(df) > 0 else {}
-            records = []
-            for _, row in df.iterrows():
-                records.append(
-                    {
-                        "date": str(row.get("date", "")),
-                        "open": round(float(row.get("open", 0)), 2),
-                        "high": round(float(row.get("high", 0)), 2),
-                        "low": round(float(row.get("low", 0)), 2),
-                        "close": round(float(row.get("close", 0)), 2),
-                        "volume": int(row.get("volume", 0)),
-                        "pct_chg": round(float(row.get("pct_chg", 0)), 2),
-                    }
-                )
-            return {
-                "code": code,
-                "days": len(records),
-                "latest_close": round(float(latest.get("close", 0)), 2),
-                "latest_date": str(latest.get("date", "")),
-                "data_status": "ok",
-                **hist_meta,
-                "data": records,
-                **({"tickflow_limit_hint": hist_hints[0]} if hist_hints else {}),
-            }
-
-        # mode == "diagnose"
         from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
 
+        # 拉取 320 个交易日数据（Supabase 缓存优先）
+        end_date = date.today()
         start_date = end_date - timedelta(days=500)
         df = get_stock_hist(code, start_date, end_date)
+
         if df is None or df.empty:
             return {"error": f"无法获取 {code} 的行情数据"}
-        hist_hints = _collect_tickflow_limit_hints_from_df(df)
-        hist_meta = _hist_metadata(df)
-        latest_date = _latest_hist_date(df, "日期")
+
+        from core.stock_cache import _COL_MAP
         df = df.rename(columns=_COL_MAP)
+
         name = _code_to_name(code)
+
         d = diagnose_one_stock(code, name, cost, df)
         text = format_diagnostic_text(d)
         return {
@@ -397,103 +222,47 @@ def analyze_stock(
             "from_year_low_pct": round(d.from_year_low_pct, 1),
             "health_reasons": d.health_reasons,
             "formatted_text": text,
-            "data_status": "ok",
-            "latest_date": latest_date or _latest_hist_date(df),
-            **hist_meta,
-            **({"tickflow_limit_hint": hist_hints[0]} if hist_hints else {}),
         }
     except Exception as e:
-        logger.exception("analyze_stock error")
+        logger.exception("diagnose_stock error")
         return {"error": str(e)}
 
 
 # ---------------------------------------------------------------------------
-# Tool 3: 持仓（合并原 get_portfolio + diagnose_portfolio）
+# Tool 3: 持仓诊断
 # ---------------------------------------------------------------------------
 
+def diagnose_portfolio(tool_context: ToolContext) -> dict:
+    """诊断当前用户所有持仓的健康状况。
 
-def portfolio(mode: str = "view", tool_context: ToolContext = None) -> dict:
-    """查看或诊断用户当前持仓。
-
-    Args:
-        mode: "view" 仅返回持仓列表和可用资金；"diagnose" 对每只持仓做 Wyckoff 健康诊断
+    从 Supabase 加载用户持仓，对每只股票运行 Wyckoff 健康诊断。
 
     Returns:
-        持仓数据或诊断结果。
+        包含所有持仓诊断结果的 dict。
     """
     try:
-        from integrations.supabase_portfolio import build_user_live_portfolio_id
+        _ensure_tushare_token(tool_context)
+        from integrations.stock_hist_repository import get_stock_hist
+        from integrations.supabase_portfolio import (
+            load_portfolio_state,
+            build_user_live_portfolio_id,
+        )
+        from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
 
         user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未登录，请先执行 /login"}
+
         portfolio_id = build_user_live_portfolio_id(user_id)
-        state = None
+        logger.info("diagnose_portfolio: user_id=%s, portfolio_id=%s", user_id, portfolio_id)
 
-        # local-first
-        try:
-            from integrations.local_db import load_portfolio
-
-            state = load_portfolio(portfolio_id)
-        except Exception:
-            pass
-
-        if state is None and _has_cloud(tool_context):
-            from integrations.supabase_portfolio import load_portfolio_state
-
-            _client = _get_user_client(tool_context)
-            state = _with_auth_retry(tool_context, load_portfolio_state, portfolio_id, client=_client)
-            if state:
-                try:
-                    from integrations.local_db import save_portfolio
-
-                    save_portfolio(
-                        portfolio_id,
-                        float(state.get("free_cash", 0) or 0),
-                        [
-                            {
-                                "code": p.get("code", ""),
-                                "name": p.get("name", ""),
-                                "shares": p.get("shares", 0),
-                                "cost_price": p.get("cost", p.get("cost_price", 0)),
-                                "buy_dt": p.get("buy_dt", ""),
-                                "stop_loss": p.get("stop_loss"),
-                            }
-                            for p in state.get("positions", [])
-                        ],
-                    )
-                except Exception:
-                    pass
-
+        _user_client = _get_user_client(tool_context)
+        state = load_portfolio_state(portfolio_id, client=_user_client)
         if state is None:
-            return {"message": "未找到持仓记录，可通过 update_portfolio 添加", "positions": [], "free_cash": 0}
-
-        mode = (mode or "view").strip().lower()
-        if mode not in ("view", "diagnose"):
-            return {"error": f"mode 参数无效: '{mode}'，可选值: view, diagnose"}
-
-        if mode == "view":
-            positions = []
-            for p in state.get("positions", []):
-                positions.append(
-                    {
-                        "code": p.get("code", ""),
-                        "name": p.get("name", ""),
-                        "shares": p.get("shares", 0),
-                        "cost_price": p.get("cost", p.get("cost_price", 0)),
-                        "buy_dt": p.get("buy_dt", ""),
-                    }
-                )
-            return {
-                "portfolio_id": portfolio_id,
-                "free_cash": state.get("free_cash", 0),
-                "position_count": len(positions),
-                "positions": positions,
-            }
-
-        # mode == "diagnose"
-        _ensure_tushare_token(tool_context)
-        from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
-        from integrations.stock_hist_repository import get_stock_hist
-
+            from integrations.supabase_portfolio import is_supabase_configured
+            if not is_supabase_configured():
+                return {"error": "Supabase 未配置（缺少 SUPABASE_URL/KEY 环境变量）"}
+            return {"error": f"未找到持仓记录 (portfolio_id={portfolio_id})，请确认 Web 端已录入持仓"}
         if not state.get("positions"):
             return {
                 "message": "持仓记录存在但无头寸",
@@ -505,69 +274,192 @@ def portfolio(mode: str = "view", tool_context: ToolContext = None) -> dict:
         end_date = date.today()
         start_date = end_date - timedelta(days=500)
         results = []
-        hist_tickflow_hints: list[str] = []
-        successful_count = 0
-        failed_count = 0
         for pos in state["positions"]:
-            pos_code = pos.get("code", "") or pos.get("code", "")
-            pos_name = pos.get("name", pos_code)
-            pos_cost = float(pos.get("cost", pos.get("cost_price", 0)) or 0)
+            code = pos["code"]
+            name = pos.get("name", code)
+            cost = float(pos.get("cost", 0))
             try:
-                df = get_stock_hist(pos_code, start_date, end_date)
+                df = get_stock_hist(code, start_date, end_date)
                 if df is None or df.empty:
-                    failed_count += 1
-                    results.append({"code": pos_code, "name": pos_name, "error": "无行情数据"})
+                    results.append({"code": code, "name": name, "error": "无行情数据"})
                     continue
-                hist_meta = _hist_metadata(df)
-                latest_date = _latest_hist_date(df, "日期")
-                for hint in _collect_tickflow_limit_hints_from_df(df):
-                    if hint not in hist_tickflow_hints:
-                        hist_tickflow_hints.append(hint)
                 from core.stock_cache import _COL_MAP
-
                 df = df.rename(columns=_COL_MAP)
-                d = diagnose_one_stock(pos_code, pos_name, pos_cost, df)
-                successful_count += 1
-                results.append(
-                    {
-                        "code": d.code,
-                        "name": d.name,
-                        "health": d.health,
-                        "pnl_pct": round(d.pnl_pct, 2),
-                        "latest_close": d.latest_close,
-                        "l2_channel": d.l2_channel,
-                        "l4_triggers": d.l4_triggers,
-                        "health_reasons": d.health_reasons,
-                        "formatted_text": format_diagnostic_text(d),
-                        "data_status": "ok",
-                        "latest_date": latest_date or _latest_hist_date(df),
-                        **hist_meta,
-                    }
-                )
+                d = diagnose_one_stock(code, name, cost, df)
+                results.append({
+                    "code": d.code,
+                    "name": d.name,
+                    "health": d.health,
+                    "pnl_pct": round(d.pnl_pct, 2),
+                    "latest_close": d.latest_close,
+                    "l2_channel": d.l2_channel,
+                    "l4_triggers": d.l4_triggers,
+                    "health_reasons": d.health_reasons,
+                    "formatted_text": format_diagnostic_text(d),
+                })
             except Exception as e:
-                failed_count += 1
-                results.append({"code": pos_code, "name": pos_name, "error": str(e)})
+                results.append({"code": code, "name": name, "error": str(e)})
+
+        # ── 盘中信号增强（需要 TickFlow） ──
+        intraday_signals: list[dict] = []
+        tickflow_hint = ""
+        tickflow_key = _get_credential(tool_context, "tickflow_api_key", "TICKFLOW_API_KEY")
+        if tickflow_key:
+            try:
+                from integrations.tickflow_client import TickFlowClient, normalize_cn_symbol
+                from core.intraday_sell_signals import PositionSnapshot, scan_position
+
+                tf = TickFlowClient(api_key=tickflow_key)
+                codes = [p["code"] for p in state["positions"]]
+                quotes = tf.get_quotes(codes)
+                for pos in state["positions"]:
+                    sym = normalize_cn_symbol(pos["code"])
+                    q = quotes.get(sym)
+                    if not q:
+                        continue
+                    snap = PositionSnapshot(
+                        code=pos["code"],
+                        name=pos.get("name", pos["code"]),
+                        cost=float(pos.get("cost", 0)),
+                        shares=int(pos.get("shares", 0)),
+                        stop_loss=pos.get("stop_loss"),
+                        current_price=float(q.get("close", 0) or q.get("last", 0) or 0),
+                        open_price=float(q.get("open", 0) or 0),
+                        prev_close=float(q.get("prev_close", 0) or q.get("preClose", 0) or 0),
+                    )
+                    # 获取分钟K线
+                    df_1m = df_5m = None
+                    yday_vol = 0.0
+                    try:
+                        df_d = tf.get_klines(sym, period="1d", count=2, intraday=False)
+                        if df_d is not None and len(df_d) >= 2:
+                            yday_vol = float(df_d.iloc[-2]["volume"])
+                    except Exception:
+                        pass
+                    try:
+                        df_1m = tf.get_intraday(sym, period="1m", count=500)
+                    except Exception:
+                        pass
+                    try:
+                        df_5m = tf.get_intraday(sym, period="5m", count=500)
+                    except Exception:
+                        pass
+                    from datetime import datetime as _dt
+                    from zoneinfo import ZoneInfo as _ZI
+                    check_gap = _dt.now(_ZI("Asia/Shanghai")).hour < 12
+                    sigs = scan_position(snap, df_1m, df_5m, yday_vol, check_gap=check_gap)
+                    for s in sigs:
+                        intraday_signals.append({
+                            "code": s.code, "name": s.name,
+                            "signal_type": s.signal_type,
+                            "severity": s.severity,
+                            "detail": s.detail,
+                        })
+            except Exception as e:
+                logger.warning("盘中信号增强失败: %s", e)
+        else:
+            tickflow_hint = "盘中实时信号（止损穿破/跳空低开/放量滞涨/VWAP破位）需要 TickFlow 数据源，购买链接: https://tickflow.org/auth/register?ref=5N4NKTCPL4"
 
         result = {
             "portfolio_id": portfolio_id,
             "free_cash": state.get("free_cash", 0),
             "position_count": len(state["positions"]),
-            "successful_count": successful_count,
-            "failed_count": failed_count,
             "diagnostics": results,
         }
-        if hist_tickflow_hints:
-            result["tickflow_limit_hint"] = hist_tickflow_hints[0]
+        if intraday_signals:
+            result["intraday_signals"] = intraday_signals
+        if tickflow_hint:
+            result["tickflow_hint"] = tickflow_hint
         return result
     except Exception as e:
-        logger.exception("portfolio error")
+        logger.exception("diagnose_portfolio error")
         return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 4: 行情查询
+# ---------------------------------------------------------------------------
+
+def get_stock_price(code: str, days: int = 30, tool_context: ToolContext = None) -> dict:
+    """获取指定股票的近期行情数据（OHLCV）。
+
+    Args:
+        code: 6 位股票代码，如 "000001"
+        days: 获取天数，默认 30，最大 250
+
+    Returns:
+        包含最近 N 天 OHLCV 数据的 dict。
+    """
+    try:
+        _ensure_tushare_token(tool_context)
+        from integrations.stock_hist_repository import get_stock_hist
+
+        days = min(max(days, 1), 250)
+        end_date = date.today()
+        start_date = end_date - timedelta(days=int(days * 1.6))
+        df = get_stock_hist(code, start_date, end_date)
+
+        if df is None or df.empty:
+            return {"error": f"无法获取 {code} 的行情数据"}
+
+        from core.stock_cache import _COL_MAP
+        df = df.rename(columns=_COL_MAP)
+        df = df.tail(days)
+
+        latest = df.iloc[-1] if len(df) > 0 else {}
+        records = []
+        for _, row in df.iterrows():
+            records.append({
+                "date": str(row.get("date", "")),
+                "open": round(float(row.get("open", 0)), 2),
+                "high": round(float(row.get("high", 0)), 2),
+                "low": round(float(row.get("low", 0)), 2),
+                "close": round(float(row.get("close", 0)), 2),
+                "volume": int(row.get("volume", 0)),
+                "pct_chg": round(float(row.get("pct_chg", 0)), 2),
+            })
+
+        return {
+            "code": code,
+            "days": len(records),
+            "latest_close": round(float(latest.get("close", 0)), 2),
+            "latest_date": str(latest.get("date", "")),
+            "data": records,
+        }
+    except Exception as e:
+        logger.exception("get_stock_price error")
+        return {"error": str(e)}
+
+
+def analyze_stock(
+    code: str,
+    mode: str = "diagnose",
+    cost: float = 0.0,
+    days: int = 30,
+    tool_context: ToolContext = None,
+) -> dict:
+    """分析单只 A 股股票：统一承接读盘诊断和近期行情查询。
+
+    Args:
+        code: 6 位股票代码，如 "000001" 或 "600519"
+        mode: "diagnose" 做 Wyckoff 结构化诊断；"price" 返回近期 OHLCV 行情
+        cost: 持仓成本价，仅 diagnose 模式使用，默认 0 表示未持仓
+        days: 获取天数，仅 price 模式使用，默认 30，最大 250
+
+    Returns:
+        诊断结果或行情数据 dict。
+    """
+    mode = (mode or "diagnose").strip().lower()
+    if mode == "diagnose":
+        return diagnose_stock(code=code, cost=cost, tool_context=tool_context)
+    if mode == "price":
+        return get_stock_price(code=code, days=days, tool_context=tool_context)
+    return {"error": f"mode 参数无效: '{mode}'，可选值: diagnose, price"}
 
 
 # ---------------------------------------------------------------------------
 # Tool 5: 大盘概览
 # ---------------------------------------------------------------------------
-
 
 def get_market_overview(tool_context: ToolContext) -> dict:
     """获取当前 A 股大盘环境概览。
@@ -730,19 +622,14 @@ def screen_stocks(board: str = "all", tool_context: ToolContext = None) -> dict:
         # 保存并设置环境变量（调用后恢复）
         prev_mode = os.environ.get("FUNNEL_POOL_MODE")
         prev_board = os.environ.get("FUNNEL_POOL_BOARD")
-        prev_exec = os.environ.get("FUNNEL_EXECUTOR_MODE")
         os.environ["FUNNEL_POOL_MODE"] = "board"
         os.environ["FUNNEL_POOL_BOARD"] = board
-        # CLI 后台线程中 fork 子进程会触发 Python 3.13+ fds_to_keep 错误，强制用 thread
-        os.environ["FUNNEL_EXECUTOR_MODE"] = "thread"
 
         from core.funnel_pipeline import run_funnel
 
         try:
             ok, symbols, bench_ctx, details = run_funnel(
-                "",
-                notify=False,
-                return_details=True,
+                "", notify=False, return_details=True,
             )
         finally:
             # 恢复环境变量，避免影响后续调用
@@ -754,10 +641,6 @@ def screen_stocks(board: str = "all", tool_context: ToolContext = None) -> dict:
                 os.environ.pop("FUNNEL_POOL_BOARD", None)
             else:
                 os.environ["FUNNEL_POOL_BOARD"] = prev_board
-            if prev_exec is None:
-                os.environ.pop("FUNNEL_EXECUTOR_MODE", None)
-            else:
-                os.environ["FUNNEL_EXECUTOR_MODE"] = prev_exec
 
         metrics = details.get("metrics") or {}
         triggers = details.get("triggers") or {}
@@ -795,7 +678,6 @@ def screen_stocks(board: str = "all", tool_context: ToolContext = None) -> dict:
 # Tool 7: AI 研报生成
 # ---------------------------------------------------------------------------
 
-
 def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dict:
     """对指定股票列表生成威科夫三阵营 AI 深度研报。
 
@@ -804,7 +686,7 @@ def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dic
     - 储备营地 (Building Cause)
     - 起跳板 (On the Springboard)
 
-    需要配置大模型 API Key 才能使用。
+    需要配置 Gemini API Key 才能使用。
 
     Args:
         stock_codes: 股票代码列表，如 ["000001", "600519", "300750"]，最多 10 只
@@ -819,9 +701,12 @@ def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dic
         if len(stock_codes) > 10:
             stock_codes = stock_codes[:10]
 
-        provider, api_key, model, base_url = _resolve_llm_config(tool_context)
+        # 从 Supabase 获取 Gemini 凭据，兜底环境变量
+        api_key = _get_credential(tool_context, "gemini_api_key", "GEMINI_API_KEY")
+        model = _get_credential(tool_context, "gemini_model", "GEMINI_MODEL") or "gemini-2.0-flash"
+        base_url = _get_credential(tool_context, "gemini_base_url", "")
         if not api_key:
-            return {"error": "未配置 LLM API Key，无法生成 AI 研报。请通过 /model 或设置页面配置。"}
+            return {"error": "未配置 Gemini API Key，无法生成 AI 研报。请在设置页面配置。"}
 
         # 构建 symbols_info 格式
         symbols_info = []
@@ -839,7 +724,7 @@ def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dic
             model=model,
             benchmark_context=None,
             notify=False,
-            provider=provider,
+            provider="gemini",
             llm_base_url=base_url,
         )
 
@@ -859,7 +744,6 @@ def generate_ai_report(stock_codes: list[str], tool_context: ToolContext) -> dic
 # Tool 8: 持仓策略决策
 # ---------------------------------------------------------------------------
 
-
 def generate_strategy_decision(tool_context: ToolContext) -> dict:
     """生成持仓去留决策和新标的买入策略（需要先运行筛选和研报）。
 
@@ -867,7 +751,7 @@ def generate_strategy_decision(tool_context: ToolContext) -> dict:
     - 现有持仓的去留决策（EXIT/TRIM/HOLD）
     - 外部候选的买入建议（PROBE/ATTACK）
 
-    需要配置大模型 API Key 和持仓数据。
+    需要配置 Gemini API Key 和持仓数据。
 
     Returns:
         策略决策结果 dict。
@@ -875,11 +759,17 @@ def generate_strategy_decision(tool_context: ToolContext) -> dict:
     try:
         _ensure_tushare_token(tool_context)
 
-        provider, api_key, model, base_url = _resolve_llm_config(tool_context)
+        # 从 Supabase 获取 Gemini 凭据
+        api_key = _get_credential(tool_context, "gemini_api_key", "GEMINI_API_KEY")
+        model = _get_credential(tool_context, "gemini_model", "GEMINI_MODEL") or "gemini-2.0-flash"
+        base_url = _get_credential(tool_context, "gemini_base_url", "")
         if not api_key:
-            return {"error": "未配置 LLM API Key，无法生成策略决策。请通过 /model 或设置页面配置。"}
+            return {"error": "未配置 Gemini API Key，无法生成策略决策。请在设置页面配置。"}
 
         user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未找到用户 ID，无法加载持仓进行策略分析"}
+
         from integrations.supabase_portfolio import build_user_live_portfolio_id
 
         portfolio_id = build_user_live_portfolio_id(user_id)
@@ -903,7 +793,7 @@ def generate_strategy_decision(tool_context: ToolContext) -> dict:
                 model=model,
                 benchmark_context=None,
                 notify=False,
-                provider=provider,
+                provider="gemini",
                 llm_base_url=base_url,
             )
 
@@ -941,57 +831,30 @@ def generate_strategy_decision(tool_context: ToolContext) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Tool 5: 历史记录查询（合并原 recommendation / signal / tail_buy）
+# Tool 9: 推荐跟踪查询
 # ---------------------------------------------------------------------------
 
+def get_recommendation_tracking(limit: int = 20) -> dict:
+    """查询最近的 AI 推荐记录及其跟踪表现。
 
-def query_history(source: str, status: str = "all", run_date: str = "", decision: str = "", limit: int = 20) -> dict:
-    """查询历史记录：AI 推荐追踪、信号确认池或尾盘买入记录。
+    返回历史推荐的股票及其后续涨跌幅表现。
 
     Args:
-        source: "recommendation" 查推荐追踪；"signal" 查信号确认池；"tail_buy" 查尾盘买入记录
-        status: 仅 signal 源使用，"all"/"pending"/"confirmed"/"expired"
-        run_date: 仅 tail_buy 源使用，按日期过滤（YYYY-MM-DD）
-        decision: 仅 tail_buy 源使用，按决策过滤（BUY/WATCH 等）
-        limit: 返回记录数上限，默认 20
+        limit: 返回记录数，默认 20，最大 50
 
     Returns:
-        对应来源的历史记录列表。
+        推荐跟踪记录列表。
     """
-    source = (source or "").strip().lower()
-    if source == "recommendation":
-        return _query_recommendation(limit)
-    elif source == "signal":
-        return _query_signal(status, limit)
-    elif source == "tail_buy":
-        return _query_tail_buy(run_date, decision, limit)
-    else:
-        return {"error": f"不支持的 source：{source}，请用 'recommendation'、'signal' 或 'tail_buy'"}
-
-
-def _query_recommendation(limit: int) -> dict:
     try:
+        from integrations.supabase_recommendation import load_recommendation_tracking
+
         limit = min(max(limit, 1), 50)
-        records = []
-        try:
-            from integrations.local_db import load_recommendations
+        records = load_recommendation_tracking(limit=limit)
 
-            records = load_recommendations(limit=limit)
-        except Exception:
-            pass
-        if not records:
-            from integrations.supabase_recommendation import load_recommendation_tracking
-
-            records = load_recommendation_tracking(limit=limit)
-            if records:
-                try:
-                    from integrations.local_db import save_recommendations
-
-                    save_recommendations(records)
-                except Exception:
-                    pass
         if not records:
             return {"message": "暂无推荐跟踪记录", "records": []}
+
+        # 简化返回格式
         simplified = [
             {
                 "code": str(r.get("code", "")),
@@ -1006,44 +869,53 @@ def _query_recommendation(limit: int) -> dict:
             }
             for r in records
         ]
-        return {"total": len(simplified), "records": simplified}
+
+        return {
+            "total": len(simplified),
+            "records": simplified,
+        }
     except Exception as e:
-        logger.exception("query_history(recommendation) error")
+        logger.exception("get_recommendation_tracking error")
         return {"error": str(e)}
 
 
-def _query_signal(status: str, limit: int) -> dict:
+# ---------------------------------------------------------------------------
+# Tool 10: 信号确认池查询
+# ---------------------------------------------------------------------------
+
+def get_signal_pending(status: str = "all", limit: int = 30) -> dict:
+    """查询信号确认池（signal_pending）中的信号状态。
+
+    信号确认系统：L4 触发信号（SOS/Spring/LPS/EVR）先进入 pending 池，
+    经 1-3 天价格行为确认后变为 confirmed（可操作）或 expired（失效）。
+
+    Args:
+        status: 筛选状态，可选 "all"、"pending"、"confirmed"、"expired"，默认 "all"
+        limit: 返回记录数，默认 30，最大 100
+
+    Returns:
+        信号确认池记录列表。
+    """
     try:
+        from integrations.supabase_base import create_admin_client, is_admin_configured
+        from core.constants import TABLE_SIGNAL_PENDING
+
+        if not is_admin_configured():
+            return {"error": "Supabase 未配置，无法查询信号确认池"}
+
         limit = min(max(limit, 1), 100)
-        rows: list[dict] = []
-        try:
-            from integrations.local_db import load_signals
+        client = create_admin_client()
+        query = client.table(TABLE_SIGNAL_PENDING).select("*")
 
-            st = status if status in ("pending", "confirmed", "expired") else None
-            rows = load_signals(status=st, limit=limit)
-        except Exception:
-            pass
-        if not rows:
-            from core.constants import TABLE_SIGNAL_PENDING
-            from integrations.supabase_base import create_admin_client, is_admin_configured
+        if status in ("pending", "confirmed", "expired"):
+            query = query.eq("status", status)
 
-            if not is_admin_configured():
-                return {"error": "本地无缓存且 Supabase 未配置"}
-            client = create_admin_client()
-            query = client.table(TABLE_SIGNAL_PENDING).select("*")
-            if status in ("pending", "confirmed", "expired"):
-                query = query.eq("status", status)
-            rows = query.order("updated_at", desc=True).limit(limit).execute().data or []
-            if rows:
-                try:
-                    from integrations.local_db import save_signals
+        rows = query.order("updated_at", desc=True).limit(limit).execute().data or []
 
-                    save_signals(rows)
-                except Exception:
-                    pass
         if not rows:
             status_label = {"pending": "待确认", "confirmed": "已确认", "expired": "已过期"}.get(status, "")
             return {"message": f"暂无{status_label}信号记录", "records": []}
+
         records = [
             {
                 "code": f"{int(r.get('code', 0)):06d}",
@@ -1063,13 +935,20 @@ def _query_signal(status: str, limit: int) -> dict:
             }
             for r in rows
         ]
-        status_counts: dict[str, int] = {}
+
+        # 统计摘要
+        status_counts = {}
         for rec in records:
             s = rec["status"]
             status_counts[s] = status_counts.get(s, 0) + 1
-        return {"total": len(records), "status_counts": status_counts, "records": records}
+
+        return {
+            "total": len(records),
+            "status_counts": status_counts,
+            "records": records,
+        }
     except Exception as e:
-        logger.exception("query_history(signal) error")
+        logger.exception("get_signal_pending error")
         return {"error": str(e)}
 
 
@@ -1081,84 +960,29 @@ _user_client_cache: dict[str, Any] = {}  # user_id → Client
 
 
 def _get_user_client(tool_context: ToolContext | None):
-    """获取或复用 user client。token 变化时重建；auth 失败自动重登。"""
+    """获取或复用 user client。token 变化时重建 client。"""
     if tool_context is None:
         return None
-    at = tool_context.state.get("access_token") or ""
+    at = (tool_context.state.get("access_token") or "")
     if not at:
         return None
     user_id = _get_user_id(tool_context)
+    # token 变化（如重新登录）时需重建 client
     cache_key = f"{user_id}:{at[:16]}"
     cached = _user_client_cache.get(cache_key)
     if cached is not None:
         return cached
-    rt = tool_context.state.get("refresh_token") or ""
+    rt = (tool_context.state.get("refresh_token") or "")
     from integrations.supabase_base import create_user_client, get_session_tokens
-
-    try:
-        client = create_user_client(at, rt)
-        new_at, new_rt = get_session_tokens(client)
-    except Exception as e:
-        if _is_auth_error(e):
-            client, new_at, new_rt = _relogin_and_create_client(tool_context)
-            if client is None:
-                return None
-        else:
-            raise
+    client = create_user_client(at, rt)
+    # 回写刷新后的 token
+    new_at, new_rt = get_session_tokens(client)
     if new_at:
         tool_context.state["access_token"] = new_at
     if new_rt:
         tool_context.state["refresh_token"] = new_rt
-    final_key = f"{user_id}:{(new_at or at)[:16]}"
-    _user_client_cache[final_key] = client
+    _user_client_cache[cache_key] = client
     return client
-
-
-def _relogin_and_create_client(tool_context: ToolContext | None):
-    """用 wyckoff.json 中的凭证重新登录，返回 (client, access_token, refresh_token)。"""
-    from cli.auth import _auto_relogin
-
-    data = _auto_relogin()
-    if not data:
-        return None, "", ""
-    tool_context.state["access_token"] = data["access_token"]
-    tool_context.state["refresh_token"] = data["refresh_token"]
-    from integrations.supabase_base import create_user_client, get_session_tokens
-
-    client = create_user_client(data["access_token"], data["refresh_token"])
-    new_at, new_rt = get_session_tokens(client)
-    return client, new_at or data["access_token"], new_rt or data["refresh_token"]
-
-
-_AUTH_ERR_KEYWORDS = ("invalid", "expired", "revoked", "refresh", "jwt", "token")
-
-
-def _is_auth_error(e: Exception) -> bool:
-    err = str(e).lower()
-    return any(k in err for k in _AUTH_ERR_KEYWORDS)
-
-
-def _with_auth_retry(tool_context: ToolContext | None, fn, *args, **kwargs):
-    """执行 fn，遇到 auth 错误时自动重登并重试一次。"""
-    try:
-        return fn(*args, **kwargs)
-    except Exception as e:
-        if not _is_auth_error(e) or tool_context is None:
-            raise
-    _user_client_cache.clear()
-    client, new_at, new_rt = _relogin_and_create_client(tool_context)
-    if client is None:
-        return None
-    if "client" in kwargs:
-        kwargs["client"] = client
-    elif args:
-        args_list = list(args)
-        for i, a in enumerate(args_list):
-            if hasattr(a, "auth") and hasattr(a, "postgrest"):
-                args_list[i] = client
-                break
-        args = tuple(args_list)
-    return fn(*args, **kwargs)
 
 
 def _to_ts_code(code: str) -> str:
@@ -1172,9 +996,55 @@ def _to_ts_code(code: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Tool 6: 持仓管理（合并原 update_portfolio + delete_tracking_records）
+# Tool 11: 查看持仓（原子数据）
 # ---------------------------------------------------------------------------
 
+def get_portfolio(tool_context: ToolContext) -> dict:
+    """查看用户当前持仓列表和可用资金。仅返回原始数据，不做诊断分析。
+
+    Returns:
+        持仓列表和可用资金。
+    """
+    try:
+        from integrations.supabase_portfolio import (
+            build_user_live_portfolio_id,
+            load_portfolio_state,
+        )
+
+        user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未登录，请先执行 /login"}
+
+        _client = _get_user_client(tool_context)
+        portfolio_id = build_user_live_portfolio_id(user_id)
+        state = load_portfolio_state(portfolio_id, client=_client)
+        if state is None:
+            return {"message": "未找到持仓记录", "positions": [], "free_cash": 0}
+
+        positions = []
+        for p in state.get("positions", []):
+            positions.append({
+                "code": p["code"],
+                "name": p.get("name", ""),
+                "shares": p.get("shares", 0),
+                "cost_price": p.get("cost", 0),
+                "buy_dt": p.get("buy_dt", ""),
+            })
+
+        return {
+            "portfolio_id": portfolio_id,
+            "free_cash": state.get("free_cash", 0),
+            "position_count": len(positions),
+            "positions": positions,
+        }
+    except Exception as e:
+        logger.exception("get_portfolio error")
+        return {"error": str(e)}
+
+
+# ---------------------------------------------------------------------------
+# Tool 12: 持仓管理
+# ---------------------------------------------------------------------------
 
 def update_portfolio(
     action: str,
@@ -1184,57 +1054,46 @@ def update_portfolio(
     cost_price: float = 0,
     buy_dt: str = "",
     free_cash: float = 0,
-    table: str = "",
-    codes: list[str] = None,
     tool_context: ToolContext = None,
 ) -> dict:
-    """管理用户持仓或删除追踪记录。
+    """管理用户持仓：新增、修改、删除持仓，或设置可用资金。
 
     Args:
-        action: 操作类型，"add"（新增/加仓）、"update"（修改）、"remove"（删除）、"set_cash"（设置可用资金）、"delete_records"（删除推荐/信号记录）
+        action: 操作类型，"add"（新增/加仓）、"update"（修改）、"remove"（删除）、"set_cash"（设置可用资金）
         code: 6 位股票代码（add/update/remove 时必填）
         name: 股票名称（可选）
         shares: 持仓股数
         cost_price: 成本价
         buy_dt: 买入日期（YYYYMMDD 格式）
         free_cash: 可用资金（set_cash 时使用）
-        table: 仅 delete_records 使用，'recommendation' 或 'signal'
-        codes: 仅 delete_records 使用，要删除的股票代码列表
 
     Returns:
-        操作结果。
+        操作结果和最新持仓摘要。
     """
     try:
-        action = action.strip().lower()
-
-        if action == "delete_records":
-            if not codes:
-                return {"error": "请指定要删除的股票代码 codes"}
-            codes = [str(c).strip() for c in codes if str(c).strip()]
-            if table == "recommendation":
-                from integrations.local_db import delete_recommendations
-
-                n = delete_recommendations(codes)
-                return {"deleted": n, "table": "recommendation_tracking", "codes": codes}
-            elif table == "signal":
-                from integrations.local_db import delete_signals
-
-                n = delete_signals(codes)
-                return {"deleted": n, "table": "signal_pending", "codes": codes}
-            else:
-                return {"error": f"不支持的表：{table}，请用 'recommendation' 或 'signal'"}
-
-        from integrations.supabase_portfolio import build_user_live_portfolio_id
-
+        from integrations.supabase_portfolio import (
+            build_user_live_portfolio_id,
+            load_portfolio_state,
+            upsert_position,
+            delete_position,
+            update_free_cash,
+        )
         user_id = _get_user_id(tool_context)
+        if not user_id:
+            return {"error": "未登录，请先执行 /login"}
+
+        client = _get_user_client(tool_context)
+        if client is None:
+            return {"error": "缺少 access_token，请重新登录"}
+
         portfolio_id = build_user_live_portfolio_id(user_id)
-        cloud = _has_cloud(tool_context)
-        msg = ""
+        action = action.strip().lower()
 
         if action in ("add", "update"):
             if not code:
                 return {"error": "add/update 操作需要提供股票代码 code"}
             code = code.strip()
+            # 校验 code-name 匹配
             real_name = _code_to_name(code)
             if real_name and name and real_name != name:
                 return {"error": f"代码 {code} 对应的股票是「{real_name}」，而非「{name}」，请确认代码或名称是否正确"}
@@ -1242,269 +1101,52 @@ def update_portfolio(
                 name = real_name
             if not real_name and not name:
                 return {"error": f"代码 {code} 在股票列表中未找到，请确认代码是否正确"}
-            if cloud:
-                from integrations.supabase_portfolio import upsert_position
-
-                client = _get_user_client(tool_context)
-                ok, msg = _with_auth_retry(
-                    tool_context,
-                    upsert_position,
-                    portfolio_id,
-                    {
-                        "code": code,
-                        "name": name,
-                        "shares": shares,
-                        "cost_price": cost_price,
-                        "buy_dt": buy_dt,
-                    },
-                    client=client,
-                )
-                if not ok:
-                    return {"error": msg}
-            from integrations.local_db import upsert_local_position
-
-            upsert_local_position(portfolio_id, code, name, shares, cost_price, buy_dt)
-            msg = msg or f"{code} 已更新"
+            ok, msg = upsert_position(portfolio_id, {
+                "code": code,
+                "name": name,
+                "shares": shares,
+                "cost_price": cost_price,
+                "buy_dt": buy_dt,
+            }, client=client)
+            if not ok:
+                return {"error": msg}
 
         elif action == "remove":
             if not code:
                 return {"error": "remove 操作需要提供股票代码 code"}
-            code = code.strip()
-            if cloud:
-                from integrations.supabase_portfolio import delete_position
-
-                client = _get_user_client(tool_context)
-                ok, msg = _with_auth_retry(tool_context, delete_position, portfolio_id, code, client=client)
-                if not ok:
-                    return {"error": msg}
-            from integrations.local_db import delete_local_position
-
-            delete_local_position(portfolio_id, code)
-            msg = msg or f"{code} 已删除"
+            ok, msg = delete_position(portfolio_id, code.strip(), client=client)
+            if not ok:
+                return {"error": msg}
 
         elif action == "set_cash":
-            if cloud:
-                from integrations.supabase_portfolio import update_free_cash
-
-                client = _get_user_client(tool_context)
-                ok, msg = _with_auth_retry(tool_context, update_free_cash, portfolio_id, free_cash, client=client)
-                if not ok:
-                    return {"error": msg}
-            from integrations.local_db import update_local_free_cash
-
-            update_local_free_cash(portfolio_id, free_cash)
-            msg = msg or f"可用资金已更新为 {free_cash:,.2f}"
+            ok, msg = update_free_cash(portfolio_id, free_cash, client=client)
+            if not ok:
+                return {"error": msg}
 
         else:
-            return {"error": f"未知操作: {action}，支持 add/update/remove/set_cash/delete_records"}
+            return {"error": f"未知操作: {action}，支持 add/update/remove/set_cash"}
 
-        # Supabase write-through: 读回最新状态同步到本地
-        if cloud:
-            try:
-                from integrations.supabase_portfolio import load_portfolio_state
-
-                client = _get_user_client(tool_context)
-                state = _with_auth_retry(tool_context, load_portfolio_state, portfolio_id, client=client)
-                if state:
-                    from integrations.local_db import save_portfolio
-
-                    save_portfolio(
-                        portfolio_id,
-                        float(state.get("free_cash", 0) or 0),
-                        [
-                            {
-                                "code": p.get("code", ""),
-                                "name": p.get("name", ""),
-                                "shares": p.get("shares", 0),
-                                "cost_price": p.get("cost", p.get("cost_price", 0)),
-                                "buy_dt": p.get("buy_dt", ""),
-                                "stop_loss": p.get("stop_loss"),
-                            }
-                            for p in state.get("positions", [])
-                        ],
-                    )
-            except Exception:
-                pass
-
-        # 读本地最新状态返回
-        from integrations.local_db import load_portfolio
-
-        state = load_portfolio(portfolio_id)
+        # 返回最新持仓状态
+        state = load_portfolio_state(portfolio_id, client=client)
         if not state:
             return {"success": True, "message": msg, "positions": []}
-
         summary = []
         for p in state.get("positions", []):
-            summary.append(f"{p['code']} {p.get('name', '')} {p.get('shares', 0)}股 成本{p.get('cost_price', 0)}")
-        result = {
+            summary.append(f"{p['code']} {p.get('name','')} {p.get('shares',0)}股 成本{p.get('cost',0)}")
+        return {
             "success": True,
             "message": msg,
             "free_cash": state.get("free_cash", 0),
             "position_count": len(state.get("positions", [])),
             "positions_summary": summary,
         }
-        if not cloud:
-            result["storage"] = "local"
-        return result
     except Exception as e:
         logger.exception("update_portfolio error")
         return {"error": str(e)}
 
 
-def _query_tail_buy(run_date: str, decision: str, limit: int) -> dict:
-    try:
-        limit = min(max(int(limit), 1), 200)
-        from integrations.local_db import load_tail_buy_history
-
-        records = load_tail_buy_history(
-            run_date=str(run_date or "").strip(),
-            decision=str(decision or "").strip(),
-            limit=limit,
-        )
-        if not records:
-            from integrations.supabase_tail_buy import load_tail_buy_from_supabase
-
-            sb_rows = load_tail_buy_from_supabase(limit=limit)
-            if sb_rows:
-                from integrations.local_db import save_tail_buy_results
-
-                save_tail_buy_results(
-                    [
-                        {
-                            "code": str(r.get("code", "")),
-                            "name": r.get("name", ""),
-                            "run_date": str(r.get("run_date", "")),
-                            "signal_date": r.get("signal_date", ""),
-                            "signal_type": r.get("signal_type", ""),
-                            "status": "",
-                            "final_decision": r.get("final_decision", "BUY"),
-                            "rule_score": float(r.get("rule_score", 0)),
-                            "priority_score": float(r.get("priority_score", 0)),
-                            "rule_reasons": r.get("rule_reasons", ""),
-                            "llm_decision": r.get("llm_decision", ""),
-                            "llm_reason": r.get("llm_reason", ""),
-                        }
-                        for r in sb_rows
-                    ]
-                )
-                records = load_tail_buy_history(
-                    run_date=str(run_date or "").strip(),
-                    decision=str(decision or "").strip(),
-                    limit=limit,
-                )
-        if not records:
-            return {"message": "暂无尾盘策略记录", "records": []}
-        simplified = [
-            {
-                "code": str(r.get("code", "")),
-                "name": str(r.get("name", "")),
-                "run_date": str(r.get("run_date", "")),
-                "signal_type": str(r.get("signal_type", "")),
-                "final_decision": str(r.get("final_decision", "")),
-                "rule_score": r.get("rule_score", 0),
-                "priority_score": r.get("priority_score", 0),
-                "llm_decision": str(r.get("llm_decision", "")),
-                "llm_reason": str(r.get("llm_reason", "")),
-            }
-            for r in records
-        ]
-        return {"total": len(simplified), "records": simplified}
-    except Exception as e:
-        logger.exception("query_history(tail_buy) error")
-        return {"error": str(e)}
-
-
 # ---------------------------------------------------------------------------
-# Tool 15: 回测
-# ---------------------------------------------------------------------------
-
-
-def run_backtest(
-    start: str = "",
-    end: str = "",
-    hold_days: int = 10,
-    top_n: int = 3,
-    board: str = "main_chinext",
-    stop_loss_pct: float = -7.0,
-    take_profit_pct: float = 18.0,
-    tool_context: ToolContext = None,
-) -> dict:
-    """回测威科夫五层漏斗策略的历史表现。耗时较长（3-10分钟），会在后台执行。
-
-    基于历史数据模拟漏斗筛选 + 信号触发 → 买入 → 止盈止损退出的完整流程，
-    输出胜率、Sharpe 比率、最大回撤等核心指标。
-
-    Args:
-        start: 开始日期（YYYY-MM-DD），默认 6 个月前
-        end: 结束日期（YYYY-MM-DD），默认昨天
-        hold_days: 最大持仓天数（5/10/15/30），默认 10
-        top_n: 每日最大候选数（0=不限），默认 3
-        board: 股票池 'main_chinext'/'main'/'chinext'/'all'
-        stop_loss_pct: 止损百分比（负数），默认 -7.0
-        take_profit_pct: 止盈百分比，默认 18.0
-
-    Returns:
-        回测结果摘要：胜率、Sharpe、最大回撤、交易笔数等。
-    """
-    try:
-        from datetime import date, timedelta
-
-        from core.backtester import run_backtest as _run_backtest
-
-        _ensure_tushare_token(tool_context)
-
-        if start:
-            start_dt = date.fromisoformat(str(start).strip()[:10])
-        else:
-            start_dt = date.today() - timedelta(days=180)
-        if end:
-            end_dt = date.fromisoformat(str(end).strip()[:10])
-        else:
-            end_dt = date.today() - timedelta(days=1)
-
-        hold_days = max(1, min(int(hold_days), 60))
-        top_n = max(0, min(int(top_n), 20))
-        stop_loss_pct = min(0.0, float(stop_loss_pct))
-        take_profit_pct = max(0.0, float(take_profit_pct))
-
-        _trades_df, summary = _run_backtest(
-            start_dt=start_dt,
-            end_dt=end_dt,
-            hold_days=hold_days,
-            top_n=top_n,
-            board=str(board or "main_chinext").strip(),
-            sample_size=0,
-            trading_days=320,
-            max_workers=8,
-            exit_mode="sltp",
-            stop_loss_pct=stop_loss_pct,
-            take_profit_pct=take_profit_pct,
-        )
-
-        return {
-            "period": f"{start_dt} ~ {end_dt}",
-            "hold_days": hold_days,
-            "top_n": top_n,
-            "board": board,
-            "stop_loss_pct": stop_loss_pct,
-            "take_profit_pct": take_profit_pct,
-            "trades": summary.get("trades", 0),
-            "win_rate_pct": summary.get("win_rate_pct"),
-            "avg_ret_pct": summary.get("avg_ret_pct"),
-            "median_ret_pct": summary.get("median_ret_pct"),
-            "sharpe_ratio": summary.get("sharpe_ratio"),
-            "max_drawdown_pct": summary.get("max_drawdown_pct"),
-            "portfolio_total_ret_pct": summary.get("portfolio_total_ret_pct"),
-            "portfolio_ann_ret_pct": summary.get("portfolio_ann_ret_pct"),
-            "max_consecutive_losses": summary.get("max_consecutive_losses"),
-        }
-    except Exception as e:
-        logger.exception("run_backtest error")
-        return {"error": str(e)}
-
-
-# ---------------------------------------------------------------------------
-# Tool 15-18: Agent 标准工具（仅 CLI，Web 端不暴露）
+# Tool 13-16: Agent 标准工具（仅 CLI，Web 端不暴露）
 # ---------------------------------------------------------------------------
 
 
@@ -1523,12 +1165,8 @@ def exec_command(command: str, timeout: int = 30, tool_context: ToolContext = No
     timeout = max(1, min(int(timeout), 120))
     try:
         r = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-            cwd=os.path.expanduser("~"),
+            command, shell=True, capture_output=True, text=True,
+            timeout=timeout, cwd=os.path.expanduser("~"),
         )
         return {
             "stdout": r.stdout[:8000] + ("...(截断)" if len(r.stdout) > 8000 else ""),
@@ -1566,19 +1204,16 @@ def read_file(path: str, encoding: str = "utf-8", tool_context: ToolContext = No
     try:
         if suffix == ".csv":
             import pandas as pd
-
             df = pd.read_csv(p, encoding=encoding, nrows=50)
             preview = df.to_markdown(index=False)
             return {"path": str(p), "size": size, "rows_total": "≤50(预览)", "content": preview}
         elif suffix in (".xls", ".xlsx"):
             import pandas as pd
-
             df = pd.read_excel(p, nrows=50)
             preview = df.to_markdown(index=False)
             return {"path": str(p), "size": size, "rows_total": "≤50(预览)", "content": preview}
         elif suffix == ".json":
             import json as _json
-
             text = p.read_text(encoding=encoding)[:10000]
             try:
                 obj = _json.loads(text)
@@ -1589,8 +1224,7 @@ def read_file(path: str, encoding: str = "utf-8", tool_context: ToolContext = No
         else:
             text = p.read_text(encoding=encoding)
             return {
-                "path": str(p),
-                "size": size,
+                "path": str(p), "size": size,
                 "content": text[:10000] + ("...(截断)" if len(text) > 10000 else ""),
             }
     except Exception as e:
@@ -1630,8 +1264,6 @@ def web_fetch(url: str, tool_context: ToolContext = None) -> dict:
     """
     import re
 
-    import requests
-
     try:
         resp = requests.get(url, timeout=15, headers={"User-Agent": "Wyckoff-Agent/1.0"})
         resp.raise_for_status()
@@ -1657,12 +1289,15 @@ def web_fetch(url: str, tool_context: ToolContext = None) -> dict:
 WYCKOFF_TOOLS = [
     search_stock_by_name,
     analyze_stock,
-    portfolio,
+    diagnose_stock,
+    diagnose_portfolio,
+    get_portfolio,
+    get_stock_price,
     get_market_overview,
     screen_stocks,
     generate_ai_report,
     generate_strategy_decision,
-    query_history,
+    get_recommendation_tracking,
+    get_signal_pending,
     update_portfolio,
-    run_backtest,
 ]

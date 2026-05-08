@@ -1,10 +1,13 @@
-name: Tail Buy
+name: Tail Buy 14:10
 
 on:
+  schedule:
+    # UTC 06:10 Mon-Fri = 北京时间 14:10
+    - cron: "10 6 * * 1-5"
   workflow_dispatch:
 
 concurrency:
-  group: tail-buy-1350-${{ github.ref }}
+  group: tail-buy-1420-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,7 +26,6 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
       TAIL_BUY_LLM_TOP_N: "20"
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       TAIL_BUY_FETCH_CONCURRENCY: "8"
@@ -35,8 +37,6 @@ jobs:
       TAIL_BUY_TICKFLOW_MAX_RETRIES: "1"
       TAIL_BUY_USE_BATCH_INTRADAY: "1"
       TAIL_BUY_INTRADAY_BATCH_SIZE: "200"
-      TAIL_BUY_PORTFOLIO_ID: ${{ secrets.TAIL_BUY_PORTFOLIO_ID }}
-      TAIL_BUY_HOLDING_HARD_STOP_PCT: "6"
 
     steps:
       - uses: actions/checkout@v4
@@ -61,14 +61,14 @@ jobs:
           python -u scripts/tail_buy_intraday_job.py \
             --max-llm-symbols "${TAIL_BUY_LLM_TOP_N}" \
             --deadline-minute "${TAIL_BUY_TASK_TIMEOUT_MIN}" \
-            --logs "${{ github.workspace }}/logs/tail_buy_1350.log" \
-            2>&1 | tee -a "${{ github.workspace }}/logs/tail_buy_1350.console.log"
+            --logs "${{ github.workspace }}/logs/tail_buy_1420.log" \
+            2>&1 | tee -a "${{ github.workspace }}/logs/tail_buy_1420.console.log"
 
       - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tail-buy-1350-logs-${{ github.run_number }}
+          name: tail-buy-1420-logs-${{ github.run_number }}
           path: logs/*
           retention-days: 7
           if-no-files-found: warn
@@ -90,7 +90,7 @@ jobs:
           payload = {
             'msg_type': 'interactive',
             'card': {
-              'header': {'title': {'tag': 'plain_text', 'content': '❌ Tail Buy 任务失败'}},
+              'header': {'title': {'tag': 'plain_text', 'content': '❌ 尾盘买入扫描任务失败'}},
               'elements': [{'tag': 'div', 'text': {'tag': 'lark_md', 'content': content}}]
             }
           }

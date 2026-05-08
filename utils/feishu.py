@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 飞书 Webhook 通知，纯工具函数。
 
@@ -5,20 +6,13 @@
 - Streamlit：使用用户登录后 Supabase 中的 feishu_webhook
 - 定时任务：使用 GitHub Actions 的 FEISHU_WEBHOOK_URL secret
 """
-
 from __future__ import annotations
 
 import os
 import re
+import requests
 import time
 
-import requests
-
-from integrations.tickflow_notice import (
-    TICKFLOW_LIMIT_HINT,
-    append_tickflow_limit_hint,
-    has_recent_tickflow_limit_event,
-)
 
 _TERM_GLOSSARY_PATTERNS: list[tuple[re.Pattern, str]] = [
     # Regime / risk state
@@ -125,7 +119,7 @@ def _split_lark_md(content: str, max_len: int = 2800) -> list[str]:
             continue
         start = 0
         while start < len(p):
-            chunks.append(p[start : start + max_len])
+            chunks.append(p[start:start + max_len])
             start += max_len
     if current:
         chunks.append(current)
@@ -138,7 +132,9 @@ def _post_card(webhook_url: str, title: str, chunk: str) -> tuple[bool, str]:
         "msg_type": "interactive",
         "card": {
             "header": {"title": {"tag": "plain_text", "content": title}},
-            "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": chunk}}],
+            "elements": [
+                {"tag": "div", "text": {"tag": "lark_md", "content": chunk}}
+            ],
         },
     }
     resp = requests.post(webhook_url.strip(), headers=headers, json=payload, timeout=10)
@@ -155,10 +151,7 @@ def _post_card(webhook_url: str, title: str, chunk: str) -> tuple[bool, str]:
 
 
 def _post_rich_card(
-    webhook_url: str,
-    title: str,
-    elements: list,
-    template: str = "blue",
+    webhook_url: str, title: str, elements: list, template: str = "blue",
 ) -> tuple[bool, str]:
     """发送飞书富文本卡片（column_set 等原生组件）。"""
     headers = {"Content-Type": "application/json"}
@@ -190,7 +183,7 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
     if not webhook_url or not webhook_url.strip():
         return False
 
-    with open(summary_path, encoding="utf-8") as f:
+    with open(summary_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     def _extract(keyword: str) -> float | None:
@@ -214,10 +207,10 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
     avg = _extract("平均收益")
     sharpe = _extract("夏普比")
     mdd = _extract("最大回撤")
-    _extract("卡玛比")
+    calmar = _extract("卡玛比")
     trades = _extract("成交样本")
     hold = _extract_str("持有周期")
-    _extract_str("离场模式")
+    exit_mode = _extract_str("离场模式")
     sl = _extract_str("止损线")
     tp = _extract_str("止盈线")
     trail = _extract_str("移动止盈")
@@ -265,18 +258,10 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
     elements = []
 
     # 摘要
-    elements.append(
-        {
-            "tag": "div",
-            "text": {"tag": "lark_md", "content": f"**区间** {bt_range}  ·  **TopN** {top_n}  ·  **{pool}**"},
-        }
-    )
-    elements.append(
-        {
-            "tag": "div",
-            "text": {"tag": "lark_md", "content": f"📌 **参数**  持有{hold} / SL{sl} / TP{tp} / 移动止盈{trail}"},
-        }
-    )
+    elements.append({"tag": "div", "text": {"tag": "lark_md",
+        "content": f"**区间** {bt_range}  ·  **TopN** {top_n}  ·  **{pool}**"}})
+    elements.append({"tag": "div", "text": {"tag": "lark_md",
+        "content": f"📌 **参数**  持有{hold} / SL{sl} / TP{tp} / 移动止盈{trail}"}})
     elements.append({"tag": "hr"})
 
     # 核心指标
@@ -289,27 +274,18 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
         ("**回撤**", f"{_fmt(mdd, '.1f')}%"),
         ("**样本**", f"{int(trades or 0)}笔"),
     ]
-    elements.append(
-        {
-            "tag": "column_set",
-            "flex_mode": "stretch",
-            "background_style": "grey",
-            "columns": [
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": f"{label}\n{val}"}}],
-                }
-                for label, val in cols
-            ],
-        }
-    )
+    elements.append({"tag": "column_set", "flex_mode": "stretch",
+        "background_style": "grey", "columns": [
+            {"tag": "column", "width": "weighted", "weight": 1, "elements": [
+                {"tag": "div", "text": {"tag": "lark_md", "content": f"{label}\n{val}"}}
+            ]} for label, val in cols
+        ]})
     elements.append({"tag": "hr"})
 
     # 分轨统计
     if track_data:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": "**分轨统计 (Trend vs Accum)**"}})
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+            "content": "**分轨统计 (Trend vs Accum)**"}})
         track_cols = []
         icons = {"Trend": "⚡", "Accum": "🔄"}
         for name in track_data:
@@ -320,26 +296,18 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
                 f"均收{d.get('平均收益(%)', '?')}% · 夏普{d.get('夏普比', '?')}\n"
                 f"连亏{d.get('最长连亏', '?')}笔"
             )
-            track_cols.append(
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": txt}}],
-                }
-            )
+            track_cols.append({"tag": "column", "width": "weighted", "weight": 1,
+                "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": txt}}]})
         elements.append({"tag": "column_set", "flex_mode": "stretch", "columns": track_cols})
         elements.append({"tag": "hr"})
 
     # 按水温
     if regime_data:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": "**按大盘水温**"}})
+        elements.append({"tag": "div", "text": {"tag": "lark_md",
+            "content": "**按大盘水温**"}})
         regime_icons = {
-            "NEUTRAL": "🟡",
-            "PANIC_REPAIR": "🟠",
-            "RISK_OFF": "🔴",
-            "RISK_ON": "🟢",
-            "CRASH": "⚫",
+            "NEUTRAL": "🟡", "PANIC_REPAIR": "🟠", "RISK_OFF": "🔴",
+            "RISK_ON": "🟢", "CRASH": "⚫",
         }
         regime_cols = []
         for name in regime_data:
@@ -350,29 +318,9 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
                 f"{d.get('成交笔数', '?')}笔 · 胜率{d.get('胜率(%)', '?')}%\n"
                 f"均收{d.get('平均收益(%)', '?')}%"
             )
-            regime_cols.append(
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": txt}}],
-                }
-            )
+            regime_cols.append({"tag": "column", "width": "weighted", "weight": 1,
+                "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": txt}}]})
         elements.append({"tag": "column_set", "flex_mode": "stretch", "columns": regime_cols})
-
-    if has_recent_tickflow_limit_event():
-        elements.append({"tag": "hr"})
-        elements.append(
-            {
-                "tag": "note",
-                "elements": [
-                    {
-                        "tag": "plain_text",
-                        "content": f"⚠️ {TICKFLOW_LIMIT_HINT}",
-                    }
-                ],
-            }
-        )
 
     # --- 发送 ---
     template = "blue" if sharpe_val > 0 else "orange"
@@ -394,265 +342,11 @@ def send_backtest_card(webhook_url: str, summary_path: str) -> bool:
         return False
 
 
-def _tail_buy_extract_line(lines: list[str], prefix: str) -> str:
-    for raw in lines:
-        text = raw.strip()
-        if text.startswith(prefix):
-            return text[len(prefix) :].strip()
-    return ""
-
-
-def _tail_buy_extract_section_items(lines: list[str], heading: str) -> list[str]:
-    target = f"## {heading}"
-    in_section = False
-    out: list[str] = []
-    for raw in lines:
-        text = raw.strip()
-        if text == target:
-            in_section = True
-            continue
-        if in_section and text.startswith("## "):
-            break
-        if in_section and text.startswith("- "):
-            out.append(text[2:].strip())
-    return out
-
-
-def _tail_buy_extract_subsection_items(
-    lines: list[str],
-    parent_heading: str,
-    sub_heading: str,
-) -> list[str]:
-    parent = f"## {parent_heading}"
-    sub = f"### {sub_heading}"
-    in_parent = False
-    in_sub = False
-    out: list[str] = []
-    for raw in lines:
-        text = raw.strip()
-        if text == parent:
-            in_parent = True
-            in_sub = False
-            continue
-        if in_parent and text.startswith("## ") and text != parent:
-            break
-        if in_parent and text == sub:
-            in_sub = True
-            continue
-        if in_sub and text.startswith("### ") and text != sub:
-            break
-        if in_sub and text.startswith("- "):
-            out.append(text[2:].strip())
-    return out
-
-
-def _tail_buy_trim_text(text: str, limit: int) -> str:
-    clean = str(text or "").strip().replace("<", "&lt;").replace(">", "&gt;")
-    if int(limit) <= 0:
-        return clean
-    if len(clean) <= max(limit, 32):
-        return clean
-    return clean[: max(limit, 32) - 1] + "…"
-
-
-def _tail_buy_format_item(item: str, item_char_limit: int) -> str:
-    text = _tail_buy_trim_text(item, item_char_limit)
-    if not text:
-        return "- -"
-    if text in {"无", "none", "None"}:
-        return "- 无"
-    if " | " in text:
-        head, tail = text.split(" | ", 1)
-        return f"- **{head.strip()}** | {tail.strip()}"
-    return f"- {text}"
-
-
-def _safe_int(raw: str, default: int) -> int:
-    try:
-        return int(str(raw).strip())
-    except Exception:
-        return int(default)
-
-
-def send_tail_buy_card(webhook_url: str, title: str, content: str) -> bool:
-    """
-    Tail Buy 专用飞书富卡片（默认全量展示）：
-    - 摘要指标 + 风险提醒
-    - 持仓动作（ADD/TRIM/HOLD）
-    - BUY/WATCH/SKIP 分区（仅在显式配置上限时截断）
-    """
-    if not webhook_url or not webhook_url.strip():
-        return False
-
-    max_buy = _safe_int(os.getenv("FEISHU_TAIL_BUY_MAX_BUY", "0"), 0)
-    max_watch = _safe_int(os.getenv("FEISHU_TAIL_BUY_MAX_WATCH", "0"), 0)
-    max_skip = _safe_int(os.getenv("FEISHU_TAIL_BUY_MAX_SKIP", "0"), 0)
-    max_hold_each = _safe_int(os.getenv("FEISHU_TAIL_BUY_MAX_HOLDING_EACH", "0"), 0)
-    item_char_limit = _safe_int(os.getenv("FEISHU_TAIL_BUY_ITEM_CHAR_LIMIT", "0"), 0)
-
-    annotated = _annotate_financial_terms(append_tickflow_limit_hint(content))
-    lines = annotated.replace("\r\n", "\n").replace("\r", "\n").splitlines()
-
-    run_line = next((x.strip() for x in lines if x.strip().startswith("⏰ Tail Buy ")), "⏰ Tail Buy")
-    source = _tail_buy_extract_line(lines, "- 候选来源:")
-    scan_count = _tail_buy_extract_line(lines, "- 扫描数量:")
-    decision_line = _tail_buy_extract_line(lines, "- 分层结果:")
-    llm_line = _tail_buy_extract_line(lines, "- LLM 二判:")
-    route_line = _tail_buy_extract_line(lines, "- LLM 路由:")
-    elapsed_line = _tail_buy_extract_line(lines, "- 总耗时:")
-    risk_line = next((x.strip() for x in lines if x.strip().startswith("⚠️ 风险提醒:")), "")
-
-    holding_source = _tail_buy_extract_line(lines, "- 持仓来源:")
-    holding_count = _tail_buy_extract_line(lines, "- 持仓数量:")
-    holding_distribution = _tail_buy_extract_line(lines, "- 动作分布:")
-    add_items = _tail_buy_extract_subsection_items(lines, "持仓动作建议（加仓/减仓）", "ADD（可考虑加仓）")
-    trim_items = _tail_buy_extract_subsection_items(lines, "持仓动作建议（加仓/减仓）", "TRIM（可考虑减仓）")
-    hold_items = _tail_buy_extract_subsection_items(lines, "持仓动作建议（加仓/减仓）", "HOLD（持有观察）")
-
-    buy_items = _tail_buy_extract_section_items(lines, "BUY（优先关注）")
-    watch_items = _tail_buy_extract_section_items(lines, "WATCH（观察）")
-    skip_items = _tail_buy_extract_section_items(lines, "SKIP（暂不买入）")
-
-    def _add_bucket(
-        elements: list[dict],
-        title_text: str,
-        items: list[str],
-        max_items: int,
-    ) -> None:
-        safe_items = [x for x in items if x]
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"**{title_text}**"}})
-        if not safe_items:
-            elements.append({"tag": "div", "text": {"tag": "lark_md", "content": "- 无"}})
-            return
-        if int(max_items) > 0:
-            shown = safe_items[:max_items]
-        else:
-            shown = safe_items
-        body = "\n".join([_tail_buy_format_item(x, item_char_limit) for x in shown])
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": body}})
-        omitted = max(len(safe_items) - len(shown), 0)
-        if omitted > 0:
-            elements.append(
-                {
-                    "tag": "note",
-                    "elements": [
-                        {
-                            "tag": "plain_text",
-                            "content": f"{title_text} 其余 {omitted} 条已折叠（完整明细见 TG / 日志）",
-                        }
-                    ],
-                }
-            )
-
-    elements: list[dict] = []
-    elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"**{run_line}**"}})
-    if source:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"候选来源：`{source}`"}})
-    elements.append(
-        {
-            "tag": "column_set",
-            "flex_mode": "stretch",
-            "background_style": "grey",
-            "columns": [
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [
-                        {"tag": "div", "text": {"tag": "lark_md", "content": f"**扫描**\n{scan_count or '-'}"}}
-                    ],
-                },
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [
-                        {"tag": "div", "text": {"tag": "lark_md", "content": f"**分层**\n{decision_line or '-'}"}}
-                    ],
-                },
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [{"tag": "div", "text": {"tag": "lark_md", "content": f"**LLM**\n{llm_line or '-'}"}}],
-                },
-                {
-                    "tag": "column",
-                    "width": "weighted",
-                    "weight": 1,
-                    "elements": [
-                        {"tag": "div", "text": {"tag": "lark_md", "content": f"**耗时**\n{elapsed_line or '-'}"}}
-                    ],
-                },
-            ],
-        }
-    )
-    if route_line:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"LLM 路由：`{route_line}`"}})
-    if risk_line:
-        elements.append({"tag": "note", "elements": [{"tag": "plain_text", "content": risk_line}]})
-
-    elements.append({"tag": "hr"})
-    elements.append({"tag": "div", "text": {"tag": "lark_md", "content": "**持仓动作建议（加仓/减仓）**"}})
-    if holding_source:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"- {holding_source}"}})
-    if holding_count:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"- 持仓数量：{holding_count}"}})
-    if holding_distribution:
-        elements.append({"tag": "div", "text": {"tag": "lark_md", "content": f"- 动作分布：{holding_distribution}"}})
-    _add_bucket(elements, "ADD（可考虑加仓）", add_items, max_hold_each)
-    _add_bucket(elements, "TRIM（可考虑减仓）", trim_items, max_hold_each)
-    _add_bucket(elements, "HOLD（持有观察）", hold_items, max_hold_each)
-
-    elements.append({"tag": "hr"})
-    _add_bucket(elements, "BUY（优先关注）", buy_items, max_buy)
-    _add_bucket(elements, "WATCH（观察）", watch_items, max_watch)
-    _add_bucket(elements, "SKIP（暂不买入）", skip_items, max_skip)
-
-    elements.append({"tag": "hr"})
-    elements.append(
-        {
-            "tag": "note",
-            "elements": [
-                {
-                    "tag": "plain_text",
-                    "content": "说明：本任务仅输出尾盘扫描建议，不生成订单，不写入交易表。",
-                }
-            ],
-        }
-    )
-    if has_recent_tickflow_limit_event() or TICKFLOW_LIMIT_HINT in annotated:
-        elements.append(
-            {
-                "tag": "note",
-                "elements": [
-                    {
-                        "tag": "plain_text",
-                        "content": f"⚠️ {TICKFLOW_LIMIT_HINT}",
-                    }
-                ],
-            }
-        )
-
-    ok, err = _post_rich_card(
-        webhook_url=webhook_url,
-        title=title,
-        elements=elements,
-        template="blue",
-    )
-    if ok:
-        print("[feishu] tail_buy rich card sent")
-        return True
-    print(f"[feishu] tail_buy rich card failed: {err}")
-    return False
-
-
 def send_feishu_notification(webhook_url: str, title: str, content: str) -> bool:
     """发送飞书卡片消息。webhook_url 由调用方传入，为空时返回 False。"""
     if not webhook_url or not webhook_url.strip():
         return False
 
-    content = append_tickflow_limit_hint(content)
     annotated = _annotate_financial_terms(content)
     normalized = _normalize_for_lark_md(annotated)
     max_len = int(os.getenv("FEISHU_LARK_MAX_LEN", "2800"))

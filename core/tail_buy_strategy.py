@@ -1,13 +1,13 @@
+# -*- coding: utf-8 -*-
 """
 尾盘买入策略核心（规则层 + LLM 合并层）。
 """
-
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import json
 import math
 import re
-from dataclasses import dataclass, field
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -214,13 +214,21 @@ def compute_tail_features(df_1m: pd.DataFrame) -> dict[str, Any]:
     last30_ret_pct = _ret_pct(close, 30)
     last15_ret_pct = _ret_pct(close, 15)
     day_ret_pct = ((last_close / first_open - 1.0) * 100.0) if first_open > 0 else 0.0
-    tail30_volume_share = float(volume.tail(min(30, len(volume))).sum()) / total_volume if total_volume > 0 else 0.0
-    tail15_volume_share = float(volume.tail(min(15, len(volume))).sum()) / total_volume if total_volume > 0 else 0.0
+    tail30_volume_share = (
+        float(volume.tail(min(30, len(volume))).sum()) / total_volume
+        if total_volume > 0
+        else 0.0
+    )
+    tail15_volume_share = (
+        float(volume.tail(min(15, len(volume))).sum()) / total_volume
+        if total_volume > 0
+        else 0.0
+    )
     drop_from_high_pct = (last_close / day_high - 1.0) * 100.0 if day_high > 0 else 0.0
     dist_vwap_pct = (last_close / vwap - 1.0) * 100.0 if vwap > 0 else 0.0
 
     history_window = min(90, max(len(close) - 1, 1))
-    history_before_tail = close.iloc[: -min(20, len(close))] if len(close) > 20 else close.iloc[:-1]
+    history_before_tail = close.iloc[:-min(20, len(close))] if len(close) > 20 else close.iloc[:-1]
     if history_before_tail.empty:
         history_before_tail = close.iloc[:-1]
     min_before_tail = _safe_float(history_before_tail.tail(history_window).min(), last_close)
@@ -260,58 +268,24 @@ def compute_tail_features(df_1m: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-_SIGNAL_TYPE_STYLE: dict[str, str] = {
-    "sos": "trend",
-    "jac": "trend",
-    "spring": "pullback",
-    "lps": "pullback",
-    "evr": "hybrid",
-}
-
-
-def _normalize_signal_score(signal_score: float, signal_type: str) -> float:
-    """按信号类型归一化 score 到 0-10 统一量纲。"""
-    st = signal_type.strip().lower()
-    raw = max(signal_score, 0.0)
-    if st == "lps":
-        # LPS score 是缩量比，越小越好（0.2=极干, 0.65=阈值边界）
-        normalized = max(0.0, (0.65 - raw) / 0.65) * 10.0
-    elif st in ("sos", "jac"):
-        # SOS score 是放量倍数（2.5-8+），线性映射到 0-10
-        normalized = min((raw - 2.0) / 4.0, 1.0) * 10.0
-    elif st == "evr":
-        # EVR score 是放量倍数（1.3-5+），线性映射
-        normalized = min((raw - 1.0) / 3.0, 1.0) * 10.0
-    elif st == "spring":
-        # Spring score 是回升幅度%（0-10+），天然接近 0-10
-        normalized = raw
-    else:
-        normalized = raw
-    return min(max(normalized, 0.0), 10.0)
-
-
 def score_tail_features(
     features: dict[str, Any],
     *,
     signal_score: float = 0.0,
-    signal_type: str = "",
     status: str = "pending",
     style: str = "hybrid",
 ) -> tuple[float, str, list[str]]:
     """
     规则评分：输出 (分数, BUY/WATCH/SKIP, 理由列表)。
-    style 支持 trend / pullback / hybrid；传空则按 signal_type 自动选择。
+    style 支持 trend / pullback / hybrid。
     """
     bars = int(_safe_float(features.get("bars"), 0))
     if bars < 60:
         return 5.0, DECISION_SKIP, ["分时数据不足（<60根1m）"]
 
-    st_lower = signal_type.strip().lower()
-    style_norm = str(style or "").strip().lower()
-    if not style_norm or style_norm == "auto":
-        style_norm = _SIGNAL_TYPE_STYLE.get(st_lower, "hybrid")
     trend_bias = 1.0
     pullback_bias = 1.0
+    style_norm = str(style or "hybrid").strip().lower()
     if style_norm == "trend":
         trend_bias, pullback_bias = 1.2, 0.8
     elif style_norm in {"pullback", "reclaim"}:
@@ -320,11 +294,10 @@ def score_tail_features(
     score = 35.0
     reasons: list[str] = []
 
-    norm_score = _normalize_signal_score(signal_score, st_lower)
-    sig_boost = norm_score * 1.6
+    sig_boost = min(max(signal_score, 0.0), 10.0) * 1.6
     if sig_boost > 0:
         score += sig_boost
-        reasons.append(f"漏斗信号加分({st_lower or '?'}) +{sig_boost:.1f}")
+        reasons.append(f"漏斗信号加分 +{sig_boost:.1f}")
 
     if str(status).lower() == "confirmed":
         score += 6.0
@@ -415,13 +388,12 @@ def evaluate_rule_decision(
     candidate: TailBuyCandidate,
     df_1m: pd.DataFrame,
     *,
-    style: str = "auto",
+    style: str = "hybrid",
 ) -> TailBuyCandidate:
     features = compute_tail_features(df_1m)
     score, decision, reasons = score_tail_features(
         features,
         signal_score=candidate.signal_score,
-        signal_type=candidate.signal_type,
         status=candidate.status,
         style=style,
     )
@@ -457,12 +429,7 @@ def build_5m_summary(df_1m: pd.DataFrame, *, max_bars: int = 12) -> str:
     return "\n".join(rows)
 
 
-def build_llm_prompt(
-    candidate: TailBuyCandidate,
-    *,
-    style: str = "hybrid",
-    depth_info: dict | None = None,
-) -> tuple[str, str]:
+def build_llm_prompt(candidate: TailBuyCandidate, *, style: str = "hybrid") -> tuple[str, str]:
     f = candidate.features or {}
     style_desc = {
         "trend": "偏趋势（尾盘点火）",
@@ -489,15 +456,10 @@ def build_llm_prompt(
         f"- breakout_tail={bool(f.get('breakout_tail'))}\n"
         f"- drop_from_high_pct={_safe_float(f.get('drop_from_high_pct')):.3f}\n"
         "最近5m摘要:\n"
-        f"{candidate.summary_5m or 'NO_DATA'}\n"
+        f"{candidate.summary_5m or 'NO_DATA'}\n\n"
+        "请输出严格 JSON："
+        '{"decision":"BUY|WATCH|SKIP","reason":"<=80字","risk":"<=40字","confidence":0.0}'
     )
-    if depth_info:
-        user_prompt += (
-            f"\n[五档] 委比: {depth_info.get('weibi', 0):.1f}% | "
-            f"买盘总量: {depth_info.get('bid_total', 0)}手 | "
-            f"卖盘总量: {depth_info.get('ask_total', 0)}手\n"
-        )
-    user_prompt += '\n请输出严格 JSON：{"decision":"BUY|WATCH|SKIP","reason":"<=80字","risk":"<=40字","confidence":0.0}'
     return system_prompt, user_prompt
 
 
@@ -537,40 +499,6 @@ def parse_llm_decision(raw_text: str) -> dict[str, Any] | None:
         "risk": risk,
         "confidence": conf_value,
     }
-
-
-def select_llm_overlay_candidates(
-    candidates: list[TailBuyCandidate],
-    *,
-    max_llm_symbols: int,
-    min_rule_score: float = 60.0,
-    allowed_rule_decisions: tuple[str, ...] = (DECISION_BUY, DECISION_WATCH),
-) -> list[TailBuyCandidate]:
-    """
-    在 Python 规则层先收紧 LLM 二判候选：
-    - 仅保留无 fetch_error 的标的
-    - 仅保留规则结论在 allowed_rule_decisions 内的标的
-    - 仅保留 rule_score >= min_rule_score 的标的
-    - 最后按 rule_score 倒序截断到 max_llm_symbols
-    """
-    limit = max(int(max_llm_symbols), 0)
-    if limit <= 0 or not candidates:
-        return []
-
-    allowed = {str(x or "").strip().upper() for x in (allowed_rule_decisions or ()) if str(x or "").strip()}
-    if not allowed:
-        return []
-
-    floor = max(_safe_float(min_rule_score, 0.0), 0.0)
-    selected = [
-        item
-        for item in candidates
-        if not item.fetch_error
-        and str(item.rule_decision or "").strip().upper() in allowed
-        and _safe_float(item.rule_score, 0.0) >= floor
-    ]
-    selected.sort(key=lambda x: (-x.rule_score, x.code))
-    return selected[:limit]
 
 
 def merge_rule_and_llm(
@@ -635,23 +563,16 @@ def build_tail_buy_markdown(
     llm_route_plan: list[str] | None = None,
     llm_route_stats: dict[str, int] | None = None,
     elapsed_seconds: float,
-    extra_sections: list[str] | None = None,
-    extra_sections_first: bool = False,
-    max_error_items_per_block: int = 5,
-    candidate_source: str | None = None,
 ) -> str:
     counts = summarize_decision_counts(candidates)
     llm_route_plan = list(llm_route_plan or [])
     llm_route_stats = dict(llm_route_stats or {})
     route_line = " -> ".join(llm_route_plan) if llm_route_plan else "未启用"
     route_hits = ", ".join([f"{k}:{v}" for k, v in sorted(llm_route_stats.items())]) if llm_route_stats else "无"
-    source_text = str(candidate_source or "").strip() or (
-        f"signal_pending（signal_date={target_signal_date}, status in pending/confirmed）"
-    )
     lines: list[str] = [
-        f"⏰ Tail Buy {now_text}",
+        f"⏰ 尾盘买入扫描 {now_text}",
         "",
-        f"- 候选来源: {source_text}",
+        f"- 候选来源: signal_pending（signal_date={target_signal_date}, status in pending/confirmed）",
         f"- 扫描数量: {len(candidates)}",
         f"- 分层结果: BUY={counts[DECISION_BUY]} / WATCH={counts[DECISION_WATCH]} / SKIP={counts[DECISION_SKIP]}",
         f"- LLM 二判: {llm_success}/{llm_total}",
@@ -670,11 +591,7 @@ def build_tail_buy_markdown(
             lines.append("- 无")
             lines.append("")
             return
-        max_error_items = max(int(max_error_items_per_block), 1)
-        error_items = [x for x in block if str(x.fetch_error or "").strip()]
-        normal_items = [x for x in block if not str(x.fetch_error or "").strip()]
-        show_items = normal_items + error_items[:max_error_items]
-        for item in show_items:
+        for item in block:
             reasons = "；".join(item.rule_reasons[:2]) if item.rule_reasons else "规则信号一般"
             llm_tag = ""
             if item.llm_decision:
@@ -686,30 +603,10 @@ def build_tail_buy_markdown(
                 f"rule={item.rule_decision}({item.rule_score:.1f}){llm_tag}"
                 f" | {reasons}{llm_reason}"
             )
-        omitted_errors = max(len(error_items) - max_error_items, 0)
-        if omitted_errors > 0:
-            lines.append(f"- ... 其余 {omitted_errors} 只报错标的已省略（详见日志 artifacts）")
         lines.append("")
-
-    cleaned_sections: list[str] = []
-    for section in extra_sections or []:
-        text = str(section or "").strip()
-        if not text:
-            continue
-        cleaned_sections.append(text)
-
-    if extra_sections_first:
-        for text in cleaned_sections:
-            lines.append(text)
-            lines.append("")
 
     _append_block("BUY（优先关注）", DECISION_BUY)
     _append_block("WATCH（观察）", DECISION_WATCH)
     _append_block("SKIP（暂不买入）", DECISION_SKIP)
-
-    if not extra_sections_first:
-        for text in cleaned_sections:
-            lines.append(text)
-            lines.append("")
     lines.append("说明：本任务仅输出尾盘扫描建议，不生成订单，不写入交易表。")
     return "\n".join(lines).strip() + "\n"

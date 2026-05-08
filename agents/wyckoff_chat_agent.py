@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Wyckoff 对话 Agent — 基于 Google ADK 的智能投研助手。
 
@@ -17,7 +18,6 @@ Wyckoff 对话 Agent — 基于 Google ADK 的智能投研助手。
         api_key="ak_xxx", base_url="https://api.longcat.chat/openai",
     )
 """
-
 from __future__ import annotations
 
 import logging
@@ -84,6 +84,7 @@ def create_agent(
     api_key: str = "",
     base_url: str = "",
     provider: str = "gemini",
+    portfolio_context: str = "",
 ) -> LlmAgent:
     """
     创建 Wyckoff 对话 Agent 实例。
@@ -115,20 +116,20 @@ def create_agent(
             ),
         )
 
+    instruction = CHAT_AGENT_SYSTEM_PROMPT
+    if portfolio_context:
+        instruction += f"\n\n# 当前用户持仓\n\n{portfolio_context}"
+
     agent = LlmAgent(
         name="wyckoff_advisor",
         model=llm_model,
-        instruction=CHAT_AGENT_SYSTEM_PROMPT,
+        instruction=instruction,
         tools=WYCKOFF_TOOLS,
         output_key="last_response",
         **extra_kwargs,
     )
     logger.info(
         "Created Wyckoff chat agent: provider=%s, model=%s, tools=%d, key_injected=%s, base_url=%s",
-        provider,
-        model,
-        len(WYCKOFF_TOOLS),
-        bool(api_key),
-        base_url or "(default)",
+        provider, model, len(WYCKOFF_TOOLS), bool(api_key), base_url or "(default)",
     )
     return agent

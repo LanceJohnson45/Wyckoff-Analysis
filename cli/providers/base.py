@@ -1,10 +1,9 @@
+# -*- coding: utf-8 -*-
 """LLM Provider 抽象接口 — 所有模型供应商实现这个接口。"""
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Generator
-from typing import Any
+from typing import Any, Generator
 
 
 class LLMProvider(ABC):
@@ -27,7 +26,8 @@ class LLMProvider(ABC):
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]],
         system_prompt: str = "",
-    ) -> dict[str, Any]: ...
+    ) -> dict[str, Any]:
+        ...
 
     @abstractmethod
     def chat_stream(

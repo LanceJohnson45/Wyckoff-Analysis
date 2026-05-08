@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 LiteLLM 适配层 — 为 Agent 层提供统一的 LLM 调用接口。
 
@@ -8,11 +9,11 @@ LiteLLM 适配层 — 为 Agent 层提供统一的 LLM 调用接口。
 
 可通过 LITELLM_ENABLED=1 启用，作为 llm_client.call_llm() 的路由替代
 """
-
 from __future__ import annotations
 
 import logging
 import os
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -29,15 +30,11 @@ logger = logging.getLogger(__name__)
 PROVIDER_PREFIX_MAP: dict[str, str] = {
     "gemini": "gemini",
     "openai": "openai",
-    "openrouter": "openai",
-    "longcat": "openai",
-    "efficiency": "openai",
-    "openai_compatible": "openai",
     "deepseek": "deepseek",
-    "qwen": "openai",  # DashScope OpenAI-compatible
-    "zhipu": "openai",  # 智谱 OpenAI-compatible
+    "qwen": "openai",        # DashScope OpenAI-compatible
+    "zhipu": "openai",       # 智谱 OpenAI-compatible
     "volcengine": "openai",  # 火山引擎 OpenAI-compatible
-    "minimax": "openai",  # Minimax OpenAI-compatible
+    "minimax": "openai",     # Minimax OpenAI-compatible
 }
 
 # 复用 llm_client.py 的 URL 表，避免重复维护
@@ -78,12 +75,11 @@ def call_llm_via_litellm(
     system_prompt: str,
     user_message: str,
     *,
-    base_url: str | None = None,
+    base_url: Optional[str] = None,
     timeout: int = 120,
-    max_output_tokens: int | None = None,
+    max_output_tokens: Optional[int] = None,
     temperature: float = DEFAULT_TEMPERATURE,
     top_p: float = DEFAULT_TOP_P,
-    allow_truncated_text: bool = False,
 ) -> str:
     """
     通过 LiteLLM 调用任意 provider 的 LLM。
@@ -99,21 +95,17 @@ def call_llm_via_litellm(
         import litellm
     except ImportError as e:
         raise ImportError(
-            "LiteLLM is required for the agent layer. Install it with: pip install litellm>=1.40.0"
+            "LiteLLM is required for the agent layer. "
+            "Install it with: pip install litellm>=1.40.0"
         ) from e
 
     litellm_model = _resolve_litellm_model(provider, model)
     resolved_base_url = _resolve_base_url(provider, base_url)
     max_tokens = max_output_tokens or DEFAULT_MAX_OUTPUT_TOKENS
-    _ = allow_truncated_text
 
     logger.info(
         "LiteLLM call: provider=%s model=%s litellm_model=%s base_url=%s max_tokens=%d",
-        provider,
-        model,
-        litellm_model,
-        resolved_base_url or "(default)",
-        max_tokens,
+        provider, model, litellm_model, resolved_base_url or "(default)", max_tokens,
     )
 
     # Gemini 需要通过环境变量传递 API key
@@ -158,3 +150,5 @@ def call_llm_via_litellm(
         getattr(response.usage, "completion_tokens", "?"),
     )
     return content.strip()
+
+

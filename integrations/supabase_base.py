@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Supabase 客户端工厂 — 不依赖 Streamlit，CLI / 脚本 / Web 通用。
 
@@ -47,8 +48,7 @@ def _resolve_credentials() -> tuple[str, str]:
     if url and key:
         return url, key
     # 内置 anon key（CLI / 无 .env 场景）
-    from core.constants import SUPABASE_ANON_KEY, SUPABASE_ANON_URL
-
+    from core.constants import SUPABASE_ANON_URL, SUPABASE_ANON_KEY
     url = url or SUPABASE_ANON_URL
     key = key or SUPABASE_ANON_KEY
     if url and key:
@@ -56,7 +56,6 @@ def _resolve_credentials() -> tuple[str, str]:
     # Streamlit Cloud
     try:
         import streamlit as st
-
         url = url or str(st.secrets.get("SUPABASE_URL", "") or "").strip()
         key = key or str(st.secrets.get("SUPABASE_KEY", "") or "").strip()
     except Exception:
@@ -64,7 +63,7 @@ def _resolve_credentials() -> tuple[str, str]:
     return url, key
 
 
-def create_admin_client() -> Client:
+def create_admin_client() -> "Client":
     """Service-role 客户端（写库用，不经过 RLS）。
 
     优先读 SUPABASE_SERVICE_ROLE_KEY，回退到通用凭据链。
@@ -80,7 +79,7 @@ def create_admin_client() -> Client:
     return _create_cached_client(url, key)
 
 
-def create_anon_client() -> Client:
+def create_anon_client() -> "Client":
     """Anon-key 客户端（RLS 保护）。
 
     Web 端由 supabase_client.get_supabase_client() 在此基础上绑定用户 session。
@@ -88,12 +87,13 @@ def create_anon_client() -> Client:
     url, key = _resolve_credentials()
     if not url or not key:
         raise ValueError(
-            "Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_KEY in .env or st.secrets."
+            "Missing Supabase credentials. "
+            "Please set SUPABASE_URL and SUPABASE_KEY in .env or st.secrets."
         )
     return _create_cached_client(url, key)
 
 
-def create_user_client(access_token: str, refresh_token: str = "") -> Client:
+def create_user_client(access_token: str, refresh_token: str = "") -> "Client":
     """用用户 JWT 创建客户端（通过 RLS）。
 
     CLI 登录后拿到的 access_token 用于身份验证，等同于 Web 端
@@ -111,16 +111,14 @@ def create_user_client(access_token: str, refresh_token: str = "") -> Client:
     if refresh_token:
         resp = client.auth.set_session(access_token, refresh_token)
         # set_session 返回新 token pair，用新的 access_token 做 postgrest auth
-        new_at = getattr(resp, "access_token", None) or (
-            resp.session.access_token if hasattr(resp, "session") and resp.session else None
-        )
+        new_at = getattr(resp, "access_token", None) or (resp.session.access_token if hasattr(resp, "session") and resp.session else None)
         if new_at:
             access_token = new_at
     client.postgrest.auth(access_token)
     return client
 
 
-def get_session_tokens(client: Client) -> tuple[str, str]:
+def get_session_tokens(client: "Client") -> tuple[str, str]:
     """从 client 中提取当前有效的 access_token 和 refresh_token。"""
     try:
         session = client.auth.get_session()

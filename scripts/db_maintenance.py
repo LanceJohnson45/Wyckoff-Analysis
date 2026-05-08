@@ -1,14 +1,14 @@
+# -*- coding: utf-8 -*-
 """
 数据库维护任务 — 多表过期数据清理。
-每日定时运行，按各表 TTL / 滑动窗口策略删除历史记录以节约数据库空间。
+每日定时运行，按各表 TTL 策略删除历史记录以节约数据库空间。
 """
-
 from __future__ import annotations
 
 import argparse
 import os
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,7 +19,6 @@ from core.constants import (
     TABLE_RECOMMENDATION_TRACKING,
     TABLE_SIGNAL_PENDING,
     TABLE_STOCK_HIST_CACHE,
-    TABLE_TAIL_BUY_HISTORY,
     TABLE_TRADE_ORDERS,
 )
 from integrations.supabase_base import create_admin_client
@@ -31,17 +30,15 @@ from integrations.supabase_base import create_admin_client
 CLEANUP_RULES: list[tuple[str, str, int, str]] = [
     (TABLE_STOCK_HIST_CACHE, "date", 320, "iso_date"),
     (TABLE_TRADE_ORDERS, "trade_date", 15, "iso_date"),
+    (TABLE_RECOMMENDATION_TRACKING, "recommend_date", 40, "yyyymmdd_int"),
     (TABLE_SIGNAL_PENDING, "signal_date", 15, "iso_date"),
     (TABLE_MARKET_SIGNAL_DAILY, "trade_date", 30, "iso_date"),
     (TABLE_DAILY_NAV, "trade_date", 15, "iso_date"),
-    (TABLE_TAIL_BUY_HISTORY, "run_date", 10, "iso_date"),
 ]
-RECOMMENDATION_KEEP_DATES = 30
-RECOMMENDATION_DATE_PAGE_SIZE = 1000
 
 
 def _cutoff_value(ttl_days: int, kind: str) -> str | int:
-    d = (datetime.now(UTC) - timedelta(days=ttl_days)).date()
+    d = (datetime.now(timezone.utc) - timedelta(days=ttl_days)).date()
     if kind == "yyyymmdd_int":
         return int(d.strftime("%Y%m%d"))
     return d.isoformat()
@@ -84,7 +81,11 @@ def _cleanup_stock_hist_cache_before_cutoff(
             return False, f"probe failed: {probe_err}"
 
         symbols = sorted(
-            {str(r.get("symbol", "")).strip() for r in (probe.data or []) if str(r.get("symbol", "")).strip()}
+            {
+                str(r.get("symbol", "")).strip()
+                for r in (probe.data or [])
+                if str(r.get("symbol", "")).strip()
+            }
         )
         if not symbols:
             return (
@@ -94,7 +95,13 @@ def _cleanup_stock_hist_cache_before_cutoff(
 
         for sym in symbols:
             try:
-                (client.table(TABLE_STOCK_HIST_CACHE).delete().eq("symbol", sym).lt("date", cutoff_iso).execute())
+                (
+                    client.table(TABLE_STOCK_HIST_CACHE)
+                    .delete()
+                    .eq("symbol", sym)
+                    .lt("date", cutoff_iso)
+                    .execute()
+                )
                 deleted_symbols += 1
             except Exception as delete_err:
                 if _is_statement_timeout_error(delete_err):
@@ -120,7 +127,13 @@ def cleanup_table(
     cutoff = _cutoff_value(ttl_days, cutoff_kind)
     try:
         if dry_run:
-            resp = client.table(table).select("*", count="exact").lt(date_col, cutoff).limit(0).execute()
+            resp = (
+                client.table(table)
+                .select("*", count="exact")
+                .lt(date_col, cutoff)
+                .limit(0)
+                .execute()
+            )
             return "dry_run", resp.count or 0
         client.table(table).delete().lt(date_col, cutoff).execute()
         return "ok", None
@@ -139,77 +152,6 @@ def cleanup_table(
             if ok:
                 return f"ok_batched: {msg}", None
             return f"error: {msg}", None
-        return f"error: {e}", None
-
-
-def _to_int_date(value: object) -> int | None:
-    try:
-        return int(value) if value is not None else None
-    except (TypeError, ValueError):
-        return None
-
-
-def _latest_recommend_dates(client, keep_dates: int, page_size: int) -> list[int]:
-    dates: list[int] = []
-    seen: set[int] = set()
-    before_date: int | None = None
-
-    while len(dates) < keep_dates:
-        query = (
-            client.table(TABLE_RECOMMENDATION_TRACKING)
-            .select("recommend_date")
-            .order("recommend_date", desc=True)
-            .limit(page_size)
-        )
-        if before_date is not None:
-            query = query.lt("recommend_date", before_date)
-
-        rows = query.execute().data or []
-        page_dates = [_to_int_date(row.get("recommend_date")) for row in rows]
-        valid_dates = [d for d in page_dates if d is not None]
-        if not valid_dates:
-            break
-
-        for recommend_date in valid_dates:
-            if recommend_date not in seen:
-                seen.add(recommend_date)
-                dates.append(recommend_date)
-                if len(dates) >= keep_dates:
-                    break
-
-        before_date = min(valid_dates)
-
-    return dates
-
-
-def cleanup_recommendation_tracking(
-    client,
-    *,
-    keep_dates: int = RECOMMENDATION_KEEP_DATES,
-    page_size: int = RECOMMENDATION_DATE_PAGE_SIZE,
-    dry_run: bool = False,
-) -> tuple[str, int | None]:
-    keep_dates = max(int(keep_dates), 1)
-    page_size = max(int(page_size), 1)
-    dates = _latest_recommend_dates(client, keep_dates, page_size)
-    if len(dates) < keep_dates:
-        count = 0 if dry_run else None
-        return f"keep_all, keep_dates={keep_dates}, distinct_dates={len(dates)}", count
-
-    cutoff = dates[keep_dates - 1]
-    try:
-        if dry_run:
-            resp = (
-                client.table(TABLE_RECOMMENDATION_TRACKING)
-                .select("*", count="exact")
-                .lt("recommend_date", cutoff)
-                .limit(0)
-                .execute()
-            )
-            return f"dry_run, keep_dates={keep_dates}, cutoff={cutoff}", resp.count or 0
-        client.table(TABLE_RECOMMENDATION_TRACKING).delete().lt("recommend_date", cutoff).execute()
-        return f"ok, keep_dates={keep_dates}, cutoff={cutoff}", None
-    except Exception as e:
         return f"error: {e}", None
 
 
@@ -238,16 +180,27 @@ def cleanup_unadjusted_cache(client) -> tuple[bool, str]:
                         return True, f"adjust=none probe timeout, skipped remaining cleanup: {probe_err}"
                     raise
                 symbols = sorted(
-                    {str(r.get("symbol", "")).strip() for r in (probe.data or []) if str(r.get("symbol", "")).strip()}
+                    {
+                        str(r.get("symbol", "")).strip()
+                        for r in (probe.data or [])
+                        if str(r.get("symbol", "")).strip()
+                    }
                 )
                 if not symbols:
                     return (
                         True,
-                        f"cleaned adjust=none (batched, symbols={deleted_symbols}, timeout_symbols={timeout_symbols})",
+                        "cleaned adjust=none (batched, "
+                        f"symbols={deleted_symbols}, timeout_symbols={timeout_symbols})",
                     )
                 for sym in symbols:
                     try:
-                        (client.table(TABLE_STOCK_HIST_CACHE).delete().eq("adjust", "none").eq("symbol", sym).execute())
+                        (
+                            client.table(TABLE_STOCK_HIST_CACHE)
+                            .delete()
+                            .eq("adjust", "none")
+                            .eq("symbol", sym)
+                            .execute()
+                        )
                         deleted_symbols += 1
                     except Exception as delete_err:
                         if _is_statement_timeout_error(delete_err):
@@ -290,12 +243,6 @@ def main() -> int:
         print(f"[db_maintenance] {table}: {status}, ttl={ttl_days}d{suffix}")
         if status.startswith("error"):
             all_ok = False
-
-    status, count = cleanup_recommendation_tracking(client, dry_run=args.dry_run)
-    suffix = f" ({count} rows)" if count is not None else ""
-    print(f"[db_maintenance] {TABLE_RECOMMENDATION_TRACKING}: {status}{suffix}")
-    if status.startswith("error"):
-        all_ok = False
 
     ok, msg = cleanup_unadjusted_cache(client)
     print(f"[db_maintenance] stock_hist_cache adjust=none: ok={ok}, {msg}")

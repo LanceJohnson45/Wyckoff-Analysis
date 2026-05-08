@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 持仓健康诊断模块
 
@@ -15,21 +16,23 @@
     for d in diagnostics:
         print(format_diagnostic_text(d))
 """
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from typing import Optional
 
+import numpy as np
 import pandas as pd
 
 from core.wyckoff_engine import (
     FunnelConfig,
-    _analyze_accum_stage,
-    _detect_evr,
-    _detect_lps,
-    _detect_sos,
-    _detect_spring,
     _sorted_if_needed,
+    _analyze_accum_stage,
+    _detect_distribution_start,
+    _detect_spring,
+    _detect_lps,
+    _detect_evr,
+    _detect_sos,
     layer2_strength_detailed,
     layer5_exit_signals,
 )
@@ -46,22 +49,22 @@ class HoldingDiagnostic:
     pnl_pct: float  # 浮盈亏 %
 
     # 均线结构
-    ma5: float | None = None
-    ma20: float | None = None
-    ma50: float | None = None
-    ma200: float | None = None
+    ma5: Optional[float] = None
+    ma20: Optional[float] = None
+    ma50: Optional[float] = None
+    ma200: Optional[float] = None
     ma_pattern: str = "数据不足"  # 多头排列 / 空头排列 / MA50>MA200 / MA50<MA200
-    ma200_bias_pct: float | None = None
+    ma200_bias_pct: Optional[float] = None
 
     # Wyckoff 定位
     l2_channel: str = "未入选"  # 主升通道 / 潜伏通道 / 吸筹通道 / ...
-    accum_stage: str | None = None  # Accum_A / Accum_B / Accum_C
+    accum_stage: Optional[str] = None  # Accum_A / Accum_B / Accum_C
     track: str = "Unknown"  # Trend / Accum / Unknown
     l4_triggers: list[str] = field(default_factory=list)  # ["SOS", "Spring", ...]
 
     # 退出信号 (来自 layer5_exit_signals)
-    exit_signal: str | None = None  # stop_loss / distribution_warning
-    exit_price: float | None = None
+    exit_signal: Optional[str] = None  # stop_loss / distribution_warning
+    exit_price: Optional[float] = None
     exit_reason: str = ""
 
     # 止损参考
@@ -104,8 +107,8 @@ def _classify_track(channel: str) -> str:
 
 def _calc_ma_pattern(
     close_val: float,
-    ma50: float | None,
-    ma200: float | None,
+    ma50: Optional[float],
+    ma200: Optional[float],
 ) -> str:
     if ma50 is None or ma200 is None:
         return "数据不足"
@@ -164,7 +167,9 @@ def diagnose_one_stock(
     l2_channel = "未入选"
     try:
         diag_cfg = replace(cfg, enable_rps_filter=False)
-        passed, channel_map, _ = layer2_strength_detailed([code], {code: df_s}, bench_df, diag_cfg)
+        passed, channel_map = layer2_strength_detailed(
+            [code], {code: df_s}, bench_df, diag_cfg
+        )
         if code in channel_map:
             l2_channel = channel_map[code]
     except Exception:
@@ -248,9 +253,9 @@ def diagnose_one_stock(
     if ma_pattern == "空头排列":
         reasons.append("均线空头排列")
     if range_60d > 50:
-        reasons.append(f"60日振幅过大(>{range_60d:.0f}%)")
+        reasons.append("60日振幅过大(>{:.0f}%)".format(range_60d))
     if ret_10d < -15:
-        reasons.append(f"近10日暴跌({ret_10d:+.1f}%)")
+        reasons.append("近10日暴跌({:+.1f}%)".format(ret_10d))
 
     # 警戒信号
     if exit_signal == "distribution_warning":
@@ -279,7 +284,9 @@ def diagnose_one_stock(
 
     if danger_count >= 1:
         health = "🔴危险"
-    elif warn_count >= 2 or warn_count == 1 and not positive:
+    elif warn_count >= 2:
+        health = "🟡警戒"
+    elif warn_count == 1 and not positive:
         health = "🟡警戒"
     else:
         health = "🟢健康"
@@ -340,17 +347,12 @@ def diagnose_holdings(
         df = df_map.get(code)
         if df is None or df.empty:
             # 无数据时返回最小诊断
-            results.append(
-                HoldingDiagnostic(
-                    code=code,
-                    name=name,
-                    cost=cost,
-                    latest_close=0.0,
-                    pnl_pct=0.0,
-                    health="🔴危险",
-                    health_reasons=["无法获取行情数据"],
-                )
-            )
+            results.append(HoldingDiagnostic(
+                code=code, name=name, cost=cost,
+                latest_close=0.0, pnl_pct=0.0,
+                health="🔴危险",
+                health_reasons=["无法获取行情数据"],
+            ))
             continue
         results.append(diagnose_one_stock(code, name, cost, df, bench_df, cfg))
     return results
@@ -387,7 +389,9 @@ def format_diagnostic_text(d: HoldingDiagnostic) -> str:
         lines.append("  " + " | ".join(exit_parts))
 
     # 止损
-    lines.append(f"  止损(-7%): {d.stop_loss_7pct:.2f} → {d.stop_loss_status}")
+    lines.append(
+        f"  止损(-7%): {d.stop_loss_7pct:.2f} → {d.stop_loss_status}"
+    )
 
     # 量能
     lines.append(
