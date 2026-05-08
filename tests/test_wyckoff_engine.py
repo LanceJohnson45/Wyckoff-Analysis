@@ -163,6 +163,10 @@ class TestConfigDefaults:
         assert FunnelConfig.for_profile("hk_value").profile == "hk"
         assert FunnelConfig.for_profile("us_value").profile == "us"
 
+    def test_profile_market_mismatch_is_rejected(self):
+        with pytest.raises(ValueError, match="does not match market"):
+            FunnelConfig.for_profile("cn", market="hk")
+
 
 class TestIntegrityPolicy:
     def test_integrity_rejects_recent_missing_days(self):
@@ -316,6 +320,41 @@ class TestL2CLiteDecision:
 
         assert passed == ["000001"]
         assert "主升通道" in channel_map["000001"]
+        assert rejected == {}
+
+    @pytest.mark.parametrize(
+        ("market", "symbol"),
+        [
+            ("hk", "0700.HK"),
+            ("us", "AAPL"),
+        ],
+    )
+    def test_hk_us_layer2_keep_c_lite_labels(self, market, symbol):
+        cfg = FunnelConfig.for_market(market)
+        dates = pd.date_range("2024-01-01", periods=260, freq="B")
+        closes = [10 + i * 0.08 for i in range(260)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["pct_chg"] = pd.Series(df["close"]).pct_change() * 100.0
+        df["amount"] = 100_000_000.0
+        bench = _make_df(
+            dates.strftime("%Y-%m-%d").tolist(),
+            [100.0 for _ in range(260)],
+        )
+        bench["pct_chg"] = pd.Series(bench["close"]).pct_change() * 100.0
+
+        passed, channel_map, rejected = layer2_strength_detailed(
+            [symbol],
+            {symbol: df},
+            bench,
+            cfg,
+            rps_universe=[symbol],
+            return_rejections=True,
+        )
+
+        assert passed == [symbol]
+        assert channel_map[symbol] in {"主升确认", "启动确认", "吸筹改善"}
+        assert "主升通道" not in channel_map[symbol]
+        assert "点火破局" not in channel_map[symbol]
         assert rejected == {}
 
 

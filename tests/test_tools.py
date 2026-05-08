@@ -40,6 +40,42 @@ class TestFunnelConfig:
         for val in ("0", "false", "no", "off", ""):
             assert parse_bool(val) is False, f"Expected False for {val!r}"
 
+    def test_global_cfg_overrides_apply_only_to_cn(self, monkeypatch):
+        from core.wyckoff_engine import FunnelConfig
+        from tools.funnel_config import apply_funnel_cfg_overrides
+
+        monkeypatch.setenv("FUNNEL_CFG_MIN_MARKET_CAP_YI", "35.0")
+        monkeypatch.setenv("FUNNEL_CFG_MIN_AVG_AMOUNT_WAN", "5000.0")
+
+        cn = FunnelConfig.for_market("cn")
+        hk = FunnelConfig.for_market("hk")
+        us = FunnelConfig.for_market("us")
+        apply_funnel_cfg_overrides(cn)
+        apply_funnel_cfg_overrides(hk)
+        apply_funnel_cfg_overrides(us)
+
+        assert cn.min_market_cap_yi == 35.0
+        assert cn.min_avg_amount_wan == 5000.0
+        assert hk.min_market_cap_yi == 0.0
+        assert hk.min_avg_amount_wan == 4000.0
+        assert us.min_market_cap_yi == 0.0
+        assert us.min_avg_amount_wan == 0.0
+
+    def test_market_scoped_cfg_overrides_apply_to_matching_market(self, monkeypatch):
+        from core.wyckoff_engine import FunnelConfig
+        from tools.funnel_config import apply_funnel_cfg_overrides
+
+        monkeypatch.setenv("FUNNEL_CFG_US_MIN_AVG_AMOUNT_WAN", "123.0")
+        monkeypatch.setenv("FUNNEL_CFG_HK_MIN_AVG_AMOUNT_WAN", "456.0")
+
+        hk = FunnelConfig.for_market("hk")
+        us = FunnelConfig.for_market("us")
+        apply_funnel_cfg_overrides(hk)
+        apply_funnel_cfg_overrides(us)
+
+        assert hk.min_avg_amount_wan == 456.0
+        assert us.min_avg_amount_wan == 123.0
+
 
 # ── tools/report_builder ──
 

@@ -491,6 +491,12 @@ class FunnelConfig:
         """Build one of the three market profiles: cn, hk, or us."""
         profile_key = _normalize_template_key(profile)
         profile_key = _PROFILE_ALIASES.get(profile_key, profile_key)
+        if market is not None:
+            market_key = _PROFILE_ALIASES.get(_normalize_template_key(market), "cn")
+            if profile_key != market_key:
+                raise ValueError(
+                    f"funnel profile {profile_key!r} does not match market {market_key!r}"
+                )
         if profile_key in _PROFILE_OVERRIDES:
             cfg = cls()
             _apply_config_overrides(cfg, _PROFILE_OVERRIDES[profile_key])

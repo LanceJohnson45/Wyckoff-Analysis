@@ -52,6 +52,9 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
     ).strip().lower()
     if profile:
         os.environ["FUNNEL_CONFIG_PROFILE"] = profile
+    elif market in {"cn", "us", "hk"}:
+        os.environ.pop("FUNNEL_CONFIG_PROFILE", None)
+        os.environ.pop("FUNNEL_PROFILE", None)
 
     pool_mode = str(payload.get("pool_mode", "") or "").strip().lower()
     if pool_mode in {"manual", "board", "sp500", "hsi_hstech", "hsi_hstech_union"}:
@@ -70,20 +73,34 @@ def _apply_funnel_env(payload: dict[str, Any]) -> None:
         "trading_days": "FUNNEL_TRADING_DAYS",
         "max_workers": "FUNNEL_MAX_WORKERS",
         "batch_size": "FUNNEL_BATCH_SIZE",
-        "min_market_cap_yi": "FUNNEL_CFG_MIN_MARKET_CAP_YI",
-        "min_avg_amount_wan": "FUNNEL_CFG_MIN_AVG_AMOUNT_WAN",
-        "ma_short": "FUNNEL_CFG_MA_SHORT",
-        "ma_long": "FUNNEL_CFG_MA_LONG",
-        "ma_hold": "FUNNEL_CFG_MA_HOLD",
-        "top_n_sectors": "FUNNEL_CFG_TOP_N_SECTORS",
-        "spring_support_window": "FUNNEL_CFG_SPRING_SUPPORT_WINDOW",
-        "lps_vol_dry_ratio": "FUNNEL_CFG_LPS_VOL_DRY_RATIO",
-        "evr_vol_ratio": "FUNNEL_CFG_EVR_VOL_RATIO",
     }
     for key, env_name in env_map.items():
         value = payload.get(key)
         if value not in {None, ""}:
             os.environ[env_name] = str(value)
+
+    market_cfg_fields = {
+        "min_market_cap_yi": "MIN_MARKET_CAP_YI",
+        "min_avg_amount_wan": "MIN_AVG_AMOUNT_WAN",
+        "ma_short": "MA_SHORT",
+        "ma_long": "MA_LONG",
+        "ma_hold": "MA_HOLD",
+        "top_n_sectors": "TOP_N_SECTORS",
+        "spring_support_window": "SPRING_SUPPORT_WINDOW",
+        "lps_vol_dry_ratio": "LPS_VOL_DRY_RATIO",
+        "evr_vol_ratio": "EVR_VOL_RATIO",
+    }
+    market_prefix = market.upper() if market in {"cn", "us", "hk"} else "CN"
+    for key, suffix in market_cfg_fields.items():
+        value = payload.get(key)
+        if value in {None, ""}:
+            continue
+        env_name = (
+            f"FUNNEL_CFG_{suffix}"
+            if market_prefix == "CN"
+            else f"FUNNEL_CFG_{market_prefix}_{suffix}"
+        )
+        os.environ[env_name] = str(value)
 
 
 def _run_funnel_screen(request_id: str, payload: dict[str, Any]) -> dict[str, Any]:

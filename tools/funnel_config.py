@@ -29,20 +29,37 @@ def parse_bool(raw: str) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _cfg_market(cfg: FunnelConfig) -> str:
+    market = str(
+        getattr(cfg, "market_template", "") or getattr(cfg, "profile", "cn") or "cn"
+    ).strip().lower()
+    return market if market in {"cn", "hk", "us"} else "cn"
+
+
 def apply_funnel_cfg_overrides(cfg: FunnelConfig) -> None:
     """
-    将环境变量 FUNNEL_CFG_* 映射到 FunnelConfig 字段。
+    将环境变量映射到 FunnelConfig 字段。
 
-    示例：FUNNEL_CFG_MIN_MARKET_CAP_YI=35 → cfg.min_market_cap_yi = 35.0
+    示例：
+    - FUNNEL_CFG_MIN_MARKET_CAP_YI=35 只作用于 CN 默认口径
+    - FUNNEL_CFG_HK_MIN_AVG_AMOUNT_WAN=4000 只作用于 HK
+    - FUNNEL_CFG_US_MIN_AVG_AMOUNT_WAN=0 只作用于 US
 
     注意：enable_evr_trigger 仅由 regime 自动决策，不接受环境变量覆盖。
     """
+    market = _cfg_market(cfg)
     for f in dataclass_fields(FunnelConfig):
         if f.name == "enable_evr_trigger":
             # EVR 仅由 regime 自动决策，不接受环境变量覆盖。
             continue
-        key = f"FUNNEL_CFG_{f.name.upper()}"
-        raw = os.getenv(key)
+        field_key = f.name.upper()
+        scoped_key = f"FUNNEL_CFG_{market.upper()}_{field_key}"
+        legacy_key = f"FUNNEL_CFG_{field_key}"
+        raw = os.getenv(scoped_key)
+        key = scoped_key
+        if raw is None and market == "cn":
+            raw = os.getenv(legacy_key)
+            key = legacy_key
         if raw is None:
             continue
         val = raw.strip()
