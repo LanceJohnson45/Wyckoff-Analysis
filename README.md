@@ -43,7 +43,7 @@ Web + CLI 双通道，Gemini / Claude / OpenAI 三选一，GitHub Actions 定时
 个股日线自动降级：
 
 ```
-tickflow → tushare → akshare → baostock → efinance
+tickflow → akshare → baostock → efinance
 ```
 
 任一源不可用时自动切换，无需干预。

@@ -47,7 +47,6 @@ def test_fetch_stock_hist_cn_prefers_yfinance_when_configured(monkeypatch: pytes
     monkeypatch.setenv("TICKFLOW_API_KEY", "dummy")
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT", None)
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT_READY", False)
-    monkeypatch.setattr("integrations.tushare_client.get_pro", lambda: object())
 
     def _raise_lower_source_if_called(*args, **kwargs):
         raise RuntimeError("should_not_call")
@@ -60,7 +59,6 @@ def test_fetch_stock_hist_cn_prefers_yfinance_when_configured(monkeypatch: pytes
 
     monkeypatch.setattr(ds, "_fetch_stock_yfinance", _fake_yfinance)
     monkeypatch.setattr(ds, "_fetch_stock_tickflow", _raise_lower_source_if_called)
-    monkeypatch.setattr(ds, "_fetch_stock_tushare", _raise_lower_source_if_called)
 
     out = ds.fetch_stock_hist("600519", "2026-04-10", "2026-04-18", adjust="qfq")
     assert not out.empty
@@ -69,12 +67,12 @@ def test_fetch_stock_hist_cn_prefers_yfinance_when_configured(monkeypatch: pytes
     assert out.iloc[0]["日期"] == "2026-04-18"
 
 
-def test_fetch_stock_hist_falls_back_to_tushare_when_tickflow_failed(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fetch_stock_hist_falls_back_to_akshare_when_tickflow_failed(monkeypatch: pytest.MonkeyPatch) -> None:
     _disable_other_fallbacks(monkeypatch)
+    monkeypatch.delenv("DATA_SOURCE_DISABLE_AKSHARE", raising=False)
     monkeypatch.setenv("TICKFLOW_API_KEY", "dummy")
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT", None)
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT_READY", False)
-    monkeypatch.setattr("integrations.tushare_client.get_pro", lambda: object())
 
     def _raise_tickflow(*args, **kwargs):
         raise RuntimeError("tickflow timeout")
@@ -85,11 +83,11 @@ def test_fetch_stock_hist_falls_back_to_tushare_when_tickflow_failed(monkeypatch
         lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("yf failed")),
     )
     monkeypatch.setattr(ds, "_fetch_stock_tickflow", _raise_tickflow)
-    monkeypatch.setattr(ds, "_fetch_stock_tushare", lambda *args, **kwargs: _sample_cn_hist())
+    monkeypatch.setattr(ds, "_fetch_stock_akshare", lambda *args, **kwargs: _sample_cn_hist())
 
     out = ds.fetch_stock_hist("000001", "2026-04-10", "2026-04-18", adjust="qfq")
     assert not out.empty
-    assert out.attrs.get("source") == "tushare"
+    assert out.attrs.get("source") == "akshare"
 
 
 def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -97,7 +95,6 @@ def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pyt
     monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT", None)
     monkeypatch.setattr(ds, "_TICKFLOW_CLIENT_READY", False)
-    monkeypatch.setattr("integrations.tushare_client.get_pro", lambda: None)
     monkeypatch.setattr(
         ds,
         "_fetch_stock_yfinance",
@@ -106,7 +103,7 @@ def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pyt
 
     with pytest.raises(RuntimeError) as exc:
         ds.fetch_stock_hist("000001", "2026-04-10", "2026-04-18", adjust="qfq")
-    assert "yfinance→tickflow→tushare→akshare→baostock→efinance" in str(exc.value)
+    assert "yfinance→tickflow→akshare→baostock→efinance" in str(exc.value)
 
 
 def test_fetch_stock_hist_us_prefers_yfinance_then_tickflow(monkeypatch: pytest.MonkeyPatch) -> None:

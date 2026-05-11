@@ -217,7 +217,7 @@ def main() -> int:
         _log(f"LLM base_url: {llm_base_url or '(empty)'} (env={base_url_env_key})", logs_path)
 
     # 数据源口径在 integrations/data_source.py 中固定为：
-    # tickflow 优先（前复权 qfq），失败按 tushare→akshare→baostock→efinance 回退。
+    # tickflow 优先（前复权 qfq），失败按 akshare→baostock→efinance 回退。
     # US/HK 个股使用 yfinance，A 股指数优先 yfinance 后回退 akshare。
 
     from core.funnel_pipeline import run_funnel as run_step2

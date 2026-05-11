@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：A 股个股日线 yfinance / tickflow / tushare / akshare / baostock / efinance 逐级回退；
+统一数据源：A 股个股日线 yfinance / tickflow / akshare / baostock / efinance 逐级回退；
 US/HK 个股优先 yfinance，失败回退 tickflow；A 股指数优先 yfinance，失败回退 akshare；行业/市值仅读缓存。
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
@@ -148,26 +148,6 @@ def _is_retryable_akshare_error(err: Exception) -> bool:
         "proxyerror",
     ]
     return any(m in text for m in markers) or isinstance(err, RemoteDisconnected)
-
-
-def _to_ts_code(symbol: str) -> str:
-    """6 位代码转 tushare 格式：000001 -> 000001.SZ，600519 -> 600519.SH"""
-    s = str(symbol).strip()
-    if "." in s:
-        return s
-    if s.startswith(("600", "601", "603", "605", "688")):
-        return f"{s}.SH"
-    return f"{s}.SZ"
-
-
-def _index_to_ts_code(code: str) -> str:
-    """指数代码转 tushare 格式：000001->000001.SH, 399001->399001.SZ, 399006->399006.SZ"""
-    s = str(code).strip()
-    if "." in s:
-        return s
-    if s.startswith(("000", "880", "899")):
-        return f"{s}.SH"
-    return f"{s}.SZ"
 
 
 def _get_tickflow_client():
@@ -963,71 +943,6 @@ def _fetch_stock_tickflow_global(
     ].copy()
 
 
-def _fetch_stock_tushare(
-    symbol: str,
-    start: str,
-    end: str,
-    adjust: str,
-) -> pd.DataFrame:
-    import tushare as ts
-
-    from integrations.tushare_client import _wait_for_rate_limit, get_pro
-
-    pro = get_pro()
-    if pro is None:
-        raise RuntimeError("TUSHARE_TOKEN 未配置")
-    ts_code = _to_ts_code(symbol)
-    adj_val = str(adjust or "qfq").strip().lower() or "qfq"
-    _wait_for_rate_limit()
-    df = ts.pro_bar(ts_code=ts_code, adj=adj_val, start_date=start, end_date=end)
-    if df is None or df.empty:
-        try:
-            df_no_adj = pro.daily(ts_code=ts_code, start_date=start, end_date=end)
-            if df_no_adj is not None and not df_no_adj.empty:
-                raise RuntimeError("tushare empty (qfq auth limit?)")
-        except Exception:
-            pass
-        raise RuntimeError("tushare empty")
-
-    df = df.rename(
-        columns={
-            "trade_date": "日期",
-            "open": "开盘",
-            "high": "最高",
-            "low": "最低",
-            "close": "收盘",
-            "vol": "成交量",
-            "amount": "成交额",
-            "pct_chg": "涨跌幅",
-        }
-    )
-    df["成交量"] = pd.to_numeric(df["成交量"], errors="coerce") * 100
-    df["成交额"] = pd.to_numeric(df["成交额"], errors="coerce") * 1000
-    df["换手率"] = pd.NA
-    df["振幅"] = pd.NA
-    df["日期"] = (
-        df["日期"].astype(str).str[:4]
-        + "-"
-        + df["日期"].astype(str).str[4:6]
-        + "-"
-        + df["日期"].astype(str).str[6:8]
-    )
-    return df[
-        [
-            "日期",
-            "开盘",
-            "最高",
-            "最低",
-            "收盘",
-            "成交量",
-            "成交额",
-            "涨跌幅",
-            "换手率",
-            "振幅",
-        ]
-    ].copy()
-
-
 def fetch_stock_hist(
     symbol: str,
     start: str | date,
@@ -1036,7 +951,7 @@ def fetch_stock_hist(
     market: Literal["cn", "us", "hk"] = "cn",
 ) -> pd.DataFrame:
     """
-    个股日线：A 股 yfinance 优先，失败时回退 tickflow/tushare/akshare/baostock/efinance。
+    个股日线：A 股 yfinance 优先，失败时回退 tickflow/akshare/baostock/efinance。
     US/HK 个股优先 yfinance，失败回退 tickflow。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_YFINANCE=1
@@ -1186,24 +1101,7 @@ def fetch_stock_hist(
             failed_sources.append("tickflow")
             failed_details.append(f"tickflow={_compact_error(e)}")
 
-    # 3) tushare（固定 qfq）
-    from integrations.tushare_client import get_pro
-
-    pro = get_pro()
-    if pro is not None:
-        try:
-            return _tag_source(
-                _fetch_stock_tushare(symbol, start_s, end_s, "qfq"), "tushare"
-            )
-        except Exception as e:
-            _debug_source_fail("tushare", e)
-            failed_sources.append("tushare")
-            failed_details.append(f"tushare={_compact_error(e)}")
-    else:
-        failed_sources.append("tushare(unconfigured)")
-        failed_details.append("tushare=token_missing")
-
-    # 4. akshare
+    # 3. akshare
     if disable_akshare:
         failed_sources.append("akshare(disabled)")
         failed_details.append("akshare=disabled_by_env")
@@ -1230,7 +1128,7 @@ def fetch_stock_hist(
                 failed_details.append(f"akshare={_compact_error(e)}")
                 break
 
-    # 5. baostock (仅前复权)
+    # 4. baostock (仅前复权)
     baostock_circuit_open, baostock_circuit_note = _baostock_circuit_state()
     if disable_baostock:
         failed_sources.append("baostock(disabled)")
@@ -1261,7 +1159,7 @@ def fetch_stock_hist(
             failed_sources.append("baostock")
             failed_details.append(f"baostock={_compact_error(e)}")
 
-    # 6. efinance (仅前复权)
+    # 5. efinance (仅前复权)
     if disable_efinance:
         failed_sources.append("efinance(disabled)")
         failed_details.append("efinance=disabled_by_env")
@@ -1285,7 +1183,7 @@ def fetch_stock_hist(
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 yfinance→tickflow→tushare→akshare→baostock→efinance，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 yfinance→tickflow→akshare→baostock→efinance，"
         f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
     )
 
