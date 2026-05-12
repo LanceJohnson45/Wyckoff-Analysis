@@ -64,6 +64,13 @@ def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
         "amplitude",
     ]
     out = out[[c for c in keep if c in out.columns]].copy()
+    
+    # 如果缺少 amplitude，尝试计算
+    if "amplitude" not in out.columns and all(c in out.columns for c in ["high", "low", "close"]):
+        prev_close = out["close"].shift(1)
+        base = prev_close.where(prev_close > 0, out["close"].where(out["close"] > 0, pd.NA))
+        out["amplitude"] = ((out["high"] - out["low"]) / base.replace(0, pd.NA) * 100).astype(float)
+    
     for col in [
         "open",
         "high",
@@ -301,6 +308,37 @@ def upsert_cache_data(
         )
         return True
     except APIError as e:
+        error_msg = str(e)
+        # 如果是列缺失错误，尝试移除该列后重试
+        if "Could not find the" in error_msg and "column" in error_msg:
+            import re
+            match = re.search(r"'(\w+)' column", error_msg)
+            if match:
+                missing_col = match.group(1)
+                print(
+                    f"[upsert_cache_data] Column '{missing_col}' not in schema, retrying without it",
+                    flush=True,
+                )
+                # 从 payload 中移除该列
+                if missing_col in payload.columns:
+                    payload = payload.drop(columns=[missing_col])
+                    records = payload.to_dict(orient="records")
+                    try:
+                        supabase.table(TABLE_STOCK_HIST_CACHE).upsert(records).execute()
+                        _trim_symbol_history_window(
+                            supabase=supabase,
+                            symbol=symbol,
+                            adjust=adjust,
+                            retention_days=_STOCK_HIST_RETENTION_DAYS,
+                        )
+                        return True
+                    except Exception as retry_error:
+                        print(
+                            f"[upsert_cache_data] Retry failed: {retry_error}",
+                            flush=True,
+                        )
+                        return False
+        
         print(
             f"[upsert_cache_data] APIError: symbol={symbol}, adjust={adjust}, "
             f"source={source}, rows={len(records)}, error={e}",

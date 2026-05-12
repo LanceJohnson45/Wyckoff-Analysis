@@ -82,6 +82,13 @@ class HoldingDiagnostic:
     # 综合评级
     health: str = "🟢健康"
     health_reasons: list[str] = field(default_factory=list)
+    
+    # 新增：趋势预判与操作建议
+    trend_outlook: str = ""  # 看多 / 看空 / 震荡 / 观望
+    next_resistance: Optional[float] = None  # 下一个压力位
+    next_support: Optional[float] = None  # 下一个支撑位
+    action_plan: str = ""  # 操作建议（持有/加仓/减仓/止损）
+    action_condition: str = ""  # 触发条件
 
 
 # ── 通道 → 轨道映射 ──
@@ -103,6 +110,123 @@ def _classify_track(channel: str) -> str:
         if a in channel:
             return "Accum"
     return "Unknown"
+
+
+def _generate_action_plan(
+    *,
+    latest_close: float,
+    cost: float,
+    ma50: Optional[float],
+    ma200: Optional[float],
+    ma_pattern: str,
+    l4_triggers: list[str],
+    accum_stage: Optional[str],
+    exit_signal: Optional[str],
+    stop_status: str,
+    ret_10d: float,
+    ret_20d: float,
+    vol_ratio: float,
+    high: pd.Series,
+    low: pd.Series,
+    close: pd.Series,
+) -> tuple[str, Optional[float], Optional[float], str, str]:
+    """
+    生成趋势预判与操作建议。
+    
+    Returns:
+        (trend_outlook, next_resistance, next_support, action_plan, action_condition)
+    """
+    # 计算关键位
+    h20 = float(high.tail(20).max()) if len(high) >= 20 else latest_close
+    l20 = float(low.tail(20).min()) if len(low) >= 20 else latest_close
+    h60 = float(high.tail(60).max()) if len(high) >= 60 else h20
+    l60 = float(low.tail(60).min()) if len(low) >= 60 else l20
+    
+    next_resistance = h20 if h20 > latest_close * 1.02 else h60
+    next_support = l20 if l20 < latest_close * 0.98 else l60
+    
+    # 趋势预判
+    trend_outlook = "观望"
+    action_plan = "持有观察"
+    action_condition = ""
+    
+    # 危险：立即止损
+    if stop_status == "已穿止损" or exit_signal == "stop_loss":
+        trend_outlook = "看空"
+        action_plan = "立即止损"
+        action_condition = "结构已破坏，无条件退出"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 派发预警：减仓
+    if exit_signal == "distribution_warning":
+        trend_outlook = "看空"
+        action_plan = "分批减仓"
+        action_condition = f"反弹至 {latest_close * 1.03:.2f} 附近减仓 50%"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 左侧信号：持有或加仓
+    if l4_triggers or accum_stage == "Accum_C":
+        if "Spring" in l4_triggers or "LPS" in l4_triggers:
+            trend_outlook = "看多"
+            if cost > 0 and latest_close < cost * 0.98:
+                action_plan = "持有待涨"
+                action_condition = f"若回踩 {next_support:.2f} 缩量（量比<0.8）可加仓，突破 {next_resistance:.2f} 放量确认上涨"
+            else:
+                action_plan = "持有"
+                action_condition = f"突破 {next_resistance:.2f} 且量比>1.5 可加仓"
+        elif "SOS" in l4_triggers:
+            trend_outlook = "看多"
+            action_plan = "持有"
+            action_condition = f"回踩 {ma50 or next_support:.2f} 不破可加仓"
+        else:
+            trend_outlook = "震荡"
+            action_plan = "持有"
+            action_condition = f"跌破 {next_support:.2f} 止损"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 右侧趋势：多头排列
+    if ma_pattern == "多头排列":
+        trend_outlook = "看多"
+        if ret_10d > 10:
+            action_plan = "持有"
+            action_condition = f"回踩 MA50({ma50:.2f}) 不破继续持有，破位减仓"
+        else:
+            action_plan = "持有"
+            action_condition = f"突破 {next_resistance:.2f} 可加仓"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 空头排列：观望或止损
+    if ma_pattern == "空头排列":
+        trend_outlook = "看空"
+        if cost > 0 and latest_close < cost * 0.95:
+            action_plan = "止损"
+            action_condition = f"反弹至成本价 {cost:.2f} 附近止损"
+        else:
+            action_plan = "减仓"
+            action_condition = f"反弹至 MA50({ma50:.2f}) 减仓 50%"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 均线偏弱但有动能
+    if ma_pattern == "MA50<MA200(偏弱)":
+        if ret_20d > 15 and vol_ratio > 1.2:
+            trend_outlook = "震荡偏多"
+            action_plan = "持有"
+            action_condition = f"突破 MA50({ma50:.2f}) 转强，跌破 {next_support:.2f} 止损"
+        else:
+            trend_outlook = "震荡"
+            action_plan = "持有观察"
+            action_condition = f"突破 {next_resistance:.2f} 且放量可加仓，跌破 {next_support:.2f} 减仓"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 均线偏强
+    if ma_pattern == "MA50>MA200(偏强)":
+        trend_outlook = "看多"
+        action_plan = "持有"
+        action_condition = f"回踩 MA50({ma50:.2f}) 不破可加仓"
+        return trend_outlook, next_resistance, next_support, action_plan, action_condition
+    
+    # 默认
+    return "观望", next_resistance, next_support, "持有观察", f"突破 {next_resistance:.2f} 或跌破 {next_support:.2f} 再决策"
 
 
 def _calc_ma_pattern(
@@ -264,7 +388,8 @@ def diagnose_one_stock(
         reasons.append("逼近止损线")
     if pnl_pct < -5:
         reasons.append("浮亏超过5%")
-    if ma_pattern == "MA50<MA200(偏弱)" and pnl_pct < 0:
+    # 优化：左侧信号（L4触发）时不因均线偏弱降级
+    if ma_pattern == "MA50<MA200(偏弱)" and pnl_pct < 0 and not l4_triggers:
         reasons.append("均线偏弱且浮亏")
     if vol_ratio < 0.5:
         reasons.append("量能严重萎缩")
@@ -277,14 +402,19 @@ def diagnose_one_stock(
         positive.append(f"L2通道:{l2_channel}")
     if l4_triggers:
         positive.append(f"L4信号:{'+'.join(l4_triggers)}")
+    if accum_stage in ["Accum_C"]:
+        positive.append("吸筹末期")
 
-    # 打分
+    # 打分（优化：左侧信号加权）
     danger_count = sum(1 for r in reasons if any(k in r for k in ["已穿", "暴跌", "空头排列", "结构止损"]))
     warn_count = len(reasons) - danger_count
+    
+    # 左侧信号降级保护：有 L4 触发且无危险信号时，最多警戒
+    has_left_signal = bool(l4_triggers) or accum_stage in ["Accum_C"]
 
     if danger_count >= 1:
         health = "🔴危险"
-    elif warn_count >= 2:
+    elif warn_count >= 2 and not has_left_signal:
         health = "🟡警戒"
     elif warn_count == 1 and not positive:
         health = "🟡警戒"
@@ -293,6 +423,25 @@ def diagnose_one_stock(
 
     if positive and not reasons:
         reasons = positive  # 健康时展示正面因素
+
+    # ── 新增：趋势预判与操作建议 ──
+    trend_outlook, next_resistance, next_support, action_plan, action_condition = _generate_action_plan(
+        latest_close=latest_close,
+        cost=cost,
+        ma50=ma50,
+        ma200=ma200,
+        ma_pattern=ma_pattern,
+        l4_triggers=l4_triggers,
+        accum_stage=accum_stage,
+        exit_signal=exit_signal,
+        stop_status=stop_status,
+        ret_10d=ret_10d,
+        ret_20d=ret_20d,
+        vol_ratio=vol_ratio,
+        high=high,
+        low=low,
+        close=close,
+    )
 
     return HoldingDiagnostic(
         code=code,
@@ -323,6 +472,11 @@ def diagnose_one_stock(
         from_year_low_pct=from_year_low,
         health=health,
         health_reasons=reasons,
+        trend_outlook=trend_outlook,
+        next_resistance=next_resistance,
+        next_support=next_support,
+        action_plan=action_plan,
+        action_condition=action_condition,
     )
 
 
