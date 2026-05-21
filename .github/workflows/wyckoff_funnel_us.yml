@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUNBUFFERED: "1"
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+      FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/f8aa11e7-de81-464a-9041-db38ec5f2c30"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}

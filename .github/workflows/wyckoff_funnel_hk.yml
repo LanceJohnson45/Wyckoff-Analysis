@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUNBUFFERED: "1"
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+      FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/da56e0a3-761a-470f-94a2-bf12a9d21281"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -96,3 +96,32 @@ jobs:
         with:
           path: data/hk_hsi_hstech_constituents.json
           key: ${{ env.HK_SNAPSHOT_CACHE_KEY }}
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          WORKFLOW: ${{ github.workflow }}
+          REF: ${{ github.ref_name }}
+        run: |
+          python -c "
+          import os, urllib.request, json
+          url = os.environ.get('FEISHU_WEBHOOK_URL', '')
+          if not url:
+            print('FEISHU_WEBHOOK_URL 未配置，跳过失败通知')
+            exit(0)
+          content = '**Run**: ' + os.environ.get('RUN_URL', '') + '\n**Workflow**: ' + os.environ.get('WORKFLOW', '') + '\n**Branch**: ' + os.environ.get('REF', '')
+          payload = {
+            'msg_type': 'interactive',
+            'card': {
+              'header': {'title': {'tag': 'plain_text', 'content': '❌ HK 定时任务失败'}},
+              'elements': [{'tag': 'div', 'text': {'tag': 'lark_md', 'content': content}}]
+            }
+          }
+          req = urllib.request.Request(url, data=json.dumps(payload).encode(), headers={'Content-Type': 'application/json'})
+          try:
+            urllib.request.urlopen(req, timeout=10)
+          except Exception as e:
+            print('warning: 失败通知发送异常:', e)
+          "

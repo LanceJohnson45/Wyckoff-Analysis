@@ -25,6 +25,13 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# 加载 .env（必须在所有 integrations 导入之前）
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
 from datetime import date, timedelta
 from integrations.stock_hist_repository import get_stock_hist
 from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_text
