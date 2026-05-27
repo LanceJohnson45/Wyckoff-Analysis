@@ -1,6 +1,6 @@
 {
   "source": "yfinance_shares",
-  "updated_at": "2026-04-23T18:09:12.470923+00:00",
+  "updated_at": "2026-05-21T16:05:17.147417+00:00",
   "items": {
     "MSFT": {
       "symbol": "MSFT",
@@ -21,10 +21,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 213465100178.0,
+      "fast_market_cap": 207643324718.59998,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:25.691921+00:00",
-      "updated_ts": 1776947605.6919281
+      "updated_at": "2026-05-21T16:04:21.180696+00:00",
+      "updated_ts": 1779379461.1807082
     },
     "000002.SZ": {
       "symbol": "000002.SZ",
@@ -33,10 +33,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 45456002401.82933,
+      "fast_market_cap": 41399561864.37,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:29.622313+00:00",
-      "updated_ts": 1776947609.622318
+      "updated_at": "2026-05-21T16:04:19.566689+00:00",
+      "updated_ts": 1779379459.566706
     },
     "000004.SZ": {
       "symbol": "000004.SZ",
@@ -53,38 +53,38 @@
     "000006.SZ": {
       "symbol": "000006.SZ",
       "market": "cn",
-      "shares_outstanding": 1349995047.0,
+      "shares_outstanding": 1349995046.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 13121952217.327568,
+      "fast_market_cap": 14120948181.160002,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:37.502969+00:00",
-      "updated_ts": 1776947617.502982
+      "updated_at": "2026-05-21T16:04:17.292544+00:00",
+      "updated_ts": 1779379457.2925599
     },
     "000007.SZ": {
       "symbol": "000007.SZ",
       "market": "cn",
-      "shares_outstanding": 346448045.0,
+      "shares_outstanding": 346448044.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 4739409361.327553,
+      "fast_market_cap": 4025726271.2799997,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:41.337219+00:00",
-      "updated_ts": 1776947621.337234
+      "updated_at": "2026-05-21T16:04:21.943572+00:00",
+      "updated_ts": 1779379461.943585
     },
     "000008.SZ": {
       "symbol": "000008.SZ",
       "market": "cn",
-      "shares_outstanding": 2716377684.0,
+      "shares_outstanding": 2716377683.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 7252728623.52317,
+      "fast_market_cap": 7089745752.63,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:45.206848+00:00",
-      "updated_ts": 1776947625.206861
+      "updated_at": "2026-05-21T16:04:18.025261+00:00",
+      "updated_ts": 1779379458.025275
     },
     "000009.SZ": {
       "symbol": "000009.SZ",
@@ -93,10 +93,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 22903420304.367615,
+      "fast_market_cap": 19988908228.75,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:49.201929+00:00",
-      "updated_ts": 1776947629.201945
+      "updated_at": "2026-05-21T16:04:18.824480+00:00",
+      "updated_ts": 1779379458.8245
     },
     "000010.SZ": {
       "symbol": "000010.SZ",
@@ -117,10 +117,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 5012184072.7808075,
+      "fast_market_cap": 4446004026.32,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:33:57.078478+00:00",
-      "updated_ts": 1776947637.078489
+      "updated_at": "2026-05-21T16:04:16.382435+00:00",
+      "updated_ts": 1779379456.382468
     },
     "000012.SZ": {
       "symbol": "000012.SZ",
@@ -129,22 +129,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 13599834946.83464,
+      "fast_market_cap": 12169875244.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:01.144829+00:00",
-      "updated_ts": 1776947641.144842
+      "updated_at": "2026-05-21T16:04:20.374707+00:00",
+      "updated_ts": 1779379460.374721
     },
     "000014.SZ": {
       "symbol": "000014.SZ",
       "market": "cn",
-      "shares_outstanding": 242046225.0,
+      "shares_outstanding": 242046224.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3178066961.949992,
+      "fast_market_cap": 2708497246.56,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:05.066316+00:00",
-      "updated_ts": 1776947645.066331
+      "updated_at": "2026-05-21T16:04:25.700087+00:00",
+      "updated_ts": 1779379465.700107
     },
     "000016.SZ": {
       "symbol": "000016.SZ",
@@ -165,10 +165,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 4390107944.339044,
+      "fast_market_cap": 3859435624.7999997,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:12.809225+00:00",
-      "updated_ts": 1776947652.809236
+      "updated_at": "2026-05-21T16:04:22.650472+00:00",
+      "updated_ts": 1779379462.650507
     },
     "000019.SZ": {
       "symbol": "000019.SZ",
@@ -177,10 +177,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 9312484764.388538,
+      "fast_market_cap": 7779612964.5,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:16.772738+00:00",
-      "updated_ts": 1776947656.772747
+      "updated_at": "2026-05-21T16:04:23.384698+00:00",
+      "updated_ts": 1779379463.384711
     },
     "000020.SZ": {
       "symbol": "000020.SZ",
@@ -189,22 +189,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 4386167341.4195385,
+      "fast_market_cap": 3624463705.6000004,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:20.695404+00:00",
-      "updated_ts": 1776947660.6954088
+      "updated_at": "2026-05-21T16:04:24.101250+00:00",
+      "updated_ts": 1779379464.1012712
     },
     "000021.SZ": {
       "symbol": "000021.SZ",
       "market": "cn",
-      "shares_outstanding": 1571680519.0,
+      "shares_outstanding": 1574272580.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 45154380591.41176,
+      "fast_market_cap": 57256293734.6,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:24.802632+00:00",
-      "updated_ts": 1776947664.802644
+      "updated_at": "2026-05-21T16:04:24.913837+00:00",
+      "updated_ts": 1779379464.913853
     },
     "000025.SZ": {
       "symbol": "000025.SZ",
@@ -213,10 +213,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6771926223.64357,
+      "fast_market_cap": 6302072638.4,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:28.656139+00:00",
-      "updated_ts": 1776947668.6561542
+      "updated_at": "2026-05-21T16:04:26.497666+00:00",
+      "updated_ts": 1779379466.497679
     },
     "000026.SZ": {
       "symbol": "000026.SZ",
@@ -225,10 +225,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 7340270948.544674,
+      "fast_market_cap": 9425897882.61,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:32.648630+00:00",
-      "updated_ts": 1776947672.648643
+      "updated_at": "2026-05-21T16:04:29.495802+00:00",
+      "updated_ts": 1779379469.4958138
     },
     "000027.SZ": {
       "symbol": "000027.SZ",
@@ -237,10 +237,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 33634747522.780106,
+      "fast_market_cap": 34491076891.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:36.527920+00:00",
-      "updated_ts": 1776947676.52793
+      "updated_at": "2026-05-21T16:04:27.234150+00:00",
+      "updated_ts": 1779379467.234171
     },
     "000028.SZ": {
       "symbol": "000028.SZ",
@@ -249,10 +249,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 13914126925.0,
+      "fast_market_cap": 13301905340.3,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:40.525734+00:00",
-      "updated_ts": 1776947680.5257442
+      "updated_at": "2026-05-21T16:04:30.294563+00:00",
+      "updated_ts": 1779379470.294584
     },
     "000029.SZ": {
       "symbol": "000029.SZ",
@@ -261,10 +261,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 20567047722.816467,
+      "fast_market_cap": 24957652200.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:44.420043+00:00",
-      "updated_ts": 1776947684.420054
+      "updated_at": "2026-05-21T16:04:27.954660+00:00",
+      "updated_ts": 1779379467.954677
     },
     "000030.SZ": {
       "symbol": "000030.SZ",
@@ -273,10 +273,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 8960214568.055576,
+      "fast_market_cap": 8065912863.050001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:48.442964+00:00",
-      "updated_ts": 1776947688.4429739
+      "updated_at": "2026-05-21T16:04:32.546437+00:00",
+      "updated_ts": 1779379472.546453
     },
     "000031.SZ": {
       "symbol": "000031.SZ",
@@ -285,58 +285,58 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 12387445999.362164,
+      "fast_market_cap": 11315867214.960001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:52.363998+00:00",
-      "updated_ts": 1776947692.364018
+      "updated_at": "2026-05-21T16:04:31.018149+00:00",
+      "updated_ts": 1779379471.0181708
     },
     "000032.SZ": {
       "symbol": "000032.SZ",
       "market": "cn",
-      "shares_outstanding": 1215179312.0,
+      "shares_outstanding": 1215179311.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 22262084624.996704,
+      "fast_market_cap": 23246380219.43,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:34:56.303543+00:00",
-      "updated_ts": 1776947696.3035588
+      "updated_at": "2026-05-21T16:04:28.750788+00:00",
+      "updated_ts": 1779379468.750798
     },
     "000034.SZ": {
       "symbol": "000034.SZ",
       "market": "cn",
-      "shares_outstanding": 724991225.0,
+      "shares_outstanding": 1016739663.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 26599927049.626064,
+      "fast_market_cap": 28478877960.63,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:00.318889+00:00",
-      "updated_ts": 1776947700.3189042
+      "updated_at": "2026-05-21T16:04:31.759921+00:00",
+      "updated_ts": 1779379471.759933
     },
     "000035.SZ": {
       "symbol": "000035.SZ",
       "market": "cn",
-      "shares_outstanding": 2388032770.0,
+      "shares_outstanding": 2388032769.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 16596827296.018896,
+      "fast_market_cap": 14399837597.07,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:04.251715+00:00",
-      "updated_ts": 1776947704.251731
+      "updated_at": "2026-05-21T16:04:36.206629+00:00",
+      "updated_ts": 1779379476.206651
     },
     "000036.SZ": {
       "symbol": "000036.SZ",
       "market": "cn",
-      "shares_outstanding": 1403818726.0,
+      "shares_outstanding": 1403818725.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 7089284834.057173,
+      "fast_market_cap": 7580621115.000001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:08.430910+00:00",
-      "updated_ts": 1776947708.430921
+      "updated_at": "2026-05-21T16:04:34.008124+00:00",
+      "updated_ts": 1779379474.008147
     },
     "000037.SZ": {
       "symbol": "000037.SZ",
@@ -345,10 +345,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6979990815.692863,
+      "fast_market_cap": 5792548547.559999,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:12.349453+00:00",
-      "updated_ts": 1776947712.3494751
+      "updated_at": "2026-05-21T16:04:33.272201+00:00",
+      "updated_ts": 1779379473.272216
     },
     "000039.SZ": {
       "symbol": "000039.SZ",
@@ -357,10 +357,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 61151181988.73331,
+      "fast_market_cap": 54949782723.149994,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:16.377537+00:00",
-      "updated_ts": 1776947716.377551
+      "updated_at": "2026-05-21T16:04:35.499870+00:00",
+      "updated_ts": 1779379475.499885
     },
     "000042.SZ": {
       "symbol": "000042.SZ",
@@ -369,10 +369,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6016721934.756476,
+      "fast_market_cap": 6661608012.78,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:20.285700+00:00",
-      "updated_ts": 1776947720.285711
+      "updated_at": "2026-05-21T16:04:34.750910+00:00",
+      "updated_ts": 1779379474.7509289
     },
     "000045.SZ": {
       "symbol": "000045.SZ",
@@ -381,10 +381,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 5987088100.601799,
+      "fast_market_cap": 5982023036.690001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:24.232251+00:00",
-      "updated_ts": 1776947724.232256
+      "updated_at": "2026-05-21T16:04:36.966745+00:00",
+      "updated_ts": 1779379476.966772
     },
     "000048.SZ": {
       "symbol": "000048.SZ",
@@ -393,34 +393,34 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 7715606838.643312,
+      "fast_market_cap": 7254261180.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:28.146638+00:00",
-      "updated_ts": 1776947728.14665
+      "updated_at": "2026-05-21T16:04:39.235202+00:00",
+      "updated_ts": 1779379479.2352178
     },
     "000049.SZ": {
       "symbol": "000049.SZ",
       "market": "cn",
-      "shares_outstanding": 384638535.0,
+      "shares_outstanding": 384638534.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 11066050828.023548,
+      "fast_market_cap": 10162150068.28,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:32.008260+00:00",
-      "updated_ts": 1776947732.0082738
+      "updated_at": "2026-05-21T16:04:37.766828+00:00",
+      "updated_ts": 1779379477.76685
     },
     "000050.SZ": {
       "symbol": "000050.SZ",
       "market": "cn",
-      "shares_outstanding": 2457747662.0,
+      "shares_outstanding": 2457747661.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 20448459797.794937,
+      "fast_market_cap": 18678882223.6,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:36.003143+00:00",
-      "updated_ts": 1776947736.00316
+      "updated_at": "2026-05-21T16:04:38.493923+00:00",
+      "updated_ts": 1779379478.493941
     },
     "000055.SZ": {
       "symbol": "000055.SZ",
@@ -429,10 +429,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3640433742.1838894,
+      "fast_market_cap": 3769298536.77,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:39.928502+00:00",
-      "updated_ts": 1776947739.928515
+      "updated_at": "2026-05-21T16:04:39.990638+00:00",
+      "updated_ts": 1779379479.990648
     },
     "000056.SZ": {
       "symbol": "000056.SZ",
@@ -453,10 +453,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 9935789047.307373,
+      "fast_market_cap": 9270941060.16,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:48.688649+00:00",
-      "updated_ts": 1776947748.6886542
+      "updated_at": "2026-05-21T16:04:40.715259+00:00",
+      "updated_ts": 1779379480.715273
     },
     "000059.SZ": {
       "symbol": "000059.SZ",
@@ -465,10 +465,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 8461050959.716109,
+      "fast_market_cap": 7597352050.75,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:52.530906+00:00",
-      "updated_ts": 1776947752.530944
+      "updated_at": "2026-05-21T16:04:41.520149+00:00",
+      "updated_ts": 1779379481.5201652
     },
     "000060.SZ": {
       "symbol": "000060.SZ",
@@ -477,10 +477,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 28823208235.916294,
+      "fast_market_cap": 30555266511.04,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:35:56.488191+00:00",
-      "updated_ts": 1776947756.488203
+      "updated_at": "2026-05-21T16:04:53.352699+00:00",
+      "updated_ts": 1779379493.3527098
     },
     "000061.SZ": {
       "symbol": "000061.SZ",
@@ -489,22 +489,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 14926908171.099869,
+      "fast_market_cap": 12862548563.04,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:00.481685+00:00",
-      "updated_ts": 1776947760.481712
+      "updated_at": "2026-05-21T16:04:42.363770+00:00",
+      "updated_ts": 1779379482.3637838
     },
     "000062.SZ": {
       "symbol": "000062.SZ",
       "market": "cn",
-      "shares_outstanding": 1045909323.0,
+      "shares_outstanding": 1045909322.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 32653288345.89106,
+      "fast_market_cap": 34755566770.06,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:04.478189+00:00",
-      "updated_ts": 1776947764.478209
+      "updated_at": "2026-05-21T16:04:43.108485+00:00",
+      "updated_ts": 1779379483.108499
     },
     "000063.SZ": {
       "symbol": "000063.SZ",
@@ -513,22 +513,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 176273253286.855,
+      "fast_market_cap": 166610520114.21,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:08.358967+00:00",
-      "updated_ts": 1776947768.358977
+      "updated_at": "2026-05-21T16:04:43.865877+00:00",
+      "updated_ts": 1779379483.865896
     },
     "000065.SZ": {
       "symbol": "000065.SZ",
       "market": "cn",
-      "shares_outstanding": 1161442160.0,
+      "shares_outstanding": 1161442159.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 15807227398.85048,
+      "fast_market_cap": 14169594339.8,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:12.307969+00:00",
-      "updated_ts": 1776947772.307982
+      "updated_at": "2026-05-21T16:04:44.577565+00:00",
+      "updated_ts": 1779379484.577578
     },
     "000066.SZ": {
       "symbol": "000066.SZ",
@@ -537,10 +537,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 52225688957.482574,
+      "fast_market_cap": 65483721486.4,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:16.179720+00:00",
-      "updated_ts": 1776947776.179743
+      "updated_at": "2026-05-21T16:04:45.413086+00:00",
+      "updated_ts": 1779379485.413106
     },
     "000068.SZ": {
       "symbol": "000068.SZ",
@@ -549,10 +549,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3211282027.762203,
+      "fast_market_cap": 3150881682.3199997,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:20.051287+00:00",
-      "updated_ts": 1776947780.051299
+      "updated_at": "2026-05-21T16:04:46.181522+00:00",
+      "updated_ts": 1779379486.181539
     },
     "000069.SZ": {
       "symbol": "000069.SZ",
@@ -561,22 +561,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 17441935588.24227,
+      "fast_market_cap": 15754005783.88,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:24.026023+00:00",
-      "updated_ts": 1776947784.0260339
+      "updated_at": "2026-05-21T16:04:46.969514+00:00",
+      "updated_ts": 1779379486.9695292
     },
     "000070.SZ": {
       "symbol": "000070.SZ",
       "market": "cn",
-      "shares_outstanding": 900344760.0,
+      "shares_outstanding": 868392949.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 18898236306.32744,
+      "fast_market_cap": 15622389152.509998,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:27.914478+00:00",
-      "updated_ts": 1776947787.9144902
+      "updated_at": "2026-05-21T16:04:47.720235+00:00",
+      "updated_ts": 1779379487.720255
     },
     "000078.SZ": {
       "symbol": "000078.SZ",
@@ -597,10 +597,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 23397675057.0,
+      "fast_market_cap": 23345680223.54,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:35.713715+00:00",
-      "updated_ts": 1776947795.713749
+      "updated_at": "2026-05-21T16:04:49.385826+00:00",
+      "updated_ts": 1779379489.3858519
     },
     "000089.SZ": {
       "symbol": "000089.SZ",
@@ -609,22 +609,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 14109294456.611946,
+      "fast_market_cap": 13801678795.570002,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:39.543668+00:00",
-      "updated_ts": 1776947799.5436978
+      "updated_at": "2026-05-21T16:04:50.335474+00:00",
+      "updated_ts": 1779379490.33549
     },
     "000090.SZ": {
       "symbol": "000090.SZ",
       "market": "cn",
-      "shares_outstanding": 1868545435.0,
+      "shares_outstanding": 1868545434.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6708077951.271459,
+      "fast_market_cap": 6110143569.18,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:43.440363+00:00",
-      "updated_ts": 1776947803.4403672
+      "updated_at": "2026-05-21T16:04:51.119925+00:00",
+      "updated_ts": 1779379491.119949
     },
     "000096.SZ": {
       "symbol": "000096.SZ",
@@ -633,34 +633,34 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 5169119979.858398,
+      "fast_market_cap": 4561920000.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:47.364867+00:00",
-      "updated_ts": 1776947807.3648798
+      "updated_at": "2026-05-21T16:04:51.854163+00:00",
+      "updated_ts": 1779379491.854176
     },
     "000099.SZ": {
       "symbol": "000099.SZ",
       "market": "cn",
-      "shares_outstanding": 775770138.0,
+      "shares_outstanding": 775770137.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 13932830968.241226,
+      "fast_market_cap": 13071726808.45,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:51.283646+00:00",
-      "updated_ts": 1776947811.2836611
+      "updated_at": "2026-05-21T16:04:52.590053+00:00",
+      "updated_ts": 1779379492.590064
     },
     "000100.SZ": {
       "symbol": "000100.SZ",
       "market": "cn",
-      "shares_outstanding": 20800862448.0,
+      "shares_outstanding": 20800862447.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 88611678789.41959,
+      "fast_market_cap": 90899768893.39,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:55.251813+00:00",
-      "updated_ts": 1776947815.2518232
+      "updated_at": "2026-05-21T16:04:48.571820+00:00",
+      "updated_ts": 1779379488.5718248
     },
     "000151.SZ": {
       "symbol": "000151.SZ",
@@ -669,22 +669,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3709079335.9319,
+      "fast_market_cap": 4007349786.12,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:36:59.128102+00:00",
-      "updated_ts": 1776947819.128115
+      "updated_at": "2026-05-21T16:04:54.073785+00:00",
+      "updated_ts": 1779379494.073803
     },
     "000153.SZ": {
       "symbol": "000153.SZ",
       "market": "cn",
-      "shares_outstanding": 464685523.0,
+      "shares_outstanding": 464685522.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 2936812585.1285567,
+      "fast_market_cap": 2760232000.6800003,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:03.186708+00:00",
-      "updated_ts": 1776947823.186718
+      "updated_at": "2026-05-21T16:04:54.800914+00:00",
+      "updated_ts": 1779379494.8009229
     },
     "000155.SZ": {
       "symbol": "000155.SZ",
@@ -693,22 +693,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 30886395516.5512,
+      "fast_market_cap": 26547900757.960003,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:07.021670+00:00",
-      "updated_ts": 1776947827.021687
+      "updated_at": "2026-05-21T16:04:55.589722+00:00",
+      "updated_ts": 1779379495.589735
     },
     "000156.SZ": {
       "symbol": "000156.SZ",
       "market": "cn",
-      "shares_outstanding": 1852932443.0,
+      "shares_outstanding": 1852932442.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 13952581684.550697,
+      "fast_market_cap": 13433760204.5,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:10.989026+00:00",
-      "updated_ts": 1776947830.9890401
+      "updated_at": "2026-05-21T16:04:56.324825+00:00",
+      "updated_ts": 1779379496.3248389
     },
     "000157.SZ": {
       "symbol": "000157.SZ",
@@ -717,10 +717,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 69188281888.0,
+      "fast_market_cap": 62874851165.71999,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:14.920153+00:00",
-      "updated_ts": 1776947834.920161
+      "updated_at": "2026-05-21T16:04:57.080041+00:00",
+      "updated_ts": 1779379497.080055
     },
     "000158.SZ": {
       "symbol": "000158.SZ",
@@ -729,22 +729,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 29398560523.471786,
+      "fast_market_cap": 24650669837.82,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:18.841726+00:00",
-      "updated_ts": 1776947838.841732
+      "updated_at": "2026-05-21T16:04:57.806192+00:00",
+      "updated_ts": 1779379497.806222
     },
     "000159.SZ": {
       "symbol": "000159.SZ",
       "market": "cn",
-      "shares_outstanding": 480685994.0,
+      "shares_outstanding": 480685993.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3220596068.1164227,
+      "fast_market_cap": 3268664752.4,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:22.709706+00:00",
-      "updated_ts": 1776947842.7097259
+      "updated_at": "2026-05-21T16:04:58.544778+00:00",
+      "updated_ts": 1779379498.544794
     },
     "000166.SZ": {
       "symbol": "000166.SZ",
@@ -753,10 +753,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 116435744591.99521,
+      "fast_market_cap": 111928552183.2,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:26.752737+00:00",
-      "updated_ts": 1776947846.752745
+      "updated_at": "2026-05-21T16:04:59.288265+00:00",
+      "updated_ts": 1779379499.2882738
     },
     "000301.SZ": {
       "symbol": "000301.SZ",
@@ -765,22 +765,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 82442048980.95906,
+      "fast_market_cap": 82772608752.12,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:30.613006+00:00",
-      "updated_ts": 1776947850.613034
+      "updated_at": "2026-05-21T16:05:00.776154+00:00",
+      "updated_ts": 1779379500.776169
     },
     "000333.SZ": {
       "symbol": "000333.SZ",
       "market": "cn",
-      "shares_outstanding": 7605346973.0,
+      "shares_outstanding": 7609592988.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 607286944189.2114,
+      "fast_market_cap": 620181828522.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:34.561908+00:00",
-      "updated_ts": 1776947854.561931
+      "updated_at": "2026-05-21T16:05:01.501503+00:00",
+      "updated_ts": 1779379501.50152
     },
     "000338.SZ": {
       "symbol": "000338.SZ",
@@ -789,22 +789,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 256928588366.93054,
+      "fast_market_cap": 281236178258.88,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:38.423090+00:00",
-      "updated_ts": 1776947858.423121
+      "updated_at": "2026-05-21T16:05:02.270428+00:00",
+      "updated_ts": 1779379502.270447
     },
     "000400.SZ": {
       "symbol": "000400.SZ",
       "market": "cn",
-      "shares_outstanding": 1018622250.0,
+      "shares_outstanding": 1018622249.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 26636971448.92645,
+      "fast_market_cap": 26412874916.57,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:42.338811+00:00",
-      "updated_ts": 1776947862.338825
+      "updated_at": "2026-05-21T16:05:03.141621+00:00",
+      "updated_ts": 1779379503.1416361
     },
     "000401.SZ": {
       "symbol": "000401.SZ",
@@ -813,22 +813,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 12467038984.25441,
+      "fast_market_cap": 10526540250.6,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:46.349360+00:00",
-      "updated_ts": 1776947866.349372
+      "updated_at": "2026-05-21T16:05:05.495355+00:00",
+      "updated_ts": 1779379505.4953659
     },
     "000402.SZ": {
       "symbol": "000402.SZ",
       "market": "cn",
-      "shares_outstanding": 2988929908.0,
+      "shares_outstanding": 2988929907.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 8010332352.972598,
+      "fast_market_cap": 8578228833.09,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:50.327952+00:00",
-      "updated_ts": 1776947870.327966
+      "updated_at": "2026-05-21T16:05:04.747333+00:00",
+      "updated_ts": 1779379504.747353
     },
     "000403.SZ": {
       "symbol": "000403.SZ",
@@ -837,22 +837,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 12051039144.518265,
+      "fast_market_cap": 10977089808.300001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:54.303026+00:00",
-      "updated_ts": 1776947874.303037
+      "updated_at": "2026-05-21T16:05:00.007716+00:00",
+      "updated_ts": 1779379500.007732
     },
     "000404.SZ": {
       "symbol": "000404.SZ",
       "market": "cn",
-      "shares_outstanding": 695995980.0,
+      "shares_outstanding": 695995979.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6013405506.151257,
+      "fast_market_cap": 6869480312.73,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:37:58.259471+00:00",
-      "updated_ts": 1776947878.25948
+      "updated_at": "2026-05-21T16:05:06.239186+00:00",
+      "updated_ts": 1779379506.239203
     },
     "000407.SZ": {
       "symbol": "000407.SZ",
@@ -869,14 +869,14 @@
     "000408.SZ": {
       "symbol": "000408.SZ",
       "market": "cn",
-      "shares_outstanding": 1570225746.0,
+      "shares_outstanding": 1568914754.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 137065006805.9246,
+      "fast_market_cap": 122673444615.26,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:06.296029+00:00",
-      "updated_ts": 1776947886.2960489
+      "updated_at": "2026-05-21T16:05:03.909499+00:00",
+      "updated_ts": 1779379503.909515
     },
     "000409.SZ": {
       "symbol": "000409.SZ",
@@ -885,10 +885,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6892722687.55826,
+      "fast_market_cap": 6438629797.5,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:10.538020+00:00",
-      "updated_ts": 1776947890.538033
+      "updated_at": "2026-05-21T16:05:06.949878+00:00",
+      "updated_ts": 1779379506.949895
     },
     "000410.SZ": {
       "symbol": "000410.SZ",
@@ -897,10 +897,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 17695807245.37648,
+      "fast_market_cap": 15232169801.75,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:14.486186+00:00",
-      "updated_ts": 1776947894.486203
+      "updated_at": "2026-05-21T16:05:08.437037+00:00",
+      "updated_ts": 1779379508.437057
     },
     "000411.SZ": {
       "symbol": "000411.SZ",
@@ -909,10 +909,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 6303716383.17086,
+      "fast_market_cap": 6727353328.86,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:18.289635+00:00",
-      "updated_ts": 1776947898.289647
+      "updated_at": "2026-05-21T16:05:09.182419+00:00",
+      "updated_ts": 1779379509.1824331
     },
     "000415.SZ": {
       "symbol": "000415.SZ",
@@ -921,10 +921,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 28201416692.038853,
+      "fast_market_cap": 25603918107.48,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:22.633396+00:00",
-      "updated_ts": 1776947902.63341
+      "updated_at": "2026-05-21T16:05:07.713336+00:00",
+      "updated_ts": 1779379507.713352
     },
     "000417.SZ": {
       "symbol": "000417.SZ",
@@ -933,10 +933,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 4983459933.874226,
+      "fast_market_cap": 7260721902.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:26.713878+00:00",
-      "updated_ts": 1776947906.713898
+      "updated_at": "2026-05-21T16:05:10.803295+00:00",
+      "updated_ts": 1779379510.803318
     },
     "000419.SZ": {
       "symbol": "000419.SZ",
@@ -945,46 +945,46 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3038627124.3941307,
+      "fast_market_cap": 2891859724.6000004,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:30.600991+00:00",
-      "updated_ts": 1776947910.6010041
+      "updated_at": "2026-05-21T16:05:10.006401+00:00",
+      "updated_ts": 1779379510.0064168
     },
     "000420.SZ": {
       "symbol": "000420.SZ",
       "market": "cn",
-      "shares_outstanding": 2458868344.0,
+      "shares_outstanding": 2458868343.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 12933648052.2303,
+      "fast_market_cap": 11482915161.81,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:34.447535+00:00",
-      "updated_ts": 1776947914.4475598
+      "updated_at": "2026-05-21T16:05:11.522707+00:00",
+      "updated_ts": 1779379511.522718
     },
     "000421.SZ": {
       "symbol": "000421.SZ",
       "market": "cn",
-      "shares_outstanding": 574415735.0,
+      "shares_outstanding": 574415734.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3440750121.176672,
+      "fast_market_cap": 3446494404.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:38.448556+00:00",
-      "updated_ts": 1776947918.448566
+      "updated_at": "2026-05-21T16:05:13.881734+00:00",
+      "updated_ts": 1779379513.8817542
     },
     "000422.SZ": {
       "symbol": "000422.SZ",
       "market": "cn",
-      "shares_outstanding": 1087584713.0,
+      "shares_outstanding": 1087584712.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 17705879874.425156,
+      "fast_market_cap": 15672095699.92,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:42.349684+00:00",
-      "updated_ts": 1776947922.349694
+      "updated_at": "2026-05-21T16:05:13.084006+00:00",
+      "updated_ts": 1779379513.084018
     },
     "000423.SZ": {
       "symbol": "000423.SZ",
@@ -993,22 +993,22 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 33622029391.46161,
+      "fast_market_cap": 31973449311.6,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:46.318274+00:00",
-      "updated_ts": 1776947926.318292
+      "updated_at": "2026-05-21T16:05:12.263081+00:00",
+      "updated_ts": 1779379512.2630908
     },
     "000425.SZ": {
       "symbol": "000425.SZ",
       "market": "cn",
-      "shares_outstanding": 11748615753.0,
+      "shares_outstanding": 11711210449.0,
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 115136436620.27061,
+      "fast_market_cap": 112076283996.93001,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:50.205654+00:00",
-      "updated_ts": 1776947930.205666
+      "updated_at": "2026-05-21T16:05:14.611511+00:00",
+      "updated_ts": 1779379514.6115289
     },
     "000426.SZ": {
       "symbol": "000426.SZ",
@@ -1017,10 +1017,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 72978626163.49487,
+      "fast_market_cap": 70776840556.54,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:54.044444+00:00",
-      "updated_ts": 1776947934.0444548
+      "updated_at": "2026-05-21T16:05:15.341270+00:00",
+      "updated_ts": 1779379515.3412821
     },
     "000428.SZ": {
       "symbol": "000428.SZ",
@@ -1029,10 +1029,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 3841351000.565529,
+      "fast_market_cap": 3831161760.0,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:38:57.860930+00:00",
-      "updated_ts": 1776947937.8609421
+      "updated_at": "2026-05-21T16:05:16.074182+00:00",
+      "updated_ts": 1779379516.0742028
     },
     "000429.SZ": {
       "symbol": "000429.SZ",
@@ -1041,10 +1041,10 @@
       "float_shares": null,
       "currency": "CNY",
       "info_market_cap": null,
-      "fast_market_cap": 26699595186.11509,
+      "fast_market_cap": 27682273108.24,
       "source": "yfinance.fast_info+info",
-      "updated_at": "2026-04-23T12:39:01.752563+00:00",
-      "updated_ts": 1776947941.752574
+      "updated_at": "2026-05-21T16:05:16.831724+00:00",
+      "updated_ts": 1779379516.831769
     },
     "000430.SZ": {
       "symbol": "000430.SZ",

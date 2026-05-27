@@ -263,6 +263,17 @@ def main() -> int:
     elif benchmark_context:
         _persist_benchmark_context(benchmark_context, logs_path)
 
+    # 数据日报（漏斗执行完后立即发送，无论是否有 L4 命中）
+    if step2_details:
+        try:
+            from scripts.data_daily_report import send_data_daily_report
+            funnel_metrics = step2_details.get("metrics") or {}
+            if funnel_metrics:
+                send_data_daily_report(funnel_metrics, run_ts=t0)
+                _log("数据日报发送完成", logs_path)
+        except Exception as _rpt_e:
+            _log(f"数据日报发送失败（不影响主流程）: {_rpt_e}", logs_path)
+
     # 推荐跟踪写库（按 recommend_date=最近交易日）
     if step2_ok and symbols_info and not is_non_cn_market:
         try:

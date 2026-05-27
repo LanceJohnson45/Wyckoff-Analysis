@@ -2,8 +2,8 @@ name: Wyckoff Funnel US
 
 on:
   schedule:
-    # Reuse the existing cadence first; market-specific timing can be optimized later.
-    - cron: "25 10 * * 0-4"
+    # 北京 12:00（UTC 04:00），美股盘前，工作日周一至周五
+    - cron: "0 4 * * 1-5"
   workflow_dispatch:
 
 concurrency:

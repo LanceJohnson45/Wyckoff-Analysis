@@ -110,12 +110,66 @@ def _build_hit_map(triggers: dict[str, list[tuple[str, float]]]) -> dict[str, li
     return hit_map
 
 
+def _find_big_gainers_from_zt_pool(date_str: str, name_map: dict[str, str]) -> list[str]:
+    """
+    使用 akshare 涨停板股票池接口获取当日真实涨停股票（东方财富数据，全市场覆盖）。
+    date_str: YYYYMMDD 格式，例如 "20260521"
+    """
+    try:
+        import akshare as ak
+        df = ak.stock_zt_pool_em(date=date_str)
+        if df is None or df.empty:
+            print(f"[review] 涨停池为空（date={date_str}）")
+            return []
+        # 确定代码列和名称列
+        code_col = next((c for c in df.columns if "代码" in str(c)), None)
+        name_col = next((c for c in df.columns if "名称" in str(c)), None)
+        if not code_col:
+            print(f"[review] 涨停池缺少代码列，columns={list(df.columns)}")
+            return []
+        codes: list[str] = []
+        for _, row in df.iterrows():
+            code = str(row.get(code_col, "")).strip().zfill(6)
+            if not _is_main_or_chinext(code):
+                continue
+            name_api = str(row.get(name_col, "") if name_col else "").upper()
+            name_map_v = str(name_map.get(code, "")).upper()
+            if "ST" in name_api or "ST" in name_map_v:
+                continue
+            codes.append(code)
+        codes.sort()
+        print(f"[review] 涨停池模式（{date_str}）：主板+创业板非ST涨停 {len(codes)} 只")
+        return codes
+    except Exception as e:
+        print(f"[review] akshare 涨停池加载失败，回退到 df_map: {e}")
+        return []
+
+
 def _find_big_gainers(
     df_map: dict[str, pd.DataFrame],
     name_map: dict[str, str],
     threshold: float = 8.0,
+    *,
+    trade_date: str = "",
 ) -> list[str]:
-    """找出当日涨幅 >= threshold% 的主板+创业板非ST股票。"""
+    """
+    找出当日涨幅 >= threshold% 的主板+创业板非ST股票。
+
+    优先使用 akshare 涨停板股票池（stock_zt_pool_em），覆盖全市场真实涨停数据，
+    不受漏斗数据完整性过滤/yfinance复权调整/数据获取失败等因素影响。
+    涨停池不可用时，回退到 df_map 最后一行 pct_chg。
+    """
+    # --- 优先路径：akshare 涨停板股票池（权威数据源）---
+    if trade_date and trade_date != "未知":
+        date_s = trade_date.replace("-", "")  # YYYYMMDD
+        zt_codes = _find_big_gainers_from_zt_pool(date_s, name_map)
+        if zt_codes:
+            return zt_codes
+        # 空列表可能是当日无涨停（如全面暴跌），也可能是接口失败
+        # 继续用 df_map 做二次确认
+        print("[review] 涨停池返回空，用 df_map 二次确认")
+
+    # --- 回退路径：df_map pct_chg（受漏斗完整性过滤，可能遗漏次新股等）---
     codes: list[str] = []
     for code, df in df_map.items():
         if not _is_main_or_chinext(code):
@@ -131,6 +185,7 @@ def _find_big_gainers(
         if float(pct.iloc[-1]) >= threshold:
             codes.append(code)
     codes.sort()
+    print(f"[review] df_map 回退模式：涨幅 >= {threshold}% 共 {len(codes)} 只")
     return codes
 
 
@@ -197,7 +252,7 @@ def main() -> int:
     l3_symbols = [str(x) for x in (debug.get("layer3_symbols_raw", []) or [])]
     end_trade_date = str(debug.get("end_trade_date", "未知"))
 
-    review_codes = _find_big_gainers(df_map, name_map, threshold=8.0)
+    review_codes = _find_big_gainers(df_map, name_map, threshold=8.0, trade_date=end_trade_date)
     if not review_codes:
         print("[review] 当日无涨幅 ≥ 8% 的股票，跳过")
         send_feishu_notification(webhook, "🔍 涨停复盘", f"交易日 {end_trade_date}：当日无涨幅 ≥ 8% 的主板/创业板股票")
