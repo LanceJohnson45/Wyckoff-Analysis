@@ -98,7 +98,15 @@ jobs:
                       with conn.cursor() as cur:
                           cur.execute("select current_database(), current_user, now()")
                           row = cur.fetchone()
-                  log(f"postgres ok db={row[0]} user={row[1]} now={row[2]}")
+                  if isinstance(row, dict):
+                      db_name = row.get("current_database")
+                      db_user = row.get("current_user")
+                      db_now = row.get("now")
+                  else:
+                      db_name = row[0] if row else None
+                      db_user = row[1] if row and len(row) > 1 else None
+                      db_now = row[2] if row and len(row) > 2 else None
+                  log(f"postgres ok db={db_name} user={db_user} now={db_now}")
               except Exception as e:
                   log(f"postgres fail {type(e).__name__}: {e}")
           else:
