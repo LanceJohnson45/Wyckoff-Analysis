@@ -1,0 +1,148 @@
+name: yfinance Intraday Data Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Comma-separated tickers (e.g., AAPL,000001.SZ)"
+        required: false
+        default: "AAPL,000001.SZ"
+      period:
+        description: "yfinance period (1d, 5d, 1mo)"
+        required: false
+        default: "1d"
+      interval:
+        description: "yfinance interval (1m, 2m, 5m, 15m, 30m, 60m, 90m)"
+        required: false
+        default: "5m"
+      last-n:
+        description: "Show last N rows"
+        required: false
+        default: "10"
+
+concurrency:
+  group: yfinance-intraday-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PYTHONUNBUFFERED: "1"
+      TZ: Asia/Shanghai
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance
+          pip install -e .
+
+      - name: Prepare logs dir
+        run: mkdir -p logs
+
+      - name: Run yfinance intraday smoke test
+        env:
+          SMOKE_SYMBOLS: ${{ github.event.inputs.symbols }}
+          SMOKE_PERIOD: ${{ github.event.inputs.period }}
+          SMOKE_INTERVAL: ${{ github.event.inputs.interval }}
+          SMOKE_LAST_N: ${{ github.event.inputs.last-n }}
+        run: |
+          set -o pipefail
+          python - <<'PY' 2>&1 | tee -a "${{ github.workspace }}/logs/yfinance_intraday_smoke.console.log"
+          from __future__ import annotations
+
+          import os
+          from datetime import datetime
+
+          import yfinance as yf
+
+
+          def log(msg: str) -> None:
+              print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
+
+          def test_ticker(symbol: str, period: str, interval: str, last_n: int) -> bool:
+              """Test intraday data fetch for a single ticker"""
+              log(f"Testing {symbol} (period={period}, interval={interval})...")
+              
+              try:
+                  ticker = yf.Ticker(symbol)
+                  data = ticker.history(period=period, interval=interval)
+                  
+                  if data.empty:
+                      log(f"  ✗ Empty data returned")
+                      return False
+                  
+                  # Show last N rows
+                  show_data = data.tail(last_n)
+                  log(f"  ✓ Success: {len(data)} total rows, showing last {len(show_data)}")
+                  log(f"  Time range: {show_data.index[0]} ~ {show_data.index[-1]}")
+                  log(f"  Last 5 rows:")
+                  for idx, row in show_data.tail(5).iterrows():
+                      log(f"    {idx} O:{row['Open']:.2f} H:{row['High']:.2f} L:{row['Low']:.2f} C:{row['Close']:.2f} V:{int(row['Volume'])}")
+                  return True
+                  
+              except Exception as e:
+                  log(f"  ✗ Error: {type(e).__name__}: {e}")
+                  return False
+
+
+          def main():
+              symbols_str = os.getenv("SMOKE_SYMBOLS", "AAPL,000001.SZ")
+              period = os.getenv("SMOKE_PERIOD", "1d")
+              interval = os.getenv("SMOKE_INTERVAL", "5m")
+              last_n = int(os.getenv("SMOKE_LAST_N", "10"))
+              
+              log(f"yfinance version: {yf.__version__}")
+              log(f"Parameters: period={period}, interval={interval}, last_n={last_n}")
+              log(f"Testing symbols: {symbols_str}")
+              log("=" * 70)
+              
+              symbols = [s.strip() for s in symbols_str.split(",") if s.strip()]
+              ok = 0
+              fail = 0
+              
+              for symbol in symbols:
+                  if test_ticker(symbol, period, interval, last_n):
+                      ok += 1
+                  else:
+                      fail += 1
+                  
+                  # Small delay to avoid rate limiting
+                  import time
+                  time.sleep(3)
+              
+              log("=" * 70)
+              log(f"Summary: {ok} ok, {fail} fail")
+              
+              if fail > 0:
+                  log("")
+                  log("Note: yfinance has rate limiting. If you see 'Too Many Requests' errors:")
+                  log("  - Wait 5-10 minutes before retrying")
+                  log("  - Consider increasing SMOKE_SYMBOLS delay between requests")
+                  raise SystemExit(1)
+              
+              log("Smoke test passed!")
+
+          if __name__ == "__main__":
+              main()
+          PY
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yfinance-intraday-smoke-logs-${{ github.run_number }}
+          path: logs/*
+          retention-days: 7
+          if-no-files-found: warn
