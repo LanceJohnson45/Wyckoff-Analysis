@@ -2,8 +2,8 @@ name: Wyckoff Funnel
 
 on:
   schedule:
-    # 北京 19:30（UTC 11:30），A股/港股收盘后，工作日周一至周五
-    - cron: "30 11 * * 1-5"
+    # 北京 18:00（UTC 10:00），A股收盘后，工作日周一至周五
+    - cron: "0 10 * * 1-5"
   workflow_dispatch:
 
 concurrency:
