@@ -398,7 +398,7 @@ def upsert_cache_data(
         payload["date"] = payload["date"].astype(str)
         payload["symbol"] = symbol
         payload["adjust"] = adjust
-        payload["updated_at"] = datetime.now(timezone.utc)
+        payload["updated_at"] = datetime.now(timezone.utc).isoformat()
         invalid_before_clean = _collect_invalid_numeric_samples(payload)
         payload = _sanitize_payload_dataframe(payload)
         records = payload.to_dict(orient="records")
