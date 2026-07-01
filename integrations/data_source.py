@@ -670,7 +670,7 @@ def _fetch_stock_yfinance(
         work[col] = pd.to_numeric(work[col], errors="coerce")
 
     work["成交额"] = work["收盘"] * work["成交量"]
-    work["涨跌幅"] = work["收盘"].pct_change() * 100.0
+    work["涨跌幅"] = work["收盘"].pct_change(fill_method=None) * 100.0
     work["换手率"] = pd.NA
     base = work["收盘"].shift(1)
     work["振幅"] = (work["最高"] - work["最低"]) / base.replace(0, pd.NA) * 100.0

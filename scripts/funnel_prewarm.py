@@ -310,8 +310,15 @@ def _prefetch_one(
     refreshed_set = set(refreshed_dates)
     if verify_expected_dates and not set(verify_expected_dates).issubset(refreshed_set):
         remaining = _missing_ranges(verify_expected_dates, refreshed_dates)
-        raise RuntimeError(
-            f"cache gap verification failed remaining_ranges={remaining[:3]}"
+        return (
+            symbol,
+            "gap_partial",
+            rows_written,
+            len(gap_ranges),
+            len(verify_expected_dates),
+            len(refreshed_dates),
+            remaining[:5],
+            len(ignored_ranges),
         )
     return (
         symbol,
@@ -395,6 +402,15 @@ def main() -> int:
                     _log(
                         f"prewarm ok {symbol} cache_ready "
                         f"cached={cached_count}/{expected_count}"
+                    )
+                elif status == "gap_partial":
+                    repaired_symbols += 1
+                    repaired_ranges += int(gap_count)
+                    repaired_rows += int(rows)
+                    preview = ", ".join(f"{s}..{e}" for s, e in gap_preview) or "-"
+                    _log(
+                        f"prewarm partial {symbol} rows={rows} "
+                        f"remaining_ranges=[{preview}] ignored_old_ranges={ignored_count}"
                     )
                 elif args.dry_run:
                     repaired_ranges += int(gap_count)

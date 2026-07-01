@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import os
 from typing import Literal
 
 import pandas as pd
@@ -18,6 +19,10 @@ from integrations.data_source import fetch_stock_hist as fetch_stock_hist_from_s
 
 AdjustType = Literal["", "qfq", "hfq"]
 MarketType = Literal["cn", "us", "hk"]
+_RECENT_GAP_MAX_AGE_DAYS = max(
+    int(os.getenv("FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS", "45")),
+    0,
+)
 
 
 def _load_from_md_tables(
@@ -66,13 +71,30 @@ def _merge_norm_frames(frames: list[pd.DataFrame]) -> pd.DataFrame:
 
 
 def _compute_gap_ranges(
-    requested_start: date, requested_end: date, meta: CacheMeta | None
+    requested_start: date,
+    requested_end: date,
+    meta: CacheMeta | None,
+    *,
+    market: MarketType,
 ) -> list[tuple[date, date]]:
     if meta is None:
         return [(requested_start, requested_end)]
     gaps: list[tuple[date, date]] = []
+    market_norm = str(market or "cn").strip().lower()
+    should_ignore_old_left_gap = (
+        market_norm in {"cn", "us", "hk"} and _RECENT_GAP_MAX_AGE_DAYS > 0
+    )
+    recent_cutoff = requested_end - timedelta(days=_RECENT_GAP_MAX_AGE_DAYS)
     if requested_start < meta.start_date:
-        gaps.append((requested_start, meta.start_date - timedelta(days=1)))
+        left_gap_start = requested_start
+        left_gap_end = meta.start_date - timedelta(days=1)
+        if should_ignore_old_left_gap:
+            if left_gap_end >= recent_cutoff:
+                left_gap_start = max(left_gap_start, recent_cutoff)
+                if left_gap_start <= left_gap_end:
+                    gaps.append((left_gap_start, left_gap_end))
+        else:
+            gaps.append((left_gap_start, left_gap_end))
     if requested_end > meta.end_date:
         gaps.append((meta.end_date + timedelta(days=1), requested_end))
     return [(s, e) for s, e in gaps if s <= e]
@@ -191,7 +213,7 @@ def get_stock_hist(
         )
         return pd.DataFrame()
 
-    gaps = _compute_gap_ranges(start_d, end_d, meta)
+    gaps = _compute_gap_ranges(start_d, end_d, meta, market=market_norm)
     fetched_frames: list[pd.DataFrame] = []
     did_fetch = False
 
