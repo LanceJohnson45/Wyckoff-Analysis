@@ -18,14 +18,29 @@ jobs:
       FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/f8aa11e7-de81-464a-9041-db38ec5f2c30"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
+      TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PG_ENABLED: ${{ secrets.PG_ENABLED }}
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT }}
+      PG_DATABASE: ${{ secrets.PG_DATABASE }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+      PG_DSN: ${{ secrets.PG_DSN }}
       TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
       SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
+      DATA_SOURCE_DEBUG: "1"
       FUNNEL_MARKET: "us"
       FUNNEL_POOL_MODE: "sp500"
+      FUNNEL_EXECUTOR_MODE: "thread"
+      FUNNEL_MAX_WORKERS: "3"
+      FUNNEL_BATCH_SIZE: "60"
+      FUNNEL_FETCH_RETRIES: "2"
+      FUNNEL_BATCH_TIMEOUT: "300"
       DAILY_JOB_SKIP_STEP4: "1"
       DAILY_JOB_REQUIRE_STEP3_REPORT: "1"
       FUNNEL_PREWARM_DAYS: "320"

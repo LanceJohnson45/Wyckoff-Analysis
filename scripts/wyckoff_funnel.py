@@ -249,14 +249,18 @@ def _fetch_one_with_retry(
 ) -> tuple[str, pd.DataFrame | None]:
     """在子进程中执行，单票硬超时 + 重试，避免个别数据源卡死拖慢整批。"""
     socket.setdefaulttimeout(SOCKET_TIMEOUT)
+    last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
             df = _run_with_timeout(sym, window, FETCH_TIMEOUT)
             return (sym, df)
-        except Exception:
+        except Exception as e:
+            last_error = e
             if attempt < max_retries - 1:
                 delay = RETRY_BASE_DELAY * (attempt + 1)
                 time.sleep(delay)
+    if last_error is not None:
+        print(f"[funnel] 拉取失败 {sym}: {type(last_error).__name__}: {last_error}")
     return (sym, None)
 
 
@@ -266,14 +270,18 @@ def _fetch_one_with_retry_thread(
     """
     线程模式：避免 signal，依赖数据源请求超时与重试。
     """
+    last_error: Exception | None = None
     for attempt in range(max_retries):
         try:
             df = _fetch_hist(sym, window, "qfq")
             return (sym, df)
-        except Exception:
+        except Exception as e:
+            last_error = e
             if attempt < max_retries - 1:
                 delay = RETRY_BASE_DELAY * (attempt + 1)
                 time.sleep(delay)
+    if last_error is not None:
+        print(f"[funnel] 拉取失败 {sym}: {type(last_error).__name__}: {last_error}")
     return (sym, None)
 
 
