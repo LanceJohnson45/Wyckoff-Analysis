@@ -16,6 +16,25 @@ from core.constants import TABLE_RECOMMENDATION_TRACKING
 from integrations.supabase_base import create_admin_client as _get_supabase_admin_client
 from integrations.supabase_base import is_admin_configured as is_supabase_configured
 
+RECOMMENDATION_TRACKING_LIST_COLUMNS = ",".join(
+    [
+        "id",
+        "market",
+        "symbol",
+        "code",
+        "name",
+        "recommend_reason",
+        "recommend_date",
+        "initial_price",
+        "current_price",
+        "change_pct",
+        "recommend_count",
+        "funnel_score",
+        "is_ai_recommended",
+        "updated_at",
+    ]
+)
+
 
 def _parse_recommend_date(raw_value: Any) -> date | None:
     if raw_value is None:
@@ -653,7 +672,7 @@ def load_recommendation_tracking(limit: int = 1000) -> list[dict[str, Any]]:
         client = _get_supabase_admin_client()
         resp = (
             client.table(TABLE_RECOMMENDATION_TRACKING)
-            .select("*")
+            .select(RECOMMENDATION_TRACKING_LIST_COLUMNS)
             .order("recommend_date", desc=True)
             .limit(limit)
             .execute()

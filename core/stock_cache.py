@@ -274,6 +274,46 @@ def load_cached_history(
     return None
 
 
+def load_cached_dates(
+    symbol: str,
+    adjust: str,
+    start_date: date,
+    end_date: date,
+    *,
+    context: str = "auto",
+) -> list[date]:
+    supabase = _get_stock_cache_client(context=context)
+    if supabase is None:
+        return []
+    try:
+        resp = (
+            supabase.table(TABLE_STOCK_HIST_CACHE)
+            .select("date")
+            .eq("symbol", symbol)
+            .eq("adjust", adjust)
+            .gte("date", start_date.isoformat())
+            .lte("date", end_date.isoformat())
+            .order("date")
+            .execute()
+        )
+    except APIError:
+        return []
+    except Exception:
+        return []
+    out: list[date] = []
+    for row in resp.data or []:
+        raw = None
+        if isinstance(row, dict):
+            raw = row.get("date")
+        if not raw:
+            continue
+        try:
+            out.append(_parse_iso_date(str(raw)))
+        except Exception:
+            continue
+    return sorted(set(out))
+
+
 def upsert_cache_data(
     symbol: str,
     adjust: str,

@@ -131,6 +131,45 @@ STRUCTURED_MARKET_SIGNAL_FIELDS = {
     "action_phrase",
 }
 
+MARKET_SIGNAL_READ_COLUMNS = ",".join(
+    [
+        "trade_date",
+        "market",
+        "updated_at",
+        "benchmark_regime",
+        "main_index_code",
+        "main_index_close",
+        "main_index_ma50",
+        "main_index_ma200",
+        "main_index_recent3_cum_pct",
+        "main_index_today_pct",
+        "smallcap_index_code",
+        "smallcap_close",
+        "smallcap_recent3_cum_pct",
+        "premarket_regime",
+        "premarket_reasons",
+        "a50_value_date",
+        "a50_source",
+        "a50_close",
+        "a50_pct_chg",
+        "vix_value_date",
+        "vix_source",
+        "vix_close",
+        "vix_pct_chg",
+        "benchmark_slot",
+        "premarket_slot",
+        "market_posture_code",
+        "market_posture_name",
+        "wind_phrase",
+        "water_phrase",
+        "action_phrase",
+        "banner_tone",
+        "banner_title",
+        "banner_message",
+        "source_jobs",
+    ]
+)
+
 
 MARKET_BANNER_MATRIX: dict[str, dict[str, dict[str, str]]] = {
     "BLACK_SWAN": {
@@ -399,7 +438,7 @@ def _select_market_signal_row(rows: list[dict[str, Any]], market: str) -> dict[s
 def _load_market_signal_by_trade_date(client: Client, trade_date: str, market: str = "cn") -> dict[str, Any] | None:
     resp = (
         client.table(TABLE_MARKET_SIGNAL_DAILY)
-        .select("*")
+        .select(MARKET_SIGNAL_READ_COLUMNS)
         .eq("trade_date", trade_date)
         .order("updated_at", desc=True)
         .limit(20)
@@ -513,7 +552,7 @@ def load_latest_market_signal_daily(
                 continue
             resp = (
                 sb.table(TABLE_MARKET_SIGNAL_DAILY)
-                .select("*")
+                .select(MARKET_SIGNAL_READ_COLUMNS)
                 .order("trade_date", desc=True)
                 .order("updated_at", desc=True)
                 .limit(120)
