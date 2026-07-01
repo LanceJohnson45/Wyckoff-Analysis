@@ -606,17 +606,28 @@ def _fetch_stock_yfinance(
     except Exception as e:
         raise RuntimeError(f"yfinance unavailable: {e}")
 
-    start_iso = f"{start[:4]}-{start[4:6]}-{start[6:8]}"
-    end_iso = f"{end[:4]}-{end[4:6]}-{end[6:8]}"
-    # yfinance 的 end 为开区间，+1 天可覆盖 end 当天。
-    end_ts = pd.to_datetime(end_iso, errors="coerce") + pd.Timedelta(days=1)
-    if pd.isna(end_ts):
+    start_ts = pd.to_datetime(f"{start[:4]}-{start[4:6]}-{start[6:8]}", errors="coerce")
+    end_req_ts = pd.to_datetime(f"{end[:4]}-{end[4:6]}-{end[6:8]}", errors="coerce")
+    if pd.isna(start_ts):
+        raise RuntimeError("invalid start date")
+    if pd.isna(end_req_ts):
         raise RuntimeError("invalid end date")
+    if start_ts > end_req_ts:
+        raise RuntimeError("start date after end date")
+
+    start_iso = start_ts.strftime("%Y-%m-%d")
+    end_iso = end_req_ts.strftime("%Y-%m-%d")
+
+    # US/HK 的节假日边界、小区间缺口补拉时，直接按原始起止请求偶发 empty。
+    # 这里向前后各扩几天抓取，再裁剪回目标区间，提升稳定性。
+    fetch_start_ts = start_ts - pd.Timedelta(days=7)
+    # yfinance 的 end 为开区间，+1 天可覆盖 end 当天；这里额外再留缓冲。
+    fetch_end_ts = end_req_ts + pd.Timedelta(days=3)
 
     df = yf.download(
         str(symbol).strip(),
-        start=start_iso,
-        end=end_ts.strftime("%Y-%m-%d"),
+        start=fetch_start_ts.strftime("%Y-%m-%d"),
+        end=fetch_end_ts.strftime("%Y-%m-%d"),
         interval="1d",
         auto_adjust=True,
         progress=False,
@@ -650,6 +661,11 @@ def _fetch_stock_yfinance(
         if col not in work.columns:
             raise RuntimeError(f"yfinance missing column {col}")
     work["日期"] = pd.to_datetime(work["日期"], errors="coerce").dt.strftime("%Y-%m-%d")
+    work = work.loc[
+        (work["日期"] >= start_iso) & (work["日期"] <= end_iso)
+    ].copy()
+    if work.empty:
+        raise RuntimeError("yfinance empty after date filter")
     for col in ["开盘", "最高", "最低", "收盘", "成交量"]:
         work[col] = pd.to_numeric(work[col], errors="coerce")
 
