@@ -18,7 +18,12 @@ from integrations.supabase_base import create_admin_client as _create_admin_clie
 _ADMIN_CLIENT: Client | None = None
 _CLI_CLIENT: Client | None = None
 _CLI_TOKENS: tuple[str, str] = ("", "")
-_STOCK_HIST_RETENTION_DAYS = 320
+_FUNNEL_TRADING_DAYS = max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30)
+_DEFAULT_RETENTION_DAYS = max(int(_FUNNEL_TRADING_DAYS * 1.7), 540)
+_STOCK_HIST_RETENTION_DAYS = max(
+    int(os.getenv("STOCK_HIST_RETENTION_DAYS", str(_DEFAULT_RETENTION_DAYS))),
+    30,
+)
 
 
 def _parse_iso_datetime(value: str) -> datetime:

@@ -6,22 +6,57 @@ import os
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
+from datetime import date, timedelta
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
+from pandas.tseries.holiday import (
+    AbstractHolidayCalendar,
+    GoodFriday,
+    Holiday,
+    USLaborDay,
+    USMartinLutherKingJr,
+    USMemorialDay,
+    USPresidentsDay,
+    USThanksgivingDay,
+    nearest_workday,
+)
 
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+ROOT = Path(__file__).resolve().parent.parent
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
+
 from core.stock_cache import get_cache_meta, load_cached_dates, normalize_hist_df, upsert_cache_data
-from integrations.data_source import fetch_stock_hist
+from integrations.data_source import fetch_index_hist, fetch_stock_hist
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached
-from scripts.wyckoff_funnel import _job_end_calendar_day, _normalize_symbols, _resolve_funnel_market, _resolve_symbol_pool_from_env
+from scripts.wyckoff_funnel import (
+    HK_MAIN_BENCH_CODE,
+    HK_SMALLCAP_BENCH_CODE,
+    US_MAIN_BENCH_CODE,
+    US_SMALLCAP_BENCH_CODE,
+    _job_end_calendar_day,
+    _normalize_symbols,
+    _resolve_funnel_market,
+    _resolve_symbol_pool_from_env,
+)
 
 
 def _log(msg: str) -> None:
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+
+
+_RECENT_GAP_MAX_AGE_DAYS = max(
+    int(os.getenv("FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS", "45")),
+    0,
+)
 
 
 def _expected_trade_dates(window, market: str) -> list[date]:
@@ -31,10 +66,81 @@ def _expected_trade_dates(window, market: str) -> list[date]:
             d for d in _trade_dates_cached()
             if window.start_trade_date <= d <= window.end_trade_date
         ]
+    bench_codes: list[tuple[str, str]] = []
+    if market_norm == "us":
+        bench_codes = [
+            ("main_benchmark", US_MAIN_BENCH_CODE),
+            ("smallcap_benchmark", US_SMALLCAP_BENCH_CODE),
+        ]
+    elif market_norm == "hk":
+        bench_codes = [
+            ("main_benchmark", HK_MAIN_BENCH_CODE),
+            ("smallcap_benchmark", HK_SMALLCAP_BENCH_CODE),
+        ]
+    for _, code in bench_codes:
+        try:
+            frame = fetch_index_hist(
+                code,
+                window.start_trade_date,
+                window.end_trade_date,
+                market=market_norm,
+            )
+            if frame is None or frame.empty or "date" not in frame.columns:
+                continue
+            s = pd.to_datetime(frame["date"], errors="coerce").dropna()
+            dates = sorted(
+                {
+                    x.date()
+                    for x in s.tolist()
+                    if window.start_trade_date <= x.date() <= window.end_trade_date
+                }
+            )
+            if dates:
+                return dates
+        except Exception:
+            continue
+    if market_norm == "us":
+        return _approx_us_market_dates(
+            start=window.start_trade_date,
+            end=window.end_trade_date,
+        )
     return pd.bdate_range(
         start=window.start_trade_date,
         end=window.end_trade_date,
     ).date.tolist()
+
+
+class _ApproxNyseHolidayCalendar(AbstractHolidayCalendar):
+    rules = [
+        Holiday("NewYearsDay", month=1, day=1, observance=nearest_workday),
+        USMartinLutherKingJr,
+        USPresidentsDay,
+        GoodFriday,
+        USMemorialDay,
+        Holiday(
+            "Juneteenth",
+            month=6,
+            day=19,
+            start_date="2022-06-19",
+            observance=nearest_workday,
+        ),
+        Holiday("IndependenceDay", month=7, day=4, observance=nearest_workday),
+        USLaborDay,
+        USThanksgivingDay,
+        Holiday("Christmas", month=12, day=25, observance=nearest_workday),
+    ]
+
+
+def _approx_us_market_dates(*, start: date, end: date) -> list[date]:
+    business_days = pd.bdate_range(start=start, end=end)
+    if business_days.empty:
+        return []
+    holidays = _ApproxNyseHolidayCalendar().holidays(
+        start=business_days.min(),
+        end=business_days.max(),
+    )
+    holiday_set = {ts.date() for ts in holidays}
+    return [ts.date() for ts in business_days if ts.date() not in holiday_set]
 
 
 def _missing_ranges(expected_dates: list[date], cached_dates: list[date]) -> list[tuple[date, date]]:
@@ -57,7 +163,48 @@ def _missing_ranges(expected_dates: list[date], cached_dates: list[date]) -> lis
     return ranges
 
 
-def _prefetch_one(symbol: str, market: str, trading_days: int) -> tuple[str, str, int, int]:
+def _trim_recent_gap_ranges(
+    gap_ranges: list[tuple[date, date]],
+    *,
+    end_trade_date: date,
+    max_age_days: int,
+) -> tuple[list[tuple[date, date]], list[tuple[date, date]]]:
+    if max_age_days <= 0:
+        return (gap_ranges, [])
+    cutoff = end_trade_date - timedelta(days=max_age_days)
+    kept: list[tuple[date, date]] = []
+    ignored: list[tuple[date, date]] = []
+    for gap_start, gap_end in gap_ranges:
+        if gap_end < cutoff:
+            ignored.append((gap_start, gap_end))
+            continue
+        if gap_start < cutoff <= gap_end:
+            kept.append((cutoff, gap_end))
+            ignored.append((gap_start, cutoff - timedelta(days=1)))
+            continue
+        kept.append((gap_start, gap_end))
+    return (kept, ignored)
+
+
+def _filter_expected_dates_by_recent_window(
+    expected_dates: list[date],
+    *,
+    end_trade_date: date,
+    max_age_days: int,
+) -> list[date]:
+    if max_age_days <= 0:
+        return expected_dates
+    cutoff = end_trade_date - timedelta(days=max_age_days)
+    return [d for d in expected_dates if d >= cutoff]
+
+
+def _prefetch_one(
+    symbol: str,
+    market: str,
+    trading_days: int,
+    *,
+    dry_run: bool = False,
+) -> tuple[str, str, int, int, int, int, list[tuple[date, date]], int]:
     end_day = _job_end_calendar_day()
     window = (
         _resolve_us_window(end_calendar_day=end_day, trading_days=trading_days)
@@ -81,17 +228,55 @@ def _prefetch_one(symbol: str, market: str, trading_days: int) -> tuple[str, str
         window.end_trade_date,
         context="background",
     )
+    effective_expected_dates = expected_dates
+    if meta is not None and _RECENT_GAP_MAX_AGE_DAYS > 0:
+        effective_expected_dates = _filter_expected_dates_by_recent_window(
+            expected_dates,
+            end_trade_date=window.end_trade_date,
+            max_age_days=_RECENT_GAP_MAX_AGE_DAYS,
+        )
     if (
         meta is not None
-        and meta.start_date <= window.start_trade_date
+        and effective_expected_dates
+        and meta.end_date >= effective_expected_dates[-1]
         and meta.end_date >= window.end_trade_date
-        and len(cached_dates) == len(expected_dates)
-        and cached_dates == expected_dates
+        and len(cached_dates) >= len(effective_expected_dates)
+        and set(effective_expected_dates).issubset(set(cached_dates))
     ):
-        return symbol, "cache_ready", 0, 0
+        return (
+            symbol,
+            "cache_ready",
+            0,
+            0,
+            len(effective_expected_dates),
+            len(cached_dates),
+            [],
+            0,
+        )
     gap_ranges = _missing_ranges(expected_dates, cached_dates)
     if not gap_ranges and meta is None:
         gap_ranges = [(window.start_trade_date, window.end_trade_date)]
+    ignored_ranges: list[tuple[date, date]] = []
+    if meta is not None and gap_ranges:
+        gap_ranges, ignored_ranges = _trim_recent_gap_ranges(
+            gap_ranges,
+            end_trade_date=window.end_trade_date,
+            max_age_days=_RECENT_GAP_MAX_AGE_DAYS,
+        )
+    if dry_run:
+        preview_ranges = gap_ranges[:5]
+        if ignored_ranges:
+            preview_ranges = preview_ranges + ignored_ranges[:2]
+        return (
+            symbol,
+            "dry_run_missing" if gap_ranges else "dry_run_noop",
+            0,
+            len(gap_ranges),
+            len(effective_expected_dates),
+            len(cached_dates),
+            gap_ranges[:5],
+            len(ignored_ranges),
+        )
     rows_written = 0
     for gap_start, gap_end in gap_ranges:
         frame = fetch_stock_hist(
@@ -121,12 +306,27 @@ def _prefetch_one(symbol: str, market: str, trading_days: int) -> tuple[str, str
         window.end_trade_date,
         context="background",
     )
-    if len(refreshed_dates) != len(expected_dates) or refreshed_dates != expected_dates:
-        remaining = _missing_ranges(expected_dates, refreshed_dates)
+    verify_expected_dates = effective_expected_dates
+    refreshed_set = set(refreshed_dates)
+    if verify_expected_dates and not set(verify_expected_dates).issubset(refreshed_set):
+        remaining = _missing_ranges(verify_expected_dates, refreshed_dates)
         raise RuntimeError(
             f"cache gap verification failed remaining_ranges={remaining[:3]}"
         )
-    return symbol, "gap_repaired", rows_written, len(gap_ranges)
+    return (
+        symbol,
+        "gap_repaired",
+        rows_written,
+        len(gap_ranges),
+        len(verify_expected_dates),
+        len(refreshed_dates),
+        gap_ranges[:5],
+        len(ignored_ranges),
+    )
+
+
+def _parse_manual_symbols(raw: str) -> list[str]:
+    return [x.strip() for x in str(raw or "").split(",") if x.strip()]
 
 
 def main() -> int:
@@ -136,12 +336,18 @@ def main() -> int:
     parser.add_argument("--max-workers", type=int, default=max(int(os.getenv("FUNNEL_PREWARM_MAX_WORKERS", "8")), 1))
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
+    parser.add_argument("--dry-run", action="store_true", help="Only inspect cache gaps; do not fetch or write")
+    parser.add_argument("--symbols", default="", help="Comma-separated symbols to inspect instead of pool resolution")
     args = parser.parse_args()
 
     if args.market:
         os.environ["FUNNEL_MARKET"] = args.market
     market = _resolve_funnel_market()
-    symbols, _, stats = _resolve_symbol_pool_from_env()
+    if args.symbols.strip():
+        symbols = _parse_manual_symbols(args.symbols)
+        stats = {"pool_mode": "cli_symbols"}
+    else:
+        symbols, _, stats = _resolve_symbol_pool_from_env()
     normalized = _normalize_symbols(symbols, market=market)
     if args.limit > 0:
         normalized = normalized[: args.limit]
@@ -150,7 +356,8 @@ def main() -> int:
         return 0
 
     _log(
-        f"prewarm start market={market} symbols={len(normalized)} trading_days={args.trading_days} mode={stats.get('pool_mode')}"
+        f"prewarm start market={market} symbols={len(normalized)} trading_days={args.trading_days} "
+        f"mode={stats.get('pool_mode')} dry_run={args.dry_run}"
     )
     ok = 0
     fail = 0
@@ -159,15 +366,45 @@ def main() -> int:
     repaired_ranges = 0
     repaired_rows = 0
     with ThreadPoolExecutor(max_workers=max(int(args.max_workers), 1)) as executor:
-        futures = {executor.submit(_prefetch_one, sym, market, max(int(args.trading_days), 1)): sym for sym in normalized}
+        futures = {
+            executor.submit(
+                _prefetch_one,
+                sym,
+                market,
+                max(int(args.trading_days), 1),
+                dry_run=bool(args.dry_run),
+            ): sym
+            for sym in normalized
+        }
         for future in as_completed(futures):
             symbol = futures[future]
             try:
-                _, status, rows, gap_count = future.result()
+                (
+                    _,
+                    status,
+                    rows,
+                    gap_count,
+                    expected_count,
+                    cached_count,
+                    gap_preview,
+                    ignored_count,
+                ) = future.result()
                 ok += 1
                 if status == "cache_ready":
                     cache_ready += 1
-                    _log(f"prewarm ok {symbol} cache_ready")
+                    _log(
+                        f"prewarm ok {symbol} cache_ready "
+                        f"cached={cached_count}/{expected_count}"
+                    )
+                elif args.dry_run:
+                    repaired_ranges += int(gap_count)
+                    preview = ", ".join(f"{s}..{e}" for s, e in gap_preview) or "-"
+                    _log(
+                        f"prewarm dry-run {symbol} status={status} "
+                        f"cached={cached_count}/{expected_count} "
+                        f"gap_ranges={gap_count} ignored_old_ranges={ignored_count} "
+                        f"preview=[{preview}]"
+                    )
                 else:
                     repaired_symbols += 1
                     repaired_ranges += int(gap_count)
