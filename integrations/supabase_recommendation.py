@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 from supabase import Client
 from core.constants import TABLE_RECOMMENDATION_TRACKING
+from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
 from integrations.supabase_base import create_admin_client as _get_supabase_admin_client
 from integrations.supabase_base import is_admin_configured as is_supabase_configured
 
@@ -198,6 +199,96 @@ def upsert_recommendations(recommend_date: int, symbols_info: list[dict[str, Any
     将每日选出的股票存入推荐跟踪表
     recommend_date: YYYYMMDD (int)
     """
+    if postgres_enabled():
+        if not symbols_info:
+            return False
+        try:
+            existing_counts: dict[tuple[str, str], int] = {}
+            existing_code_dates: dict[tuple[str, str], set[int]] = {}
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select market, symbol, recommend_count, recommend_date
+                    from public.recommendation_tracking
+                    """
+                )
+                for row in cur.fetchall():
+                    market_key, symbol_key = _market_symbol_from_record(row)
+                    if not symbol_key:
+                        continue
+                    try:
+                        cnt = int(row.get("recommend_count") or 1)
+                    except Exception:
+                        cnt = 1
+                    key = (market_key, symbol_key)
+                    existing_counts[key] = max(existing_counts.get(key, 0), cnt)
+                    try:
+                        existing_code_dates.setdefault(key, set()).add(int(row.get("recommend_date")))
+                    except Exception:
+                        pass
+
+            payload = []
+            now_dt = datetime.now(timezone.utc)
+            for s in symbols_info:
+                market = _normalize_market(s.get("market"), default="cn")
+                symbol = _normalize_symbol(s.get("symbol") or s.get("code"), market=market)
+                if not symbol:
+                    continue
+                code_int = _legacy_code_from_symbol(symbol, market)
+                price = 0.0
+                for key in ("initial_price", "current_price", "price", "latest_price", "close"):
+                    raw_price = s.get(key)
+                    if raw_price is None or raw_price == "":
+                        continue
+                    try:
+                        parsed = float(raw_price)
+                    except Exception:
+                        continue
+                    if parsed > 0:
+                        price = parsed
+                        break
+                score_val: float | None = None
+                for score_key in ("funnel_score", "priority_score", "score"):
+                    raw_score = s.get(score_key)
+                    if raw_score is None or raw_score == "":
+                        continue
+                    try:
+                        score_val = float(raw_score)
+                        break
+                    except Exception:
+                        continue
+                key = (market, symbol)
+                old_cnt = existing_counts.get(key, 0)
+                seen_dates = existing_code_dates.get(key, set())
+                new_cnt = 1 if old_cnt <= 0 else (old_cnt if recommend_date in seen_dates else old_cnt + 1)
+                payload.append(
+                    {
+                        "market": market,
+                        "symbol": symbol,
+                        "code": code_int,
+                        "name": str(s.get("name", "")).strip(),
+                        "recommend_reason": str(s.get("tag", "")).strip(),
+                        "recommend_date": recommend_date,
+                        "initial_price": price,
+                        "current_price": price,
+                        "change_pct": 0.0,
+                        "recommend_count": new_cnt,
+                        "funnel_score": score_val,
+                        "is_ai_recommended": False,
+                        "updated_at": now_dt,
+                    }
+                )
+            if payload:
+                upsert_rows(
+                    TABLE_RECOMMENDATION_TRACKING,
+                    payload,
+                    conflict_columns=("market", "symbol", "recommend_date"),
+                )
+            return True
+        except Exception as e:
+            print(f"[supabase_recommendation] upsert_recommendations failed: {e}")
+            return False
+
     if not is_supabase_configured() or not symbols_info:
         return False
     try:
@@ -378,6 +469,40 @@ def mark_ai_recommendations(
     将某个推荐日的记录标记为是否 AI 推荐（可操作池）。
     ai_codes 传入 6 位代码字符串列表。
     """
+    if postgres_enabled():
+        try:
+            now_dt = datetime.now(timezone.utc)
+            market_norm = _normalize_market(market)
+            symbols = sorted(
+                {
+                    symbol
+                    for symbol in (_normalize_symbol(code, market=market_norm) for code in (ai_codes or []))
+                    if symbol
+                }
+            )
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    update public.recommendation_tracking
+                    set is_ai_recommended = false, updated_at = %s
+                    where recommend_date = %s and market = %s
+                    """,
+                    (now_dt, recommend_date, market_norm),
+                )
+                if symbols:
+                    cur.execute(
+                        """
+                        update public.recommendation_tracking
+                        set is_ai_recommended = true, updated_at = %s
+                        where recommend_date = %s and market = %s and symbol = any(%s)
+                        """,
+                        (now_dt, recommend_date, market_norm, symbols),
+                    )
+            return True
+        except Exception as e:
+            print(f"[supabase_recommendation] mark_ai_recommendations failed: {e}")
+            return False
+
     if not is_supabase_configured():
         return False
     try:
@@ -450,6 +575,168 @@ def sync_all_tracking_prices(
     对缺失代码优先回退到历史日线收盘（qfq），最后才按开关尝试实时快照。
     返回成功更新的数量。
     """
+    if postgres_enabled():
+        try:
+            allow_spot_fallback = (
+                os.getenv("RECOMMENDATION_PRICE_ALLOW_SPOT_FALLBACK", "").strip().lower()
+                in {"1", "true", "yes", "on"}
+            )
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute("select * from public.recommendation_tracking")
+                source_rows = cur.fetchall()
+            if not source_rows:
+                print("[supabase_recommendation] sync_all_tracking_prices: 推荐表无记录，跳过")
+                return 0
+
+            grouped_records: dict[tuple[str, str], list[dict[str, Any]]] = {}
+            for row in source_rows:
+                if not isinstance(row, dict):
+                    continue
+                market, symbol = _market_symbol_from_record(row)
+                if not symbol:
+                    continue
+                grouped_records.setdefault((market, symbol), []).append(row)
+            if not grouped_records:
+                print("[supabase_recommendation] sync_all_tracking_prices: 推荐表无有效 symbol，跳过")
+                return 0
+
+            hist_window_cache: dict[str, tuple[str, str]] = {}
+            hist_close_cache: dict[tuple[str, str], float] = {}
+
+            def _resolve_hist_window(market: str) -> tuple[str | None, str | None]:
+                if market in hist_window_cache:
+                    return hist_window_cache[market]
+                try:
+                    from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window
+                    from utils.trading_clock import resolve_end_calendar_day
+
+                    if market == "us":
+                        window = _resolve_us_window(end_calendar_day=resolve_end_calendar_day(), trading_days=20)
+                    else:
+                        window = _resolve_trading_window(end_calendar_day=resolve_end_calendar_day(), trading_days=20)
+                    value = (
+                        window.start_trade_date.strftime("%Y-%m-%d"),
+                        window.end_trade_date.strftime("%Y-%m-%d"),
+                    )
+                except Exception:
+                    value = (None, None)
+                hist_window_cache[market] = value
+                return value
+
+            def _price_from_history(symbol: str, market: str) -> float | None:
+                cache_key = (market, symbol)
+                if cache_key in hist_close_cache:
+                    cached = hist_close_cache[cache_key]
+                    return cached if cached > 0 else None
+                hist_start_s, hist_end_s = _resolve_hist_window(market)
+                if not hist_start_s or not hist_end_s:
+                    hist_close_cache[cache_key] = 0.0
+                    return None
+                try:
+                    from integrations.data_source import fetch_stock_hist
+
+                    hist = fetch_stock_hist(symbol, hist_start_s, hist_end_s, adjust="qfq", market=market)
+                    if hist is None or hist.empty or "收盘" not in hist.columns:
+                        hist_close_cache[cache_key] = 0.0
+                        return None
+                    close_s = pd.to_numeric(hist.get("收盘"), errors="coerce").dropna()
+                    if close_s.empty:
+                        hist_close_cache[cache_key] = 0.0
+                        return None
+                    px = float(close_s.iloc[-1])
+                    hist_close_cache[cache_key] = px if px > 0 else 0.0
+                    return px if px > 0 else None
+                except Exception:
+                    hist_close_cache[cache_key] = 0.0
+                    return None
+
+            def _price_from_spot(symbol: str, market: str) -> float | None:
+                if not allow_spot_fallback or market != "cn":
+                    return None
+                try:
+                    from integrations.data_source import fetch_stock_spot_snapshot
+
+                    snap = fetch_stock_spot_snapshot(symbol, force_refresh=False)
+                    if not snap or snap.get("close") is None:
+                        return None
+                    px = float(snap["close"])
+                    return px if px > 0 else None
+                except Exception:
+                    return None
+
+            updated_count = 0
+            with connect_postgres() as conn, conn.cursor() as cur:
+                for (market, symbol), records in grouped_records.items():
+                    new_current_price: float | None = None
+                    if price_map:
+                        raw_px = price_map.get(f"{market}:{symbol}")
+                        if raw_px is None:
+                            raw_px = price_map.get(symbol)
+                        try:
+                            parsed_px = float(raw_px) if raw_px is not None else 0.0
+                        except Exception:
+                            parsed_px = 0.0
+                        if parsed_px > 0:
+                            new_current_price = parsed_px
+                    if new_current_price is None:
+                        new_current_price = _price_from_history(symbol, market)
+                    if new_current_price is None:
+                        new_current_price = _price_from_spot(symbol, market)
+                    if new_current_price is None:
+                        continue
+                    for record in records:
+                        initial_price = float(record.get("initial_price") or 0.0)
+                        rec_date = _parse_recommend_date(record.get("recommend_date"))
+                        update_payload: dict[str, Any] = {
+                            "current_price": new_current_price,
+                            "updated_at": datetime.now(timezone.utc),
+                        }
+                        if initial_price > 0:
+                            update_payload["change_pct"] = round(
+                                (new_current_price - initial_price) / initial_price * 100.0,
+                                2,
+                            )
+                        else:
+                            backfill_price = (
+                                _resolve_initial_price_from_history(symbol, rec_date, market=market) if rec_date else 0.0
+                            )
+                            if backfill_price <= 0:
+                                backfill_price = new_current_price
+                            update_payload["initial_price"] = backfill_price
+                            update_payload["change_pct"] = (
+                                round((new_current_price - backfill_price) / backfill_price * 100.0, 2)
+                                if backfill_price > 0
+                                else 0.0
+                            )
+                        cur.execute(
+                            """
+                            update public.recommendation_tracking
+                            set current_price = %s,
+                                initial_price = coalesce(%s, initial_price),
+                                change_pct = %s,
+                                updated_at = %s
+                            where id = %s
+                            """,
+                            (
+                                update_payload["current_price"],
+                                update_payload.get("initial_price"),
+                                update_payload["change_pct"],
+                                update_payload["updated_at"],
+                                record["id"],
+                            ),
+                        )
+                        updated_count += 1
+            if grouped_records and updated_count == 0:
+                print(
+                    "[supabase_recommendation] sync_all_tracking_prices: 推荐表有 {} 只股票但 0 条更新，可能是 price_map 为空且历史/实时行情均不可用".format(
+                        len(grouped_records)
+                    )
+                )
+            return updated_count
+        except Exception as e:
+            print(f"[supabase_recommendation] sync_all_tracking_prices failed: {e}")
+            return 0
+
     if not is_supabase_configured():
         print("[supabase_recommendation] sync_all_tracking_prices: Supabase 未配置，跳过")
         return 0
@@ -627,6 +914,48 @@ def correct_tracking_initial_prices() -> int:
     每日执行可让历史数据逐步修正。
     返回被更新的记录数。
     """
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute("select * from public.recommendation_tracking")
+                rows = cur.fetchall()
+                if not rows:
+                    return 0
+                cache: dict[tuple[str, str, date], float] = {}
+                updated = 0
+                for record in rows:
+                    write_date = _parse_write_date(record)
+                    if not write_date:
+                        continue
+                    market, symbol = _market_symbol_from_record(record)
+                    if not symbol:
+                        continue
+                    current_price = float(record.get("current_price") or 0.0)
+                    if current_price <= 0:
+                        continue
+                    key = (market, symbol, write_date)
+                    if key not in cache:
+                        cache[key] = _resolve_initial_price_from_history(symbol, write_date, market=market)
+                    initial_from_hist = cache[key]
+                    if initial_from_hist <= 0:
+                        continue
+                    change_pct = round((current_price - initial_from_hist) / initial_from_hist * 100.0, 2)
+                    cur.execute(
+                        """
+                        update public.recommendation_tracking
+                        set initial_price = %s,
+                            change_pct = %s,
+                            updated_at = %s
+                        where id = %s
+                        """,
+                        (initial_from_hist, change_pct, datetime.now(timezone.utc), record["id"]),
+                    )
+                    updated += 1
+                return updated
+        except Exception as e:
+            print(f"[supabase_recommendation] correct_tracking_initial_prices failed: {e}")
+            return 0
+
     if not is_supabase_configured():
         print("[supabase_recommendation] correct_tracking_initial_prices: Supabase 未配置，跳过")
         return 0
@@ -668,6 +997,39 @@ def correct_tracking_initial_prices() -> int:
 
 def load_recommendation_tracking(limit: int = 1000) -> list[dict[str, Any]]:
     """加载推荐跟踪数据"""
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    select {RECOMMENDATION_TRACKING_LIST_COLUMNS}
+                    from public.recommendation_tracking
+                    order by recommend_date desc
+                    limit %s
+                    """,
+                    (limit,),
+                )
+                resp_rows = cur.fetchall()
+            rows: list[dict[str, Any]] = []
+            for row in resp_rows:
+                if not isinstance(row, dict):
+                    continue
+                market, symbol = _market_symbol_from_record(row)
+                if not symbol:
+                    continue
+                normalized = dict(row)
+                normalized["market"] = market
+                normalized["symbol"] = symbol
+                if normalized.get("code") is None:
+                    legacy_code = _legacy_code_from_symbol(symbol, market)
+                    if legacy_code is not None:
+                        normalized["code"] = legacy_code
+                rows.append(normalized)
+            return rows
+        except Exception as e:
+            print(f"[supabase_recommendation] load_recommendation_tracking failed: {e}")
+            return []
+
     try:
         client = _get_supabase_admin_client()
         resp = (
@@ -734,20 +1096,34 @@ def refresh_tracking_prices_with_hist_data(
     """
     from integrations.data_source import fetch_stock_hist
 
-    if not is_supabase_configured():
-        raise ValueError("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY 未配置")
-
-    client = _get_supabase_admin_client()
-    schema_supports_market_symbol = _supports_market_symbol_schema(client)
-    market_filter = str(market or "").strip().lower()
-    if market_filter not in {"", "cn", "us"}:
-        raise ValueError("market must be '', 'cn', or 'us'")
-    resp = (
-        client.table(TABLE_RECOMMENDATION_TRACKING)
-        .select("id,market,symbol,code,recommend_date")
-        .execute()
-    )
-    records = resp.data or []
+    if postgres_enabled():
+        client = None
+        schema_supports_market_symbol = True
+        with connect_postgres() as conn, conn.cursor() as cur:
+            market_filter = str(market or "").strip().lower()
+            if market_filter not in {"", "cn", "us"}:
+                raise ValueError("market must be '', 'cn', or 'us'")
+            cur.execute(
+                """
+                select id, market, symbol, code, recommend_date
+                from public.recommendation_tracking
+                """
+            )
+            records = cur.fetchall()
+    else:
+        if not is_supabase_configured():
+            raise ValueError("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY 未配置")
+        client = _get_supabase_admin_client()
+        schema_supports_market_symbol = _supports_market_symbol_schema(client)
+        market_filter = str(market or "").strip().lower()
+        if market_filter not in {"", "cn", "us"}:
+            raise ValueError("market must be '', 'cn', or 'us'")
+        resp = (
+            client.table(TABLE_RECOMMENDATION_TRACKING)
+            .select("id,market,symbol,code,recommend_date")
+            .execute()
+        )
+        records = resp.data or []
     if not records:
         return {
             "rows_total": 0,
@@ -840,7 +1216,32 @@ def refresh_tracking_prices_with_hist_data(
                 update_payload
             )
 
-    if updates:
+    if updates and postgres_enabled():
+        with connect_postgres() as conn, conn.cursor() as cur:
+            for item in updates:
+                row_id = item.get("id")
+                if row_id is None:
+                    continue
+                payload = dict(item)
+                payload.pop("id", None)
+                cur.execute(
+                    """
+                    update public.recommendation_tracking
+                    set initial_price = %s,
+                        current_price = %s,
+                        change_pct = %s,
+                        updated_at = %s
+                    where id = %s
+                    """,
+                    (
+                        payload.get("initial_price"),
+                        payload.get("current_price"),
+                        payload.get("change_pct"),
+                        payload.get("updated_at"),
+                        row_id,
+                    ),
+                )
+    elif updates:
         for item in updates:
             row_id = item.pop("id", None)
             market_val = item.pop("market", None)

@@ -898,19 +898,30 @@ def get_signal_pending(status: str = "all", limit: int = 30) -> dict:
     """
     try:
         from integrations.supabase_base import create_admin_client, is_admin_configured
+        from integrations.postgres_base import connect_postgres, postgres_enabled
         from core.constants import TABLE_SIGNAL_PENDING
 
-        if not is_admin_configured():
+        if not postgres_enabled() and not is_admin_configured():
             return {"error": "Supabase 未配置，无法查询信号确认池"}
 
         limit = min(max(limit, 1), 100)
-        client = create_admin_client()
-        query = client.table(TABLE_SIGNAL_PENDING).select("*")
-
-        if status in ("pending", "confirmed", "expired"):
-            query = query.eq("status", status)
-
-        rows = query.order("updated_at", desc=True).limit(limit).execute().data or []
+        if postgres_enabled():
+            sql_text = "select * from public.signal_pending"
+            params: list = []
+            if status in ("pending", "confirmed", "expired"):
+                sql_text += " where status = %s"
+                params.append(status)
+            sql_text += " order by updated_at desc limit %s"
+            params.append(limit)
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(sql_text, params)
+                rows = cur.fetchall() or []
+        else:
+            client = create_admin_client()
+            query = client.table(TABLE_SIGNAL_PENDING).select("*")
+            if status in ("pending", "confirmed", "expired"):
+                query = query.eq("status", status)
+            rows = query.order("updated_at", desc=True).limit(limit).execute().data or []
 
         if not rows:
             status_label = {"pending": "待确认", "confirmed": "已确认", "expired": "已过期"}.get(status, "")

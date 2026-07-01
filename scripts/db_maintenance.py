@@ -21,6 +21,7 @@ from core.constants import (
     TABLE_STOCK_HIST_CACHE,
     TABLE_TRADE_ORDERS,
 )
+from integrations.postgres_base import connect_postgres, postgres_enabled
 from integrations.supabase_base import create_admin_client
 
 # (table, date_column, ttl_days, cutoff_kind)
@@ -52,6 +53,19 @@ def _is_statement_timeout_error(err: object) -> bool:
 def _is_missing_table_error(err: object) -> bool:
     text = str(err).lower()
     return "pgrst205" in text or "could not find the table" in text
+
+
+def _pg_table_exists(cur, table: str) -> bool:
+    cur.execute(
+        """
+        select 1
+        from information_schema.tables
+        where table_schema = 'public' and table_name = %s
+        limit 1
+        """,
+        (table,),
+    )
+    return cur.fetchone() is not None
 
 
 def _cleanup_stock_hist_cache_before_cutoff(
@@ -125,6 +139,26 @@ def cleanup_table(
     dry_run: bool = False,
 ) -> tuple[str, int | None]:
     cutoff = _cutoff_value(ttl_days, cutoff_kind)
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                if not _pg_table_exists(cur, table):
+                    return "skip_missing_table", None
+                if dry_run:
+                    cur.execute(
+                        f'select count(*) as cnt from public."{table}" where "{date_col}" < %s',
+                        (cutoff,),
+                    )
+                    row = cur.fetchone() or {}
+                    return "dry_run", int(row.get("cnt") or 0)
+                cur.execute(
+                    f'delete from public."{table}" where "{date_col}" < %s',
+                    (cutoff,),
+                )
+            return "ok", None
+        except Exception as e:
+            return f"error: {e}", None
+
     try:
         if dry_run:
             resp = (
@@ -157,6 +191,14 @@ def cleanup_table(
 
 def cleanup_unadjusted_cache(client) -> tuple[bool, str]:
     """删除 stock_hist_cache 中 adjust='none' 的存量缓存。"""
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute("delete from public.stock_hist_cache where adjust = 'none'")
+            return True, "cleaned adjust=none rows"
+        except Exception as e:
+            return False, f"cleanup failed: {e}"
+
     try:
         client.table(TABLE_STOCK_HIST_CACHE).delete().eq("adjust", "none").execute()
         return True, "cleaned adjust=none rows"
@@ -227,7 +269,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="只查询待清理行数，不实际删除")
     args = parser.parse_args()
 
-    client = create_admin_client()
+    client = None if postgres_enabled() else create_admin_client()
     all_ok = True
 
     for table, date_col, ttl_days, cutoff_kind in CLEANUP_RULES:

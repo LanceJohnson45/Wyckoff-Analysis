@@ -31,6 +31,7 @@ from core.tail_buy_strategy import (
 from integrations.fetch_a_share_csv import _resolve_trading_window
 from integrations.llm_client import DEFAULT_GEMINI_MODEL, OPENAI_COMPATIBLE_BASE_URLS, call_llm
 from integrations.supabase_base import create_admin_client, is_admin_configured
+from integrations.postgres_base import connect_postgres, postgres_enabled
 from integrations.supabase_market_signal import (
     load_latest_market_signal_daily,
     load_market_signal_daily,
@@ -123,6 +124,40 @@ def _resolve_trade_dates(logs_path: str | None = None) -> tuple[str, str]:
 
 
 def _load_signal_pending_candidates(target_signal_date: str, logs_path: str | None = None) -> list[TailBuyCandidate]:
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select code, name, signal_type, signal_score, status, signal_date
+                    from public.signal_pending
+                    where status = any(%s) and signal_date = %s
+                    limit 5000
+                    """,
+                    (["pending", "confirmed"], target_signal_date),
+                )
+                rows = cur.fetchall()
+                if not rows:
+                    cur.execute(
+                        """
+                        select code, name, signal_type, signal_score, status, signal_date
+                        from public.signal_pending
+                        where status = any(%s)
+                        order by signal_date desc
+                        limit 8000
+                        """,
+                        (["pending", "confirmed"],),
+                    )
+                    rows = cur.fetchall()
+        except Exception as e:
+            raise RuntimeError(f"读取 signal_pending 失败: {e}") from e
+        picked = pick_tail_candidates(rows, target_signal_date=target_signal_date)
+        _log(
+            f"候选池加载完成: raw={len(rows)}, picked={len(picked)}, signal_date={target_signal_date}",
+            logs_path,
+        )
+        return picked
+
     if not is_admin_configured():
         raise RuntimeError("Supabase 凭据未配置，无法读取 signal_pending")
 

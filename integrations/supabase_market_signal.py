@@ -15,6 +15,7 @@ from typing import Any
 from supabase import Client
 
 from core.constants import TABLE_MARKET_SIGNAL_DAILY
+from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
 from integrations.supabase_base import create_admin_client as _get_supabase_admin_client
 from integrations.supabase_base import is_admin_configured as is_supabase_admin_configured
 
@@ -453,6 +454,23 @@ def _load_market_signal_by_trade_date(client: Client, trade_date: str, market: s
     return dict(picked)
 
 
+def _load_market_signal_by_trade_date_pg(trade_date: str, market: str = "cn") -> dict[str, Any] | None:
+    with connect_postgres() as conn, conn.cursor() as cur:
+        cur.execute(
+            f"""
+            select {MARKET_SIGNAL_READ_COLUMNS}
+            from public.market_signal_daily
+            where trade_date = %s
+              and market = %s
+            order by updated_at desc
+            limit 1
+            """,
+            (trade_date, _normalize_market(market)),
+        )
+        row = cur.fetchone()
+    return dict(row) if row else None
+
+
 def _iter_market_signal_clients(client: Client | None = None) -> list[Client]:
     clients: list[Client] = []
     if client is not None:
@@ -475,6 +493,31 @@ def _iter_market_signal_clients(client: Client | None = None) -> list[Client]:
 
 
 def upsert_market_signal_daily(trade_date: date | str, patch: dict[str, Any], *, market: str = "cn") -> bool:
+    if postgres_enabled():
+        try:
+            trade_date_text = _normalize_trade_date(trade_date)
+            market_norm = _normalize_market(market)
+            existing = _load_market_signal_by_trade_date_pg(trade_date_text, market=market_norm) or {}
+            merged = dict(existing)
+            merged.update(_normalize_row_for_upsert(dict(patch or {})))
+            merged["trade_date"] = trade_date_text
+            merged["market"] = market_norm
+            merged["source_jobs"] = _deep_merge_source_jobs(
+                existing.get("source_jobs"),
+                patch.get("source_jobs") if isinstance(patch, dict) else None,
+            )
+            merged.update(compose_market_banner(merged))
+            merged["updated_at"] = datetime.now(timezone.utc)
+            upsert_rows(
+                TABLE_MARKET_SIGNAL_DAILY,
+                [_normalize_row_for_upsert(merged)],
+                conflict_columns=("trade_date", "market"),
+                json_columns=("premarket_reasons", "source_jobs"),
+            )
+            return True
+        except Exception:
+            return False
+
     if not is_supabase_admin_configured():
         return False
     try:
@@ -518,6 +561,11 @@ def load_market_signal_daily(
 ) -> dict[str, Any] | None:
     trade_date_text = _normalize_trade_date(trade_date)
     market_norm = _normalize_market(market)
+    if postgres_enabled():
+        try:
+            return _load_market_signal_by_trade_date_pg(trade_date_text, market=market_norm)
+        except Exception:
+            return None
     for sb in _iter_market_signal_clients(client):
         try:
             row = _load_market_signal_by_trade_date(sb, trade_date_text, market=market_norm)
@@ -546,6 +594,61 @@ def load_latest_market_signal_daily(
         return None
 
     market_norm = _normalize_market(market)
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    select {MARKET_SIGNAL_READ_COLUMNS}
+                    from public.market_signal_daily
+                    where market = %s
+                    order by trade_date desc, updated_at desc
+                    limit 120
+                    """,
+                    (market_norm,),
+                )
+                rows = [dict(x) for x in cur.fetchall()]
+            if not rows:
+                return None
+
+            merged = dict(rows[0])
+            benchmark_row = _pick_latest_with_fields(
+                rows,
+                ("benchmark_regime", "main_index_close", "main_index_ma50", "main_index_ma200"),
+            )
+            premarket_row = _pick_latest_with_fields(rows, ("premarket_regime", "premarket_reasons"))
+            a50_row = _pick_latest_with_fields(rows, ("a50_close", "a50_pct_chg", "a50_value_date"))
+            vix_row = _pick_latest_with_fields(rows, ("vix_close", "vix_pct_chg", "vix_value_date"))
+
+            if benchmark_row:
+                for key in (
+                    "trade_date",
+                    "benchmark_regime",
+                    "main_index_code",
+                    "main_index_close",
+                    "main_index_ma50",
+                    "main_index_ma200",
+                    "main_index_recent3_cum_pct",
+                    "main_index_today_pct",
+                    "smallcap_index_code",
+                    "smallcap_close",
+                    "smallcap_recent3_cum_pct",
+                ):
+                    merged[key] = benchmark_row.get(key)
+            if premarket_row:
+                for key in ("premarket_regime", "premarket_reasons"):
+                    merged[key] = premarket_row.get(key)
+            if a50_row:
+                for key in ("a50_value_date", "a50_source", "a50_close", "a50_pct_chg"):
+                    merged[key] = a50_row.get(key)
+            if vix_row:
+                for key in ("vix_value_date", "vix_source", "vix_close", "vix_pct_chg"):
+                    merged[key] = vix_row.get(key)
+            merged.update(compose_market_banner(merged))
+            return merged
+        except Exception:
+            return None
+
     for sb in _iter_market_signal_clients(client):
         try:
             if sb is None:

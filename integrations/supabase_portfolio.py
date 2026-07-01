@@ -25,6 +25,7 @@ from core.constants import (
     TABLE_TRADE_ORDERS,
     TABLE_USER_SETTINGS,
 )
+from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
 from integrations.supabase_base import create_admin_client as _get_supabase_admin_client
 from integrations.supabase_base import is_admin_configured as is_supabase_configured
 
@@ -57,6 +58,8 @@ def _normalize_portfolio_code(raw: Any, *, market: str) -> str:
 
 def load_user_settings_admin(user_id: str) -> dict[str, Any] | None:
     user_id = str(user_id or "").strip()
+    if postgres_enabled():
+        return None
     if not user_id or not is_supabase_configured():
         return None
     try:
@@ -136,9 +139,62 @@ def load_portfolio_state(portfolio_id: str = "USER_LIVE", client: Client | None 
       "positions": [{"code","name","cost","buy_dt","shares"}, ...]
     }
     """
-    if client is None and not is_supabase_configured():
+    if client is None and not (postgres_enabled() or is_supabase_configured()):
         return None
     try:
+        if postgres_enabled():
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select portfolio_id, free_cash, total_equity, updated_at
+                    from public.portfolios
+                    where portfolio_id = %s
+                    limit 1
+                    """,
+                    (portfolio_id,),
+                )
+                p = cur.fetchone()
+                if not p:
+                    return None
+                cur.execute(
+                    """
+                    select market, code, name, shares, cost_price, buy_dt, strategy, stop_loss, updated_at
+                    from public.portfolio_positions
+                    where portfolio_id = %s
+                    order by market, code
+                    """,
+                    (portfolio_id,),
+                )
+                rows = cur.fetchall()
+            positions: list[dict[str, Any]] = []
+            latest_updates: list[str] = [str(p.get("updated_at", "") or "").strip()]
+            for row in rows:
+                row_updated_at = str(row.get("updated_at", "") or "").strip()
+                if row_updated_at:
+                    latest_updates.append(row_updated_at)
+                positions.append(
+                    {
+                        "market": _normalize_market(row.get("market"), default="cn"),
+                        "code": str(row.get("code", "")).strip(),
+                        "name": str(row.get("name", "")).strip(),
+                        "cost": float(row.get("cost_price", 0.0) or 0.0),
+                        "buy_dt": str(row.get("buy_dt", "") or "").strip(),
+                        "shares": int(row.get("shares", 0) or 0),
+                        "stop_loss": float(row["stop_loss"]) if row.get("stop_loss") is not None else None,
+                        "updated_at": row_updated_at,
+                    }
+                )
+            state_updated_at = max((x for x in latest_updates if x), default="")
+            return {
+                "portfolio_id": str(p.get("portfolio_id")),
+                "free_cash": float(p.get("free_cash", 0.0) or 0.0),
+                "total_equity": float(p["total_equity"]) if p.get("total_equity") is not None else None,
+                "updated_at": str(p.get("updated_at", "") or "").strip(),
+                "state_updated_at": state_updated_at,
+                "state_signature": compute_portfolio_state_signature(p.get("free_cash", 0.0), positions),
+                "positions": positions,
+            }
+
         client = client or _get_supabase_admin_client()
         p_resp = (
             client.table(TABLE_PORTFOLIOS)
@@ -209,6 +265,8 @@ def list_step4_targets(target_user_id: str | None = None) -> list[dict[str, Any]
     - 自动映射 portfolio_id=USER_LIVE:<user_id>
     - 仅返回 Supabase 中已存在且结构可用的 portfolio
     """
+    if postgres_enabled():
+        return []
     if not is_supabase_configured():
         return []
     try:
@@ -261,6 +319,30 @@ def check_daily_run_exists(
     检查当日是否已存在同一持仓快照下的有效交易订单（幂等性检查）。
     返回 True 表示当前快照已运行过。
     """
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select run_id, status, created_at
+                    from public.trade_orders
+                    where portfolio_id = %s and trade_date = %s
+                    order by created_at desc
+                    limit 200
+                    """,
+                    (portfolio_id, trade_date),
+                )
+                rows = cur.fetchall()
+            active_rows = [row for row in rows if _is_active_trade_order_status(row.get("status"))]
+            if not active_rows:
+                return False
+            expected_sig = str(state_signature or "").strip().lower()
+            if not expected_sig:
+                return True
+            return any(extract_state_signature_from_run_id(row.get("run_id")) == expected_sig for row in active_rows)
+        except Exception:
+            return False
+
     if not is_supabase_configured():
         return False
     try:
@@ -295,6 +377,28 @@ def update_position_stops(portfolio_id: str, updates: list[dict[str, Any]]) -> b
     批量更新持仓止损价。
     updates: [{"code": "000001", "stop_loss": 12.34}, ...]
     """
+    if postgres_enabled():
+        if not updates:
+            return False
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                for item in updates:
+                    code = item.get("code")
+                    stop_loss = item.get("stop_loss")
+                    if not code or stop_loss is None:
+                        continue
+                    cur.execute(
+                        """
+                        update public.portfolio_positions
+                        set stop_loss = %s, updated_at = %s
+                        where portfolio_id = %s and code = %s
+                        """,
+                        (stop_loss, datetime.now(timezone.utc), portfolio_id, code),
+                    )
+            return True
+        except Exception:
+            return False
+
     if not is_supabase_configured() or not updates:
         return False
     try:
@@ -329,6 +433,14 @@ def _ensure_portfolio_exists(portfolio_id: str, client: Client) -> None:
         ).execute()
 
 
+def _ensure_portfolio_exists_pg(portfolio_id: str) -> None:
+    upsert_rows(
+        TABLE_PORTFOLIOS,
+        [{"portfolio_id": portfolio_id, "free_cash": 0, "name": "我的持仓"}],
+        conflict_columns=("portfolio_id",),
+    )
+
+
 def upsert_position(portfolio_id: str, position: dict[str, Any], client: Client | None = None) -> tuple[bool, str]:
     """新增或更新单个持仓。
 
@@ -339,6 +451,26 @@ def upsert_position(portfolio_id: str, position: dict[str, Any], client: Client 
     if not code or len(code) != 6:
         return False, f"无效的股票代码: {code}"
     try:
+        if postgres_enabled():
+            _ensure_portfolio_exists_pg(portfolio_id)
+            row = {
+                "portfolio_id": portfolio_id,
+                "market": _normalize_market(position.get("market"), default="cn"),
+                "code": code,
+                "name": str(position.get("name", "") or "").strip(),
+                "shares": int(position.get("shares", 0) or 0),
+                "cost_price": float(position.get("cost_price", 0) or 0),
+                "buy_dt": str(position.get("buy_dt", "") or "").strip(),
+                "strategy": str(position.get("strategy", "") or "").strip() or None,
+                "updated_at": datetime.now(timezone.utc),
+            }
+            upsert_rows(
+                TABLE_PORTFOLIO_POSITIONS,
+                [row],
+                conflict_columns=("portfolio_id", "market", "code"),
+            )
+            return True, f"{code} 已更新"
+
         client = client or _get_supabase_admin_client()
         _ensure_portfolio_exists(portfolio_id, client)
         row = {
@@ -360,6 +492,14 @@ def delete_position(portfolio_id: str, code: str, client: Client | None = None) 
     """删除单个持仓。"""
     code = code.strip()
     try:
+        if postgres_enabled():
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    "delete from public.portfolio_positions where portfolio_id = %s and code = %s",
+                    (portfolio_id, code),
+                )
+            return True, f"{code} 已删除"
+
         client = client or _get_supabase_admin_client()
         client.table(TABLE_PORTFOLIO_POSITIONS).delete().eq("portfolio_id", portfolio_id).eq("code", code).execute()
         return True, f"{code} 已删除"
@@ -371,6 +511,19 @@ def delete_position(portfolio_id: str, code: str, client: Client | None = None) 
 def update_free_cash(portfolio_id: str, free_cash: float, client: Client | None = None) -> tuple[bool, str]:
     """更新可用资金。"""
     try:
+        if postgres_enabled():
+            _ensure_portfolio_exists_pg(portfolio_id)
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    update public.portfolios
+                    set free_cash = %s, updated_at = %s
+                    where portfolio_id = %s
+                    """,
+                    (free_cash, datetime.now(timezone.utc), portfolio_id),
+                )
+            return True, f"可用资金已更新为 {free_cash:,.2f}"
+
         client = client or _get_supabase_admin_client()
         _ensure_portfolio_exists(portfolio_id, client)
         client.table(TABLE_PORTFOLIOS).update({"free_cash": free_cash}).eq("portfolio_id", portfolio_id).execute()
@@ -389,6 +542,59 @@ def save_ai_trade_orders(
     market_view: str,
     orders: list[dict[str, Any]],
 ) -> bool:
+    if postgres_enabled():
+        if not orders:
+            return True
+        try:
+            payload: list[dict[str, Any]] = []
+            now_dt = datetime.now(timezone.utc)
+            for o in orders:
+                code = str(o.get("code", "")).strip()
+                market = _normalize_market(o.get("market"), default=_infer_symbol_market(code))
+                payload.append(
+                    {
+                        "run_id": run_id,
+                        "portfolio_id": portfolio_id,
+                        "trade_date": trade_date,
+                        "model": model,
+                        "market_view": market_view or "",
+                        "market": market,
+                        "code": code,
+                        "name": str(o.get("name", "")).strip(),
+                        "action": str(o.get("action", "")).strip(),
+                        "status": str(o.get("status", "")).strip(),
+                        "shares": int(o.get("shares", 0) or 0),
+                        "price_hint": float(o["price_hint"]) if o.get("price_hint") is not None else None,
+                        "amount": float(o.get("amount", 0.0) or 0.0),
+                        "stop_loss": float(o["stop_loss"]) if o.get("stop_loss") is not None else None,
+                        "max_loss": float(o.get("max_loss", 0.0) or 0.0),
+                        "drawdown_ratio": float(o.get("drawdown_ratio", 0.0) or 0.0),
+                        "reason": str(o.get("reason", "") or ""),
+                        "tape_condition": str(o.get("tape_condition", "") or ""),
+                        "invalidate_condition": str(o.get("invalidate_condition", "") or ""),
+                        "created_at": now_dt,
+                    }
+                )
+            with connect_postgres() as conn, conn.cursor() as cur:
+                for row in payload:
+                    cur.execute(
+                        """
+                        insert into public.trade_orders (
+                            run_id, portfolio_id, trade_date, model, market_view, market, code,
+                            name, action, status, shares, price_hint, amount, stop_loss, max_loss,
+                            drawdown_ratio, reason, tape_condition, invalidate_condition, created_at
+                        ) values (
+                            %(run_id)s, %(portfolio_id)s, %(trade_date)s, %(model)s, %(market_view)s, %(market)s, %(code)s,
+                            %(name)s, %(action)s, %(status)s, %(shares)s, %(price_hint)s, %(amount)s, %(stop_loss)s, %(max_loss)s,
+                            %(drawdown_ratio)s, %(reason)s, %(tape_condition)s, %(invalidate_condition)s, %(created_at)s
+                        )
+                        """,
+                        row,
+                    )
+            return True
+        except Exception:
+            return False
+
     if not is_supabase_configured():
         return False
     if not orders:
@@ -443,6 +649,38 @@ def cancel_trade_orders(
     trade_date: str,
     exclude_run_id: str | None = None,
 ) -> int:
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                if exclude_run_id:
+                    cur.execute(
+                        """
+                        select id, status, run_id
+                        from public.trade_orders
+                        where portfolio_id = %s and trade_date = %s and run_id <> %s
+                        """,
+                        (portfolio_id, trade_date, exclude_run_id),
+                    )
+                else:
+                    cur.execute(
+                        """
+                        select id, status, run_id
+                        from public.trade_orders
+                        where portfolio_id = %s and trade_date = %s
+                        """,
+                        (portfolio_id, trade_date),
+                    )
+                rows = cur.fetchall()
+                active_rows = [row for row in rows if _is_active_trade_order_status(row.get("status"))]
+                for row in active_rows:
+                    cur.execute(
+                        "update public.trade_orders set status = 'CANCELLED' where id = %s",
+                        (row.get("id"),),
+                    )
+            return len(active_rows)
+        except Exception:
+            return 0
+
     if not is_supabase_configured():
         return 0
     try:
@@ -479,6 +717,26 @@ def upsert_daily_nav(
     total_equity: float,
     positions_value: float,
 ) -> bool:
+    if postgres_enabled():
+        try:
+            upsert_rows(
+                TABLE_DAILY_NAV,
+                [
+                    {
+                        "portfolio_id": portfolio_id,
+                        "trade_date": trade_date,
+                        "free_cash": float(free_cash),
+                        "positions_value": float(positions_value),
+                        "total_equity": float(total_equity),
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                ],
+                conflict_columns=("portfolio_id", "trade_date"),
+            )
+            return True
+        except Exception:
+            return False
+
     if not is_supabase_configured():
         return False
     try:

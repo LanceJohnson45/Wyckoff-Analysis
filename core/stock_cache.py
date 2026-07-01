@@ -12,6 +12,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 
 from core.constants import TABLE_STOCK_HIST_CACHE
+from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
 from integrations.supabase_base import create_admin_client as _create_admin_client
 
 _ADMIN_CLIENT: Client | None = None
@@ -197,6 +198,33 @@ def _get_stock_cache_client(context: str = "auto") -> Client | None:
 def get_cache_meta(
     symbol: str, adjust: str, *, context: str = "auto"
 ) -> Optional[CacheMeta]:
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select min(date) as start_date,
+                           max(date) as end_date,
+                           max(updated_at) as updated_at
+                    from public.stock_hist_cache
+                    where symbol = %s and adjust = %s
+                    """,
+                    (symbol, adjust),
+                )
+                row = cur.fetchone()
+            if not row or not row.get("start_date") or not row.get("end_date"):
+                return None
+            return CacheMeta(
+                symbol=symbol,
+                adjust=adjust,
+                source="cache",
+                start_date=row["start_date"],
+                end_date=row["end_date"],
+                updated_at=row.get("updated_at") or datetime.now(timezone.utc),
+            )
+        except Exception:
+            return None
+
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return None
@@ -249,6 +277,26 @@ def load_cached_history(
     *,
     context: str = "auto",
 ) -> Optional[pd.DataFrame]:
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select date, open, high, low, close, volume, amount, pct_chg, turnover_rate, amplitude
+                    from public.stock_hist_cache
+                    where symbol = %s
+                      and adjust = %s
+                      and date >= %s
+                      and date <= %s
+                    order by date
+                    """,
+                    (symbol, adjust, start_date, end_date),
+                )
+                rows = cur.fetchall()
+            return pd.DataFrame(rows) if rows else None
+        except Exception:
+            return None
+
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return None
@@ -282,6 +330,26 @@ def load_cached_dates(
     *,
     context: str = "auto",
 ) -> list[date]:
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    """
+                    select date
+                    from public.stock_hist_cache
+                    where symbol = %s
+                      and adjust = %s
+                      and date >= %s
+                      and date <= %s
+                    order by date
+                    """,
+                    (symbol, adjust, start_date, end_date),
+                )
+                rows = cur.fetchall()
+            return sorted({row["date"] for row in rows if row.get("date")})
+        except Exception:
+            return []
+
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return []
@@ -324,6 +392,44 @@ def upsert_cache_data(
 ) -> bool:
     if df is None or df.empty:
         return False
+
+    if postgres_enabled():
+        payload = df.copy()
+        payload["date"] = payload["date"].astype(str)
+        payload["symbol"] = symbol
+        payload["adjust"] = adjust
+        payload["updated_at"] = datetime.now(timezone.utc)
+        invalid_before_clean = _collect_invalid_numeric_samples(payload)
+        payload = _sanitize_payload_dataframe(payload)
+        records = payload.to_dict(orient="records")
+        try:
+            json.dumps(records, allow_nan=False)
+            upsert_rows(
+                TABLE_STOCK_HIST_CACHE,
+                records,
+                conflict_columns=("symbol", "adjust", "date"),
+            )
+            with connect_postgres() as conn, conn.cursor() as cur:
+                _trim_symbol_history_window_pg(
+                    cur=cur,
+                    symbol=symbol,
+                    adjust=adjust,
+                    retention_days=_STOCK_HIST_RETENTION_DAYS,
+                )
+            return True
+        except Exception as e:
+            print(
+                f"[upsert_cache_data] PG Exception: symbol={symbol}, adjust={adjust}, "
+                f"source={source}, rows={len(records)}, error={type(e).__name__}: {e}",
+                flush=True,
+            )
+            if invalid_before_clean:
+                print(
+                    f"[upsert_cache_data] Invalid numeric values before clean: {invalid_before_clean}",
+                    flush=True,
+                )
+            return False
+
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return False
@@ -435,6 +541,25 @@ def _trim_symbol_history_window(
     except Exception:
         pass
 
+
+def _trim_symbol_history_window_pg(
+    *,
+    cur,
+    symbol: str,
+    adjust: str,
+    retention_days: int,
+) -> None:
+    cutoff_date = datetime.utcnow().date() - timedelta(days=max(retention_days, 1))
+    cur.execute(
+        """
+        delete from public.stock_hist_cache
+        where symbol = %s
+          and adjust = %s
+          and date < %s
+        """,
+        (symbol, adjust, cutoff_date),
+    )
+
 def upsert_cache_meta(
     symbol: str,
     adjust: str,
@@ -452,6 +577,18 @@ def upsert_cache_meta(
 def cleanup_cache(
     ttl_days: int = _STOCK_HIST_RETENTION_DAYS, *, context: str = "auto"
 ) -> None:
+    if postgres_enabled():
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=ttl_days)).date()
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    "delete from public.stock_hist_cache where date < %s",
+                    (cutoff,),
+                )
+        except Exception:
+            pass
+        return
+
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return

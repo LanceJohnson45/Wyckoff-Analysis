@@ -1,0 +1,10 @@
+{
+  "market_signal_daily": 0,
+  "recommendation_tracking": 0,
+  "signal_pending": 0,
+  "index_constituents_snapshot": 0,
+  "portfolios": 0,
+  "portfolio_positions": 0,
+  "trade_orders": 0,
+  "daily_nav": 0
+}

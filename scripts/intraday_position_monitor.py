@@ -20,6 +20,7 @@ if __name__ == "__main__" or not __package__:
 
 from core.intraday_sell_signals import PositionSnapshot, SellSignal, scan_position
 from integrations.supabase_base import is_admin_configured
+from integrations.postgres_base import postgres_enabled
 from integrations.supabase_portfolio import load_portfolio_state
 from integrations.tickflow_client import TickFlowClient, normalize_cn_symbol
 from utils.feishu import send_feishu_notification
@@ -208,7 +209,7 @@ def main() -> int:
     if not tickflow_api_key:
         _log("缺少 TICKFLOW_API_KEY，盘中监控需要实时行情+分钟K线，请购买 TickFlow: https://tickflow.org/auth/register?ref=5N4NKTCPL4", logs_path)
         return 1
-    if not is_admin_configured():
+    if not (postgres_enabled() or is_admin_configured()):
         _log("Supabase 凭据未配置，任务失败", logs_path)
         return 1
 
