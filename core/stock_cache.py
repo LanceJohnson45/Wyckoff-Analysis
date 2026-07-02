@@ -233,28 +233,33 @@ def get_cache_meta(
     supabase = _get_stock_cache_client(context=context)
     if supabase is None:
         return None
-    first_resp = (
-        supabase.table(TABLE_STOCK_HIST_CACHE)
-        .select("date")
-        .eq("symbol", symbol)
-        .eq("adjust", adjust)
-        .order("date", desc=False)
-        .limit(1)
-        .execute()
-    )
-    if not first_resp.data:
-        return None
+    try:
+        first_resp = (
+            supabase.table(TABLE_STOCK_HIST_CACHE)
+            .select("date")
+            .eq("symbol", symbol)
+            .eq("adjust", adjust)
+            .order("date", desc=False)
+            .limit(1)
+            .execute()
+        )
+        if not first_resp.data:
+            return None
 
-    last_resp = (
-        supabase.table(TABLE_STOCK_HIST_CACHE)
-        .select("date,updated_at")
-        .eq("symbol", symbol)
-        .eq("adjust", adjust)
-        .order("date", desc=True)
-        .limit(1)
-        .execute()
-    )
-    if not last_resp.data:
+        last_resp = (
+            supabase.table(TABLE_STOCK_HIST_CACHE)
+            .select("date,updated_at")
+            .eq("symbol", symbol)
+            .eq("adjust", adjust)
+            .order("date", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not last_resp.data:
+            return None
+    except APIError:
+        return None
+    except Exception:
         return None
 
     first_row = first_resp.data[0]
