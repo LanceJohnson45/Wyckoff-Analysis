@@ -1,0 +1,175 @@
+{
+  "name": "两阳夹一阴，多方炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [6, 7, 8, 9, 10, 11, 12, 13],
+  "source": "多方炮的标准形态是先出现一根向上突破的阳线，随后一根缩量阴线回压，再出现一根重新收复并确认突破的阳线，常见于底部平台或上升中继平台。",
+  "source_summary": "第5页开始的多方炮章节包含标准形态、潜伏式、两阳夹两阴及强弱分类；当前 latest_match 只覆盖标准三日核心形态。",
+  "comment": "当前没有把原文所有变形都并入算法，latest_match 只提取标准两阳夹一阴主形态；潜伏式、多方炮两阳夹两阴、位置强弱分类仍属于未完全纳入部分。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakout_lookback": 20,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "close_high_lookback",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "最近N日收盘价最高值"
+    },
+    {
+      "id": "close_high_prev",
+      "op": "ref",
+      "field": "close_high_lookback",
+      "window": 1,
+      "description": "前一日的最近N日收盘价最高值"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日成交量简单移动平均"
+    },
+    {
+      "id": "open_prev",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一交易日开盘价"
+    },
+    {
+      "id": "high_prev",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一交易日最高价"
+    },
+    {
+      "id": "volume_prev",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一交易日成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "first_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_prev",
+      "description": "收盘价向上突破前期平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": 3,
+        "allow_same_day": false,
+        "conditions": [
+          {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "first_breakout"
+              },
+              {
+                "op": "compare",
+                "left": "close",
+                "operator": ">",
+                "right": "open"
+              },
+              {
+                "op": "compare",
+                "left": "volume",
+                "operator": ">",
+                "right": "vol_ma_5"
+              }
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "compare",
+                "left": "close",
+                "operator": "<",
+                "right": "open"
+              },
+              {
+                "op": "compare",
+                "left": "volume",
+                "operator": "<",
+                "right": "volume_prev"
+              },
+              {
+                "op": "compare",
+                "left": "low",
+                "operator": ">=",
+                "right": "open_prev"
+              }
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "compare",
+                "left": "close",
+                "operator": ">",
+                "right": "open"
+              },
+              {
+                "op": "compare",
+                "left": "close",
+                "operator": ">",
+                "right": "high_prev"
+              },
+              {
+                "op": "compare",
+                "left": "volume",
+                "operator": ">",
+                "right": "vol_ma_5"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先计算平台突破参考位、5日均量、以及前一日开盘价/最高价/成交量。",
+    "第一天要求放量阳线并向上突破最近breakout_lookback日平台。",
+    "第二天要求阴线缩量回压，且最低价不低于第一天开盘价。",
+    "第三天要求重新收阳，收盘价高于第二天最高价，同时成交量重新放大。",
+    "若最新交易日距离第三天不超过signal_keep_days，则最新交易日视为仍满足多方炮。"
+  ],
+  "signal_day_definition": "以第三根重新转强并确认突破的阳线当日作为多方炮信号完成日。",
+  "manual_review_needed": [
+    "当前规则只覆盖标准两阳夹一阴核心形态，原文中的潜伏式多方炮、两阳夹两阴、超强势跳空等变体未纳入主规则。",
+    "使用 low >= open_prev 作为回压不失真默认约束，是对“夯实平台但不破坏突破结构”的近似表达，需回测确认。",
+    "signal_keep_days=2 是为了把“开炮后短期仍视为有效”转成可执行规则，需后续回测确认。"
+  ],
+  "implementation_notes": [
+    "该规则使用 close/high/open/low/volume 五个字段。",
+    "breakout_up 目前按收盘突破 prior highest close 处理，是对前头部T线的默认近似。",
+    "如果需要完整覆盖多方炮章节，建议后续拆出至少两个附加 spec：潜伏式多方炮、两阳夹两阴多方炮。"
+  ],
+  "explain": "多方炮这里被提炼为一个三日K线突破模板：放量突破、缩量回压、再度转强。"
+}

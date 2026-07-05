@@ -1,0 +1,135 @@
+{
+  "name": "出水芙蓉",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [78, 79, 80],
+  "source": "出水芙蓉指股价长期位于季均线或月均线之下，某日突然放量冲过均线系统并收盘站上其上方，是明显的转势信号。",
+  "source_summary": "长期弱势后若放量阳线重新站上季均线系统，可视为出水芙蓉。",
+  "comment": "当前优先提取季均线版本，即20/40/60日均线之上的放量阳线站稳。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_fast_window": 20,
+    "ma_mid_window": 40,
+    "ma_slow_window": 60,
+    "background_lookback": 40,
+    "background_min_bearish_days": 5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "40日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "vol_ma_10",
+      "op": "sma",
+      "field": "volume",
+      "window": 10,
+      "description": "10日均量"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "count",
+            "window": "$params.background_lookback",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": "<",
+                  "right": "ma_fast"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": "<",
+                  "right": "ma_mid"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": "<",
+                  "right": "ma_slow"
+                }
+              ]
+            },
+            "gte": "$params.background_min_bearish_days"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_fast"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_mid"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_slow"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "vol_ma_10"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20/40/60日均线和10日均量。",
+    "要求在过去background_lookback日中，曾有不少于background_min_bearish_days日收盘位于三均线之下。",
+    "要求某日以阳线形式收盘站上20/40/60三条均线，并放量高于10日均量。"
+  ],
+  "signal_day_definition": "以放量阳线重新站上季均线系统的当日作为出水芙蓉信号日。",
+  "manual_review_needed": [
+    "原文同时提及月均线版本与多次冲击版本，当前 latest_match 只保留通用季均线近似版本。",
+    "均线系统‘相对收敛’尚未量化。"
+  ],
+  "implementation_notes": [
+    "如果后续需要更精确的芙蓉出水定义，建议增加均线收敛和实体幅度条件。"
+  ],
+  "explain": "出水芙蓉在这里是长期弱势后的一次放量重新站上长期均线系统。"
+}

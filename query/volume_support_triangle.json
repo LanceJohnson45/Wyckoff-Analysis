@@ -1,0 +1,164 @@
+{
+  "name": "量托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [4, 5],
+  "source": "量托由5日、10日、20日均量线在底部区域依次向上交叉形成封闭三角形，通常与价托配合出现，用来确认底部放量活跃。",
+  "source_summary": "在长期缩量后，5/10/20日均量线依次形成三个向上交叉并转为多头排列，可视为底部量托信号。",
+  "comment": "当前按日线成交量均线交叉转写为规则；原文强调量托通常与价托共振，单独使用时仍需结合价格结构。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "volume"
+  ],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "background_lookback": 20,
+    "background_min_bearish_days": 3,
+    "sequence_lookback": 20,
+    "post_confirm_lookback": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "vol_ma_fast",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.ma_fast_window",
+      "description": "5日成交量简单移动平均"
+    },
+    {
+      "id": "vol_ma_mid",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.ma_mid_window",
+      "description": "10日成交量简单移动平均"
+    },
+    {
+      "id": "vol_ma_slow",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.ma_slow_window",
+      "description": "20日成交量简单移动平均"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_fast_mid",
+      "op": "cross_up",
+      "left": "vol_ma_fast",
+      "right": "vol_ma_mid",
+      "description": "5日均量线上穿10日均量线"
+    },
+    {
+      "id": "cross_fast_slow",
+      "op": "cross_up",
+      "left": "vol_ma_fast",
+      "right": "vol_ma_slow",
+      "description": "5日均量线上穿20日均量线"
+    },
+    {
+      "id": "cross_mid_slow",
+      "op": "cross_up",
+      "left": "vol_ma_mid",
+      "right": "vol_ma_slow",
+      "description": "10日均量线上穿20日均量线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "before",
+          "condition": {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "compare",
+                "left": "vol_ma_slow",
+                "operator": ">",
+                "right": "vol_ma_mid"
+              },
+              {
+                "op": "compare",
+                "left": "vol_ma_mid",
+                "operator": ">",
+                "right": "vol_ma_fast"
+              }
+            ]
+          },
+          "event": "cross_fast_mid",
+          "window": "$params.background_lookback",
+          "min_count": "$params.background_min_bearish_days"
+        },
+        {
+          "op": "sequence",
+          "window": "$params.sequence_lookback",
+          "allow_same_day": "$params.allow_same_day",
+          "conditions": [
+            {
+              "op": "condition",
+              "event": "cross_fast_mid"
+            },
+            {
+              "op": "condition",
+              "event": "cross_fast_slow"
+            },
+            {
+              "op": "condition",
+              "event": "cross_mid_slow"
+            }
+          ]
+        },
+        {
+          "op": "within",
+          "window": "$params.post_confirm_lookback",
+          "condition": {
+            "op": "condition",
+            "event": "cross_mid_slow"
+          }
+        },
+        {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "compare",
+              "left": "vol_ma_fast",
+              "operator": ">=",
+              "right": "vol_ma_mid"
+            },
+            {
+              "op": "compare",
+              "left": "vol_ma_mid",
+              "operator": ">=",
+              "right": "vol_ma_slow"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日、20日成交量简单移动平均序列。",
+    "要求在最近background_lookback个交易日内，先出现若干天 vol_ma_slow > vol_ma_mid > vol_ma_fast 的空头均量背景。",
+    "在最近sequence_lookback个交易日内按顺序检测三次向上交叉：vol_ma_fast上穿vol_ma_mid、vol_ma_fast上穿vol_ma_slow、vol_ma_mid上穿vol_ma_slow。",
+    "要求最新交易日仍处于最近post_confirm_lookback个交易日内发生过最后一个交叉的区间。",
+    "要求最新交易日保持 vol_ma_fast >= vol_ma_mid >= vol_ma_slow。"
+  ],
+  "signal_day_definition": "以 vol_ma_mid 上穿 vol_ma_slow 的当日作为量托完成日；若最新交易日距离该完成日不超过post_confirm_lookback且均量线仍保持多头排列，则最新交易日视为满足量托。",
+  "manual_review_needed": [
+    "background_lookback=20、background_min_bearish_days=3、sequence_lookback=20、post_confirm_lookback=5 均为把原文模糊描述转成规则后的默认参数，需后续回测确认。",
+    "原文强调量托最好和价托共振，本规则仅提取量托本身，未强制绑定价托。",
+    "原文还提到季量托等变体，当前仅输出基础5/10/20日均量版本。"
+  ],
+  "implementation_notes": [
+    "cross_up 使用前一交易日 left <= right 且当前交易日 left > right。",
+    "warmup_bars 建议满足：max(ma_slow_window + sequence_lookback + 1, ma_slow_window + background_lookback + 1)。当前保留60作为统一预热长度。",
+    "该指标仅依赖 volume 字段。"
+  ],
+  "explain": "量托是成交量均线的底部三角托结构，主要判断底部缩量结束后成交量是否开始持续活跃。"
+}

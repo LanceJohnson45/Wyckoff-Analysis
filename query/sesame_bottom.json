@@ -1,0 +1,168 @@
+{
+  "name": "底部芝麻功",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [21, 22, 23, 24, 25],
+  "source": "底部芝麻功强调在潜收集完成后的回档过程中，连续出现极度萎缩的小成交量和小K线，说明浮筹被洗净，随后一旦重新放量上升就可能进入新的拉升阶段。",
+  "source_summary": "连续缩量到极致的底部整理区间，可视为底部芝麻功；若随后重新放量上行，信号更强。",
+  "comment": "当前优先提取日线可执行部分：连续低量与底部区域确认；原文对K线实体大小的细节未完全量化。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "low",
+    "close",
+    "volume"
+  ],
+  "warmup_bars": 30,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "low_window": 20,
+    "sesame_consecutive_days": 3,
+    "reexpand_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    },
+    {
+      "id": "vol_ma_10",
+      "op": "sma",
+      "field": "volume",
+      "window": 10,
+      "description": "10日均量"
+    },
+    {
+      "id": "vol_ma_20",
+      "op": "sma",
+      "field": "volume",
+      "window": 20,
+      "description": "20日均量"
+    },
+    {
+      "id": "low_20",
+      "op": "lowest",
+      "field": "low",
+      "window": "$params.low_window",
+      "description": "最近N日最低价"
+    },
+    {
+      "id": "close_prev",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "or",
+      "conditions": [
+        {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "consecutive",
+              "length": "$params.sesame_consecutive_days",
+              "condition": {
+                "op": "and",
+                "conditions": [
+                  {
+                    "op": "compare",
+                    "left": "volume",
+                    "operator": "<",
+                    "right": "vol_ma_5"
+                  },
+                  {
+                    "op": "compare",
+                    "left": "volume",
+                    "operator": "<",
+                    "right": "vol_ma_10"
+                  },
+                  {
+                    "op": "compare",
+                    "left": "volume",
+                    "operator": "<",
+                    "right": "vol_ma_20"
+                  }
+                ]
+              }
+            },
+            {
+              "op": "compare",
+              "left": "low",
+              "operator": "<=",
+              "right": "low_20"
+            }
+          ]
+        },
+        {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "within",
+              "window": "$params.reexpand_keep_days",
+              "condition": {
+                "op": "consecutive",
+                "length": "$params.sesame_consecutive_days",
+                "condition": {
+                  "op": "and",
+                  "conditions": [
+                    {
+                      "op": "compare",
+                      "left": "volume",
+                      "operator": "<",
+                      "right": "vol_ma_5"
+                    },
+                    {
+                      "op": "compare",
+                      "left": "volume",
+                      "operator": "<",
+                      "right": "vol_ma_10"
+                    },
+                    {
+                      "op": "compare",
+                      "left": "volume",
+                      "operator": "<",
+                      "right": "vol_ma_20"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "op": "compare",
+              "left": "volume",
+              "operator": ">",
+              "right": "vol_ma_5"
+            },
+            {
+              "op": "compare",
+              "left": "close",
+              "operator": ">",
+              "right": "close_prev"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均量和最近low_window日最低价。",
+    "若最新交易日已经连续sesame_consecutive_days天满足 volume 同时低于 5/10/20 日均量，且当前低点落在最近low_window日低位附近，则视为芝麻点阶段成立。",
+    "如果最新交易日不处于芝麻点阶段，但最近reexpand_keep_days日内刚经历过芝麻点阶段，且当前量能重新高于5日均量、收盘价高于前一日，也可视为芝麻功后的放量启动。"
+  ],
+  "signal_day_definition": "连续极度缩量且位于底部区间的最后一天，或其后首个重新放量上升的交易日，视为底部芝麻功信号日。",
+  "manual_review_needed": [
+    "原文中的“小阴小阳、十字星、回档越浅越好”未被完全量化，当前仅用连续低量和低位区间近似表达。",
+    "sesame_consecutive_days=3 与 reexpand_keep_days=2 均为默认建议参数，需后续回测确认。"
+  ],
+  "implementation_notes": [
+    "该规则使用 volume 的极度萎缩与 low 的底部位置来近似芝麻点。",
+    "如果后续需要更严格的芝麻K线定义，建议引擎支持实体振幅或区间振幅算子。"
+  ],
+  "explain": "底部芝麻功被近似为连续极低量的底部整理，外加其后的首次放量转强。"
+}

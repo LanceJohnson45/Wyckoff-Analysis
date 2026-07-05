@@ -1,0 +1,124 @@
+{
+  "name": "假托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [51, 52, 53, 54, 55, 56],
+  "source": "假托指股价在头部区间下跌后组织反弹并形成价托，但成交量放大不足、反弹空间有限，随后再次跌破该价托底边线并重回跌势。",
+  "source_summary": "头部下跌后的弱反弹虽然形成价托，但若放量不足且很快跌破托底，可视为假托。",
+  "comment": "当前按“先有反弹形成托结构，再发生向下破坏”的日线近似规则提取；原文依赖价压和压辐射背景，当前未完全绑定。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "support_keep_days": 15,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "support_complete",
+      "op": "cross_up",
+      "left": "ma_mid",
+      "right": "ma_slow",
+      "description": "反弹过程中形成价托的最后一个结点"
+    },
+    {
+      "id": "support_breakdown",
+      "op": "cross_down",
+      "left": "close",
+      "right": "ma_slow",
+      "description": "收盘价向下跌破20日均线近似表示跌破假托底边"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "within",
+          "window": "$params.signal_keep_days",
+          "condition": {
+            "op": "condition",
+            "event": "support_breakdown"
+          }
+        },
+        {
+          "op": "before",
+          "condition": {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "support_complete"
+              },
+              {
+                "op": "compare",
+                "left": "volume",
+                "operator": "<=",
+                "right": "vol_ma_5"
+              }
+            ]
+          },
+          "event": "support_breakdown",
+          "window": "$params.support_keep_days",
+          "min_count": 1
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": "<",
+          "right": "ma_slow"
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线与5日均量。",
+    "用10日均线上穿20日均线近似表示反弹中形成价托。",
+    "要求该价托形成时未出现明显放量，即 volume <= vol_ma_5。",
+    "随后在support_keep_days窗口内出现收盘价下破20日均线，近似表示跌破假托底边。"
+  ],
+  "signal_day_definition": "以收盘价再次跌破假托底边近似位的当日作为假托确认日。",
+  "manual_review_needed": [
+    "原文里的价压、压辐射带和反弹空间不足没有完全量化，当前主要保留“弱反弹托结构后再跌破”的核心。",
+    "用 close 下破 ma_slow 近似跌破假托底边线是默认简化，需后续回测确认。"
+  ],
+  "implementation_notes": [
+    "该规则本质上是‘假托完成后快速失效’。",
+    "后续如果引擎支持事件价格带引用，可把托底边线定义得更精确。"
+  ],
+  "explain": "假托被收敛为一个弱反弹形成托结构、随后很快失效的反弹陷阱规则。"
+}

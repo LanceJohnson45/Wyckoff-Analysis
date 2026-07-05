@@ -1,0 +1,163 @@
+{
+  "name": "一脚踢出大黑马",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [39, 40, 41],
+  "source": "赤脚底强调快速赶底形成脚跟，随后反弹受60日均线压制回落，但不再创新低，最终中短期均线收敛并在脚趾位置放量突破，走出上扬行情。",
+  "source_summary": "底部不创新低、60日线附近收敛后放量突破，可视为赤脚底信号。",
+  "comment": "当前按日线“60日线压制后的底部抬高 + 收敛后放量突破”近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "high",
+    "low",
+    "close",
+    "volume"
+  ],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_hold_window": 20,
+    "base_lookback": 60,
+    "toe_breakout_lookback": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_hold",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_hold_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "low_60",
+      "op": "lowest",
+      "field": "low",
+      "window": "$params.base_lookback",
+      "description": "最近N日最低价"
+    },
+    {
+      "id": "high_20",
+      "op": "highest",
+      "field": "high",
+      "window": "$params.toe_breakout_lookback",
+      "description": "最近N日最高价"
+    },
+    {
+      "id": "high_20_prev",
+      "op": "ref",
+      "field": "high_20",
+      "window": 1,
+      "description": "前一日最近N日最高价"
+    },
+    {
+      "id": "low_prev",
+      "op": "ref",
+      "field": "low",
+      "window": 1,
+      "description": "前一日最低价"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "toe_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "high_20_prev",
+      "description": "突破脚趾位置平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "toe_breakout"
+          },
+          {
+            "op": "compare",
+            "left": "low",
+            "operator": ">",
+            "right": "low_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_fast",
+            "operator": ">=",
+            "right": "ma_mid"
+          },
+          {
+            "op": "compare",
+            "left": "ma_mid",
+            "operator": ">=",
+            "right": "ma_hold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_long"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "vol_ma_5"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60日均线、最近60日低点、最近20日高点及5日均量。",
+    "要求当前低点高于最近60日最低点，近似表达脚底不再创新低和底部抬高。",
+    "要求5/10/20日均线收敛后转强，且收盘价重新站上60日均线。",
+    "要求当前日放量突破最近20日平台高点。",
+    "若最新交易日距离突破日不超过signal_keep_days，则 latest_match = true。"
+  ],
+  "signal_day_definition": "以放量突破脚趾平台并站上60日均线的当日作为赤脚底完成日。",
+  "manual_review_needed": [
+    "原文的脚跟、脚背、脚趾是图形化描述，当前只用底部抬高、均线收敛、平台突破做近似表达。",
+    "signal_keep_days=3 为默认短期有效窗口，需回测确认。"
+  ],
+  "implementation_notes": [
+    "该规则只覆盖日线版本，不包含原文里对量缩放节奏和脚形细节的全部描述。",
+    "如果后续需要更严格判断脚趾头收敛程度，建议引擎支持均线间距阈值。"
+  ],
+  "explain": "赤脚底被近似为一个底部抬高、均线收敛、放量突破的右侧信号。"
+}

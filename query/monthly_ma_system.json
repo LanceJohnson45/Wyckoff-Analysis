@@ -1,0 +1,66 @@
+{
+  "name": "月均线系统的综合运用",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [31, 32, 33],
+  "source": "月均线系统由5日、10日、20日均线组成，原文主要描述其短中线观察用途，以及与60分钟或季均线系统配合使用的方法。",
+  "source_summary": "这是一个监视趋势和配合其他周期使用的分析框架，不是单一触发指标。",
+  "comment": "原文更像方法论，而不是一个可单点判断 latest_match 的独立形态指标。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": [
+    "close"
+  ],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线。",
+    "将其视为短中线趋势观察框架，而非单一布尔信号。"
+  ],
+  "signal_day_definition": "原文未定义单一信号完成日。",
+  "manual_review_needed": [
+    "如需把该方法论收敛成可执行信号，需要另行定义具体触发条件，例如三线顺上、三线拐头、或与季均线共振等。",
+    "原文明确提到与60分钟K线配合使用，但当前仓库仅有日线数据。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。",
+    "后续若要可计算化，需要先确定把哪一种用法收敛成规则。"
+  ],
+  "explain": "这是一个均线观察系统，不是单一入场/出场信号。"
+}

@@ -1,0 +1,108 @@
+{
+  "name": "一阴下穿三角压",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [72, 73, 74, 75],
+  "source": "一阴下穿三角压指一根长阴线由上而下穿过已经形成的价压结构，断头铡刀与价压共振，强化头部信号。",
+  "source_summary": "若价压存在，随后再出现一根阴线向下切穿三均线，可视为一阴下穿三角压。",
+  "comment": "当前按‘近期价压完成 + 当日收盘跌破5/10/20均线’近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 70,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "signal_keep_days": 3,
+    "pressure_keep_days": 10
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "pressure_complete",
+      "op": "cross_down",
+      "left": "ma_mid",
+      "right": "ma_slow",
+      "description": "价压最后一个结点"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "condition",
+              "event": "pressure_complete"
+            },
+            "event": "pressure_complete",
+            "window": "$params.pressure_keep_days",
+            "min_count": 1
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_fast"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_mid"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_slow"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先计算5/10/20日均线并识别价压完成点。",
+    "要求最新日附近先已有价压。",
+    "要求某日收阴并收盘跌破5/10/20三条均线，近似表达一阴下穿三角压。"
+  ],
+  "signal_day_definition": "以收阴并同时下穿三条均线的当日作为一阴下穿三角压信号日。",
+  "manual_review_needed": [
+    "当前没有直接度量‘长阴线’实体大小，仅用阴线且收盘跌破三线近似。",
+    "before 对同一事件的使用是为了表达近期已有价压，后续可用更专门的 recently_completed 算子替代。"
+  ],
+  "implementation_notes": [
+    "该规则强调断头铡刀与价压的共振。"
+  ],
+  "explain": "一阴下穿三角压是头部价压上的进一步向下破坏。"
+}

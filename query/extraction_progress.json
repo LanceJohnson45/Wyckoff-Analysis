@@ -1,0 +1,175 @@
+{
+  "document": "docs/指标解析.pdf",
+  "total_pages": 923,
+  "page_chunks_reviewed": [
+    {
+      "range": "1-10",
+      "markdown_file": "tmp/pdf_extract/指标解析_p1-10.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "11-20",
+      "markdown_file": "tmp/pdf_extract/指标解析_p11-20.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "21-30",
+      "markdown_file": "tmp/pdf_extract/指标解析_p21-30.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "31-40",
+      "markdown_file": "tmp/pdf_extract/指标解析_p31-40.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "41-50",
+      "markdown_file": "tmp/pdf_extract/指标解析_p41-50.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "51-60",
+      "markdown_file": "tmp/pdf_extract/指标解析_p51-60.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "61-70",
+      "markdown_file": "tmp/pdf_extract/指标解析_p61-70.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "71-80",
+      "markdown_file": "tmp/pdf_extract/指标解析_p71-80.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "81-90",
+      "markdown_file": "tmp/pdf_extract/指标解析_p81-90.md",
+      "status": "reviewed"
+    },
+    {
+      "range": "91-100",
+      "markdown_file": "tmp/pdf_extract/指标解析_p91-100.md",
+      "status": "reviewed"
+    }
+  ],
+  "indicators_extracted": [
+    {
+      "name": "价托",
+      "file": "query/jiatu.json",
+      "status": "structured"
+    },
+    {
+      "name": "量托",
+      "file": "query/volume_support_triangle.json",
+      "status": "structured"
+    },
+    {
+      "name": "两阳夹一阴，多方炮",
+      "file": "query/bullish_cannon.json",
+      "status": "structured"
+    },
+    {
+      "name": "潜伏式多方炮",
+      "file": "query/bullish_cannon_hidden.json",
+      "status": "structured"
+    },
+    {
+      "name": "两阳夹两阴多方炮",
+      "file": "query/bullish_cannon_two_yang_two_yin.json",
+      "status": "structured"
+    },
+    {
+      "name": "东方红 大阳升",
+      "file": "query/eastern_sun_big_rally.json",
+      "status": "structured"
+    },
+    {
+      "name": "底部芝麻功",
+      "file": "query/sesame_bottom.json",
+      "status": "structured"
+    },
+    {
+      "name": "月均线系统的综合运用",
+      "file": "query/monthly_ma_system.json",
+      "status": "structured"
+    },
+    {
+      "name": "季均线挤出大黑马",
+      "file": "query/seasonal_ma_black_horse.json",
+      "status": "structured"
+    },
+    {
+      "name": "一脚踢出大黑马",
+      "file": "query/red_foot_bottom.json",
+      "status": "structured"
+    },
+    {
+      "name": "短长结合的均线系统",
+      "file": "query/short_long_ma_system.json",
+      "status": "structured"
+    },
+    {
+      "name": "双价托",
+      "file": "query/double_price_support.json",
+      "status": "structured"
+    },
+    {
+      "name": "假托",
+      "file": "query/fake_support_triangle.json",
+      "status": "structured"
+    },
+    {
+      "name": "价压",
+      "file": "query/price_pressure_triangle.json",
+      "status": "structured"
+    },
+    {
+      "name": "托辐射",
+      "file": "query/support_radiation.json",
+      "status": "structured"
+    },
+    {
+      "name": "压辐射",
+      "file": "query/pressure_radiation.json",
+      "status": "structured"
+    },
+    {
+      "name": "量压",
+      "file": "query/volume_pressure_triangle.json",
+      "status": "structured"
+    },
+    {
+      "name": "金蜘蛛",
+      "file": "query/golden_spider.json",
+      "status": "structured"
+    },
+    {
+      "name": "死蜘蛛",
+      "file": "query/dead_spider.json",
+      "status": "structured"
+    },
+    {
+      "name": "一阴下穿三角压",
+      "file": "query/one_bear_crosses_pressure.json",
+      "status": "structured"
+    },
+    {
+      "name": "一阳上穿三角托",
+      "file": "query/one_bull_crosses_support.json",
+      "status": "structured"
+    },
+    {
+      "name": "出水芙蓉",
+      "file": "query/rising_lotus.json",
+      "status": "structured"
+    }
+  ],
+  "last_completed_page": 100,
+  "next_page_to_process": 101,
+  "notes": [
+    "当前采用先切分 PDF 页段，再用 MinerU 识别的方式，便于断点续跑。",
+    "图像内容在 markdown 中以占位符形式出现，规则主要依据正文文案抽取。",
+    "第2到第20个指标已完成结构化提取，文件名统一使用英文slug。"
+  ]
+}

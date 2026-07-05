@@ -1,0 +1,106 @@
+{
+  "name": "金蜘蛛",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [66, 67, 68, 69, 70],
+  "source": "金蜘蛛指三条均线由上而下探底启稳后几乎在同一价位附近交叉并扭转向上，形成一个对未来有支撑力的共振结点。",
+  "source_summary": "三条均线在很短窗口内共同向上交叉并使价格站上其上方，可视为金蜘蛛。",
+  "comment": "当前把‘同一价位附近交叉’近似为多个向上交叉在短窗口内集中出现。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "cluster_window": 3,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_fast_mid",
+      "op": "cross_up",
+      "left": "ma_fast",
+      "right": "ma_mid",
+      "description": "5日均线上穿10日均线"
+    },
+    {
+      "id": "cross_fast_slow",
+      "op": "cross_up",
+      "left": "ma_fast",
+      "right": "ma_slow",
+      "description": "5日均线上穿20日均线"
+    },
+    {
+      "id": "cross_mid_slow",
+      "op": "cross_up",
+      "left": "ma_mid",
+      "right": "ma_slow",
+      "description": "10日均线上穿20日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": "$params.cluster_window",
+        "allow_same_day": "$params.allow_same_day",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "cross_fast_mid"
+          },
+          {
+            "op": "condition",
+            "event": "cross_fast_slow"
+          },
+          {
+            "op": "condition",
+            "event": "cross_mid_slow"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线。",
+    "要求三个向上交叉在cluster_window窗口内集中发生，近似表达‘同一价位附近形成金蜘蛛’。",
+    "若最新交易日距离该共振交叉簇不超过signal_keep_days，则视为仍处于金蜘蛛有效期。"
+  ],
+  "signal_day_definition": "以最后一个向上交叉完成的当日作为金蜘蛛信号日。",
+  "manual_review_needed": [
+    "当前没有直接度量三个交叉价位是否足够接近，只是用短窗口近似。",
+    "后续可增加均线价差阈值，进一步收紧‘蜘蛛结点’定义。"
+  ],
+  "implementation_notes": [
+    "这和价托类似，但更强调三线在短时间内靠得很近地产生共振。"
+  ],
+  "explain": "金蜘蛛是短窗口内的均线向上共振结点。"
+}

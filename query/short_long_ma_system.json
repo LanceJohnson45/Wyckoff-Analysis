@@ -1,0 +1,109 @@
+{
+  "name": "短长结合的均线系统",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [42, 43, 44, 45],
+  "source": "该系统用5日、10日均线表示短中线方向，用60日均线确认中长期趋势；当5日、10日金叉向上且60日均线向上时助涨，死叉向下且60日均线向下时助跌。",
+  "source_summary": "5/10日均线金叉并叠加60日均线向上时，可视为短长结合的多头信号。",
+  "comment": "latest_match 当前提取的是偏多版本；原文中的助跌死叉逻辑保留在说明里，未并入 latest_match。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "close"
+  ],
+  "warmup_bars": 80,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_long_window": 60,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_long_prev",
+      "op": "ref",
+      "field": "ma_long",
+      "window": 1,
+      "description": "前一日60日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "golden_cross",
+      "op": "cross_up",
+      "left": "ma_fast",
+      "right": "ma_mid",
+      "description": "5日均线上穿10日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "golden_cross"
+          },
+          {
+            "op": "compare",
+            "left": "ma_long",
+            "operator": ">",
+            "right": "ma_long_prev"
+          },
+          {
+            "op": "compare",
+            "left": "ma_fast",
+            "operator": ">",
+            "right": "ma_long"
+          },
+          {
+            "op": "compare",
+            "left": "ma_mid",
+            "operator": ">",
+            "right": "ma_long"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日、60日均线及前一日60日均线。",
+    "检测5日均线向上金叉10日均线。",
+    "要求60日均线方向向上，即当前60日均线高于前一日60日均线。",
+    "要求金叉位置位于60日均线之上，以近似表达短线金叉得到长期趋势助涨。"
+  ],
+  "signal_day_definition": "以5日均线向上金叉10日均线且60日均线同时向上的当日作为多头信号日。",
+  "manual_review_needed": [
+    "原文同时包含助跌版本（死叉+60日线向下），当前 latest_match 只保留偏多版本。",
+    "“每一个金叉位置都比前一个高”的细节未纳入主规则，若需要可后续扩展。"
+  ],
+  "implementation_notes": [
+    "该规则可直接用于多头筛选。",
+    "如需对称输出空头规则，可新增 sister spec。"
+  ],
+  "explain": "这是一个短线金叉叠加长期均线方向过滤的趋势规则。"
+}

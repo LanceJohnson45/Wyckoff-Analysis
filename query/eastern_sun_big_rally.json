@@ -1,0 +1,164 @@
+{
+  "name": "东方红 大阳升",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [14, 15, 16, 17, 18],
+  "source": "东方红大阳升强调5日、10日、20日均线在长期空头排列后趋于平缓，随后一根放量长阳从均线簇或横向整理平台上方升起，标志跌势结束和涨势开始。",
+  "source_summary": "长期弱势后的5/10/20日均线平台上若出现放量长阳突破，可视为东方红大阳升。",
+  "comment": "当前按“空头背景 + 放量阳线突破均线簇/前高”的日线近似规则提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": [
+    "open",
+    "close",
+    "volume"
+  ],
+  "warmup_bars": 40,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "background_lookback": 20,
+    "background_min_bearish_days": 3,
+    "breakout_lookback": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "close_high_lookback",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "最近N日收盘价最高值"
+    },
+    {
+      "id": "close_high_prev",
+      "op": "ref",
+      "field": "close_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日收盘价最高值"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_prev_high",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_prev",
+      "description": "收盘价突破近期平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "ma_slow",
+                  "operator": ">",
+                  "right": "ma_mid"
+                },
+                {
+                  "op": "compare",
+                  "left": "ma_mid",
+                  "operator": ">",
+                  "right": "ma_fast"
+                }
+              ]
+            },
+            "event": "breakout_prev_high",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_bearish_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_prev_high"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_fast"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_mid"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_slow"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "vol_ma_5"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线、5日均量和最近breakout_lookback日平台前高。",
+    "要求在突破前最近background_lookback日内，先出现过一定天数的 ma_slow > ma_mid > ma_fast 空头背景。",
+    "要求某日收盘价向上突破前期平台，且当日为阳线并站上5/10/20日均线。",
+    "要求当日成交量高于5日均量。",
+    "若最新交易日距离该突破长阳不超过signal_keep_days，则 latest_match = true。"
+  ],
+  "signal_day_definition": "以放量长阳突破近期平台并站上5/10/20日均线的当日作为东方红大阳升完成日。",
+  "manual_review_needed": [
+    "原文中的“长阳”“巨量”“均线像水平线一样平缓”都被转成了默认可执行条件，未引入实体比例或均线斜率阈值，需后续人工补强。",
+    "signal_keep_days=3 是对短期有效性的默认建议参数，需后续回测。"
+  ],
+  "implementation_notes": [
+    "该规则只依赖日线 close/open/volume。",
+    "如果后续需要严格定义“大阳”，建议引擎增加实体幅度类算子。"
+  ],
+  "explain": "东方红大阳升被收敛成一个底部放量突破规则：先有弱势均线背景，再出现站上三均线的放量突破阳线。"
+}

@@ -1,0 +1,106 @@
+{
+  "name": "一阳上穿三角托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [75, 76, 77, 78],
+  "source": "一阳上穿三角托指一根长阳线由下而上穿过价托结构，芙蓉出水与价托共振，强化底部反转信号。",
+  "source_summary": "若近期完成价托，随后再出现一根阳线同时站上三均线，可视为一阳上穿三角托。",
+  "comment": "当前按‘近期价托完成 + 阳线站上5/10/20均线’近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 70,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "support_keep_days": 10,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "support_complete",
+      "op": "cross_up",
+      "left": "ma_mid",
+      "right": "ma_slow",
+      "description": "价托最后一个结点"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "within",
+            "window": "$params.support_keep_days",
+            "condition": {
+              "op": "condition",
+              "event": "support_complete"
+            }
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_fast"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_mid"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_slow"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先计算5/10/20日均线并识别价托完成点。",
+    "要求最近support_keep_days日内已有价托完成。",
+    "要求某日收阳并同时站上5/10/20三条均线。"
+  ],
+  "signal_day_definition": "以收阳并同时站上三均线的当日作为一阳上穿三角托信号日。",
+  "manual_review_needed": [
+    "当前没有直接度量‘长阳线’实体大小，仅用阳线且站上三线近似。",
+    "原文还提到多方炮过线等特殊形态，未纳入主规则。"
+  ],
+  "implementation_notes": [
+    "这是价托与芙蓉出水的共振版。"
+  ],
+  "explain": "一阳上穿三角托是底部价托上的进一步向上确认。"
+}

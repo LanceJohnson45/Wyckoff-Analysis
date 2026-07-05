@@ -1,0 +1,122 @@
+{
+  "name": "潜伏式多方炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [10, 11],
+  "source": "潜伏式多方炮强调第一天小阳试探平台和均线系统，第二天小阴缩量压回但仍压在平台之下、均线之上，第三天放量突破平台并快速上攻。",
+  "source_summary": "平台下方的缩量潜伏整理后，第三天放量突破，可视为潜伏式多方炮。",
+  "comment": "这是多方炮的变形之一，特征在于前两天更贴近平台下沿潜伏，第三天直接突破。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakout_lookback": 20,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "close_high_lookback",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "最近N日收盘价最高值"
+    },
+    {
+      "id": "close_high_prev",
+      "op": "ref",
+      "field": "close_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日收盘价最高值"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    },
+    {
+      "id": "close_prev",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "high_prev",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "volume_prev",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "final_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_prev",
+      "description": "第三天收盘突破平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": 3,
+        "allow_same_day": false,
+        "conditions": [
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+              {"op": "compare", "left": "volume", "operator": ">", "right": "vol_ma_5"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+              {"op": "compare", "left": "volume", "operator": "<", "right": "volume_prev"},
+              {"op": "compare", "left": "close", "operator": "<", "right": "close_high_prev"},
+              {"op": "compare", "left": "close", "operator": ">=", "right": "close_prev"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "condition", "event": "final_breakout"},
+              {"op": "compare", "left": "close", "operator": ">", "right": "high_prev"},
+              {"op": "compare", "left": "volume", "operator": ">", "right": "vol_ma_5"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "第一天识别小阳试探。",
+    "第二天识别缩量小阴潜伏，不破坏靠近平台的结构。",
+    "第三天要求放量并突破前期平台。"
+  ],
+  "signal_day_definition": "以第三天放量突破平台的阳线作为潜伏式多方炮信号日。",
+  "manual_review_needed": [
+    "潜伏式的“小心翼翼贴近平台”在当前规则里只做了弱近似，尚未引入实体大小或离平台距离阈值。",
+    "如果后续需要更严格定义潜伏程度，建议增加实体/振幅比例参数。"
+  ],
+  "implementation_notes": [
+    "这是 bullish_cannon 的 sibling spec。",
+    "当前仍是近似规则，不包含涨停、跳空等更强变体。"
+  ],
+  "explain": "潜伏式多方炮强调平台下方潜伏后的一次放量突破。"
+}

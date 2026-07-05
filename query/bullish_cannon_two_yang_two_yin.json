@@ -1,0 +1,121 @@
+{
+  "name": "两阳夹两阴多方炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [10, 11, 12],
+  "source": "两阳夹两阴是多方炮的变形，第一天阳线突破，随后连续两天缩量阴线或小阴星洗盘，第四天阳线重新转强并包住中间整理区，之后常见继续上攻。",
+  "source_summary": "突破阳线后连续两天缩量洗盘，再由第四天阳线重新转强，可视为两阳夹两阴多方炮。",
+  "comment": "这是多方炮的四日变体，当前 latest_match 按突破、双阴洗盘、再转强的日线近似规则提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakout_lookback": 20,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "close_high_lookback",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "最近N日收盘价最高值"
+    },
+    {
+      "id": "close_high_prev",
+      "op": "ref",
+      "field": "close_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日收盘价最高值"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    },
+    {
+      "id": "volume_prev",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    },
+    {
+      "id": "high_prev",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    }
+  ],
+  "events": [
+    {
+      "id": "first_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_prev",
+      "description": "第一天突破平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": 4,
+        "allow_same_day": false,
+        "conditions": [
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "condition", "event": "first_breakout"},
+              {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+              {"op": "compare", "left": "volume", "operator": ">", "right": "vol_ma_5"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": "<=", "right": "open"},
+              {"op": "compare", "left": "volume", "operator": "<", "right": "volume_prev"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": "<=", "right": "open"},
+              {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_prev"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+              {"op": "compare", "left": "close", "operator": ">", "right": "high_prev"},
+              {"op": "compare", "left": "volume", "operator": ">=", "right": "vol_ma_5"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "第一天识别放量突破阳线。",
+    "第二、三天识别连续两日缩量洗盘。",
+    "第四天要求阳线重新转强并收在前一日高点之上。"
+  ],
+  "signal_day_definition": "以第四天重新转强的阳线作为两阳夹两阴多方炮信号日。",
+  "manual_review_needed": [
+    "原文中的小阴星、十字星、倒锤头等细节在当前规则中仅用收阴/缩量近似表达。",
+    "是否必须完全包住两根中间K线，当前只用收盘转强近似，后续可继续收紧。"
+  ],
+  "implementation_notes": [
+    "这是 bullish_cannon 的 sibling spec。",
+    "后续可再细拆十字星版或倒锤头版。"
+  ],
+  "explain": "两阳夹两阴是多方炮的四日洗盘变体。"
+}

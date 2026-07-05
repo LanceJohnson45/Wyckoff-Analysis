@@ -1,0 +1,105 @@
+{
+  "name": "死蜘蛛",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [70, 71, 72],
+  "source": "死蜘蛛指三条均线由下而上筑顶后在某个价位附近共同向下交叉并扭转向下，对未来股价形成持续压制。",
+  "source_summary": "三条均线在很短窗口内共同向下交叉并使价格位于其下方，可视为死蜘蛛。",
+  "comment": "当前按金蜘蛛的镜像规则提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "cluster_window": 3,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_fast_mid",
+      "op": "cross_down",
+      "left": "ma_fast",
+      "right": "ma_mid",
+      "description": "5日均线下穿10日均线"
+    },
+    {
+      "id": "cross_fast_slow",
+      "op": "cross_down",
+      "left": "ma_fast",
+      "right": "ma_slow",
+      "description": "5日均线下穿20日均线"
+    },
+    {
+      "id": "cross_mid_slow",
+      "op": "cross_down",
+      "left": "ma_mid",
+      "right": "ma_slow",
+      "description": "10日均线下穿20日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": "$params.cluster_window",
+        "allow_same_day": "$params.allow_same_day",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "cross_fast_mid"
+          },
+          {
+            "op": "condition",
+            "event": "cross_fast_slow"
+          },
+          {
+            "op": "condition",
+            "event": "cross_mid_slow"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线。",
+    "要求三个向下交叉在cluster_window窗口内集中发生。",
+    "若最新交易日距离该向下共振结点不超过signal_keep_days，则视为仍处于死蜘蛛有效期。"
+  ],
+  "signal_day_definition": "以最后一个向下交叉完成的当日作为死蜘蛛信号日。",
+  "manual_review_needed": [
+    "当前同样没有单独约束‘共同交叉价位’的价差，只用时间窗口近似。"
+  ],
+  "implementation_notes": [
+    "这是金蜘蛛的镜像版本。"
+  ],
+  "explain": "死蜘蛛是短窗口内的均线向下共振结点。"
+}
