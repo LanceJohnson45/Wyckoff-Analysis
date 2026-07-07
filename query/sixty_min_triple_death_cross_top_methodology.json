@@ -1,0 +1,36 @@
+{
+  "name": "60K 线三死叉见顶",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [571, 572, 573],
+  "source": "60K线三死叉见顶，是指在60分钟级别上，量能死叉、MACD死叉和价格死叉同时或相继出现，往往对应一波明显跌势。原文强调2+3区间里的60K三死叉可能只是回档，而2-3区间里的60K三死叉往往是反弹结束后继续下跌的信号。",
+  "source_summary": "这是基于60分钟K线的三死叉风险规避方法，当前不适合直接压成日线单一规则。",
+  "comment": "原文核心建立在60分钟级别的三死叉共振与位置判断上，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "在60分钟K线上同时观察量能死叉、MACD死叉和价格死叉。",
+    "结合股价所处的2+3或2-3区间判断是回档开始还是反弹结束后继续下跌。"
+  ],
+  "signal_day_definition": "原文定义的是60分钟级别的顶部风险区，不是日线上的单一统一信号日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入60分钟级别 O/H/L/C/V 数据，并补齐分钟级三死叉规则。"
+  ],
+  "implementation_notes": [
+    "当前仓库仅有日线数据，因此先作为不可直接计算的方法论保留。"
+  ],
+  "explain": "该节是60分钟K线三死叉顶部规避方法，当前不能仅靠日线数据完整复现。"
+}

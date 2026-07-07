@@ -1,0 +1,93 @@
+{
+  "name": "实量与虚量",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [121, 122, 123, 124, 125],
+  "source": "实量与虚量描述两段上升浪：第一段有量支持的上升浪称为实浪，第二段在接近前头部时量能不足、形成虚浪，一旦随后跌破60日均线，则应视为撤退信号。",
+  "source_summary": "若第二浪量能小于第一浪、反弹高度未明显超过前浪高点且最终跌破60日线，可视为虚量虚浪完成。",
+  "comment": "当前输出的是偏卖出侧的虚浪识别规则，重点放在第二浪量弱与跌破60日均线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 110,
+  "indicator_type": "trend_rule",
+  "params": {
+    "wave_window": 20,
+    "ma_long_window": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "recent_wave_volume",
+      "op": "sum",
+      "field": "volume",
+      "window": "$params.wave_window",
+      "description": "第二浪近似窗口的累计成交量"
+    },
+    {
+      "id": "prior_wave_volume",
+      "op": "ref",
+      "field": "recent_wave_volume",
+      "window": "$params.wave_window",
+      "description": "第一浪近似窗口的累计成交量"
+    },
+    {
+      "id": "recent_wave_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.wave_window",
+      "description": "第二浪最高收盘价"
+    },
+    {
+      "id": "prior_wave_high",
+      "op": "ref",
+      "field": "recent_wave_high",
+      "window": "$params.wave_window",
+      "description": "第一浪最高收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_down_ma_long",
+      "op": "cross_down",
+      "left": "close",
+      "right": "ma_long",
+      "description": "收盘价跌破60日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "recent_wave_volume", "operator": "<", "right": "prior_wave_volume"},
+          {"op": "compare", "left": "recent_wave_high", "operator": "<=", "right": "prior_wave_high"},
+          {"op": "condition", "event": "break_down_ma_long"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "用两个连续wave_window窗口近似第一浪与第二浪。",
+    "比较第二浪累计量能是否小于第一浪，并检查第二浪高点是否未明显越过前浪高点。",
+    "在量弱反弹后，检测收盘价是否向下跌破60日均线。"
+  ],
+  "signal_day_definition": "以第二浪量弱后跌破60日均线的当日作为虚浪确认日。",
+  "manual_review_needed": [
+    "原文里的‘前头部附近’当前被收敛成 recent_wave_high <= prior_wave_high，后续可加入容忍区间参数。",
+    "该章节本质上同时讨论实浪与虚浪，当前主规则只输出更适合日线布尔判断的虚浪出场版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + wave_window * 2 + 1。",
+    "若后续需要把实浪也结构化，可另拆为独立偏多规则。"
+  ],
+  "explain": "实量与虚量在这里被落成‘第二浪量弱且失守60日线’的风险识别规则。"
+}

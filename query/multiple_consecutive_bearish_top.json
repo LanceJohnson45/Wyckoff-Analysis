@@ -1,0 +1,76 @@
+{
+  "name": "多连阴",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [344, 345, 346],
+  "source": "多连阴指在庄家获利丰厚的高位，连续出现较多阴线，例如六连阴、十二连阴；这说明庄家已不再维护股价，只求快速出货，往往意味着头部形成。",
+  "source_summary": "若高位上涨后连续多日收阴，可视为多连阴头部。",
+  "comment": "当前以六连阴作为默认起点提取，并允许后续通过参数扩展到更长连阴。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "consecutive_bearish_days": 6,
+    "background_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "close_ref_6",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.consecutive_bearish_days",
+      "description": "连阴开始前收盘价"
+    },
+    {
+      "id": "close_ref_20",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.background_lookback",
+      "description": "更早周期收盘价，用于上涨背景近似"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_ref_6",
+            "operator": ">",
+            "right": "close_ref_20"
+          },
+          {
+            "op": "consecutive",
+            "length": "$params.consecutive_bearish_days",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "open"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别连阴开始前已经存在上涨或高位背景。",
+    "要求最近连续N日全部为阴线，默认N=6。",
+    "把最后一根连阴K线完成日视为多连阴头部确认。"
+  ],
+  "signal_day_definition": "以连续第N根阴线收盘的当日作为多连阴信号完成日。",
+  "manual_review_needed": [
+    "原文举例既有六连阴也有十二连阴，当前默认参数取6，后续需要回测确认不同市场更合适的N值。",
+    "原文强调‘阴线实体长于阳线实体’，当前仅保留连阴数量，不对实体长度做硬约束。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= background_lookback + consecutive_bearish_days + 1，当前取40。"
+  ],
+  "explain": "多连阴被结构化为上涨背景后的连续多日收阴头部信号。"
+}

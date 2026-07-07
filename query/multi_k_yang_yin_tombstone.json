@@ -1,0 +1,37 @@
+{
+  "name": "阳阴墓碑夹多 K 线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [334, 335, 336, 337, 338],
+  "source": "阳阴墓碑夹多K线指第一根阳线拉高后，在顶部区间夹杂多根小阴、小阳、十字、锤头等震荡出货K线，最后以阴线跌下去；中间K线数量越多，庄家高位派发时间越长，头部越稳定。",
+  "source_summary": "这是一个变长、多变体的高位分布区头部框架，不是单一固定长度形态。",
+  "comment": "原文覆盖夹双K线、夹三K线以及更长的顶部派发区，当前不强行压成一个固定日线布尔规则。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["open", "high", "low", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文允许阳阴墓碑之间夹任意数量、任意类型的小K线。",
+    "图形核心是高位分布区的持续时间和顶部水平带，而不是固定长度K线模板。",
+    "当前规则引擎缺少对可变长度平台带、事件锚定价区和分布区语义的统一表达。"
+  ],
+  "signal_day_definition": "原文未给出单一固定长度下的统一信号完成日。",
+  "manual_review_needed": [
+    "后续若引擎支持区间平台、事件锚定价格带和可变长度模板，可把夹双K线、夹三K线等拆成独立spec。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "阳阴墓碑夹多K线本质上是可变长度顶部分布区模板，当前不适合压成单一日线布尔规则。"
+}

@@ -1,0 +1,95 @@
+{
+  "name": "猎豹出击",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [105, 106, 107],
+  "source": "猎豹出击强调长期下跌或长期横盘后的隐蔽建仓阶段，随后在某一时刻突然放量上攻，犹如猎豹突然出击。",
+  "source_summary": "长期低姿态整理后若突然放量上攻，可视为猎豹出击。",
+  "comment": "当前按长期低波动/低位整理后的放量突破近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "setup_lookback": 40,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "close_high_20",
+      "op": "highest",
+      "field": "close",
+      "window": 20,
+      "description": "最近20日最高收盘"
+    },
+    {
+      "id": "close_high_20_prev",
+      "op": "ref",
+      "field": "close_high_20",
+      "window": 1,
+      "description": "前一日最近20日最高收盘"
+    },
+    {
+      "id": "low_40",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.setup_lookback",
+      "description": "最近N日最低收盘"
+    },
+    {
+      "id": "vol_ma_10",
+      "op": "sma",
+      "field": "volume",
+      "window": 10,
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "sudden_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_20_prev",
+      "description": "突然向上突破近期平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "count",
+            "window": "$params.setup_lookback",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<=",
+              "right": "close_high_20_prev"
+            },
+            "gte": 10
+          },
+          {"op": "condition", "event": "sudden_breakout"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "vol_ma_10"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "low_40"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别过去较长时间内的隐蔽整理。",
+    "检测是否突然放量突破近20日平台。",
+    "要求成交量高于10日均量。"
+  ],
+  "signal_day_definition": "以突然放量突破平台的当日作为猎豹出击信号日。",
+  "manual_review_needed": [
+    "原文中的‘匍匐前进低姿态’当前只用较长整理近似表达。",
+    "后续可增加更严格的波动率压缩条件。"
+  ],
+  "implementation_notes": [
+    "这是一个隐蔽建仓后放量突破的右侧信号。"
+  ],
+  "explain": "猎豹出击是长期低姿态整理后的一次突然放量上攻。"
+}

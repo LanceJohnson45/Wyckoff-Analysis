@@ -1,0 +1,36 @@
+{
+  "name": "跌势见英雄",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [201, 202, 203],
+  "source": "本节强调在指数暴跌时，仍能放量站稳短期均线或收盘稳在20日均线之上的个股，往往说明有主力关照，是后续反弹中的强势英雄股。",
+  "source_summary": "这是一个依赖‘相对大盘强弱’的强势股筛选方法，若没有指数序列就无法完整判断。",
+  "comment": "关键条件是‘在大盘暴跌时仍然走强’，当前单票日线O/H/L/C/V不足以表达相对大盘强弱。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求在指数暴跌背景下观察个股是否还能放量站稳均线。",
+    "当前规则系统只面向单个标的的日线O/H/L/C/V，缺少指数对照序列。"
+  ],
+  "signal_day_definition": "原文未定义脱离大盘背景的单一日线完成日。",
+  "manual_review_needed": [
+    "若后续规则引擎支持引入基准指数序列，可重新提炼相对强弱版本。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "这是一种相对大盘强弱筛选方法，不是单票纯日线规则。"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "天门",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [337, 338],
+  "source": "天门是阳阴墓碑夹多K线的一种更长版本：顶部区间夹杂较多小阴、小阳、锤、星、针、杖等K线，庄家每天盘中出货、收盘拉回，直到基本清仓后再阴线下跌。",
+  "source_summary": "天门是长时间高位派发区的专名，更偏结构状态而非固定长度信号。",
+  "comment": "原文强调顶部最高价区间、长时间派发和最终跌破季生命线后的逃命点，当前不强行压成一个固定模板。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["open", "high", "low", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "天门需要识别较长顶部区间、反复盘中出货后收回、以及最终清仓下跌。",
+    "其核心是分布阶段和区间顶部的状态判断，不是固定N日形态。"
+  ],
+  "signal_day_definition": "原文更强调形成后跌破季生命线的清仓点，而不是单一即时模板完成日。",
+  "manual_review_needed": [
+    "后续若引擎支持区间分布状态和顶部价格带表达，可单独量化‘天门完成’与‘跌破季生命线确认’两步规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "天门是顶部长期派发区的专门命名，当前不适合压成单一固定日线规则。"
+}

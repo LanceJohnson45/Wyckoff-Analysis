@@ -1,0 +1,46 @@
+{
+  "name": "擀面杖形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [303, 304],
+  "source": "擀面杖是一根中阳线或中阴线带上下影线的组合。若它出现在高位且股价不能再创新高，则形成头部的可能性增大；若再配合其他头部K线并跌破60线，头部更可靠。",
+  "source_summary": "若高位出现带上下影线的擀面杖后不能再创新高，可视为擀面杖头部。",
+  "comment": "当前按高位长实体带双影线后转弱的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 60,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_3", "op": "ref", "field": "close", "window": 3, "description": "3日前收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "high", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "low", "operator": "<", "right": "close"},
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "close"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别带上下影线的擀面杖近似形态。",
+    "要求之后价格未能继续创新高并转弱。"
+  ],
+  "signal_day_definition": "以擀面杖出现后短期转弱的确认日作为信号完成日。",
+  "manual_review_needed": [
+    "原文区分阴线擀面杖和阳线擀面杖，当前未细分。"
+  ],
+  "implementation_notes": [
+    "这是对高位震荡受阻的一类头部K线近似。"
+  ],
+  "explain": "擀面杖形成的头部被结构化为高位双影实体K线后转弱。"
+}

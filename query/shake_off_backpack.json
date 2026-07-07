@@ -1,0 +1,111 @@
+{
+  "name": "甩背包",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [793, 794, 795, 796],
+  "source": "甩背包描述主力在快速拉高后做一次短暂洗盘或短空中盘旋，随后用一根挑战前头部的阳线把‘背包’甩过去，若5日、10日均线继续保持畅通，这种甩背包往往意味着另一段上涨行情的开始。",
+  "source_summary": "若快速拉高后出现短暂整理，并再度用阳线挑战前头部且5/10日均线保持畅通，可视为甩背包成立。",
+  "comment": "当前优先提取‘短盘旋后再挑战前高’的日线主干，不纳入L3能量。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "platform_lookback": 15,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "前头部高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日前头部高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "收盘挑战并突破前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          },
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">=",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在短平台窗口内计算前头部高点，近似快速拉高后的短空中盘旋压力位。",
+    "要求最新交易日收盘价重新挑战并突破前头部。",
+    "同时要求5日均线不弱于10日均线，且阳线伴随不弱于均量的成交量，以近似强势甩背包。"
+  ],
+  "signal_day_definition": "以挑战并突破前头部的阳线当日作为甩背包确认日。",
+  "manual_review_needed": [
+    "原文还区分强势和弱势甩背包，并强调指数环境，当前只提取更通用的强势骨架。"
+  ],
+  "implementation_notes": [
+    "当前把甩背包近似成短暂整理后重新突破前高的再起动信号。"
+  ],
+  "explain": "甩背包被结构化为短盘旋后，5/10均线保持畅通并再次突破前头部。"
+}

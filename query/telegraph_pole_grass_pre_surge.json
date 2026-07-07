@@ -1,0 +1,121 @@
+{
+  "name": "电杆小草 暴涨先兆",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [618, 619, 620],
+  "source": "电杆小草暴涨先兆指个股在低位或上升初端，突然拉出巨量长阳，成交量像电杆一样竖起，把此前量柱压成小草，同时股价突破T线或筷子线等关键压力位，往往是行情启动前兆。",
+  "source_summary": "若低位阶段出现电杆小草量柱并同步突破关键压力位，往往预示后续暴涨启动。",
+  "comment": "当前用‘阶段低位背景 + 电杆小草巨量 + 关键压力突破’来近似识别。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "setup_lookback": 60,
+    "t_line_lookback": 40,
+    "volume_ma_window": 5,
+    "pole_volume_multiplier": 4,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "t_line",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.t_line_lookback",
+      "description": "关键压力位近似"
+    },
+    {
+      "id": "t_line_prev",
+      "op": "ref",
+      "field": "t_line",
+      "window": 1,
+      "description": "前一日关键压力位"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "pole_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.pole_volume_multiplier",
+      "window": 0,
+      "description": "电杆量阈值"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_t_line",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "t_line_prev",
+      "description": "放量突破关键压力位"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<=",
+              "right": "ma_60"
+            },
+            "event": "break_t_line",
+            "window": "$params.setup_lookback",
+            "min_count": 3
+          },
+          {
+            "op": "condition",
+            "event": "break_t_line"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "pole_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "用60日均线近似低位或上升初端背景。",
+    "识别最新是否出现明显放量长阳，且成交量达到 pole_volume_multiplier 倍5日均量。",
+    "要求股价同步突破关键压力位，作为电杆小草启动确认。"
+  ],
+  "signal_day_definition": "以电杆量长阳并突破关键压力位的当日作为暴涨先兆确认日。",
+  "manual_review_needed": [
+    "原文强调必须出现在低位区间或上升初端，而不是拉升后高位，当前先用60日均线附近背景近似表达。",
+    "pole_volume_multiplier=4 源自原文案例表达，后续可回测修正不同股票的阈值。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(60, t_line_lookback + 1, setup_lookback + 1)。",
+    "该规则把‘电杆小草’落成了巨量长阳启动确认。"
+  ],
+  "explain": "该规则用于识别低位阶段突然出现的电杆量长阳突破，这通常是暴涨前兆。"
+}

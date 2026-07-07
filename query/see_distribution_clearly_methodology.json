@@ -1,0 +1,37 @@
+{
+  "name": "庄家出货看得清清楚楚",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [632, 633, 634, 635],
+  "source": "庄家出货看得清清楚楚强调：在5分钟K线上观察OBV微能量，若能量潮不能维持上升并跌破低点连线，就说明庄家已经从边维护股价边缓慢派发，切换到加速出货阶段，这时必须撤退。",
+  "source_summary": "这是建立在5分钟OBV低点连线与派发临界点之上的出货方法，不适合直接压成日线规则。",
+  "comment": "原文关键语义来自5分钟OBV低点连线跌破和阴量连续涌出，当前系统没有分钟级OBV输入。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "在5分钟K线上构造OBV微能量曲线。",
+    "观察OBV是否先失去创新高能力，再跌破低点连线。",
+    "若进入加速派发阶段，则把该位置视为必须撤退的临界点。"
+  ],
+  "signal_day_definition": "本节描述的是5分钟OBV识别庄家派发临界点的方法，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入5分钟原始K线和分钟级OBV序列。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免误把分钟级OBV连线判断压成伪精确日线规则。"
+  ],
+  "explain": "该节核心依赖5分钟OBV低点连线破位来识别庄家出货，当前单靠日线O/H/L/C/V无法完整实现。"
+}

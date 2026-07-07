@@ -1,0 +1,99 @@
+{
+  "name": "当大阳升起的时候",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [564, 565],
+  "source": "当大阳升起的时候，是指在相对安全的指数环境中，个股突然放出巨大红量并拉出大阳线向上突破。原文把这类图形与单位时间两倍量追涨法结合，强调若量比两倍量还大，通常意味着有主力资金强力介入，应重点关注。",
+  "source_summary": "若大阳线突破且成交量远超两倍均量，可视为强势启动信号。",
+  "comment": "当前按日线巨量阳线突破平台的版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 40,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "volume_ma_window": 10,
+    "giant_volume_multiplier": 4,
+    "breakout_lookback": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "giant_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.giant_volume_multiplier",
+      "window": 0,
+      "description": "巨量阈值"
+    },
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "近窗口最高收盘价"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近窗口最高收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_recent_high",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "recent_high_prev",
+      "description": "收盘突破近期平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_recent_high"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "giant_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算10日均量及巨量阈值。",
+    "识别股价向上突破近期平台。",
+    "要求突破阳线伴随远超均量的巨量，近似主力强力推进。"
+  ],
+  "signal_day_definition": "以巨量大阳线完成平台突破的当日作为‘当大阳升起的时候’确认日。",
+  "manual_review_needed": [
+    "原文要求指数环境相对安全，当前单票规则未显式加入大盘过滤。"
+  ],
+  "implementation_notes": [
+    "giant_volume_multiplier=4 是当前默认建议，后续可回测调优。"
+  ],
+  "explain": "该规则用于识别比普通两倍量更强的巨量大阳突破。"
+}

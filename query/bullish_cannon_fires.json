@@ -1,0 +1,170 @@
+{
+  "name": "多方炮开炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [621, 622, 623],
+  "source": "多方炮开炮指真正处在关键位置的多方炮在完成后，股价会在后面很短几天内直接拉长阳，甚至跳空高开，形成喷发式攻击。",
+  "source_summary": "若关键位多方炮完成后短期内继续放量上攻，可视为多方炮开炮。",
+  "comment": "当前用‘近期先有标准多方炮，再出现放量突破阳线’来近似开炮。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakout_lookback": 30,
+    "volume_ma_window": 5,
+    "post_cannon_window": 3,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "关键压力位近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日关键压力位"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "open_prev_1",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一日开盘价"
+    },
+    {
+      "id": "close_prev_1",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "high_prev_1",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "volume_prev_1",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    },
+    {
+      "id": "open_prev_2",
+      "op": "ref",
+      "field": "open",
+      "window": 2,
+      "description": "前两日开盘价"
+    },
+    {
+      "id": "close_prev_2",
+      "op": "ref",
+      "field": "close",
+      "window": 2,
+      "description": "前两日收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "收盘突破关键压力位"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close_prev_2",
+                  "operator": ">",
+                  "right": "open_prev_2"
+                },
+                {
+                  "op": "compare",
+                  "left": "close_prev_1",
+                  "operator": "<",
+                  "right": "open_prev_1"
+                },
+                {
+                  "op": "compare",
+                  "left": "volume_prev_1",
+                  "operator": "<",
+                  "right": "volume_ma"
+                },
+                {
+                  "op": "compare",
+                  "left": "low",
+                  "operator": ">=",
+                  "right": "open_prev_2"
+                }
+              ]
+            },
+            "event": "break_head",
+            "window": "$params.post_cannon_window",
+            "min_count": 1
+          },
+          {
+            "op": "condition",
+            "event": "break_head"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先在 post_cannon_window 窗口内识别多方炮主结构。",
+    "再检查当前是否出现放量阳线突破关键压力位。",
+    "若多方炮完成后很短时间内直接再拉长阳上攻，则视为开炮。"
+  ],
+  "signal_day_definition": "以多方炮完成后短期内放量再攻并突破关键压力位的阳线当日作为开炮信号日。",
+  "manual_review_needed": [
+    "原文强调关键位置上的多方炮才有开炮意义，当前仍需人工结合位置背景确认‘关键位置’。",
+    "原文也允许直接跳空高开开炮，当前主规则先保留更稳健的放量长阳突破版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= breakout_lookback + post_cannon_window。",
+    "该规则把‘多方炮后短期喷发’压成了近期多方炮后的再突破模型。"
+  ],
+  "explain": "该规则用于识别关键位多方炮完成后，股价快速进入喷发式拉升的形态。"
+}

@@ -1,0 +1,68 @@
+{
+  "name": "缩量止跌点",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [275, 276],
+  "source": "缩量止跌点指股价进入起飞线后的滑跑过程中，多次震仓洗盘的低点通常出现在60日均线附近；若跌到60线附近时成交量极度萎缩，股价在这里翘头向上并发生金叉，则是较好的买入点。",
+  "source_summary": "若股价回到60日均线附近缩量止跌，并重新金叉上行，可视为缩量止跌点成立。",
+  "comment": "当前按缩量回踩60日线后5日线上穿10日线近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_long_window": 60,
+    "volume_ma_window": 20,
+    "setup_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "cross_fast_mid", "op": "cross_up", "left": "ma_fast", "right": "ma_mid", "description": "5日均线上穿10日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "close", "operator": "<=", "right": "ma_long"},
+                {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"}
+              ]
+            },
+            "event": "cross_fast_mid",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "cross_fast_mid"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "观察回踩60日均线附近是否伴随缩量。",
+    "其后检测5日均线是否重新上穿10日均线。",
+    "将缩量回踩 + 金叉翘头视为缩量止跌点。"
+  ],
+  "signal_day_definition": "以缩量回踩后重新金叉的当日作为缩量止跌点确认日。",
+  "manual_review_needed": [
+    "原文还提到可有第一、第二、第三缩量止跌点，当前只输出通用单次版本。"
+  ],
+  "implementation_notes": [
+    "这是滑跑阶段中的回踩买点规则。"
+  ],
+  "explain": "缩量止跌点被结构化为靠近60日线缩量回踩后重新金叉。"
+}

@@ -1,0 +1,114 @@
+{
+  "name": "均线 2+3（三）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [368, 369, 370],
+  "source": "均线2+3（三）讨论2+3末端与上升2&3末端：股价仍处于牛市区间，但创新高逐渐乏力，开始放量滞涨、频繁出现头部K线组合，不再创新高反而创新低，是由升转跌的拐点区域。",
+  "source_summary": "若股价仍在60/120日均线上方但短期均线转弱、收盘走低，可视为均线2+3末端风险区。",
+  "comment": "当前提取为‘仍在2+3区间但短期均线已拐头转弱’的基础风险版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "weakness_lookback": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_longer_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "close_ref_5",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.weakness_lookback",
+      "description": "前N日收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "fast_mid_death_cross",
+      "op": "cross_down",
+      "left": "ma_5",
+      "right": "ma_10",
+      "description": "5日均线下穿10日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "condition",
+            "event": "fast_mid_death_cross"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "close_ref_5"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认股价仍位于60日与120日均线之上，说明仍处于2+3大区间。",
+    "检测5日均线向下死叉10日均线，近似表达短期创新高乏力和转弱。",
+    "要求当前收盘低于前N日收盘，近似表达‘不创新高反而创新低’的风险信号。"
+  ],
+  "signal_day_definition": "以股价仍在2+3区间但短期均线死叉并开始走低的当日作为2+3末端风险确认日。",
+  "manual_review_needed": [
+    "原文强调放量滞涨、头部K线组合频繁出现和价压反复，当前 latest_match 只保留短期转弱主干。",
+    "‘创新低’在原文更偏波段新低，当前用前N日收盘比较近似表达。"
+  ],
+  "implementation_notes": [
+    "可作为2+3趋势末端的预警规则，与头部K线组合类spec联用更稳。"
+  ],
+  "explain": "均线2+3（三）被结构化为仍在牛市均线区间内、但短期均线已经拐弱的末端风险信号。"
+}

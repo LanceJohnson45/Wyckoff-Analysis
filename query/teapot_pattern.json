@@ -1,0 +1,98 @@
+{
+  "name": "茶壶",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [851, 852, 853],
+  "source": "茶壶是一个合成技术：先有放量建仓、缩量洗盘到量芝麻点，再沿斜面推高形成茶壶嘴，壶肚里装满筹码和成交量，最后向上放量喷出，股价进入加速上涨。",
+  "source_summary": "若股价经历放量建仓、缩量洗盘和斜面推高后，向上放量突破壶嘴平台，可视为茶壶成立。",
+  "comment": "当前先提取日线版‘装量壶肚 + 缩量洗盘 + 壶嘴喷出’主干。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "volume_ma_window": 10,
+    "washout_lookback": 20,
+    "platform_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "茶壶嘴高点近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日壶嘴高点"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_spout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "向上喷出突破壶嘴"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": "<=",
+              "right": "volume_ma"
+            },
+            "event": "breakout_spout",
+            "window": "$params.washout_lookback",
+            "min_count": 2
+          },
+          {
+            "op": "condition",
+            "event": "breakout_spout"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算壶嘴平台高点和10日均量。",
+    "要求突破前洗盘窗口内出现若干缩量交易日，近似量芝麻点与洗盘充分。",
+    "当股价放量突破壶嘴平台时，视为茶壶喷出成立。"
+  ],
+  "signal_day_definition": "以放量突破壶嘴平台的当日作为茶壶确认日。",
+  "manual_review_needed": [
+    "原文还强调应查看灵稳榜确认壶肚里主动性买入量充足，当前未纳入。"
+  ],
+  "implementation_notes": [
+    "这是茶壶形态最核心的可执行主干：装量、洗盘、喷出。"
+  ],
+  "explain": "茶壶被结构化为放量建仓后缩量洗盘，再沿壶嘴平台向上喷出的强势形态。"
+}

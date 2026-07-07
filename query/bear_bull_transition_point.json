@@ -1,0 +1,83 @@
+{
+  "name": "熊牛转换点",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [363, 364, 365, 366],
+  "source": "熊牛转换点指股价进入2+3初端并滞留一段时间后，60日均线从下向上穿越120日均线所形成的交叉点；该点前后常存在‘金叉引力’，是熊市向牛市过渡的重要坐标。",
+  "source_summary": "若60日均线上穿120日均线且股价位于其上，可视为熊牛转换点成立。",
+  "comment": "当前按60日均线金叉120日均线的标准日线版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_longer_window",
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "bear_bull_cross",
+      "op": "cross_up",
+      "left": "ma_60",
+      "right": "ma_120",
+      "description": "60日均线上穿120日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "bear_bull_cross"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日与120日均线。",
+    "检测60日均线是否自下而上穿越120日均线。",
+    "要求股价位于两条均线之上，以近似表达转换点后的强势状态。"
+  ],
+  "signal_day_definition": "以60日均线上穿120日均线并同时满足股价在线上的当日作为熊牛转换点完成日。",
+  "manual_review_needed": [
+    "原文还讨论金叉引力与部分失真原因，当前只保留转换点本体，不额外刻画引力效应。"
+  ],
+  "implementation_notes": [
+    "该规则本身可作为后续2+3中端、暖空气带等规则的背景条件。"
+  ],
+  "explain": "熊牛转换点被结构化为60日均线上穿120日均线的中期趋势反转坐标。"
+}

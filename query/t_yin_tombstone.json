@@ -1,0 +1,47 @@
+{
+  "name": "T 阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [306, 307, 308],
+  "source": "T阴墓碑由一根T线和一根长阴线组成，若第二天阴线从天而降吞噬前一天T线，通常说明高位宽幅震荡出货完成，结合三死叉见顶时更可靠。",
+  "source_summary": "若T线之后出现长阴吞噬前日T线，可视为T阴墓碑。",
+  "comment": "当前按T线后长阴吞噬的核心组合提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"},
+    {"id": "open_ref_1", "op": "ref", "field": "open", "window": 1, "description": "前一日开盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "low", "operator": "<", "right": "close_ref_1"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "open_ref_1"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "以带长下影的前一日T线作为基础。",
+    "要求当前出现阴线并吞没前一日T线的关键价位。"
+  ],
+  "signal_day_definition": "以阴线吞噬T线完成的当日作为T阴墓碑确认日。",
+  "manual_review_needed": [
+    "原文强调高位涨停板T线和放巨量版本，当前未单独区分。"
+  ],
+  "implementation_notes": [
+    "这是典型的两日吞噬式头部组合。"
+  ],
+  "explain": "T阴墓碑被结构化为T线后长阴吞噬的高位墓碑组合。"
+}

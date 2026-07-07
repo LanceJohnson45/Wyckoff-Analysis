@@ -1,0 +1,113 @@
+{
+  "name": "尖兵穿刺 2+3",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [644, 645, 646, 647],
+  "source": "尖兵穿刺2+3指庄家在底部或相对低位向上试探抛压区，盘中一度穿刺上方压力但收盘又退回，反复试探几次后，通过缩量盘整把浮筹洗净，最终等待放量上攻。",
+  "source_summary": "若在相对低位连续出现向上探压失败的穿刺K线，随后量能萎缩，则可视为尖兵穿刺后的洗盘阶段。",
+  "comment": "当前提取的是日线版‘反复上探未站稳 + 后续缩量等待突破’状态，而不是最终突破确认。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "pressure_lookback": 20,
+    "probe_lookback": 20,
+    "probe_min_count": 2,
+    "volume_ma_window": 5,
+    "shrink_ratio": 0.8,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "pressure_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.pressure_lookback",
+      "description": "近阶段关键压力位近似"
+    },
+    {
+      "id": "pressure_high_prev",
+      "op": "ref",
+      "field": "pressure_high",
+      "window": 1,
+      "description": "前一日关键压力位"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "shrink_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.shrink_ratio",
+      "window": 0,
+      "description": "缩量阈值"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "count",
+            "window": "$params.probe_lookback",
+            "gte": "$params.probe_min_count",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "high",
+                  "operator": ">",
+                  "right": "pressure_high_prev"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": "<=",
+                  "right": "pressure_high_prev"
+                }
+              ]
+            }
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": "<=",
+            "right": "shrink_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "pressure_high_prev"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先用近阶段最高收盘价近似上方抛压区。",
+    "统计最近 probe_lookback 日内，至少出现 probe_min_count 次盘中刺穿压力位但收盘未站稳的穿刺动作。",
+    "要求当前已进入明显缩量状态，近似表示尖兵试探后的洗盘接近尾声。"
+  ],
+  "signal_day_definition": "以反复穿刺后进入缩量洗盘状态的当日，作为尖兵穿刺2+3的可跟踪状态日。",
+  "manual_review_needed": [
+    "原文还强调盘整时间、盘整宽度和最终量芝麻点后的突破，当前主规则只保留穿刺后的缩量等待阶段。",
+    "这里用 high > pressure_high_prev 且 close <= pressure_high_prev 来近似‘长针穿刺后退回’，后续可继续细化上影长度。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(pressure_lookback + 1, probe_lookback, volume_ma_window + 1)。",
+    "这是‘仙人指路/长针试盘’在底部试探压力区的偏日线近似版本。"
+  ],
+  "explain": "该规则用于识别庄家多次向上试探抛压后，进入缩量洗盘等待突破的尖兵穿刺阶段。"
+}

@@ -1,0 +1,67 @@
+{
+  "name": "当头炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [683, 684, 685, 686],
+  "source": "当头炮是顶紧右上角的多方炮，通常出现在刚突破T线、筷子线或打拐线附近，股价小幅回档反压关键线后，以两阳夹一阴的强势多方炮确认突破并继续向上攻击。",
+  "source_summary": "若股价在关键突破位小幅回压后走出顶紧右上角的多方炮，可视为当头炮成立。",
+  "comment": "当前用‘关键压力突破后的小回压 + 多方炮确认’来近似当头炮。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 140,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "pressure_lookback": 40,
+    "volume_ma_window": 5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "pressure_high", "op": "highest", "field": "close", "window": "$params.pressure_lookback", "description": "关键压力位近似"},
+    {"id": "pressure_high_prev", "op": "ref", "field": "pressure_high", "window": 1, "description": "前一日关键压力位"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "open_prev_1", "op": "ref", "field": "open", "window": 1, "description": "前一日开盘价"},
+    {"id": "close_prev_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"},
+    {"id": "high_prev_1", "op": "ref", "field": "high", "window": 1, "description": "前一日最高价"},
+    {"id": "volume_prev_1", "op": "ref", "field": "volume", "window": 1, "description": "前一日成交量"},
+    {"id": "open_prev_2", "op": "ref", "field": "open", "window": 2, "description": "前两日开盘价"},
+    {"id": "close_prev_2", "op": "ref", "field": "close", "window": 2, "description": "前两日收盘价"}
+  ],
+  "events": [
+    {"id": "break_pressure", "op": "breakout_up", "left": "close", "right": "pressure_high_prev", "description": "收盘突破关键压力位"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60", "operator": ">", "right": "ma_120"},
+          {"op": "condition", "event": "break_pressure"},
+          {"op": "compare", "left": "close_prev_2", "operator": ">", "right": "open_prev_2"},
+          {"op": "compare", "left": "close_prev_1", "operator": "<", "right": "open_prev_1"},
+          {"op": "compare", "left": "volume_prev_1", "operator": "<=", "right": "volume_ma"},
+          {"op": "compare", "left": "low", "operator": ">=", "right": "pressure_high_prev"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "high_prev_1"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先要求60日线已在120日线之上，近似暖气带开通。",
+    "识别股价是否刚突破关键压力位后，走出两阳夹一阴的强势多方炮。",
+    "要求回压幅度小、量能缩而不破位，再由第三日阳线重新放量上攻。"
+  ],
+  "signal_day_definition": "以多方炮第三日重新放量上攻并确认站稳关键压力位的当日作为当头炮信号日。",
+  "manual_review_needed": [
+    "原文里的筷子线、打拐线和顶紧右上角位置关系，当前先用突破关键压力位后的强势回压近似。"
+  ],
+  "implementation_notes": [
+    "这是‘关键位多方炮确认突破’的日线版本。"
+  ],
+  "explain": "该规则用于识别突破关键压力后，小回压夯实并再次上攻的当头炮形态。"
+}

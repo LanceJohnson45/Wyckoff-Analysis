@@ -1,0 +1,113 @@
+{
+  "name": "拉高建仓",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [842, 843, 844, 845],
+  "source": "拉高建仓描述迟到的庄家在行情已来不及慢慢吸筹时，用快速拉高吸引筹码、再杀跌洗盘、缩量到芝麻点后重新突破前头部的方式来完成快速建仓。",
+  "source_summary": "若股价先快速拉高，再深洗缩量，随后重新突破前头部，可视为拉高建仓成立。",
+  "comment": "当前直接提取最关键的结构：快速拉高、回洗到地量、再过前头。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "surge_lookback": 10,
+    "surge_pct": 0.25,
+    "washout_lookback": 15,
+    "volume_ma_window": 10,
+    "head_lookback": 30,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "surge_pct",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.surge_lookback",
+      "description": "快速拉高阶段涨幅"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "前头部高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日前头部高点"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "重新突破前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "surge_pct",
+              "operator": ">=",
+              "right": "$params.surge_pct"
+            },
+            "event": "breakout_head",
+            "window": "$params.head_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": "<=",
+              "right": "volume_ma"
+            },
+            "event": "breakout_head",
+            "window": "$params.washout_lookback",
+            "min_count": 2
+          },
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别一段较短时间内的快速拉高，近似紧急拉高建仓。",
+    "随后要求在突破前的洗盘窗口里出现若干缩量交易日，近似洗到芝麻点。",
+    "当股价重新突破前头部时，视为拉高建仓完成并进入可跟进阶段。"
+  ],
+  "signal_day_definition": "以重新突破前头部的当日作为拉高建仓确认日。",
+  "manual_review_needed": [
+    "原文还强调庄家成本区与N倍空间估算，当前未把目标空间纳入规则。"
+  ],
+  "implementation_notes": [
+    "这是‘以空间换时间’的快速建仓日线版本。"
+  ],
+  "explain": "拉高建仓被结构化为先急拉、后洗盘缩量、再突破前头部的快速建仓确认。"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "引体向上",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [865, 866, 867, 868],
+  "source": "引体向上是分时强弱识别法：在指数暴跌或盘中极弱环境下，若个股从深水区一路靠拢均价线并最终强势翻上均价线，说明有主力关照和强承接，是强势股的重要特征。",
+  "source_summary": "这是基于分时均价线和盘中反转力度的强弱识别方法，当前不能仅凭日线数据直接执行。",
+  "comment": "原文核心依赖分时均价线、盘中低点和翻杠动作。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "在分时走势上观察个股是否从深跌位置持续靠拢均价线。",
+    "判断是否发生越过均价线的‘引体向上’关键动作。",
+    "结合日K线突破背景，筛选出真正有庄关照的强势股。"
+  ],
+  "signal_day_definition": "本节描述的是分时均价线强弱识别方法，不存在统一的日线完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入分时价格与均价线数据。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免用日线去替代盘中翻杠动作。"
+  ],
+  "explain": "引体向上依赖分时均价线和盘中反转力度，当前单靠日线无法完整实现。"
+}

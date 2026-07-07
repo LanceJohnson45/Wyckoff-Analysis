@@ -1,0 +1,36 @@
+{
+  "name": "周 K 线看得更清楚",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [207, 208, 209, 210],
+  "source": "本节强调假底部很多，最有效的方法是看周K线，从更长周期观察打底区、下影线、量缩、放量推升以及周K线价托、量托、多方炮等底部共振。",
+  "source_summary": "这是一个依赖周K线、月K线和多周期底部共振的底部确认方法，不适合直接落成只基于日线O/H/L/C/V的单一布尔信号。",
+  "comment": "核心依赖周线及多周期底部共振。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求在周K线、月K线和60分钟等多周期上寻找底部共振。",
+    "当前系统只提供日线O/H/L/C/V，无法完整还原周线、月线和多周期共振要求。"
+  ],
+  "signal_day_definition": "原文未定义单一日线信号完成日。",
+  "manual_review_needed": [
+    "若后续允许多周期聚合，可把周K线底部共振拆成独立规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "这是一个依赖周线和多周期共振的底部确认方法，不是纯日线规则。"
+}

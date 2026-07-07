@@ -1,0 +1,69 @@
+{
+  "name": "倒挂老鸭头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [101, 102, 103],
+  "source": "倒挂老鸭头是老鸭头的镜像形态：5日、10日均线跌破60日均线形成鸭颈部，反弹低点构成鸭头顶，之后再度死叉向下形成鸭嘴部，最终跌破鸭头顶。",
+  "source_summary": "5/10日均线先下穿60日线，弱反弹后再度转弱并跌破前低，可视为倒挂老鸭头。",
+  "comment": "当前按日线镜像近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "signal_keep_days": 5,
+    "setup_lookback": 60
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "close_low_30", "op": "lowest", "field": "close", "window": 30, "description": "最近30日最低收盘"},
+    {"id": "close_low_30_prev", "op": "ref", "field": "close_low_30", "window": 1, "description": "前一日最近30日最低收盘"}
+  ],
+  "events": [
+    {"id": "neck_setup", "op": "cross_down", "left": "ma_10", "right": "ma_60", "description": "10日均线下穿60日均线"},
+    {"id": "beak_setup", "op": "cross_down", "left": "ma_5", "right": "ma_10", "description": "5日均线下穿10日均线"},
+    {"id": "head_breakdown", "op": "breakout_down", "left": "close", "right": "close_low_30_prev", "description": "跌破鸭头顶近似位"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "condition", "event": "neck_setup"},
+            "event": "beak_setup",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "within",
+            "window": "$params.setup_lookback",
+            "condition": {"op": "condition", "event": "beak_setup"}
+          },
+          {
+            "op": "condition",
+            "event": "head_breakdown"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别10日均线下穿60日均线。",
+    "识别其后5日均线下穿10日均线。",
+    "识别随后跌破近30日低点近似位。"
+  ],
+  "signal_day_definition": "以跌破鸭头顶近似位的当日作为倒挂老鸭头确认日。",
+  "manual_review_needed": [
+    "原文里的鸭嘴通气、反弹力度等细节未单独量化。"
+  ],
+  "implementation_notes": [
+    "这是老鸭头的镜像头部规则。"
+  ],
+  "explain": "倒挂老鸭头表达为60日线下方的弱反弹后再转弱破位。"
+}

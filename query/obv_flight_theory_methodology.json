@@ -1,0 +1,37 @@
+{
+  "name": "OBV飞行理论",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [747, 748, 749, 750],
+  "source": "OBV飞行理论强调：OBV线像飞机沿跑道滑行并逐渐拉起机头时，说明成交量长期呈现涨放量、跌缩量的多方主导状态，即使日K线尚未明显启动，后续股价也值得看涨。",
+  "source_summary": "这是围绕OBV线、OBV均线和‘涨放量跌缩量’细节的价量能量分析方法，当前不宜强行压成单一规则。",
+  "comment": "原文关键是OBV线沿均线飞行和机头角度判断，当前规则引擎尚未内建OBV序列。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "根据涨跌方向累计OBV序列。",
+    "计算OBV均线并观察OBV是否沿均线平稳滑行并逐步抬头。",
+    "结合K线尚未明显启动但OBV已提前走强的背离关系判断后市。"
+  ],
+  "signal_day_definition": "本节描述的是OBV能量飞行框架，不存在统一单日信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先在引擎里增加OBV及其均线序列，并定义‘拉起机头’的斜率阈值。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免用不完整的替代规则误判OBV提前走强信号。"
+  ],
+  "explain": "OBV飞行理论依赖OBV累计序列与均线角度，当前引擎未直接支持。"
+}

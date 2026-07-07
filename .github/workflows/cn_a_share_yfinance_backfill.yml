@@ -1,0 +1,92 @@
+name: CN A-Share YFinance Backfill
+
+on:
+  schedule:
+    # 北京时间 22:20（UTC+8）
+    - cron: "20 14 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Optional start date, e.g. 2025-07-07"
+        required: false
+        type: string
+      end_date:
+        description: "Optional end date, e.g. 2026-07-07"
+        required: false
+        type: string
+      limit:
+        description: "Optional symbol limit for smoke/debug runs"
+        required: false
+        type: string
+
+concurrency:
+  group: cn-a-share-yfinance-backfill-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PYTHONUNBUFFERED: "1"
+      TZ: Asia/Shanghai
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PG_ENABLED: ${{ secrets.PG_ENABLED }}
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT }}
+      PG_DATABASE: ${{ secrets.PG_DATABASE }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+      PG_DSN: ${{ secrets.PG_DSN }}
+      CN_A_BACKFILL_SLEEP_SECONDS: "1.8"
+      CN_A_BACKFILL_JITTER_SECONDS: "0.8"
+      CN_A_BACKFILL_RETRY_TIMES: "4"
+      CN_A_BACKFILL_RETRY_BACKOFF_SECONDS: "10"
+      CN_A_BACKFILL_GAP_CHUNK_DAYS: "120"
+      CN_A_BACKFILL_PROGRESS_EVERY: "25"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Backfill one-year CN A-share history
+        env:
+          INPUT_START_DATE: ${{ github.event.inputs.start_date }}
+          INPUT_END_DATE: ${{ github.event.inputs.end_date }}
+          INPUT_LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          ARGS=()
+          if [ -n "${INPUT_START_DATE}" ]; then
+            ARGS+=(--start-date "${INPUT_START_DATE}")
+          fi
+          if [ -n "${INPUT_END_DATE}" ]; then
+            ARGS+=(--end-date "${INPUT_END_DATE}")
+          fi
+          if [ -n "${INPUT_LIMIT}" ]; then
+            ARGS+=(--limit "${INPUT_LIMIT}")
+          fi
+          python -u scripts/cn_a_share_yfinance_backfill.py "${ARGS[@]}" \
+            2>&1 | tee cn_a_share_yfinance_backfill.log
+
+      - name: Upload backfill log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cn-a-share-yfinance-backfill-${{ github.run_number }}
+          path: cn_a_share_yfinance_backfill.log
+          retention-days: 7
+          if-no-files-found: warn

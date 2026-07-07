@@ -1,0 +1,60 @@
+{
+  "name": "均线四挑一",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [456, 457],
+  "source": "均线四挑一指120日均线带领5/10/20日均线共同向上挑战仍向下但趋缓的60日均线，并把K线从五线之下重新挑回五线之上，随后再突破高点连线，是一种很强的向上突破图形。",
+  "source_summary": "若120日与三条短均线向上、60日均线向下趋缓且股价重新站到五线之上，可视为均线四挑一。",
+  "comment": "当前按‘四线向上、一线向下 + 收盘重回五线之上’的核心版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "ma_5_prev", "op": "ref", "field": "ma_5", "window": 1, "description": "前一日5日均线"},
+    {"id": "ma_10_prev", "op": "ref", "field": "ma_10", "window": 1, "description": "前一日10日均线"},
+    {"id": "ma_20_prev", "op": "ref", "field": "ma_20", "window": 1, "description": "前一日20日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"},
+    {"id": "ma_120_prev", "op": "ref", "field": "ma_120", "window": 1, "description": "前一日120日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_5", "operator": ">", "right": "ma_5_prev"},
+          {"op": "compare", "left": "ma_10", "operator": ">", "right": "ma_10_prev"},
+          {"op": "compare", "left": "ma_20", "operator": ">", "right": "ma_20_prev"},
+          {"op": "compare", "left": "ma_120", "operator": ">", "right": "ma_120_prev"},
+          {"op": "compare", "left": "ma_60", "operator": "<=", "right": "ma_60_prev"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_5"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线及其方向。",
+    "要求5/10/20/120日均线向上，而60日均线仍向下或趋缓。",
+    "要求收盘重新站到关键均线之上，近似表达四挑一后的向上突破。"
+  ],
+  "signal_day_definition": "以四条均线共同向上挑战60日均线并把股价重新挑回五线之上的当日作为均线四挑一确认日。",
+  "manual_review_needed": [
+    "原文还强调突破高点连线和反压成功，当前 latest_match 只保留四挑一的主结构。"
+  ],
+  "implementation_notes": [
+    "这是偏强势洗盘后再启动的图形规则。"
+  ],
+  "explain": "均线四挑一被结构化为四条均线向上挑战60日均线并带动股价转强的信号。"
+}

@@ -1,0 +1,51 @@
+{
+  "name": "冲天导弹",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [273, 274, 275],
+  "source": "冲天导弹指股价脱离成本区后快速连续拉升，最佳介入点是底部刚突破T线的瞬间；若踏空，则可在第一次收阴线靠近5日均线时抢短线反弹。",
+  "source_summary": "若突破后出现快速上冲，随后第一次阴线回靠5日均线，可视为冲天导弹的短线再介入点。",
+  "comment": "当前提取的是‘第一次收阴靠近5日均线’的短线版本，而非最初T线突破版。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "accel_window": 10,
+    "accel_pct_threshold": 0.12,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "close_pct_accel", "op": "pct_change", "field": "close", "window": "$params.accel_window", "description": "近N日累计涨幅"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close_pct_accel", "operator": ">=", "right": "$params.accel_pct_threshold"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": ">=", "right": "ma_fast"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日均线和近accel_window日累计涨幅。",
+    "要求近期已出现明显快速上冲。",
+    "在第一次阴线回靠5日均线时，近似视为冲天导弹短线买点。"
+  ],
+  "signal_day_definition": "以快速上冲后首次阴线回靠5日均线的当日作为短线介入日。",
+  "manual_review_needed": [
+    "原文强调最好是‘第一次’靠近5日均线，当前没有显式去重第一次事件，后续可加首次回踩算子。"
+  ],
+  "implementation_notes": [
+    "这是短线捡皮夹版本，而不是最优的T线首突破版本。"
+  ],
+  "explain": "冲天导弹被结构化为快速拉升后首次阴线回靠5日均线的短线机会。"
+}

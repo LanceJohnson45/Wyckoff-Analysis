@@ -1,0 +1,36 @@
+{
+  "name": "空中盘旋",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [245, 246],
+  "source": "空中盘旋描述股价在目标上升空间前的高位横向整理，可按盘旋次数Q1、Q2、Q3以及时间长短区分，是主力为释放获利盘和套牢盘而设计的高位整理过程。",
+  "source_summary": "这是一个高位整理的阶段分类框架，更适合作为状态标签而非单一即时布尔信号。",
+  "comment": "原文重点是次数与时间长度分类，而不是单一触发式规则。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文按盘旋次数和横向时间把高位整理分成Q1/Q2/Q3等阶段。",
+    "这更适合作为状态分类输出，而不是 latest_match 布尔信号。"
+  ],
+  "signal_day_definition": "原文未定义单一信号完成日。",
+  "manual_review_needed": [
+    "如果后续系统支持阶段标签，可将空中盘旋输出为 circling_stage。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "空中盘旋是高位整理阶段的分类方法，不是纯布尔信号。"
+}

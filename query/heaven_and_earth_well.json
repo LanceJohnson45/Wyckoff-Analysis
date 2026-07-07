@@ -1,0 +1,175 @@
+{
+  "name": "天上井、地上井",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [93, 94, 95, 96],
+  "source": "天上井、地上井要求5日、10日价格均线同时下穿20日、30日均线形成四个死亡交叉点构成井字，同时成交量均线也形成对应的四个死亡交叉，代表头部确认。",
+  "source_summary": "价格四交叉井字与量能四交叉井字共同出现时，可视为天上井地上井。",
+  "comment": "当前按价格井字和量能井字同时出现近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_30",
+      "op": "sma",
+      "field": "close",
+      "window": 30,
+      "description": "30日均线"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    },
+    {
+      "id": "vol_ma_10",
+      "op": "sma",
+      "field": "volume",
+      "window": 10,
+      "description": "10日均量"
+    },
+    {
+      "id": "vol_ma_20",
+      "op": "sma",
+      "field": "volume",
+      "window": 20,
+      "description": "20日均量"
+    },
+    {
+      "id": "vol_ma_30",
+      "op": "sma",
+      "field": "volume",
+      "window": 30,
+      "description": "30日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "p_5_20",
+      "op": "cross_down",
+      "left": "ma_5",
+      "right": "ma_20",
+      "description": "5日均线下穿20日均线"
+    },
+    {
+      "id": "p_10_20",
+      "op": "cross_down",
+      "left": "ma_10",
+      "right": "ma_20",
+      "description": "10日均线下穿20日均线"
+    },
+    {
+      "id": "p_5_30",
+      "op": "cross_down",
+      "left": "ma_5",
+      "right": "ma_30",
+      "description": "5日均线下穿30日均线"
+    },
+    {
+      "id": "p_10_30",
+      "op": "cross_down",
+      "left": "ma_10",
+      "right": "ma_30",
+      "description": "10日均线下穿30日均线"
+    },
+    {
+      "id": "v_5_20",
+      "op": "cross_down",
+      "left": "vol_ma_5",
+      "right": "vol_ma_20",
+      "description": "5日均量线下穿20日均量线"
+    },
+    {
+      "id": "v_10_20",
+      "op": "cross_down",
+      "left": "vol_ma_10",
+      "right": "vol_ma_20",
+      "description": "10日均量线下穿20日均量线"
+    },
+    {
+      "id": "v_5_30",
+      "op": "cross_down",
+      "left": "vol_ma_5",
+      "right": "vol_ma_30",
+      "description": "5日均量线下穿30日均量线"
+    },
+    {
+      "id": "v_10_30",
+      "op": "cross_down",
+      "left": "vol_ma_10",
+      "right": "vol_ma_30",
+      "description": "10日均量线下穿30日均量线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "count",
+          "window": "$params.signal_keep_days",
+          "condition": {"op": "or", "conditions": [
+            {"op": "condition", "event": "p_5_20"},
+            {"op": "condition", "event": "p_10_20"},
+            {"op": "condition", "event": "p_5_30"},
+            {"op": "condition", "event": "p_10_30"}
+          ]},
+          "gte": 4
+        },
+        {
+          "op": "count",
+          "window": "$params.signal_keep_days",
+          "condition": {"op": "or", "conditions": [
+            {"op": "condition", "event": "v_5_20"},
+            {"op": "condition", "event": "v_10_20"},
+            {"op": "condition", "event": "v_5_30"},
+            {"op": "condition", "event": "v_10_30"}
+          ]},
+          "gte": 4
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算价格与成交量的5/10/20/30日均线。",
+    "统计最近signal_keep_days日内价格四个死亡交叉事件是否全部出现。",
+    "统计最近signal_keep_days日内成交量四个死亡交叉事件是否全部出现。"
+  ],
+  "signal_day_definition": "以价格井字与量能井字都完成的窗口末端作为天上井地上井确认阶段。",
+  "manual_review_needed": [
+    "当前用滑动窗口内四个交叉都出现来近似井字完成，未单独要求图形上的紧凑程度。",
+    "‘一井两压’未进一步拆成附加增强条件。"
+  ],
+  "implementation_notes": [
+    "这是较复杂的多交叉共现头部规则。"
+  ],
+  "explain": "天上井地上井是价格与量能双重井字头部共振。"
+}

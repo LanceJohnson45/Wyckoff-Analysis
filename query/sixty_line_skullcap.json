@@ -1,0 +1,49 @@
+{
+  "name": "60 线天灵盖",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [379],
+  "source": "当庄家持续出货后，只要60日均线开始拐头向下，那么60日均线的最高点就成为天灵盖，代表股价已经到头顶，是较可靠的头部信号。",
+  "source_summary": "若60日均线由升转降，可视为60线天灵盖形成。",
+  "comment": "当前按60日均线拐头向下的最直接版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"},
+    {"id": "ma_60_prev_2", "op": "ref", "field": "ma_60", "window": 2, "description": "前两日60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60_prev", "operator": ">=", "right": "ma_60_prev_2"},
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_60_prev"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线及其前两日值。",
+    "要求前一日60日均线仍处于不低于更前一日的位置。",
+    "要求当前60日均线已经低于前一日，近似表达天灵盖拐头形成。"
+  ],
+  "signal_day_definition": "以60日均线开始拐头向下的当日作为60线天灵盖形成日。",
+  "manual_review_needed": [
+    "原文把60日均线最高点视为天灵盖，当前用均线由升转降的当日近似表达该顶点。"
+  ],
+  "implementation_notes": [
+    "这是头部趋势识别类规则，可配合回光返照与吸住天花板使用。"
+  ],
+  "explain": "60线天灵盖被结构化为60日均线由升转降的拐点信号。"
+}

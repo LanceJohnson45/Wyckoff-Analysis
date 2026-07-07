@@ -1,0 +1,103 @@
+{
+  "name": "幸福池养宁天龙",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [131, 132, 133, 134],
+  "source": "幸福池要求使用5日、40日、60日均线观察庄家震仓：股价处于相对低位，前期曾放量建仓，回档时跌破40日、60日均线不远处并出现量芝麻点，之后日K线和5日均线走出池底形，再放量爬上池边且不再跌破60日线。",
+  "source_summary": "若股价在底部震仓后缩量止跌，并重新站上60日线，可视为幸福池养宁天龙。",
+  "comment": "当前按日线近似提取为回档缩量后重回60日线的震仓完成信号。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_short_window": 5,
+    "ma_mid_window": 40,
+    "ma_long_window": 60,
+    "volume_ma_window": 20,
+    "setup_lookback": 40,
+    "low_volume_days": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_short",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_short_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "40日均线"
+    },
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "reclaim_ma_long",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_long",
+      "description": "股价重新站上60日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": "<", "right": "ma_mid"},
+            "event": "reclaim_ma_long",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "volume", "operator": "<", "right": "volume_ma"},
+            "event": "reclaim_ma_long",
+            "window": "$params.setup_lookback",
+            "min_count": "$params.low_volume_days"
+          },
+          {"op": "condition", "event": "reclaim_ma_long"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_short"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、40日、60日均线及成交量均线。",
+    "要求在reclaim_ma_long之前的setup_lookback日内，曾有回档跌到40日线下方，并出现不少于low_volume_days日的缩量。",
+    "以股价重新站上60日均线且同步站上5日均线，近似表达幸福池完成。"
+  ],
+  "signal_day_definition": "以回档缩量后重新站上60日均线的当日作为幸福池信号完成日。",
+  "manual_review_needed": [
+    "原文中的‘不远处’与‘池底形’是图形语言，当前只保留回档到40/60日线附近并缩量止跌的核心。",
+    "原文还强调前期曾有放量建仓，当前未单独加入前置放量建仓过滤。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + setup_lookback + 1。",
+    "如果后续希望更贴近原文，可新增‘前期放量建仓’和‘回档不再跌破60线’的二次确认。"
+  ],
+  "explain": "幸福池被结构化为底部震仓缩量后重新站上60日线的启动前信号。"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "f30K 线炒作法",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [525, 526, 527],
+  "source": "f30K线炒作法是以30分钟K线为核心的短线交易框架，结合DIF上穿零轴、三金叉见底、冲过60生命线、三死叉见顶等短线信号来决定做多、持股、空仓和区间内高抛低吸。",
+  "source_summary": "这是基于30分钟K线的完整短线操盘框架，不适合直接压成日线单一规则。",
+  "comment": "原文核心完全建立在30分钟级别的节奏与切换上，当前只记录为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "用30分钟K线识别DIF上穿零轴、三金叉、冲过60生命线和三死叉等短线信号。",
+    "根据盘整区、上破区和下破区切换短线持股、空仓与买卖策略。"
+  ],
+  "signal_day_definition": "原文定义的是30分钟级别的一整套短线操作区间，不是日线上的单一信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要接入30分钟级别 O/H/L/C/V 数据，并补齐对应分钟级规则引擎。"
+  ],
+  "implementation_notes": [
+    "当前仓库只有日线 O/H/L/C/V，因此保留为不可直接计算的方法论。"
+  ],
+  "explain": "该节是30分钟K线短线炒作框架，当前不能仅靠日线数据完整复现。"
+}

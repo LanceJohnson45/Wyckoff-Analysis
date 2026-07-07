@@ -1,0 +1,56 @@
+{
+  "name": "年金叉",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [699, 700, 701, 702],
+  "source": "年金叉指120日均线上穿240日均线，若发生在年线下长期打桩、建仓充分之后，并且最好伴随60/120/240线粘合与多项做多特征，则是最牢固的金叉之一。",
+  "source_summary": "若股价在长期年线下打桩后，120日均线上穿240日均线，可视为年金叉成立。",
+  "comment": "当前先提取最核心的120上穿240版本，并要求价格站在线组之上。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 280,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_mid_window": 60,
+    "ma_halfyear_window": 120,
+    "ma_year_window": 240,
+    "signal_keep_days": 10
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_halfyear_window", "description": "120日均线"},
+    {"id": "ma_240", "op": "sma", "field": "close", "window": "$params.ma_year_window", "description": "240日均线"}
+  ],
+  "events": [
+    {"id": "annual_cross", "op": "cross_up", "left": "ma_120", "right": "ma_240", "description": "120日均线上穿240日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "annual_cross"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_240"},
+          {"op": "compare", "left": "ma_60", "operator": ">=", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60、120和240日均线。",
+    "识别120日均线上穿240日均线的年金叉时点。",
+    "要求股价同步站在120/240线之上，且60日线不弱于120日线。"
+  ],
+  "signal_day_definition": "以120日均线上穿240日均线并同步维持强势背景的当日作为年金叉确认日。",
+  "manual_review_needed": [
+    "原文还强调年线下打桩时间必须足够长，当前主规则未显式量化‘年线下逗留时长’。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= 240 + 20。",
+    "这是年金叉最基础可执行的日线版本。"
+  ],
+  "explain": "该规则用于识别120日均线上穿240日均线的牢固中长期金叉形态。"
+}

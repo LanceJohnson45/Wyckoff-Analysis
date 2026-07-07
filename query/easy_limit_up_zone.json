@@ -1,0 +1,60 @@
+{
+  "name": "易涨停部位",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [271, 272, 273],
+  "source": "易涨停部位指庄家建仓完毕后，股价悄悄逼近前头部T线，量能未必活跃，但一旦靠近右上角并突然放量突破T线，就很容易出现快速拉升甚至涨停。",
+  "source_summary": "若股价已贴近前头部T线并放量突破，可视为进入易涨停部位。",
+  "comment": "当前按靠近前高后放量突破T线的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "near_threshold_pct": 0.03,
+    "volume_ma_window": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "前头部T线近似"},
+    {"id": "t_line_prev", "op": "ref", "field": "t_line", "window": 1, "description": "前一日T线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "breakout_t_line", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "放量突破T线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": ">=", "right": "t_line_prev"},
+            "event": "breakout_t_line",
+            "window": 5,
+            "min_count": 1
+          },
+          {"op": "condition", "event": "breakout_t_line"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前头部最高收盘价近似T线。",
+    "要求突破前几日已运行到T线附近。",
+    "以放量突破T线作为易涨停部位确认。"
+  ],
+  "signal_day_definition": "以放量突破T线的当日作为易涨停部位确认日。",
+  "manual_review_needed": [
+    "原文中的‘各种细节’与庄家信号仍需人工配合观察，当前只保留最核心的靠近T线后突破。"
+  ],
+  "implementation_notes": [
+    "这是接近前头部压力区后的启动确认规则。"
+  ],
+  "explain": "易涨停部位被结构化为贴近前头部T线后的放量突破。"
+}

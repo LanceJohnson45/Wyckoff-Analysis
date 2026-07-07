@@ -1,0 +1,46 @@
+{
+  "name": "单 T 线形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [294, 295, 296],
+  "source": "T线说明开盘后空方强打压、收盘前多方拉回；若它出现在长期上涨后的高位，就可能是强弩之末。渐进式上升中的头部T线通常下跌较慢，激进型庄家则可能快速拉高后反手做空，形成更凶险的头部T线。",
+  "source_summary": "若高位出现长下影的T线或倒T线，随后价格失守并转弱，可视为单T线头部。",
+  "comment": "当前按高位T线/倒T线后转弱的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 60,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_3", "op": "ref", "field": "close", "window": 3, "description": "3日前收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "close"},
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "open"},
+          {"op": "compare", "left": "low", "operator": "<", "right": "close_ref_3"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别高位带长下影的T线或倒T线近似形态。",
+    "若之后价格未能继续上冲并转弱，近似视为单T线头部。"
+  ],
+  "signal_day_definition": "以T线出现后短期转弱的确认日作为单T线头部确认日。",
+  "manual_review_needed": [
+    "原文区分渐进式与激进式头部T线，当前未细分，只保留高位T线转弱的共性。"
+  ],
+  "implementation_notes": [
+    "这里将T线和倒T线合并为一类高位长下影转弱信号。"
+  ],
+  "explain": "单T线形成的头部被结构化为高位长下影K线后转弱。"
+}

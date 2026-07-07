@@ -1,0 +1,36 @@
+{
+  "name": "利用除权出货",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [452, 453, 454],
+  "source": "本节讲庄家如何在120下小平台或跌破生命线后借除权制造低价错觉，通过填权预期、拉高对倒和新闻配合来继续出货。",
+  "source_summary": "这是依赖除权事件和低价错觉出货的行为学方法论，不是单一布尔指标。",
+  "comment": "原文明确依赖除权、分红送配、更名和媒体利好等外部事件，当前系统无法仅凭日线O/H/L/C/V完整表达。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要识别除权事件、低价错觉、对倒拉高和出货行为。",
+    "这些依赖外部公司行为和市场叙事，超出当前日线字段范围。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的信号完成日。",
+  "manual_review_needed": [
+    "如果后续系统引入除权日历与企业行为事件流，可重做为除权后出货风险规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "利用除权出货是依赖企业行为与低价错觉的出货方法论，不是单一布尔指标。"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "内径线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [806, 807, 808, 809, 810, 811],
+  "source": "内径线是把相邻两个股价高点连接成直线，用于估计后续回档支撑、突破后的加速以及过陡后可能转化为压力；对应的下跌内径线则用于估计反弹压力、跌破后的加速下跌以及过陡后可能转化为支撑。",
+  "source_summary": "这是围绕相邻高点或低点画线、观察突破和回测的几何分析方法，不适合仅凭日线O/H/L/C/V压成单一规则。",
+  "comment": "原文本质是连续手动画线和斜率观察方法，适合作为画线框架，不适合压成单一latest_match。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "连接相邻高点形成上升内径线，或连接相邻低点形成下跌内径线。",
+    "观察股价对内径线的突破、反压或跌破，以估计加速上涨、加速下跌和潜在拐点。",
+    "当线的角度越来越陡峭时，警惕其角色从推动线转为压力线或支撑线。"
+  ],
+  "signal_day_definition": "本节描述的是连续画线分析框架，不存在统一单日信号完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先统一高低点选取、相邻点连接规则以及斜率阈值。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把连续几何画线分析误简化成固定阈值。"
+  ],
+  "explain": "内径线依赖连续相邻高低点的几何连接和斜率判断，当前不适合直接压成单一规则。"
+}

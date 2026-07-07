@@ -1,0 +1,37 @@
+{
+  "name": "一小时两倍量",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [768, 769, 770, 771, 772],
+  "source": "一小时两倍量强调：开盘后1小时内的成交量若已达到10日均量的两倍，就是比一般半小时量填满更明确的短线买入信号；原文还比较了半小时两倍量、两小时两倍量等不同上升速度。",
+  "source_summary": "这是基于开盘后固定时间成交量填充速度的分时量能方法，当前不能仅凭日线数据执行。",
+  "comment": "虽然前文已有‘单位时间两倍量’的日线近似版，但本节明确要求1小时这一分时窗口。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "计算10日均量作为基准量柱高度。",
+    "统计开盘后1小时的累计成交量，并与10日均量的两倍比较。",
+    "结合个股所处位置和形态判断是否属于可追击的强势启动。"
+  ],
+  "signal_day_definition": "本节描述的是1小时内成交量填充速度方法，不存在可由日线统一输出的单日完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入至少60分钟内分桶成交量，或逐笔/分钟级原始数据。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位；若只用日线近似，会失去本节最核心的时间速度信息。"
+  ],
+  "explain": "一小时两倍量是明确的分时量速方法，当前单靠日线volume无法完整实现。"
+}

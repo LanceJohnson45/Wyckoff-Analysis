@@ -1,0 +1,37 @@
+{
+  "name": "老鸭头技术要求",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [753, 754, 755],
+  "source": "老鸭头技术要求是在老鸭头基础上进一步筛选强弱：要求鸭脖盘整充分、放量打拐、鸭鼻孔越小越好、F点远离60日线形成通气老鸭头、重返鸭头顶时间越短越强、60/120线开口越大越强，最好还有零上红金叉和分时吹着喇叭往前跑。",
+  "source_summary": "这是对老鸭头强弱和优先级的筛选框架，混合了均线、MACD、分时和L3语义，不适合直接压成统一规则。",
+  "comment": "基础老鸭头形态已由既有old_duck_head.json覆盖，本节更偏向强弱打分与精选要求。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先识别基础老鸭头形态。",
+    "再按鸭脖盘整、鸭鼻孔大小、是否通气、重返鸭头顶速度、60/120开口、零上红金叉和分时喇叭等条件评估强弱。",
+    "优先选择强势版本的老鸭头作为黑马候选。"
+  ],
+  "signal_day_definition": "本节描述的是老鸭头形态的强弱筛选框架，不存在统一单日完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，可考虑在基础old_duck_head上增加评分字段，而不是用单一latest_match布尔值压平。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把分时喇叭、MACD位置和均线几何强行简化后失真。"
+  ],
+  "explain": "老鸭头技术要求更像精选与强弱排序框架，当前不宜直接压成单一规则。"
+}

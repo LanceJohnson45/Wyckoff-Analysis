@@ -1,0 +1,65 @@
+{
+  "name": "会创新低还有新低直到不创新低",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [523, 524, 525],
+  "source": "会创新低还有新低直到不创新低，强调在下跌趋势中，只要后面的低点继续跌破前面的低点，就仍处在下降趋势中；只有后面不再创新低，才只能说暂时止跌，而真正摆脱下降趋势还需要后续能创新高来确认。",
+  "source_summary": "若股价再次跌破近阶段低点，说明仍在下降趋势中，不应急于抄底。",
+  "comment": "当前提取的是‘仍在创新低’的下跌延续状态，不包含后续创新高的趋势反转确认。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "trend_rule",
+  "params": {
+    "low_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_low",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.low_lookback",
+      "description": "近窗口最低收盘价"
+    },
+    {
+      "id": "recent_low_prev",
+      "op": "ref",
+      "field": "recent_low",
+      "window": 1,
+      "description": "前一日近窗口最低收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_recent_low",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "recent_low_prev",
+      "description": "收盘跌破近阶段低点"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "condition",
+        "event": "break_recent_low"
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近20日最低收盘价。",
+    "识别当前收盘是否跌破前一日的近阶段低点。",
+    "若跌破，则视为还会创新低、下跌趋势尚未结束。"
+  ],
+  "signal_day_definition": "以收盘跌破前一阶段低点的当日作为‘还会创新低’确认日。",
+  "manual_review_needed": [
+    "原文还强调‘不创新低后仍需创新高才算真正转势’，当前主规则只保留继续创新低的核心部分。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= low_lookback + 1。"
+  ],
+  "explain": "该规则用于识别股价仍在不断创新低的阶段，从而避免过早抄底。"
+}

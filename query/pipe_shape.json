@@ -1,0 +1,66 @@
+{
+  "name": "烟斗形",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [219, 220, 221, 222],
+  "source": "烟斗形要求底部已有庄家建仓，随后出现一次快速缩量下跌，并在很短时间内再次拉回到初跌价位附近，从K线图上形成烟斗形；更稳健的买点是放量上冲60日均线时。",
+  "source_summary": "若快速缩量下跌后在数日内重新收回初跌价位并站上60日线，可视为烟斗形成立。",
+  "comment": "当前提取为更稳健版本：缩量急跌后，短时间内收回并上穿60日均线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_long_window": 60,
+    "bottom_max_days": 5,
+    "setup_lookback": 15,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "volume_ref_5", "op": "ref", "field": "volume", "window": 5, "description": "5日前成交量参考"},
+    {"id": "close_ref_5", "op": "ref", "field": "close", "window": 5, "description": "5日前初跌价位近似"}
+  ],
+  "events": [
+    {"id": "recross_ma_long", "op": "cross_up", "left": "close", "right": "ma_long", "description": "重新上穿60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "close", "operator": "<", "right": "close_ref_5"},
+                {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ref_5"}
+              ]
+            },
+            "event": "recross_ma_long",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "recross_ma_long"},
+          {"op": "compare", "left": "close", "operator": ">=", "right": "close_ref_5"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在setup_lookback窗口内识别一次相对5日前快速下跌且缩量的烟斗下挫段。",
+    "要求其后在较短时间内重新站上60日均线。",
+    "同时要求收盘价已回到初跌价位附近或之上。"
+  ],
+  "signal_day_definition": "以重新上穿60日均线并收回初跌价位的当日作为烟斗形成立日。",
+  "manual_review_needed": [
+    "原文要求烟斗底部停留一般三天、不能超过一周，当前只做了短期窗口近似。"
+  ],
+  "implementation_notes": [
+    "当前使用更稳健的‘上冲60日均线买点’版本。"
+  ],
+  "explain": "烟斗形被结构化为缩量急跌后短期内重新收回并站上60日线的底部洗盘形态。"
+}

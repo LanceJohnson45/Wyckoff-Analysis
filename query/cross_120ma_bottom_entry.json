@@ -1,0 +1,55 @@
+{
+  "name": "底部特征三",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [394, 395, 396],
+  "source": "底部特征三分析在下跌途中把股价上穿120日均线当作买点时需要的附加条件：距前头部要足够远、底部不能再创新低或应有抬高、底部区必须放量，且一旦上穿120线失败再跌入2-3区间就要快速退出。",
+  "source_summary": "若底部抬高并放量上穿120日均线，可视为较可靠的底部买点。",
+  "comment": "当前提取为文中最核心的底部抬高 + 放量上穿120线版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 180,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_longer_window": 120,
+    "volume_ma_window": 20,
+    "bottom_raise_lookback": 30,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"},
+    {"id": "close_ref_30", "op": "ref", "field": "close", "window": "$params.bottom_raise_lookback", "description": "更早周期收盘价，用于近似底部抬高"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "cross_120", "op": "cross_up", "left": "close", "right": "ma_120", "description": "股价上穿120日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "cross_120"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_ref_30"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算120日均线与20日量均线。",
+    "要求股价放量上穿120日均线。",
+    "要求当前收盘高于更早周期收盘价，近似表达底部抬高和不再创新低。"
+  ],
+  "signal_day_definition": "以上穿120日均线并满足底部抬高、放量条件的当日作为较可靠的底部买点确认日。",
+  "manual_review_needed": [
+    "原文强调与前头部的距离要足够远，当前未直接量化前头部距离。",
+    "原文还强调指数背景配合，当前仅依赖个股日线数据。"
+  ],
+  "implementation_notes": [
+    "该规则可视为更严格的120线底部筛选。"
+  ],
+  "explain": "底部特征三被结构化为底部抬高后放量上穿120日均线的买点。"
+}

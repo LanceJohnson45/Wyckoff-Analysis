@@ -1,0 +1,37 @@
+{
+  "name": "黑马亲子鉴定",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [755, 756, 757, 758, 759],
+  "source": "黑马亲子鉴定通过对比历史黑马启动时的分时‘通气’和成交紧密度特征，去识别当前疑似黑马股是否也具有相同的分时基因；原文强调开盘后不久分时走势应走在均价线之上并保持通气，且成交活跃紧密。",
+  "source_summary": "这是基于分时均价线、通气和成交紧密度的黑马基因比对方法，当前不能仅凭日线数据执行。",
+  "comment": "原文核心完全依赖分时走势与均价线的细粒度行为，再辅以日K线环境验证。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "选取历史黑马启动时的分时基因模板。",
+    "对比当前个股开盘后是否长期站在均价线之上、是否保持通气、成交是否足够紧密活跃。",
+    "再结合日K线位置、暖气带通气和零上红金叉等背景做综合判断。"
+  ],
+  "signal_day_definition": "本节描述的是分时黑马基因比对方法，不存在统一单日信号完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入分时价格、分时均价线、逐笔活跃度和模板匹配能力。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把分时基因识别误简化成日线伪规则。"
+  ],
+  "explain": "黑马亲子鉴定核心依赖分时通气与成交紧密度，当前单靠日线O/H/L/C/V无法完整实现。"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "沙盘要结合 K 线形态",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [847, 848, 849, 850],
+  "source": "沙盘要结合K线形态强调：沙盘排名靠前只能说明主动性累计量强，但并不能单独证明一定是黑马；还必须结合K线处于2+3初中期、顶紧右上角、强势洗盘接近尾声等形态特征，才能同时满足能量强和形态美。",
+  "source_summary": "这是一个把沙盘能量排名与K线形态联合过滤的选股框架，当前不能仅凭日线O/H/L/C/V单独执行。",
+  "comment": "原文核心依赖沙盘主动性累计量数据，当前仓库没有该输入。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先用沙盘或主动性累计量体系筛出能量强势个股。",
+    "再结合K线形态判断是否处于2+3初中期、顶紧右上角、强势洗盘尾声等有利位置。",
+    "只有同时满足能量强和形态美，才作为优先关注对象。"
+  ],
+  "signal_day_definition": "本节描述的是能量与形态联合过滤框架，不存在单一统一的日线完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入沙盘或主动性累计量排名数据，并设计与K线形态的联合过滤逻辑。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免在缺失沙盘数据时输出伪精确规则。"
+  ],
+  "explain": "沙盘要结合K线形态依赖额外能量系统数据，当前单靠日线O/H/L/C/V无法完整实现。"
+}

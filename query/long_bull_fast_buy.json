@@ -1,0 +1,114 @@
+{
+  "name": "长阳快速买入法",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [566, 567, 568],
+  "source": "长阳快速买入法强调：在弱市反弹环境里，先有一段快速缩量下跌，再有底部缩量小平台，之后突然放出巨量长阳向上突破平台压力线，此时是一个短线快速介入时机。原文还特别强调指数应同时处于反弹阶段。",
+  "source_summary": "若经历缩量急跌与底部缩量平台后，突然放量长阳突破平台，可视为短线快速买入点。",
+  "comment": "当前优先提取单票日线主结构，指数反弹条件先记入人工复核。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "decline_window": 20,
+    "decline_pct": -0.15,
+    "platform_window": 10,
+    "volume_ma_window": 10,
+    "volume_multiplier": 2,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "decline_pct_20d",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.decline_window",
+      "description": "近20日累计跌幅"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_window",
+      "description": "底部小平台高点"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日平台高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "double_volume_ma",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.volume_multiplier",
+      "window": 0,
+      "description": "两倍10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "收盘突破底部平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "decline_pct_20d",
+            "operator": "<=",
+            "right": "$params.decline_pct"
+          },
+          {
+            "op": "condition",
+            "event": "break_platform"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "double_volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近20日累计跌幅，确认前面存在较快缩量下跌背景。",
+    "计算近10日底部平台高点，识别平台突破。",
+    "要求突破当日成交量达到两倍均量且为阳线。"
+  ],
+  "signal_day_definition": "以经历快速下跌后放量长阳突破底部平台的当日作为快速买入确认日。",
+  "manual_review_needed": [
+    "原文还要求指数正好展开反弹，当前规则未显式加入大盘环境过滤。"
+  ],
+  "implementation_notes": [
+    "该规则适合短线反弹参与，不宜被当作中长期趋势启动信号。"
+  ],
+  "explain": "该规则把长阳快速买入法收敛成‘快速缩量下跌后，放量长阳突破底部平台’的短线介入条件。"
+}

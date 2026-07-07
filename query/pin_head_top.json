@@ -1,0 +1,48 @@
+{
+  "name": "品字头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [320, 321, 322],
+  "source": "品字头是三根K线构成的头部定式，要求中间最高、两头低，呈阶梯式上升后再阶梯式下降；中间的K线可以是锤、星、针、杖或T线，只要三天排列成中间高、两边低，就是品字头。",
+  "source_summary": "若三根K线形成中间高、两边低的三日拐点，可视为品字头。",
+  "comment": "当前按三日中间高、随后转弱的基础版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "high_ref_1", "op": "ref", "field": "high", "window": 1, "description": "前一日最高价"},
+    {"id": "high_ref_2", "op": "ref", "field": "high", "window": 2, "description": "前两日最高价"},
+    {"id": "close_ref_2", "op": "ref", "field": "close", "window": 2, "description": "前两日收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "high_ref_1", "operator": ">", "right": "high_ref_2"},
+          {"op": "compare", "left": "high_ref_1", "operator": ">", "right": "high"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_2"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "比较最近三天最高价，要求中间一天最高。",
+    "要求当前第三天已转弱并回到前两天起点附近。"
+  ],
+  "signal_day_definition": "以第三天确认中间高、两边低的当日作为品字头确认日。",
+  "manual_review_needed": [
+    "原文强调带量版本与分钟线提高出货价，当前只保留三日K线定式本体。"
+  ],
+  "implementation_notes": [
+    "这是标准三日头部拐点组合。"
+  ],
+  "explain": "品字头被结构化为三日中间高、两边低的头部定式。"
+}

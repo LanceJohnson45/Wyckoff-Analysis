@@ -1,0 +1,37 @@
+{
+  "name": "饿狼扑食",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [674, 675, 676, 677],
+  "source": "饿狼扑食指高位个股在月均线死叉、价压或三死叉附近，分时图上反复出现直上直下的刀刃波，说明庄家正寻找买盘把筹码像饿狼扑食一样打出去，是危险的出货征兆。",
+  "source_summary": "这是建立在高位分时刀刃波和月均线死叉上的出货方法，不适合直接压成日线规则。",
+  "comment": "原文关键语义来自分时刀刃波和月均线系统，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先判断个股是否处于高位、月均线死叉或价压附近。",
+    "再通过分时图观察是否反复出现直上直下的刀刃波。",
+    "若确认庄家借刀刃波寻找买盘出货，则应尽快退出。"
+  ],
+  "signal_day_definition": "本节描述的是高位分时刀刃波出货征兆，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入分时成交、月均线语义和高位状态识别。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把分时出货动作硬压成日线规则。"
+  ],
+  "explain": "该节依赖高位分时刀刃波和月均线背景，当前单靠日线O/H/L/C/V无法完整实现。"
+}

@@ -1,0 +1,83 @@
+{
+  "name": "碰 撤 穿 抽",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [774, 775, 776, 777],
+  "source": "碰撤穿抽描述股价在重要支撑线附近先碰撞反弹，再回撤向下穿越，之后反抽原支撑线并确认其转为压力，确认成功后往往会继续下跌一段距离。",
+  "source_summary": "若股价先跌破重要支撑位，再在短期内反抽但收盘仍站不回去，可视为碰撤穿抽成立。",
+  "comment": "当前把原文中的任意重要技术线近似为近阶段前低支撑线，并把‘抽’定义为反抽后仍收在线下方。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "low", "close"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "line_lookback": 30,
+    "retest_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "support_line",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.line_lookback",
+      "description": "近阶段重要支撑线近似"
+    },
+    {
+      "id": "support_line_prev",
+      "op": "ref",
+      "field": "support_line",
+      "window": 1,
+      "description": "前一日支撑线"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakdown_line",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "support_line_prev",
+      "description": "向下穿越重要支撑线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "within",
+          "window": "$params.retest_window",
+          "condition": {
+            "op": "condition",
+            "event": "breakdown_line"
+          }
+        },
+        {
+          "op": "compare",
+          "left": "high",
+          "operator": ">=",
+          "right": "support_line_prev"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": "<",
+          "right": "support_line_prev"
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算近阶段支撑线的收盘近似。",
+    "识别收盘向下跌破支撑线的破位日。",
+    "在破位后的短窗口内，若股价反抽到该线附近但收盘仍压在线下方，则视为碰撤穿抽成立。"
+  ],
+  "signal_day_definition": "以跌破后反抽失败的当日作为碰撤穿抽确认日。",
+  "manual_review_needed": [
+    "原文中的支撑线可以是整数关口或其他重要技术位，当前统一近似为近阶段前低支撑线。"
+  ],
+  "implementation_notes": [
+    "当前以‘反抽但站不回去’来表达碰、撤、穿、抽四步中的结果态。"
+  ],
+  "explain": "碰撤穿抽被结构化为跌破前低后，反抽原支撑线失败并转化为压力。"
+}

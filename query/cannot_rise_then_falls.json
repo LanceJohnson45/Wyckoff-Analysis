@@ -1,0 +1,115 @@
+{
+  "name": "涨不上去就跌",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [856, 857, 858, 859],
+  "source": "涨不上去就跌强调：股价跌破暖气带后，如果不能重新回到五线之上，或者即使短暂重返但暖气带已经封闭不通气，那么后续就应按三死叉等风险信号坚决卖出回避。",
+  "source_summary": "若股价跌破暖气带后无法有效重返五线，且暖气带不通气，可视为涨不上去就跌成立。",
+  "comment": "当前用日线版‘跌破暖气带后仍压在五线下，且60不强于120’来近似原文。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_warm_band",
+      "op": "cross_down",
+      "left": "close",
+      "right": "ma_60",
+      "description": "跌破暖气带关键线近似"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_warm_band"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": "<=",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_20"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5、10、20、60、120日均线。",
+    "要求股价先跌破暖气带关键线。",
+    "若暖气带不再通气，且股价仍压在短中期均线之下，则视为涨不上去就跌成立。"
+  ],
+  "signal_day_definition": "以跌破暖气带后无法重返五线并确认弱势的当日作为风险确认日。",
+  "manual_review_needed": [
+    "原文主要基于5分钟K线和三死叉做出卖出动作，当前只保留日线近似的弱势结果态。"
+  ],
+  "implementation_notes": [
+    "这是‘跌破暖气带后无法修复’的日线镜像规则。"
+  ],
+  "explain": "涨不上去就跌被结构化为跌破暖气带后，暖气带封闭且股价持续压在五线下方。"
+}

@@ -1,0 +1,96 @@
+{
+  "name": "好马不吃回头草",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [593, 594, 595],
+  "source": "好马不吃回头草，强调真正强势的股票在大盘转暖后，每突破一条关键防线后就不愿再跌回该防线下方，而是迅速向上推进。这样的股票说明主力决心坚决、资金实力较强，不愿给散户过多逢低吸纳的机会。",
+  "source_summary": "若股价突破关键防线后不再跌回，并继续快速推进，往往说明是强势好马。",
+  "comment": "当前用‘突破前头部后连续保持在突破位之上’来近似不吃回头草。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "head_lookback": 40,
+    "hold_days": 3,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "前头部T线近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日头部T线近似"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "收盘突破前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_head"
+          },
+          {
+            "op": "consecutive",
+            "days": "$params.hold_days",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": ">",
+              "right": "head_high_prev"
+            }
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别股价是否向上突破前头部。",
+    "要求突破后连续3日都保持在该突破位之上，近似不吃回头草。",
+    "要求突破阶段量能不弱于10日均量。"
+  ],
+  "signal_day_definition": "以突破前头部后连续保持在突破位之上的第三日作为‘好马不吃回头草’确认日。",
+  "manual_review_needed": [
+    "原文更强调大盘转暖后的阳刚走势与多道防线不回踩，当前先保留关键头部防线版本。"
+  ],
+  "implementation_notes": [
+    "该规则用于刻画突破后不愿回头的强势延续。",
+    "warmup_bars >= max(head_lookback + hold_days, volume_ma_window + 1)"
+  ],
+  "explain": "该规则用于识别突破后拒绝回踩、沿强势路径加速上行的股票。"
+}

@@ -1,0 +1,48 @@
+{
+  "name": "单阳线形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [287, 288, 289, 290, 291],
+  "source": "在股价累计涨幅已大、庄家处于出货区间时，庄家可能通过拉出一根大阳线来吸引市场注意，随后次日开始出货，从此形成头部；因此相对高位的大阳线反而要警惕。",
+  "source_summary": "若相对高位出现一根显著大阳线，随后价格不再创新高并转弱，可视为单阳线头部。",
+  "comment": "当前按高位大阳线后快速转弱的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 60,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_high", "op": "highest", "field": "close", "window": "$params.lookback", "description": "近期最高收盘价"},
+    {"id": "close_ref_3", "op": "ref", "field": "close", "window": 3, "description": "3日前收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "close_high"},
+          {"op": "compare", "left": "close_ref_3", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "close_ref_3"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在近期高位窗口内寻找一根显著收阳并接近阶段高点的大阳线。",
+    "随后若当前价格已经跌回其下方，近似确认该阳线并未被后续继续创新高延续。"
+  ],
+  "signal_day_definition": "以高位大阳线后转弱并失去延续性的确认日作为单阳线头部确认日。",
+  "manual_review_needed": [
+    "原文强调‘相对高位’与后续不再创新高，当前仅用阶段高点和短期转弱近似。"
+  ],
+  "implementation_notes": [
+    "这是头部确认版，不是阳线出现当日即判头。"
+  ],
+  "explain": "单阳线形成的头部被结构化为高位大阳线后未能延续并快速转弱。"
+}

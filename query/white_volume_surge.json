@@ -1,0 +1,61 @@
+{
+  "name": "白量滔天打鱼翻船",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [431, 432],
+  "source": "白量滔天指高位除权后或高位反复震荡中，阴线多、跌多涨少，且下跌日放出的白量明显丰富，显示供过于求和主力溃逃；若随后再跌破120日均线，则头部成立概率很高。",
+  "source_summary": "若近一段时间阴量显著占优且股价跌破120日均线，可视为白量滔天头部信号。",
+  "comment": "当前按‘阴线占优 + 跌破120线’的基础版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 150,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"}
+  ],
+  "events": [
+    {"id": "break_120_down", "op": "cross_down", "left": "close", "right": "ma_120", "description": "股价跌破120日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "count",
+            "window": "$params.volume_window",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "open"
+            },
+            "gte": 6
+          },
+          {
+            "op": "condition",
+            "event": "break_120_down"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "统计近N日阴线出现次数，近似表达白量丰富、跌多涨少。",
+    "要求股价随后跌破120日均线，作为头部确认。"
+  ],
+  "signal_day_definition": "以白量占优背景下股价跌破120日均线的当日作为白量滔天信号日。",
+  "manual_review_needed": [
+    "原文更细地强调阴量大于阳量，当前只用阴线天数占优近似，尚未直接对阴量与阳量总和做拆分统计。"
+  ],
+  "implementation_notes": [
+    "需要120日均线序列来完成跌破判断。"
+  ],
+  "explain": "白量滔天被结构化为阴线占优背景下的跌破120日均线头部信号。"
+}

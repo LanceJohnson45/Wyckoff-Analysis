@@ -1,0 +1,128 @@
+{
+  "name": "致命大铡刀",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [498, 499, 500, 501],
+  "source": "致命大铡刀是庄家在出货后期加速逃跑时形成的大阴线，一两天内迅速切穿均线系统，从2+3区间直接跌入2-3区间。它往往出现在庄家去意已决、连拉高出货都不再愿意做的时候。",
+  "source_summary": "若大阴线在单日内把股价从均线系统上方砍到全部均线下方，可视为致命大铡刀。",
+  "comment": "当前要求大阴线从120日线上方开出并收于全部均线下方，近似一刀切断五线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 130,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "big_bear_pct": -0.07,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "close_return_1d",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日收盘涨跌幅"
+    },
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_return_1d",
+            "operator": "<=",
+            "right": "$params.big_bear_pct"
+          },
+          {
+            "op": "compare",
+            "left": "open",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算单日涨跌幅及5/10/20/60/120日均线。",
+    "识别单日跌幅达到大阴阈值的阴线。",
+    "要求该日开盘仍在120日均线上方，而收盘已经跌到全部五条均线下方。"
+  ],
+  "signal_day_definition": "以大阴线完成对五条均线的一刀切断的当日作为致命大铡刀确认日。",
+  "manual_review_needed": [
+    "原文强调前序庄家出货阶段背景，当前未额外引入出货波段识别。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= 120 + 1。"
+  ],
+  "explain": "该规则把‘致命大铡刀’结构化为单日大阴线从五线之上砍到五线之下的极端破位。"
+}

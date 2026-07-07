@@ -1,0 +1,57 @@
+{
+  "name": "进入起飞线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [222, 223, 224],
+  "source": "进入起飞线指长期下跌后，股价放量上穿60日均线，同时最好伴随MACD DIF上穿零线，表示飞机从机库拉到跑道上，之后才有启动可能。",
+  "source_summary": "若长期下跌后放量上穿60日均线，并伴随DIF位于零轴上方，可视为进入起飞线。",
+  "comment": "当前按三位一体强化版提取：上穿60日线、放量、DIF在零轴上方。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "volume_ma_window": 20,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"}
+  ],
+  "events": [
+    {"id": "cross_ma_long", "op": "cross_up", "left": "close", "right": "ma_long", "description": "股价上穿60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "cross_ma_long"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"},
+          {"op": "compare", "left": "macd_dif", "operator": ">", "right": 0}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线、20日量均线和MACD DIF。",
+    "检测收盘价是否上穿60日均线。",
+    "要求同时成交量高于量均线，且DIF位于零轴上方。"
+  ],
+  "signal_day_definition": "以上穿60日均线并满足放量与DIF转正的当日作为进入起飞线信号日。",
+  "manual_review_needed": [
+    "原文允许单日或双日放量以及多方炮等进入起飞线变体，当前只输出基础强化版。"
+  ],
+  "implementation_notes": [
+    "这是飞行理论中的起点确认规则。"
+  ],
+  "explain": "进入起飞线被结构化为放量上穿60日均线且DIF转正的启动前确认。"
+}

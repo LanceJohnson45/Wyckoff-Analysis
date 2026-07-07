@@ -1,0 +1,38 @@
+{
+  "name": "回档不破 OBV",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [819, 820, 821],
+  "source": "回档不破OBV强调股价在上升途中虽然发生回档，但OBV并未跌破其平均线，说明主力做多能量并未破坏；若股价又重新回到五线之上，并配合零上红金叉等信号，则是更稳妥的再次买入点。",
+  "source_summary": "这是围绕OBV均线支撑、五线重回和MACD共振的回档再买框架，当前不适合仅凭日线O/H/L/C/V单独压成规则。",
+  "comment": "原文关键在于OBV不破均线，而当前规则引擎尚未内建OBV序列。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "构造OBV及其平均线，判断回档过程中OBV是否仍守住均线。",
+    "结合股价是否重新回到五线之上，以及MACD是否出现零上红金叉或二次零上红金叉。",
+    "在回档能量未破坏的前提下，选择更稳妥的再次介入点。"
+  ],
+  "signal_day_definition": "本节描述的是OBV未破坏前提下的回档再买框架，不存在单一统一的日线完成定义。",
+  "manual_review_needed": [
+    "若后续在引擎中加入OBV序列，可把本节拆成‘OBV不破均线 + 重上五线 + MACD增强’的组合规则。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免用不完整替代逻辑误判回档性质。"
+  ],
+  "explain": "回档不破OBV依赖OBV均线与能量守恒判断，当前引擎未直接支持。"
+}

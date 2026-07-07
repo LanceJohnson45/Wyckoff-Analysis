@@ -1,0 +1,57 @@
+{
+  "name": "S 形穿越 60 线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [258, 259, 260],
+  "source": "S形穿越60线指庄家在底部通过潜收集、再下跌、再反压60日线等方式，形成‘冲而不过、冲过、回而不深和上扬’四个环节，对60日均价线完成一次标准的S形攻克。",
+  "source_summary": "若股价先靠近60线未站稳，后正式站上60线，再回踩不深并重新上扬，可视为S形穿越60线成立。",
+  "comment": "当前按‘先冲不过、后冲过、回踩不深、再向上’的顺序近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_long_window": 60,
+    "setup_lookback": 30,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"}
+  ],
+  "events": [
+    {"id": "cross_above_60", "op": "cross_up", "left": "close", "right": "ma_long", "description": "正式上穿60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": "<=", "right": "ma_long"},
+            "event": "cross_above_60",
+            "window": "$params.setup_lookback",
+            "min_count": 3
+          },
+          {"op": "condition", "event": "cross_above_60"},
+          {"op": "compare", "left": "close", "operator": ">=", "right": "ma_long"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线。",
+    "在正式上穿60线之前，要求setup_lookback窗口内已有多日围绕60线下方或附近运行，近似‘冲而不过’与回而不深。",
+    "以正式站上60线并保持在其上方作为S形穿越确认。"
+  ],
+  "signal_day_definition": "以正式上穿60线并保持不深回踩后的当日作为S形穿越确认日。",
+  "manual_review_needed": [
+    "原文四个环节中的两次穿越与反压过程当前只做了顺序近似，后续可引入更细的阶段事件。"
+  ],
+  "implementation_notes": [
+    "当前先保留标准S形攻克60线的核心定义。"
+  ],
+  "explain": "S形穿越60线被结构化为多次试探后正式站上60日均线的底部攻克形态。"
+}

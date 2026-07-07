@@ -1,0 +1,113 @@
+{
+  "name": "弹性系数",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [357, 358, 359, 360, 361],
+  "source": "弹性系数使用59日、60日、61日三条均线来观察股价在该均线组附近的弹跳力度与后市强弱；一旦三条均线方向扭转向下，且股价不能再回到均线之上或跌破线下平台，就是最后的撤退机会。",
+  "source_summary": "若59/60/61日均线同时转头向下且股价位于其下，可视为弹性系数给出的撤退信号。",
+  "comment": "当前提取的是原文强调最强的‘三线扭头向下 + 股价线下’撤退版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 59,
+    "ma_mid_window": 60,
+    "ma_slow_window": 61,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_59",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "59日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_61",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "61日均线"
+    },
+    {
+      "id": "ma_59_prev",
+      "op": "ref",
+      "field": "ma_59",
+      "window": 1,
+      "description": "前一日59日均线"
+    },
+    {
+      "id": "ma_60_prev",
+      "op": "ref",
+      "field": "ma_60",
+      "window": 1,
+      "description": "前一日60日均线"
+    },
+    {
+      "id": "ma_61_prev",
+      "op": "ref",
+      "field": "ma_61",
+      "window": 1,
+      "description": "前一日61日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "ma_59",
+            "operator": "<",
+            "right": "ma_59_prev"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": "<",
+            "right": "ma_60_prev"
+          },
+          {
+            "op": "compare",
+            "left": "ma_61",
+            "operator": "<",
+            "right": "ma_61_prev"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_60"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算59日、60日、61日均线以及各自前一日值。",
+    "要求三条均线当日同时低于前一日，近似表达均线系统扭转向下。",
+    "要求股价位于60日均线下方，作为原文‘不能再回到均线之上’的日线确认。"
+  ],
+  "signal_day_definition": "以三条弹性系数均线同步转头向下且股价位于线下的当日作为撤退信号完成日。",
+  "manual_review_needed": [
+    "原文还强调观察弹跳高度和弹跳量能，当前 latest_match 只保留最终撤退信号。",
+    "‘跌破线下平台’当前用收盘位于60日均线下方近似，后续可加平台破位子规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_slow_window + 1，当前取90以覆盖均线稳定期与回放窗口。"
+  ],
+  "explain": "弹性系数被结构化为59/60/61日均线同步转弱后的最终撤退信号。"
+}

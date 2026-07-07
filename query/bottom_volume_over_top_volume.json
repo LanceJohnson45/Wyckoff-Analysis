@@ -1,0 +1,92 @@
+{
+  "name": "底量超顶量",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [115, 116, 117, 118],
+  "source": "底量超顶量指股价自前头部回落后重新见底回升，如果底部回升阶段的成交量显著超过前头部区间的成交量，则更容易冲破原先套牢压力带。",
+  "source_summary": "底部回升量能超过前头部量能，并突破前头部价格时，可视为底量超顶量。",
+  "comment": "当前用两个相邻窗口近似‘顶量区’与‘底量区’，再叠加对前头部价格的向上突破。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "top_window": 40,
+    "bottom_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "top_volume_high",
+      "op": "highest",
+      "field": "volume",
+      "window": "$params.top_window",
+      "description": "前头部窗口的最大成交量近似"
+    },
+    {
+      "id": "prior_top_volume_high",
+      "op": "ref",
+      "field": "top_volume_high",
+      "window": "$params.bottom_window",
+      "description": "向前平移后的顶量参考"
+    },
+    {
+      "id": "bottom_volume_high",
+      "op": "highest",
+      "field": "volume",
+      "window": "$params.bottom_window",
+      "description": "近期底量窗口的最大成交量"
+    },
+    {
+      "id": "head_close_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.top_window",
+      "description": "前头部窗口最高收盘价近似"
+    },
+    {
+      "id": "head_close_high_prev",
+      "op": "ref",
+      "field": "head_close_high",
+      "window": 1,
+      "description": "前一日的头部最高收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head_close",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_close_high_prev",
+      "description": "收盘价向上突破前头部最高收盘价"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "bottom_volume_high", "operator": ">", "right": "prior_top_volume_high"},
+          {"op": "condition", "event": "breakout_head_close"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "用top_window窗口近似前头部量能和价格压力区，用bottom_window窗口近似当前底部回升区。",
+    "比较底部窗口最大成交量是否超过向前平移后的顶量参考。",
+    "要求股价进一步向上突破前头部最高收盘价。"
+  ],
+  "signal_day_definition": "以收盘突破前头部最高收盘价且底量已超过顶量的当日作为信号日。",
+  "manual_review_needed": [
+    "原文中的‘远远超过’没有给出精确倍数，当前仅使用严格大于；如需更强过滤，可后续增加倍数参数。",
+    "顶量区与底量区的真实分段依赖波段识别，当前按固定窗口近似。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= top_window + bottom_window + 1。",
+    "如果后续引擎支持波峰波谷分段，可把固定窗口升级为真正的头部/底部区间比较。"
+  ],
+  "explain": "底量超顶量被表达为当前底部放量强度超过前头部量压，并伴随价格突破。"
+}

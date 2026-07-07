@@ -1,0 +1,53 @@
+{
+  "name": "五线顺下",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [451, 452],
+  "source": "五线顺下指120日、60日、20日、10日、5日五条均线全部顺着同一方向向下排列，且每次小平台向下突破时，常是暴跌一瞬间。",
+  "source_summary": "若5/10/20/60/120日均线全部空头顺序排列，可视为五线顺下。",
+  "comment": "当前提取的是最标准的五线顺下结果态版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_5", "operator": "<", "right": "ma_10"},
+          {"op": "compare", "left": "ma_10", "operator": "<", "right": "ma_20"},
+          {"op": "compare", "left": "ma_20", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_120"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_5"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求五条均线呈空头顺序排列。",
+    "要求收盘位于5日均线之下，近似表达价格也处于五线顺下区。"
+  ],
+  "signal_day_definition": "以五条均线顺下且股价位于5日均线下方的当日作为五线顺下信号日。",
+  "manual_review_needed": [
+    "原文还强调小平台向下突破一瞬间最危险，当前 latest_match 只保留五线顺下主结构。"
+  ],
+  "implementation_notes": [
+    "与2-3区间、冷空气带等规则联用更符合原文。"
+  ],
+  "explain": "五线顺下被结构化为五条均线空头顺序排列的暴跌区信号。"
+}

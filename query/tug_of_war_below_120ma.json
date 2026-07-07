@@ -1,0 +1,88 @@
+{
+  "name": "120 线下拉锯战",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [651, 652, 653],
+  "source": "120线下拉锯战指股价先以绝对量顶天立地的长阳完成转势，随后沿着120日均线下方做旗形整理或拉锯洗盘，待量能萎缩后再放量突破120线和整理压力线，行情重新启动。",
+  "source_summary": "若巨量长阳转势后在120线下方缩量拉锯，随后重新放量突破120线，可视为120线下拉锯战完成。",
+  "comment": "当前提取的是日线版‘转势长阳 + 120线下旗形整理 + 放量再突破’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 160,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 120,
+    "platform_window": 15,
+    "volume_ma_window": 5,
+    "turning_volume_multiplier": 3,
+    "breakout_volume_multiplier": 1.5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"},
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_window", "description": "拉锯平台高点"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日拉锯平台高点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "turning_volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.turning_volume_multiplier", "window": 0, "description": "转势长阳放量阈值"},
+    {"id": "breakout_volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.breakout_volume_multiplier", "window": 0, "description": "突破放量阈值"},
+    {"id": "close_prev_5", "op": "ref", "field": "close", "window": 5, "description": "五日前收盘价"}
+  ],
+  "events": [
+    {"id": "break_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "收盘突破拉锯平台"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+                {"op": "compare", "left": "volume", "operator": ">=", "right": "turning_volume_threshold"}
+              ]
+            },
+            "event": "break_platform",
+            "window": "$params.platform_window",
+            "min_count": 1
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<=",
+              "right": "ma_120"
+            },
+            "event": "break_platform",
+            "window": "$params.platform_window",
+            "min_count": 5
+          },
+          {"op": "condition", "event": "break_platform"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "breakout_volume_threshold"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_prev_5"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别前段是否出现绝对放量的转势长阳。",
+    "要求转势后股价在120线下方进行一段时间的拉锯或旗形整理。",
+    "待收盘放量突破整理平台并重新站上120线时，视为120线下拉锯战完成。"
+  ],
+  "signal_day_definition": "以120线下方拉锯结束后放量突破平台并重回120线之上的当日作为完成日。",
+  "manual_review_needed": [
+    "原文还强调巨量跳空更强、回档不买量少股，当前主规则只保留形态和放量主干。",
+    "旗形整理的斜率和盘整宽度目前未单独参数化。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + platform_window + 1。",
+    "该规则是120线下拉锯战的日线近似版本。"
+  ],
+  "explain": "该规则用于识别强转势后在120线下洗盘拉锯，随后重新放量突破的启动形态。"
+}

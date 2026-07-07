@@ -1,0 +1,127 @@
+{
+  "name": "重上五线金不换",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [750, 751, 752],
+  "source": "重上五线金不换强调：当股价重新回到5、10、20、60、120日均线之上时，就是一个很好的买入点；后续只要仍维持在五线之上，仍可继续视作买入机会。",
+  "source_summary": "若股价在最近一段时间重新站上5/10/20/60/120日均线，可视为重上五线金不换成立。",
+  "comment": "当前先提取纯日线版‘重新回到五线之上’的形态主干，不包含原文中的L3主动性买卖量过滤。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_short_window": 10,
+    "ma_mid_window": 20,
+    "ma_long_window": 60,
+    "ma_anchor_window": 120,
+    "reclaim_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_short_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "reclaim_ma_120",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_120",
+      "description": "收盘价重新上穿120日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "within",
+          "window": "$params.reclaim_window",
+          "condition": {
+            "op": "condition",
+            "event": "reclaim_ma_120"
+          }
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "ma_5"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "ma_10"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "ma_20"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "ma_60"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "ma_120"
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算5、10、20、60、120日均线。",
+    "识别收盘价最近是否重新上穿120日均线，作为‘重上五线’的关键重返动作近似。",
+    "要求最新交易日同时站在五条均线之上，视为重上五线金不换成立。"
+  ],
+  "signal_day_definition": "以最近重新上穿120日均线且最新交易日维持在五线之上的阶段作为确认状态。",
+  "manual_review_needed": [
+    "原文认为重上五线后的数日都可视作买入机会，当前用reclaim_window窗口保持这种宽容度。",
+    "原文还要结合大盘和个股能量强弱，当前未纳入。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_anchor_window + reclaim_window + 1。"
+  ],
+  "explain": "该规则把重上五线金不换压成最近重新站上120日线且最新仍在五线之上的趋势状态。"
+}

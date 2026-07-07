@@ -1,0 +1,85 @@
+{
+  "name": "后量超前量",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [118, 119, 120],
+  "source": "后量超前量指股价呈波浪式上升时，后一个上升浪的成交量如果大于前一个上升浪，并且后浪放量时股价突破前浪顶部，则后续上涨空间更大。",
+  "source_summary": "后一上升浪量能大于前一上升浪，且价格突破前浪高点时，可视为后量超前量。",
+  "comment": "当前用固定长度窗口近似两个连续上升浪，避免引入额外的波段识别算法。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 70,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "wave_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_wave_volume",
+      "op": "sum",
+      "field": "volume",
+      "window": "$params.wave_window",
+      "description": "近期一浪的累计成交量"
+    },
+    {
+      "id": "prior_wave_volume",
+      "op": "ref",
+      "field": "recent_wave_volume",
+      "window": "$params.wave_window",
+      "description": "前一浪的累计成交量近似"
+    },
+    {
+      "id": "recent_wave_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.wave_window",
+      "description": "近期一浪最高收盘价"
+    },
+    {
+      "id": "prior_wave_high",
+      "op": "ref",
+      "field": "recent_wave_high",
+      "window": "$params.wave_window",
+      "description": "前一浪最高收盘价近似"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_prior_wave",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "prior_wave_high",
+      "description": "收盘价突破前一浪顶部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "recent_wave_volume", "operator": ">", "right": "prior_wave_volume"},
+          {"op": "condition", "event": "breakout_prior_wave"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算当前wave_window日累计成交量及其向前平移一段后的前浪累计量。",
+    "比较后浪累计量是否超过前浪累计量。",
+    "要求当前收盘同时向上突破前浪高点。"
+  ],
+  "signal_day_definition": "以后浪放量并突破前浪顶部的当日作为后量超前量信号完成日。",
+  "manual_review_needed": [
+    "原文强调的是波浪形上升，当前用固定窗口替代真正波段，后续可用 swing 识别进一步优化。",
+    "若希望更接近‘放量上升浪’，可增加阳线占比或上涨幅度的附加规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= wave_window * 2 + 1。",
+    "该规则把‘后量超前量’收敛为双窗口上升浪比较。"
+  ],
+  "explain": "后量超前量被结构化为后浪累计量能大于前浪，且价格同步创新高。"
+}

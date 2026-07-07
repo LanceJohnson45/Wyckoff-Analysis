@@ -1,0 +1,36 @@
+{
+  "name": "双峰压力跌势难挡",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [428, 429, 430, 431],
+  "source": "双峰压力跌势难挡通过上、下两个筹码峰、筷子线、防踏空线、低点连线和120下小平台来框定股价运行区间，强调在双峰共振压力下，股价向下突破的概率更大，但仍要预先画好防踏空线应对例外情况。",
+  "source_summary": "这是依赖筹码峰和手工连线管理股价运行区间的方法论，不是单一布尔指标。",
+  "comment": "原文核心是筹码峰、筷子线、防踏空线与低点连线的联合管理，当前不压成统一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要人工绘制高点连线、防踏空线、低点连线与筹码峰压力区。",
+    "同时要结合120下小平台与筹码峰共振判断突破方向。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的信号完成日。",
+  "manual_review_needed": [
+    "后续若系统支持筹码峰与趋势线，可把双峰压力拆成可执行的方向判别规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "双峰压力跌势难挡是筹码峰与手工连线管理的方法论，不是单一布尔指标。"
+}

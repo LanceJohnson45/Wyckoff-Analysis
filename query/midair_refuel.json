@@ -1,0 +1,58 @@
+{
+  "name": "空中加油",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [247, 248, 249],
+  "source": "空中加油强调高位短暂空中盘旋后，若主力控盘度高、浮筹少，洗盘几天就会出现量芝麻点，且盘旋时间尽可能短，随后股价突破盘旋最高收盘价，就说明油管畅通，股价还能继续飞得更远。",
+  "source_summary": "若高位短盘旋后快速缩量，并再次突破盘旋高点，可视为空中加油成立。",
+  "comment": "当前提取为短盘旋 + 缩量 + 突破盘旋高点的确认版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "circling_lookback": 10,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "circling_high", "op": "highest", "field": "close", "window": "$params.circling_lookback", "description": "空中盘旋最高收盘价近似"},
+    {"id": "circling_high_prev", "op": "ref", "field": "circling_high", "window": 1, "description": "前一日盘旋高点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "量均线"}
+  ],
+  "events": [
+    {"id": "breakout_circling_high", "op": "breakout_up", "left": "close", "right": "circling_high_prev", "description": "突破空中盘旋最高收盘价"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"},
+            "event": "breakout_circling_high",
+            "window": "$params.circling_lookback",
+            "min_count": 2
+          },
+          {"op": "condition", "event": "breakout_circling_high"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在较短的circling_lookback窗口内观察高位盘旋阶段。",
+    "要求突破前出现若干天量能低于量均线，近似量芝麻点与油管畅通。",
+    "以收盘突破盘旋最高收盘价作为空中加油确认。"
+  ],
+  "signal_day_definition": "以突破空中盘旋最高收盘价的当日作为空中加油确认日。",
+  "manual_review_needed": [
+    "原文强调盘旋时间最好不超过一周与5日线走平风险，当前只做了短窗口和缩量近似。"
+  ],
+  "implementation_notes": [
+    "当前主规则保留最关键的‘油管畅通后再突破’。"
+  ],
+  "explain": "空中加油被结构化为高位短盘旋缩量后再次突破盘旋高点。"
+}

@@ -1,0 +1,53 @@
+{
+  "name": "放量过头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [151, 152, 153, 154],
+  "source": "放量过头指股价冲过前一头部时出现巨大成交量，既可以是单根巨阳，也可以是几根温和放量阳线，总之在突破前头部时必须有成交量配合。",
+  "source_summary": "若股价突破前头部时成交量显著放大，可视为放量过头。",
+  "comment": "当前按日线突破前高并配合量能高于量均线的版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "head_lookback": 40,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "head_close_high", "op": "highest", "field": "close", "window": "$params.head_lookback", "description": "前头部最高收盘价近似"},
+    {"id": "head_close_high_prev", "op": "ref", "field": "head_close_high", "window": 1, "description": "前一日头部最高收盘价"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "成交量均线"}
+  ],
+  "events": [
+    {"id": "breakout_head", "op": "breakout_up", "left": "close", "right": "head_close_high_prev", "description": "收盘突破前头部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "breakout_head"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前head_lookback日最高收盘价，近似前一头部。",
+    "检测收盘价是否向上突破前头部。",
+    "要求突破当日成交量高于volume_ma_window日量均线，以表达放量配合。"
+  ],
+  "signal_day_definition": "以放量突破前头部的当日作为放量过头信号完成日。",
+  "manual_review_needed": [
+    "原文中的‘巨大’或‘温和放量数日’当前统一收敛成单日成交量高于量均线，后续可加入倍数参数或多日确认版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(head_lookback, volume_ma_window) + 1。"
+  ],
+  "explain": "放量过头被结构化为价格突破前头部且量能同步放大的突破信号。"
+}

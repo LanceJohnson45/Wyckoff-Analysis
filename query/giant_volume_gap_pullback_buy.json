@@ -1,0 +1,175 @@
+{
+  "name": "巨量跳空 回档买进",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [595, 596, 597],
+  "source": "巨量跳空，回档买进，强调在低迷市道下或形态合适时，如果个股突然跳空并放出巨量，说明主力意图明确，回档就是买入机会。原文还特别强调：回档最好缩量、不回补跳空缺口，且之后要再次放量上攻。",
+  "source_summary": "若出现巨量跳空上攻，随后浅回档且缩量、不补缺口，则可视为回档买点。",
+  "comment": "当前提取的是日线版‘巨量跳空 + 次日缩量浅回档仍守住缺口’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_ma_window": 10,
+    "gap_volume_multiplier": 2,
+    "shrink_volume_ratio": 0.8,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "gap_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.gap_volume_multiplier",
+      "window": 0,
+      "description": "两倍10日均量"
+    },
+    {
+      "id": "prev2_high",
+      "op": "ref",
+      "field": "high",
+      "window": 2,
+      "description": "前两日最高价"
+    },
+    {
+      "id": "prev_high",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "prev_low",
+      "op": "ref",
+      "field": "low",
+      "window": 1,
+      "description": "前一日最低价"
+    },
+    {
+      "id": "prev_open",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一日开盘价"
+    },
+    {
+      "id": "prev_close_prev2",
+      "op": "ref",
+      "field": "close",
+      "window": 2,
+      "description": "前两日收盘价"
+    },
+    {
+      "id": "prev_close",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "prev_volume",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    },
+    {
+      "id": "prev_volume_ma",
+      "op": "ref",
+      "field": "volume_ma",
+      "window": 1,
+      "description": "前一日10日均量"
+    },
+    {
+      "id": "shrink_volume_threshold",
+      "op": "mul",
+      "field": "prev_volume",
+      "field2": "$params.shrink_volume_ratio",
+      "window": 0,
+      "description": "回档缩量阈值"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "prev_open",
+            "operator": ">",
+            "right": "prev2_high"
+          },
+          {
+            "op": "compare",
+            "left": "prev_low",
+            "operator": ">",
+            "right": "prev2_high"
+          },
+          {
+            "op": "compare",
+            "left": "prev_volume",
+            "operator": ">=",
+            "right": "prev_volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "prev_volume",
+            "operator": ">=",
+            "right": "gap_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "low",
+            "operator": ">",
+            "right": "prev_high"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": "<=",
+            "right": "shrink_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "prev_high"
+          },
+          {
+            "op": "compare",
+            "left": "prev_close",
+            "operator": ">",
+            "right": "prev_close_prev2"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别前一日是否为巨量跳空上攻日。",
+    "再检查当前交易日是否只是浅回档，且最低价没有回补前一日跳空缺口。",
+    "要求回档日量能较跳空日明显缩小，且收盘仍守在缺口上沿之上。"
+  ],
+  "signal_day_definition": "以前一日巨量跳空后，次日缩量浅回档但不补缺口的交易日作为回档买进信号日。",
+  "manual_review_needed": [
+    "原文还会结合新股、弱市背景和后续再放量上攻，当前主规则先保留最核心的回档买点判断。",
+    "shrink_volume_ratio=0.8 是当前默认建议，后续可按回测结果调整。"
+  ],
+  "implementation_notes": [
+    "这里把‘回档买进’压成了‘跳空后的次日/近几日浅回档确认’。",
+    "warmup_bars >= max(volume_ma_window + 2, signal_keep_days + 2)"
+  ],
+  "explain": "该规则用于识别巨量跳空之后，缩量浅回档且不补缺口的短线承接买点。"
+}

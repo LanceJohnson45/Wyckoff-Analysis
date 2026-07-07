@@ -1,0 +1,91 @@
+{
+  "name": "拉链",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [347, 348, 349],
+  "source": "拉链是庄家在高位出货时，盘中反复拉高和打低、收盘再拉回所留下的痕迹，因此一连多日的K线都同时带上下影线，远看像拉链；无论平走、下走还是缓慢上推，本质上都意味着高位派发。",
+  "source_summary": "若近期连续多日K线同时带上下影并处于弱势均线下方，可视为拉链头部预警。",
+  "comment": "当前按‘连续多日双影线 + 已跌破60日均线’的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close"],
+  "warmup_bars": 80,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "ma_long_window": 60,
+    "zipper_days": 4,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "consecutive",
+            "length": "$params.zipper_days",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "high",
+                  "operator": ">",
+                  "right": "open"
+                },
+                {
+                  "op": "compare",
+                  "left": "high",
+                  "operator": ">",
+                  "right": "close"
+                },
+                {
+                  "op": "compare",
+                  "left": "low",
+                  "operator": "<",
+                  "right": "open"
+                },
+                {
+                  "op": "compare",
+                  "left": "low",
+                  "operator": "<",
+                  "right": "close"
+                }
+              ]
+            }
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_long"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别连续多日K线同时存在上影线和下影线。",
+    "要求当前收盘已跌到60日均线下方，作为原文‘拉链终端是暴跌’前的确认条件。"
+  ],
+  "signal_day_definition": "以连续双影线结构成立且收盘跌破60日均线的当日作为拉链确认日。",
+  "manual_review_needed": [
+    "原文强调高位派发背景和盘中出货痕迹，当前用连续双影线近似表达，未量化上下影线长短比例。",
+    "原文说明拉链既可平走也可缓慢上推，当前为了减少误报，增加了跌破60日均线确认。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + zipper_days + 1，当前取80。"
+  ],
+  "explain": "拉链被结构化为连续双影线派发痕迹，并用跌破60日线做确认。"
+}

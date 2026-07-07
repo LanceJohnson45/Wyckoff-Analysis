@@ -1,0 +1,61 @@
+{
+  "name": "120 下小平台",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [381, 382, 383],
+  "source": "120下小平台是股价跌入2-3初端后，在120日均线下方横向盘整两三周形成的小平台；该平台头上承受120线、60线天灵盖和各种价压，通常是最后的跳水跳台，一旦向下跌破平台底边就易暴跌。",
+  "source_summary": "若股价连续多日横盘在120日均线下方，且最终向下跌破平台底边，可视为120下小平台破位。",
+  "comment": "当前提取为‘先在120日均线下方横盘，再向下破位’的确认版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 160,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_longer_window": 120,
+    "platform_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"},
+    {"id": "platform_low", "op": "lowest", "field": "close", "window": "$params.platform_lookback", "description": "平台区间最低收盘价"},
+    {"id": "platform_low_prev", "op": "ref", "field": "platform_low", "window": 1, "description": "前一日平台底边"}
+  ],
+  "events": [
+    {"id": "break_platform_down", "op": "breakout_down", "left": "close", "right": "platform_low_prev", "description": "向下跌破120下小平台底边"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "consecutive",
+            "length": 3,
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "ma_120"
+            }
+          },
+          {"op": "condition", "event": "break_platform_down"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算120日均线与平台区间的最低收盘边界。",
+    "要求股价已连续多日位于120日均线下方，近似表达平台处于120线下。",
+    "检测向下跌破平台底边的瞬间，作为跳水确认。"
+  ],
+  "signal_day_definition": "以股价在120日均线下方横盘后向下跌破平台底边的当日作为120下小平台破位日。",
+  "manual_review_needed": [
+    "原文强调横盘两三周、可上倾或下倾并可能演化成三角形/楔形/旗形，当前只保留最通用的横盘破位主干。"
+  ],
+  "implementation_notes": [
+    "该规则和牛熊转换点、五线顺下等规则联用更稳。"
+  ],
+  "explain": "120下小平台被结构化为120日均线下方横盘后的向下破位信号。"
+}

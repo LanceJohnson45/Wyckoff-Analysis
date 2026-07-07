@@ -1,0 +1,95 @@
+{
+  "name": "对突破前头部的确认",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [479, 480, 481],
+  "source": "当一只股票放量过头，或者轻松过头时，不要急于介入，而应使用三三过滤制确认突破是否有效。所谓三三过滤制，是在前头部T线之上站稳三天，并且自突破位置起至少上涨3%的幅度；在没有经过三三过滤之前，对前头部的突破还不能被认为是有效突破。",
+  "source_summary": "突破前头部后，至少连续三天站稳T线，才算通过三三过滤的有效突破。",
+  "comment": "当前规则先严格落地“三天站稳T线”，原文的“至少上涨3%”因现有规则引擎缺少乘除算子，先记录到人工复核说明。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "prior_top_lookback": 60,
+    "hold_days": 3,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "prior_top",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.prior_top_lookback",
+      "description": "前头部T线的日线近似"
+    },
+    {
+      "id": "prior_top_prev",
+      "op": "ref",
+      "field": "prior_top",
+      "window": 1,
+      "description": "前一日T线近似值"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_tline",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "prior_top_prev",
+      "description": "收盘突破前头部T线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_tline"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          },
+          {
+            "op": "consecutive",
+            "days": "$params.hold_days",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": ">",
+              "right": "prior_top_prev"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近60日最高收盘价，近似前头部T线。",
+    "识别收盘向上突破前一日T线的突破日。",
+    "要求突破后连续3天收盘维持在T线之上，并伴随不弱于20日均量的成交量。"
+  ],
+  "signal_day_definition": "以突破T线后连续第三个站稳日作为三三过滤完成日。",
+  "manual_review_needed": [
+    "原文还要求自突破位置起至少上涨3%，当前引擎缺少乘除算子，暂未把该比例阈值写成可执行规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= prior_top_lookback + hold_days + 1。"
+  ],
+  "explain": "该规则用于确认前头部突破是否有效，当前先落地最核心的‘三天站稳T线’。"
+}

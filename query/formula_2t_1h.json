@@ -1,0 +1,37 @@
+{
+  "name": "2T-1H",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [353, 354, 355, 356, 357],
+  "source": "2T-1H 是高位盘整带向下跌破后的至少下跌幅度估算公式，也可用于长期下跌末期平台再破位后的抄底价格测量，属于空间计算工具。",
+  "source_summary": "这是一个下跌空间估算公式，不是单一即时布尔形态。",
+  "comment": "核心是测量目标位，而不是判断‘最新一日是否满足某个指标’。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求先确定顶部盘整带或下跌末期平台。",
+    "随后使用2T-1H公式估算向下跌破后的至少下跌目标位。",
+    "这属于目标位测量方法，不是 latest_match 型布尔规则。"
+  ],
+  "signal_day_definition": "原文未定义单一信号完成日。",
+  "manual_review_needed": [
+    "如果后续系统支持数值型 target_price 输出，可把2T-1H实现为下跌目标位计算器。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "2T-1H 是下跌目标位估算公式，不是纯布尔信号。"
+}

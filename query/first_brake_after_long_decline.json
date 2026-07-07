@@ -1,0 +1,122 @@
+{
+  "name": "久跌后第一脚刹车",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [513, 514, 515, 516],
+  "source": "久跌后的第一脚刹车，是指个股在长期下跌后出现一根放量长阳，使下跌速度第一次减缓。原文强调这通常只是试探性建仓痕迹，还不是正式买点，尤其在DIF仍位于零轴下方、股价仍处于2-3区间时应继续观望。",
+  "source_summary": "若久跌后出现放量长阳，但DIF仍在零轴下方，则更像第一脚刹车而非正式买点。",
+  "comment": "当前提取的是‘刹车出现但仍需观望’的状态信号。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume", "open"],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "lookback_decline_window": 40,
+    "min_decline_pct": -0.25,
+    "bullish_day_pct": 0.05,
+    "volume_ma_window": 20,
+    "ema_fast_window": 12,
+    "ema_slow_window": 26,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "decline_pct",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.lookback_decline_window",
+      "description": "长期下跌幅度"
+    },
+    {
+      "id": "day_return",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日涨跌幅"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    },
+    {
+      "id": "ema_fast",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_fast_window",
+      "description": "MACD快线EMA"
+    },
+    {
+      "id": "ema_slow",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_slow_window",
+      "description": "MACD慢线EMA"
+    },
+    {
+      "id": "macd_dif",
+      "op": "sub",
+      "field": "ema_fast",
+      "field2": "ema_slow",
+      "window": 0,
+      "description": "MACD DIF"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "decline_pct",
+            "operator": "<=",
+            "right": "$params.min_decline_pct"
+          },
+          {
+            "op": "compare",
+            "left": "day_return",
+            "operator": ">=",
+            "right": "$params.bullish_day_pct"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "macd_dif",
+            "operator": "<",
+            "right": 0
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近40日累计跌幅，确认已经久跌。",
+    "识别放量长阳日，近似第一脚刹车。",
+    "要求该日DIF仍位于零轴下方，表示只是减速观察，不是正式建仓买点。"
+  ],
+  "signal_day_definition": "以久跌后首次出现放量长阳、且DIF仍在零轴下方的当日作为第一脚刹车信号日。",
+  "manual_review_needed": [
+    "原文还强调以该阳线振幅去管理后续三角形阻尼震荡，当前主规则未把后续震荡区间测量纳入。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(lookback_decline_window + 1, ema_slow_window + 1)。"
+  ],
+  "explain": "该规则把‘久跌后第一脚刹车’落成久跌背景下的放量长阳减速信号，并明确仍应观望。"
+}

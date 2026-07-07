@@ -1,0 +1,73 @@
+{
+  "name": "断头铡刀",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [80, 81, 82, 83],
+  "source": "断头铡刀指股价在高位盘整后，5日、10日、20日均线处于相对收敛状态，随后出现一根阴线跌破三条均线，形成明显的下行破坏。",
+  "source_summary": "高位均线收敛后若出现一根阴线同时跌破5/10/20日均线，可视为断头铡刀。",
+  "comment": "当前按日线近似提取为均线收敛后的阴线下破三线；原文提到的巨量增强只保留在说明中。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_fast"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_mid"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_slow"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线。",
+    "识别阴线收盘。",
+    "要求该阴线收盘同时位于5/10/20日均线之下，近似表达阴断三线。"
+  ],
+  "signal_day_definition": "以阴线收盘同时跌破5/10/20日均线的当日作为断头铡刀信号日。",
+  "manual_review_needed": [
+    "原文强调均线需要相对收敛，当前未单独量化均线间距。",
+    "原文提到带巨量的断头铡刀更危险，当前未将量能增强并入主规则。"
+  ],
+  "implementation_notes": [
+    "这是一个强破坏性日K线规则。",
+    "若后续需要更严格，可增加均线收敛与实体大小条件。"
+  ],
+  "explain": "断头铡刀被提炼为阴线同时跌破5/10/20日均线的头部破坏信号。"
+}

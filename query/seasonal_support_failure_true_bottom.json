@@ -1,0 +1,82 @@
+{
+  "name": "季托失败后见真底",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [213, 214],
+  "source": "本节强调第一波构筑季托时要有放量，随后在指数继续下跌中故意跌破季托驱赶散户，若之后底部抬高、量萎缩，再重新金叉、重新站上季均线乃至突破季托平台高点，则往往见到真底。",
+  "source_summary": "若季托失效后重新站上季均线或突破季托平台高点，可视为季托失败后见真底。",
+  "comment": "当前优先提取更稳健版本：跌破后再站回60日线并突破前平台高点。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 120,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_long_window": 60,
+    "platform_lookback": 40,
+    "setup_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线/季均线近似"},
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "季托平台最高收盘价"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日平台高点"}
+  ],
+  "events": [
+    {"id": "recross_ma_long", "op": "cross_up", "left": "close", "right": "ma_long", "description": "股价重新站上季均线"},
+    {"id": "breakout_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "突破季托平台高点"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "or",
+        "conditions": [
+          {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "before",
+                "condition": {"op": "compare", "left": "close", "operator": "<", "right": "ma_long"},
+                "event": "recross_ma_long",
+                "window": "$params.setup_lookback",
+                "min_count": 1
+              },
+              {"op": "condition", "event": "recross_ma_long"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {
+                "op": "before",
+                "condition": {"op": "compare", "left": "close", "operator": "<", "right": "ma_long"},
+                "event": "breakout_platform",
+                "window": "$params.setup_lookback",
+                "min_count": 1
+              },
+              {"op": "condition", "event": "breakout_platform"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认过去setup_lookback日内曾失守60日季均线近似季托失败。",
+    "之后检测股价是否重新站回60日线，或进一步突破季托平台高点。",
+    "将上述回收与突破动作视为真底逐步确认。"
+  ],
+  "signal_day_definition": "以重新站回季均线或突破季托平台高点的当日作为真底确认日。",
+  "manual_review_needed": [
+    "原文还强调第一波构筑季托时要稍有放量、底部抬高与量萎缩，当前未全部并入主规则。"
+  ],
+  "implementation_notes": [
+    "这里把季均线近似为60日均线。"
+  ],
+  "explain": "季托失败后见真底被结构化为失守季托后重新站上季均线或突破前平台。"
+}

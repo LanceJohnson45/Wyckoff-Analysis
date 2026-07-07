@@ -1,0 +1,63 @@
+{
+  "name": "缺口不补磁悬浮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [458, 459],
+  "source": "缺口不补磁悬浮指个股启动时向上跳空突破关键位置，三天内不回补缺口，并且从突破位置起至少上涨3%，通过三三过滤后可视为有效突破黑马。",
+  "source_summary": "若向上跳空后连续三天不补缺口且近三日涨幅达到3%，可视为磁悬浮成立。",
+  "comment": "当前按三三过滤的核心版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "gap_holding_days": 3,
+    "min_rise_pct": 0.03,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "high_ref_3", "op": "ref", "field": "high", "window": 3, "description": "三日前最高价，近似缺口上沿参考"},
+    {"id": "close_pct_3", "op": "pct_change", "field": "close", "window": "$params.gap_holding_days", "description": "近三日累计涨幅"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "consecutive",
+            "length": "$params.gap_holding_days",
+            "condition": {
+              "op": "compare",
+              "left": "low",
+              "operator": ">",
+              "right": "high_ref_3"
+            }
+          },
+          {
+            "op": "compare",
+            "left": "close_pct_3",
+            "operator": ">=",
+            "right": "$params.min_rise_pct"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "观察近三日低点是否始终高于三日前高点，近似表达缺口三天不补。",
+    "计算近三日累计涨幅。",
+    "要求近三日累计涨幅达到3%，作为三三过滤通过的确认。"
+  ],
+  "signal_day_definition": "以满足三天不补缺口且近三日涨幅达到3%的当日作为磁悬浮信号完成日。",
+  "manual_review_needed": [
+    "原文的跳空缺口参考点应是突破当日缺口边沿，当前用三日前高点近似表达，仍需人工复核。"
+  ],
+  "implementation_notes": [
+    "这是三三过滤在跳空突破场景下的简化实现。"
+  ],
+  "explain": "缺口不补磁悬浮被结构化为三三过滤通过后的跳空持续强势信号。"
+}

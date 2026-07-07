@@ -1,0 +1,105 @@
+{
+  "name": "美人肩",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [868, 869, 870, 871],
+  "source": "美人肩要求股价在第一波放量建仓后，不作深回档，而是在缩量盘整或盘升中维持5日、10日均线通气，使后一个肩点高于前一个肩点；一旦量能重新注入并向上突破，就进入加速上行。",
+  "source_summary": "若股价缩量盘整时5/10日均线保持通气，且后肩高于前肩，随后放量突破，可视为美人肩成立。",
+  "comment": "当前用‘5/10通气 + 缩量 + 后肩抬高 + 突破’来近似表达美人肩。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "platform_lookback": 15,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "肩部平台高点近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日肩部高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_shoulder",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "向上突破美人肩平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">=",
+            "right": "ma_10"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_shoulder"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日均线和肩部平台高点。",
+    "要求盘整过程中5日均线不弱于10日均线，近似肩部保持通气。",
+    "当股价放量突破肩部平台时，视为美人肩成立。"
+  ],
+  "signal_day_definition": "以放量突破肩部平台的当日作为美人肩确认日。",
+  "manual_review_needed": [
+    "原文还强调OBV开口和灵稳榜/沙盘曲线，当前主规则未纳入这些能量增强条件。"
+  ],
+  "implementation_notes": [
+    "这是强势庄股浅回档、通气肩部的日线版本。"
+  ],
+  "explain": "美人肩被结构化为5/10通气的缩量肩部平台，随后放量向上突破。"
+}

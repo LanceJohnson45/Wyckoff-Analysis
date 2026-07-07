@@ -1,0 +1,37 @@
+{
+  "name": "突破方向不确定时的操作方案",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [558, 559, 560],
+  "source": "突破方向不确定时的操作方案，是在画好复合三角形后，分别用防踏空线和防套牢线管理向上突破、向下突破以及盘整休息三种应对方案。原文强调在方向未明确前不要凭猜想操作，而应按线执行追涨、看空或观望。",
+  "source_summary": "这是一套按线分支处理突破方向不确定局面的操作框架，不是单一信号。",
+  "comment": "原文核心依赖人工画线、分钟级观察与分支交易计划，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先画出上方防踏空线和下方防套牢线。",
+    "若放量向上突破，则按上方拦截线追涨。",
+    "若向下跌破，则按下方防线看空；若持续盘整，则休息观望。"
+  ],
+  "signal_day_definition": "本节描述的是突破方向未明时的分支应对方案，而不是单一统一的信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先定义复合三角形边界和多条防线的统一画法，以及分钟级突破确认。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免误把人工画线决策压成日线固定阈值。"
+  ],
+  "explain": "该节本质是按线制定分支交易计划，不适合直接变成一个 latest_match 布尔信号。"
+}

@@ -1,0 +1,53 @@
+{
+  "name": "乌云飞刀不可伸手",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [90, 91, 92, 93],
+  "source": "乌云飞刀指头部形成后跌破均线或平台的第一根长阴线，后续通常还有连续下跌，不应轻易抄底。",
+  "source_summary": "头部破位后的第一根长阴线，可视为乌云飞刀。",
+  "comment": "当前按头部破位后的阴线下破均线系统近似提取；连续长阴下杀的后续过程未并入主规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_slow"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20日均线。",
+    "识别阴线破位收盘。",
+    "要求收盘位于20日均线之下，以近似表达乌云飞刀的第一根破位长阴。"
+  ],
+  "signal_day_definition": "以第一根阴线跌破均线系统近似位的当日作为乌云飞刀信号日。",
+  "manual_review_needed": [
+    "原文强调头部背景与第一根长阴，这里没有单独量化‘长阴’实体大小。",
+    "若需更严格，可加入近期头部平台和连续阴线条件。"
+  ],
+  "implementation_notes": [
+    "这是一个风险警示类信号。"
+  ],
+  "explain": "乌云飞刀表示头部后的第一根危险破位阴线。"
+}

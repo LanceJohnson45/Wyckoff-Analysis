@@ -1,0 +1,36 @@
+{
+  "name": "资金榜",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [434, 435, 436, 437],
+  "source": "资金榜强调在指数下跌末期通过成交额排行、资金榜第一榜、十九强榜和形态强弱对比去识别庄家建仓或出货痕迹；核心在于观察资金榜上反复出现且形态相对指数更强的个股，从而提前锁定未来黑马或死马。",
+  "source_summary": "这是结合资金榜、十九强和相对指数强弱来识别庄股建仓/出货的方法论，不是单一布尔指标。",
+  "comment": "原文关键数据源是资金榜、十九强以及相对指数强弱，当前系统没有这些外部排行与指数对照数据。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求先看资金榜排行和十九强榜，识别主力资金反复出现的个股。",
+    "再结合形态与指数强弱，区分是建仓庄股还是出货庄股。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的日线信号完成日。",
+  "manual_review_needed": [
+    "如果后续系统接入资金榜、十九强与指数相对强弱数据，可把该章拆成‘建仓榜频繁出现’与‘出货榜频繁出现’两类规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "资金榜是外部排行与相对强弱结合的方法论，不是单一日线布尔指标。"
+}

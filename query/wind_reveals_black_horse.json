@@ -1,0 +1,97 @@
+{
+  "name": "风吹草低见牛羊",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [581, 582],
+  "source": "风吹草低见牛羊，是指指数在下跌、市场普遍承压时，仍然能逆势走强、形态较好的个股会更清晰地显露出来。这类股票若能够顶紧右上角、突破前头并持续强于指数，往往容易成为后市反弹或底部启动时的大黑马。",
+  "source_summary": "若市场弱势时个股仍维持强势并准备突破前头，可视为潜在黑马筛选信号。",
+  "comment": "当前单票规则无法直接接入指数对比，先用个股逆势强结构的近似版本表达。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "trendline_breakout_lookback": 20,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.trendline_breakout_lookback",
+      "description": "近窗口前头高点近似"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近窗口前头高点"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_recent_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "recent_high_prev",
+      "description": "收盘突破前头高点近似"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_recent_head"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前头高点近似、20日均线和10日均量。",
+    "要求个股收盘突破前头高点，近似顶紧右上角后的强势表现。",
+    "要求股价仍位于20日均线上方，且量能不弱。"
+  ],
+  "signal_day_definition": "以弱市背景下仍然准备突破前头并保持强势结构的当日作为潜在黑马确认日。",
+  "manual_review_needed": [
+    "原文关键还依赖‘强于指数’，当前系统单票规则未显式接入指数比较序列。"
+  ],
+  "implementation_notes": [
+    "后续若引擎接入指数对照序列，可进一步提高该规则的原文贴合度。"
+  ],
+  "explain": "该规则用于筛出弱市里依旧保持强势并准备上破前头的潜在黑马。"
+}

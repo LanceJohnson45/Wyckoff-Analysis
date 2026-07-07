@@ -1,0 +1,61 @@
+{
+  "name": "水平筷子线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [693, 694, 695, 696],
+  "source": "水平筷子线指在60日线和120日线黄金交叉后的暖气带上方，连接两个高点形成高点连线，再从前一高点画出水平线，两线形成筷子状压力区；股价一旦放量突破筷子线，就往往进入快速拉升区。",
+  "source_summary": "若暖气带开通后股价放量突破前高构成的水平筷子线，可视为水平筷子线成立。",
+  "comment": "当前先把水平筷子线近似成‘暖气带开通后突破前高水平线’的版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 140,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_mid_window": 60,
+    "ma_long_window": 120,
+    "t_line_lookback": 40,
+    "volume_ma_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"},
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "前头部水平线近似"},
+    {"id": "t_line_prev", "op": "ref",
+      "field": "t_line",
+      "window": 1,
+      "description": "前一日水平筷子线近似"
+    },
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"}
+  ],
+  "events": [
+    {"id": "break_chopsticks", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "放量突破水平筷子线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60", "operator": ">", "right": "ma_120"},
+          {"op": "condition", "event": "break_chopsticks"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认60日线已上穿并站在120日线之上，近似暖气带开通。",
+    "计算前头部水平线，近似水平筷子线压力。",
+    "若股价放量突破该水平压力，视为水平筷子线成立。"
+  ],
+  "signal_day_definition": "以股价放量突破水平筷子线的当日作为成立日。",
+  "manual_review_needed": [
+    "原文的完整筷子线包含高点连线与水平线双重结构，当前主规则先保留更通用的水平线突破版本。"
+  ],
+  "implementation_notes": [
+    "这是水平筷子线的基础突破模型。"
+  ],
+  "explain": "该规则用于识别暖气带开通后，股价对关键水平筷子线的放量突破。"
+}

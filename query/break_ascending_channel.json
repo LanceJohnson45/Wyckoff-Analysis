@@ -1,0 +1,127 @@
+{
+  "name": "突破上升通道",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [729, 730, 731],
+  "source": "突破上升通道指股价先在由120日均线或60日均线作为下轨、代表性高点连线或斜上筷子线作为上轨的通道内运行；当股价在通道中被上下轨挤压后，向上突破上轨，往往意味着后续进入加速爬升阶段。",
+  "source_summary": "若股价长期沿120日均线附近上行并最终突破近阶段通道高点，可视为突破上升通道成立。",
+  "comment": "当前采用120日均线作为优先下轨、近阶段高点作为上轨的日线近似版。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "low"],
+  "warmup_bars": 180,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_base_window": 120,
+    "slope_lookback": 10,
+    "channel_lookback": 30,
+    "setup_min_days": 10,
+    "support_floor_ratio": 0.97,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_base_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "ma_120_ref",
+      "op": "ref",
+      "field": "ma_120",
+      "window": "$params.slope_lookback",
+      "description": "向前平移后的120日均线"
+    },
+    {
+      "id": "ma_120_lower",
+      "op": "mul",
+      "field": "ma_120",
+      "field2": "$params.support_floor_ratio",
+      "window": 0,
+      "description": "120日均线下方容差带"
+    },
+    {
+      "id": "channel_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.channel_lookback",
+      "description": "通道上轨的收盘近似"
+    },
+    {
+      "id": "channel_high_prev",
+      "op": "ref",
+      "field": "channel_high",
+      "window": 1,
+      "description": "前一日通道上轨"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_channel",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "channel_high_prev",
+      "description": "收盘突破上升通道上轨"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "ma_120",
+            "operator": ">",
+            "right": "ma_120_ref"
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">=",
+                  "right": "ma_120"
+                },
+                {
+                  "op": "compare",
+                  "left": "low",
+                  "operator": ">=",
+                  "right": "ma_120_lower"
+                }
+              ]
+            },
+            "event": "breakout_channel",
+            "window": "$params.channel_lookback",
+            "min_count": "$params.setup_min_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_channel"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算120日均线，并要求其相对slope_lookback日前继续上行，以近似稳定的通道下轨。",
+    "在channel_lookback窗口内要求价格多数时间站在120日均线附近且低点不明显跌穿下轨，近似‘通道内挤压运行’。",
+    "当收盘价突破近阶段通道高点时，视为突破上升通道并进入加速上涨阶段。"
+  ],
+  "signal_day_definition": "以收盘突破通道上轨的当日作为突破上升通道确认日。",
+  "manual_review_needed": [
+    "原文允许60日均线替代120日均线作为下轨，且上轨可取代表性高点连线或斜上筷子线，当前统一为120日均线 + 近阶段高点近似。",
+    "原文还提到UP、UV洗盘可能出现在突破前，当前主规则未单独并入。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_base_window + channel_lookback + 1。",
+    "support_floor_ratio 用于表达120日均线下轨的容差带。"
+  ],
+  "explain": "突破上升通道被结构化为沿120日均线附近运行一段时间后，向上突破近阶段通道高点。"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "强于大盘",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [834, 835, 836, 837],
+  "source": "强于大盘要求在指数走弱、例如上证指数5日与10日均线死叉或跌破20日均线时，个股仍保持5/10均线不死叉、甚至不跌反涨，说明其明显强于大盘；这种方法必须结合指数所处阶段使用。",
+  "source_summary": "这是一个以指数为参照物的相对强弱选股方法，当前不能仅凭单只股票日线数据独立执行。",
+  "comment": "用户当前输入约束是单只股票日线O/H/L/C/V，本节额外依赖大盘指数序列。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先计算大盘指数的5/10或20日均线状态，确认指数处于死叉下跌或接近阶段底部的环境。",
+    "再比较个股自身5/10或20日均线状态，筛选出未同步走弱、甚至逆势上行的个股。",
+    "结合量价形态与能量系统进一步过滤候选黑马。"
+  ],
+  "signal_day_definition": "本节描述的是相对指数的选股框架，不存在可由单票日线数据独立输出的统一完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要在数据入口中增加指数行情，并支持‘个股相对指数状态比较’。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免在缺失指数数据的情况下给出伪相对强弱结论。"
+  ],
+  "explain": "强于大盘是相对强弱选股法，当前单靠单只股票O/H/L/C/V无法独立实现。"
+}

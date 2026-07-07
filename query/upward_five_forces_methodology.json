@@ -1,0 +1,38 @@
+{
+  "name": "涨跌五势一",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [900, 901, 902, 903, 904, 905, 906],
+  "source": "原文把所有上涨线路概括成五种基本涨势：涨斜上、涨直横、涨横直、涨拱、涨凹，并进一步提出涨小拱、涨小凹等改良线路。其核心用途是从整体路径上判断主力是以空间换时间还是以时间换空间地完成建仓与拉升。",
+  "source_summary": "上涨五势是用于描述股价整体上升路径的形态学地图，不是单一日触发指标。",
+  "comment": "原文讨论的是连续路径、弧形快慢和目标位推导，更像走势分类方法论而非一个 latest_match 规则。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "识别股价当前上涨路径更接近涨斜上、涨拱、涨凹还是其改良形态。",
+    "结合路径快慢判断主力是以空间换时间还是以时间换空间。",
+    "用该路径框架辅助解释后续平台、弧形和加速段的意义。"
+  ],
+  "signal_day_definition": "本节没有单一固定的信号完成日，描述的是上涨线路分类框架。",
+  "manual_review_needed": [
+    "若未来要自动化，需要先定义曲率、斜率变化、阶段切换点和目标位估算算法。",
+    "原文引用的2MP目标位与建仓区密集成交价当前未并入统一规则引擎。"
+  ],
+  "implementation_notes": [
+    "建议未来把它作为高阶走势分类器，而不是单一买卖布尔规则。"
+  ],
+  "explain": "上涨五势更适合做路径分类和状态解释，当前仅保留方法论结构。"
+}

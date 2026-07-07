@@ -1,0 +1,111 @@
+{
+  "name": "双炮过河",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [811, 812, 813, 814],
+  "source": "双炮过河描述股价在建仓区压力线下方先形成一组多方炮夯实，再以第二组多方炮向上越过‘汉界楚河’压力线，往往意味着股价将进入加速上涨阶段。",
+  "source_summary": "若股价在压力线附近连续完成两组多方炮并最终突破压力线，可视为双炮过河成立。",
+  "comment": "当前把‘双炮’收敛成近期存在两次强势推进，且最新一次完成对压力线的突破。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "pressure_lookback": 30,
+    "volume_ma_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "pressure_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.pressure_lookback",
+      "description": "楚河压力线近似"
+    },
+    {
+      "id": "pressure_high_prev",
+      "op": "ref",
+      "field": "pressure_high",
+      "window": 1,
+      "description": "前一日压力线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "close_prev_1",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "open_prev_1",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一日开盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_river",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "pressure_high_prev",
+      "description": "突破楚河压力线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_river"
+          },
+          {
+            "op": "compare",
+            "left": "close_prev_1",
+            "operator": "<",
+            "right": "open_prev_1"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算楚河压力线近似位。",
+    "要求最新突破日前一日存在一次回压阴线，近似双炮中的中继整理。",
+    "当最新交易日以阳线放量突破压力线时，视为双炮过河成立。"
+  ],
+  "signal_day_definition": "以第二次强势推进并突破楚河压力线的当日作为双炮过河确认日。",
+  "manual_review_needed": [
+    "原文里的双炮可以是更完整的多方炮组合，当前只保留‘前一日回压 + 当日放量突破’的可执行主干。"
+  ],
+  "implementation_notes": [
+    "如果后续需要更严格还原，可显式引用已有多方炮spec做组合验证。"
+  ],
+  "explain": "双炮过河被收敛成压力线下方夯实后，再次以强阳线放量越过压力线。"
+}

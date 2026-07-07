@@ -1,0 +1,74 @@
+{
+  "name": "三死叉见顶（二）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [171, 172, 173, 174],
+  "source": "三死叉头背离指两次价格死叉、两次量死叉和两次MACD死叉中，第二次价格死叉的位置比第一次更高，而第二次量死叉和MACD死叉的位置比第一次更低，形成价强量弱、动能衰减的头部背离。",
+  "source_summary": "若近期发生两轮死叉，且价格位置抬高而量能与MACD位置降低，可视为三死叉头背离。",
+  "comment": "由于原文是事件位点之间的比较，当前按固定参考间隔近似两轮死叉之间的高低关系。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 110,
+  "indicator_type": "trend_rule",
+  "params": {
+    "price_fast_window": 5,
+    "price_slow_window": 10,
+    "volume_fast_window": 5,
+    "volume_slow_window": 10,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "lookback": 30,
+    "cross_gap": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "price_ma_fast", "op": "sma", "field": "close", "window": "$params.price_fast_window", "description": "5日价格均线"},
+    {"id": "price_ma_slow", "op": "sma", "field": "close", "window": "$params.price_slow_window", "description": "10日价格均线"},
+    {"id": "volume_ma_fast", "op": "sma", "field": "volume", "window": "$params.volume_fast_window", "description": "5日量均线"},
+    {"id": "volume_ma_slow", "op": "sma", "field": "volume", "window": "$params.volume_slow_window", "description": "10日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "macd_dea", "op": "ema", "field": "macd_dif", "window": "$params.macd_signal_window", "description": "MACD DEA"},
+    {"id": "close_ref_gap", "op": "ref", "field": "close", "window": "$params.cross_gap", "description": "参考前一轮价格位置"},
+    {"id": "volume_ma_fast_ref_gap", "op": "ref", "field": "volume_ma_fast", "window": "$params.cross_gap", "description": "参考前一轮量能位置"},
+    {"id": "macd_dif_ref_gap", "op": "ref", "field": "macd_dif", "window": "$params.cross_gap", "description": "参考前一轮MACD位置"}
+  ],
+  "events": [
+    {"id": "price_cross_down", "op": "cross_down", "left": "price_ma_fast", "right": "price_ma_slow", "description": "价格死叉"},
+    {"id": "volume_cross_down", "op": "cross_down", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "量均线死叉"},
+    {"id": "macd_cross_down", "op": "cross_down", "left": "macd_dif", "right": "macd_dea", "description": "MACD死叉"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "count", "window": "$params.lookback", "condition": {"op": "condition", "event": "price_cross_down"}, "gte": 2},
+          {"op": "count", "window": "$params.lookback", "condition": {"op": "condition", "event": "volume_cross_down"}, "gte": 2},
+          {"op": "count", "window": "$params.lookback", "condition": {"op": "condition", "event": "macd_cross_down"}, "gte": 2},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_ref_gap"},
+          {"op": "compare", "left": "volume_ma_fast", "operator": "<", "right": "volume_ma_fast_ref_gap"},
+          {"op": "compare", "left": "macd_dif", "operator": "<", "right": "macd_dif_ref_gap"},
+          {"op": "condition", "event": "price_cross_down"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算价格、量能和MACD三组死叉，并统计近期是否都已至少出现两次。",
+    "用cross_gap日前的close、volume_ma_fast和macd_dif近似第一轮死叉位置。",
+    "若当前价格高于前一轮参考而量能与MACD低于前一轮参考，则近似判定为三死叉头背离。"
+  ],
+  "signal_day_definition": "以第二轮价格死叉形成且背离关系成立的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文要求的是严格‘事件发生点位’之间的比较，当前用固定间隔ref近似，后续可引入事件取值规则进一步收紧。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + macd_signal_window + lookback + cross_gap + 1。"
+  ],
+  "explain": "三死叉头背离被近似为两轮死叉后价格抬高而量能与MACD走弱的顶部背离。"
+}

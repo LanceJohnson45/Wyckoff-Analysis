@@ -1,0 +1,47 @@
+{
+  "name": "阳阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [304, 305, 306],
+  "source": "阳阴墓碑由一根较长阳线和一根较长阴线组成，常出现在庄家获利丰厚的高位，代表用阳线诱多、再用阴线杀跌套人；若之后跌破60日生命线，则头部成立。",
+  "source_summary": "若高位先阳后阴形成墓碑组合，可视为阳阴墓碑头部。",
+  "comment": "当前按标准两日阳后阴的头部组合提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "open_ref_1", "op": "ref", "field": "open", "window": 1, "description": "前一日开盘价"},
+    {"id": "close_ref_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close_ref_1", "operator": ">", "right": "open_ref_1"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_1"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别前一日为阳线、当前为阴线的两日组合。",
+    "要求当前阴线已把阳线的收盘位打回去，近似墓碑杀跌。"
+  ],
+  "signal_day_definition": "以第二根阴线完成墓碑组合的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文强调高位背景与跌破60日线确认，当前只提取K线组合本体。"
+  ],
+  "implementation_notes": [
+    "这是标准的两日墓碑组合。"
+  ],
+  "explain": "阳阴墓碑被结构化为高位先阳后阴的杀跌组合。"
+}

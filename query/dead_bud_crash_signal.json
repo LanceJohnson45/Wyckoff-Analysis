@@ -1,0 +1,60 @@
+{
+  "name": "死芽是暴跌先兆",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [421, 422, 423],
+  "source": "死芽指多条均线先密集收敛于一点，随后向下舒展发散；无论是三线、四线还是五线死芽，都意味着不同级别的恐慌套牢和下跌开端，五线死芽杀伤力最强。",
+  "source_summary": "若多条均线由收敛转为向下发散，可视为死芽形成。",
+  "comment": "当前按五线死芽的通用日线版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "ma_5_prev", "op": "ref", "field": "ma_5", "window": 1, "description": "前一日5日均线"},
+    {"id": "ma_10_prev", "op": "ref", "field": "ma_10", "window": 1, "description": "前一日10日均线"},
+    {"id": "ma_20_prev", "op": "ref", "field": "ma_20", "window": 1, "description": "前一日20日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_5", "operator": "<", "right": "ma_5_prev"},
+          {"op": "compare", "left": "ma_10", "operator": "<", "right": "ma_10_prev"},
+          {"op": "compare", "left": "ma_20", "operator": "<", "right": "ma_20_prev"},
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_60_prev"},
+          {"op": "compare", "left": "ma_5", "operator": "<", "right": "ma_10"},
+          {"op": "compare", "left": "ma_10", "operator": "<", "right": "ma_20"},
+          {"op": "compare", "left": "ma_20", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线及短中期均线前一日方向。",
+    "要求短中期均线同步向下，近似表达芽由收敛点向下舒展。",
+    "要求均线层级呈现5<10<20<60<120，近似表达死芽后的空头发散。"
+  ],
+  "signal_day_definition": "以多条均线同步转弱并向下发散的当日作为死芽信号完成日。",
+  "manual_review_needed": [
+    "原文强调‘先集结一点再舒展开来’，当前未显式加入前期收敛宽度阈值，只保留结果态。"
+  ],
+  "implementation_notes": [
+    "该规则偏向五线死芽，三线/四线死芽可后续拆成更轻量的sister spec。"
+  ],
+  "explain": "死芽被结构化为多条均线同步向下舒展发散的暴跌先兆。"
+}

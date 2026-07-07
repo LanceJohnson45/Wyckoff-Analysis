@@ -1,0 +1,49 @@
+{
+  "name": "长阳反弹逃命",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [107, 108, 109, 110],
+  "source": "长阳反弹逃命指头部下跌后的某次长阳反弹或诱多长阳，为持仓者提供最后的高位撤退机会，而非重新看多信号。",
+  "source_summary": "头部下跌趋势中若出现反抽长阳，可视为长阳反弹逃命。",
+  "comment": "当前按跌势中的反弹阳线近似提取，属于风险管理类规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 80,
+  "indicator_type": "other",
+  "params": {
+    "signal_keep_days": 2
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60", "operator": "<=", "right": "ma_60_prev"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_60"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线及其方向。",
+    "要求60日均线仍未转强，代表整体仍处于弱势背景。",
+    "要求当前出现一根阳线反弹，但收盘仍在60日均线之下。"
+  ],
+  "signal_day_definition": "以弱势趋势中的反弹阳线当日作为长阳反弹逃命信号日。",
+  "manual_review_needed": [
+    "原文强调头部、派发和诱多背景，当前只保留弱势趋势中反弹阳线的核心。",
+    "未单独量化‘长阳’实体大小。"
+  ],
+  "implementation_notes": [
+    "这是撤退信号，不是入场信号。"
+  ],
+  "explain": "长阳反弹逃命表示弱势趋势中的诱多或逃命反抽。"
+}

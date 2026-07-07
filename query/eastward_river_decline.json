@@ -1,0 +1,55 @@
+{
+  "name": "一江春水向东流",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [203, 204, 205],
+  "source": "一江春水向东流描述股价在下跌通道中，K线与多条均线几乎等速、等距地向下流动，均线系统形成平滑下行排列，使抢反弹资金兴趣不大，股价容易一路下滑。",
+  "source_summary": "若15/30/45/60日均线保持空头顺序且收盘位于其下方，可近似视为一江春水向东流。",
+  "comment": "当前用均线空头顺序与价格持续在其下方来近似‘等速、等距下跌’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_1_window": 15,
+    "ma_2_window": 30,
+    "ma_3_window": 45,
+    "ma_4_window": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_15", "op": "sma", "field": "close", "window": "$params.ma_1_window", "description": "15日均线"},
+    {"id": "ma_30", "op": "sma", "field": "close", "window": "$params.ma_2_window", "description": "30日均线"},
+    {"id": "ma_45", "op": "sma", "field": "close", "window": "$params.ma_3_window", "description": "45日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_4_window", "description": "60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_15", "operator": "<=", "right": "ma_30"},
+          {"op": "compare", "left": "ma_30", "operator": "<=", "right": "ma_45"},
+          {"op": "compare", "left": "ma_45", "operator": "<=", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "ma_15"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算15/30/45/60日均线。",
+    "要求多条均线保持空头顺序。",
+    "要求收盘价位于最短均线下方，近似表达K线和均线整体向下流动。"
+  ],
+  "signal_day_definition": "当最新交易日仍满足均线空头下行结构时，视为一江春水向东流仍有效。",
+  "manual_review_needed": [
+    "原文强调‘等速、等距地下跌’，当前未单独量化均线间距与速度一致性。"
+  ],
+  "implementation_notes": [
+    "这是风险回避规则，不是做多触发规则。"
+  ],
+  "explain": "一江春水向东流被结构化为多条均线空头顺序下的平滑下跌结构。"
+}

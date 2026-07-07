@@ -1,0 +1,37 @@
+{
+  "name": "车到山前必有路",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [642, 643, 644],
+  "source": "车到山前必有路强调：股价上行时会被筹码峰压力堵住，但若该股足够强势、总体涨幅不大，且属于上升中继坨或底坨，那么最终会突破所有压力，头顶一片蓝天。",
+  "source_summary": "这是建立在筹码峰压力、坨理论和基本面/大势配合上的突破方法，不适合直接压成日线规则。",
+  "comment": "原文核心是筹码峰压力带和坨理论分类，当前系统没有筹码峰分布输入。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先识别上方主要筹码峰和相应压力带。",
+    "结合坨理论判断当前属于底坨还是上升中继坨。",
+    "确认股价是否足够强势并最终突破全部压力带。"
+  ],
+  "signal_day_definition": "本节描述的是筹码峰与坨理论联合判断的突破方法，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入筹码峰分布与坨区识别能力。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把筹码峰压力和坨理论硬压成单一日线模板。"
+  ],
+  "explain": "该节依赖筹码峰压力和坨理论分类，当前单靠日线O/H/L/C/V无法完整实现。"
+}

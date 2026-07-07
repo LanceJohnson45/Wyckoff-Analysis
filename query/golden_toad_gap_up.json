@@ -1,0 +1,140 @@
+{
+  "name": "蛤蟆跳空",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [785, 786, 787],
+  "source": "蛤蟆跳空是金蛤蟆形态的强势升级版：股价先完成蛤蟆过线，即突破两眼连线，若随后再以跳空高开并继续放量上行，则说明主力急于拉升，强度高于普通蛤蟆过线。",
+  "source_summary": "若金蛤蟆眼线被突破后，又出现不补缺口的跳空放量上攻，可视为蛤蟆跳空成立。",
+  "comment": "当前在既有金蛤蟆基础上，增加了‘跳空且不补缺口’这一更强确认条件。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 130,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "eye_lookback": 40,
+    "ma_long_window": 60,
+    "ma_anchor_window": 120,
+    "volume_ma_window": 20,
+    "volume_multiplier": 1.5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "eye_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.eye_lookback",
+      "description": "蛤蟆眼线高点近似"
+    },
+    {
+      "id": "eye_high_prev",
+      "op": "ref",
+      "field": "eye_high",
+      "window": 1,
+      "description": "前一日蛤蟆眼线高点"
+    },
+    {
+      "id": "prev_high",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日均量"
+    },
+    {
+      "id": "volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.volume_multiplier",
+      "window": 0,
+      "description": "放量阈值"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_eye",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "eye_high_prev",
+      "description": "突破蛤蟆眼线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_eye"
+          },
+          {
+            "op": "compare",
+            "left": "open",
+            "operator": ">",
+            "right": "prev_high"
+          },
+          {
+            "op": "compare",
+            "left": "low",
+            "operator": ">",
+            "right": "prev_high"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">=",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算蛤蟆眼线高点、60/120日均线和放量阈值。",
+    "要求股价突破蛤蟆眼线，同时以跳空高开的方式直接越过前一日高点并不回补缺口。",
+    "当日若继续放量并维持在60日线上方，则视为蛤蟆跳空成立。"
+  ],
+  "signal_day_definition": "以跳空突破蛤蟆眼线且缺口未被回补的当日作为蛤蟆跳空确认日。",
+  "manual_review_needed": [
+    "原文还区分普通蛤蟆过线与更强的蛤蟆跳空，当前主规则只输出更强版本。"
+  ],
+  "implementation_notes": [
+    "这是既有金蛤蟆形态的强势升级版。"
+  ],
+  "explain": "蛤蟆跳空被结构化为金蛤蟆眼线突破过程中的跳空放量强化确认。"
+}

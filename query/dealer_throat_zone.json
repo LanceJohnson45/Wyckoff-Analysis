@@ -1,0 +1,42 @@
+{
+  "name": "庄家咽喉部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [125, 126, 127, 128, 129],
+  "source": "庄家咽喉部强调用周K线观察庄家底部建仓完成后的薄弱部位，要求60周均线出现地灵盖，并统计见底回升以来到量芝麻点区域的总换手率达到250%以上，才能认定为庄股咽喉部。",
+  "source_summary": "这是依赖周线结构与累计换手率的庄股识别方法，不适合直接落成只基于日线O/H/L/C/V的单一布尔信号。",
+  "comment": "缺少周线地灵盖和换手率所需的流通股本字段，当前只能保留为不可直接计算。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {
+    "weekly_ma_window": 60,
+    "turnover_threshold_pct": 250
+  },
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求先在周线级别确认60周均线的地灵盖结构。",
+    "随后还要统计底部见底回升到量芝麻点区间的总换手率是否达到turnover_threshold_pct以上。",
+    "由于当前仓库只有日线O/H/L/C/V，缺少周线原始定义和流通股本，故不输出可执行主规则。"
+  ],
+  "signal_day_definition": "原文未定义单一的日线信号完成日。",
+  "manual_review_needed": [
+    "如果后续补充流通股本或换手率数据，可重新尝试把周线版本结构化。",
+    "是否允许用日线近似周线并不解决换手率缺失问题，因此当前仍标记为不可计算。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。",
+    "核心缺口不是均线周期，而是周线语义与换手率/股本数据。"
+  ],
+  "explain": "庄家咽喉部依赖周线地灵盖和累计换手率，现有日线 O/H/L/C/V 无法完整还原。"
+}

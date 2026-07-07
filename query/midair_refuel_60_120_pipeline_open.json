@@ -1,0 +1,102 @@
+{
+  "name": "空中加油 60，120 管道畅通",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [535, 536, 537, 538],
+  "source": "空中加油60、120管道畅通，是指股价在2+3区间突破前头部后进行较长时间的横向盘整，虽然5/10/20日均线之间的短管道可能已经封闭，但只要60日和120日均线之间仍保持畅通，平台最终向上突破，就说明后续上涨行情仍有延续空间。",
+  "source_summary": "若平台上方再度突破且60日线位于120日线上方，可视为60/120油管畅通版的空中加油延续。",
+  "comment": "当前主规则按‘平台突破 + 60日线在120日线上方 + 收盘站稳两线’近似表达。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 130,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "platform_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "近平台高点"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日近平台高点"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "收盘突破空中加油平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_platform"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日、120日均线和近20日平台高点。",
+    "识别收盘向上突破盘整平台的时点。",
+    "要求60日线位于120日线上方且收盘同时站稳60/120线，近似表示60、120油管仍然畅通。"
+  ],
+  "signal_day_definition": "以平台向上突破且60/120通道继续保持畅通的当日作为空中加油延续确认日。",
+  "manual_review_needed": [
+    "原文还细分了短管道是否畅通、指数环境是否恶劣以及庄股是否已大幅爆炒，当前未把这些背景全部纳入。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= 120 + platform_lookback + 1。"
+  ],
+  "explain": "该规则用于识别短管道未必畅通、但60/120大通道仍畅通时的平台再突破。"
+}

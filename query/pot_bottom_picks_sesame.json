@@ -1,0 +1,85 @@
+{
+  "name": "锅底拣芝麻",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [714, 715, 716, 717],
+  "source": "锅底拣芝麻指股价在三波杀跌后形成锅底，成交量在锅边较大、锅底极小，并在锅底区域出现连续量芝麻点，说明浮动筹码已经很少；若此锅底出现在底部建仓后的洗盘位，则可分批试探吸纳，稳妥买点则是股价不创新低后重新走强。",
+  "source_summary": "若锅底区域连续出现极度缩量芝麻点，且随后股价不再创新低并重新转强，可视为锅底拣芝麻。",
+  "comment": "当前用‘底部连续芝麻点 + 后续不创新低转强’来近似锅底拣芝麻。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["low", "close", "volume"],
+  "warmup_bars": 50,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "base_window": 30,
+    "sesame_consecutive_days": 3,
+    "rebound_keep_days": 3
+  },
+  "series": [
+    {"id": "vol_ma_5", "op": "sma", "field": "volume", "window": 5, "description": "5日均量"},
+    {"id": "vol_ma_10", "op": "sma", "field": "volume", "window": 10, "description": "10日均量"},
+    {"id": "low_30", "op": "lowest", "field": "low", "window": "$params.base_window", "description": "近阶段最低价"},
+    {"id": "close_prev", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"},
+    {"id": "low_prev", "op": "ref", "field": "low", "window": 1, "description": "前一日最低价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "or",
+      "conditions": [
+        {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "consecutive",
+              "length": "$params.sesame_consecutive_days",
+              "condition": {
+                "op": "and",
+                "conditions": [
+                  {"op": "compare", "left": "volume", "operator": "<", "right": "vol_ma_5"},
+                  {"op": "compare", "left": "volume", "operator": "<", "right": "vol_ma_10"}
+                ]
+              }
+            },
+            {"op": "compare", "left": "low", "operator": "<=", "right": "low_30"}
+          ]
+        },
+        {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "within",
+              "window": "$params.rebound_keep_days",
+              "condition": {
+                "op": "consecutive",
+                "length": "$params.sesame_consecutive_days",
+                "condition": {
+                  "op": "and",
+                  "conditions": [
+                    {"op": "compare", "left": "volume", "operator": "<", "right": "vol_ma_5"},
+                    {"op": "compare", "left": "volume", "operator": "<", "right": "vol_ma_10"}
+                  ]
+                }
+              }
+            },
+            {"op": "compare", "left": "low", "operator": ">=", "right": "low_prev"},
+            {"op": "compare", "left": "close", "operator": ">", "right": "close_prev"}
+          ]
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "先识别锅底区域是否连续出现极度缩量的芝麻点。",
+    "要求芝麻点发生在近阶段低位，近似锅底区域。",
+    "若芝麻点之后几日内股价不再创新低且收盘转强，也可视为锅底拣芝麻后的稳妥介入状态。"
+  ],
+  "signal_day_definition": "以锅底区域连续芝麻点的最后一天，或其后首个不创新低并重新转强的交易日作为锅底拣芝麻信号日。",
+  "manual_review_needed": [
+    "原文还强调D/E/L三次递减量和分批试探买入节奏，当前主规则主要保留芝麻点和不创新低转强。"
+  ],
+  "implementation_notes": [
+    "该规则与底部芝麻功相近，但更强调锅底形和不创新低后的右侧确认。"
+  ],
+  "explain": "该规则用于识别锅底区域量芝麻点洗盘接近尾声，并在不创新低后重新转强的底部介入机会。"
+}

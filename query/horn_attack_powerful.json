@@ -1,0 +1,70 @@
+{
+  "name": "犄角上攻 力大无比",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [653, 654, 655, 656],
+  "source": "犄角上攻力大无比强调：相对低位出现前后两堆放大量遥相呼应，股价底部抬高、不断创新高，呈现顶紧右上角的强势结构，一旦突破建仓区上轨压力线，往往意味着行情启动。",
+  "source_summary": "若低位阶段出现两堆放大量互为犄角，且股价底部抬高后突破上轨，可视为犄角上攻。",
+  "comment": "当前把‘量互为犄角’近似成近窗口内至少两次显著放量，配合底部抬高和突破。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "setup_lookback": 60,
+    "volume_ma_window": 10,
+    "volume_multiplier": 2,
+    "low_compare_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "head_high", "op": "highest", "field": "close", "window": "$params.setup_lookback", "description": "建仓区上轨近似"},
+    {"id": "head_high_prev", "op": "ref", "field": "head_high", "window": 1, "description": "前一日建仓区上轨"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "10日均量"},
+    {"id": "horn_volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.volume_multiplier", "window": 0, "description": "犄角放量阈值"},
+    {"id": "recent_low", "op": "lowest", "field": "close", "window": "$params.low_compare_window", "description": "近阶段低点"},
+    {"id": "recent_low_prev", "op": "ref", "field": "recent_low", "window": 5, "description": "更早阶段低点"}
+  ],
+  "events": [
+    {"id": "break_head", "op": "breakout_up", "left": "close", "right": "head_high_prev", "description": "收盘突破建仓区上轨"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "count",
+            "window": "$params.setup_lookback",
+            "gte": 2,
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": ">=",
+              "right": "horn_volume_threshold"
+            }
+          },
+          {"op": "compare", "left": "recent_low", "operator": ">", "right": "recent_low_prev"},
+          {"op": "condition", "event": "break_head"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "head_high_prev"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "统计近 setup_lookback 日内是否至少两次出现显著放大量，近似量互为犄角。",
+    "要求近阶段低点高于更早阶段低点，近似底部抬高。",
+    "以放量背景下突破建仓区上轨，作为犄角上攻完成确认。"
+  ],
+  "signal_day_definition": "以股价在两堆放大量背景下突破建仓区上轨的当日作为犄角上攻确认日。",
+  "manual_review_needed": [
+    "原文还强调缺口不补、顶紧右上角和两堆量的相对位置关系，当前未逐段精确建模。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= setup_lookback + low_compare_window + 5。",
+    "该规则将‘量互为犄角’压成了多次显著放量的近似模型。"
+  ],
+  "explain": "该规则用于识别低位建仓量两次放大、底部抬高并最终突破上轨的强势启动形态。"
+}

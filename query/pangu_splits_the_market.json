@@ -1,0 +1,127 @@
+{
+  "name": "盘股开天地",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [796, 797, 798, 799],
+  "source": "盘股开天地描述庄家建仓后让股价在2+3区间内长时间横盘沉闷整理，待洗盘完毕后，以一根突破前T线的巨量大阳线把混沌未分的盘局彻底劈开，从而启动一轮上涨行情。",
+  "source_summary": "若股价在60/120线之上长时间盘整后，出现巨量大阳线突破前T线，可视为盘股开天地成立。",
+  "comment": "当前先提取‘暖气带之上横盘 + 巨量长阳突破’主干，不纳入L3与MACD细节。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "ma_support_window": 60,
+    "ma_anchor_window": 120,
+    "platform_lookback": 40,
+    "volume_ma_window": 10,
+    "volume_multiplier": 2,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_support_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "tline_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "前T线或平台高点近似"
+    },
+    {
+      "id": "tline_high_prev",
+      "op": "ref",
+      "field": "tline_high",
+      "window": 1,
+      "description": "前一日平台高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.volume_multiplier",
+      "window": 0,
+      "description": "巨量阈值"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_tline",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "tline_high_prev",
+      "description": "巨量长阳突破前T线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_tline"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60/120日均线，近似2+3区间上的暖气带依托。",
+    "在较长盘整窗口内寻找前T线平台高点。",
+    "当巨量长阳收盘突破该平台高点时，视为盘股开天地成立。"
+  ],
+  "signal_day_definition": "以巨量大阳线突破前T线的当日作为盘股开天地确认日。",
+  "manual_review_needed": [
+    "原文还强调L3主动性买入量与MACD零上红金叉，当前主规则未纳入这些增强条件。"
+  ],
+  "implementation_notes": [
+    "这是‘长盘整后巨量长阳开局’的日线版本。"
+  ],
+  "explain": "盘股开天地被结构化为暖气带之上的长期盘整，随后以巨量长阳突破前T线。"
+}

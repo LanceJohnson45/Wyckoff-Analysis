@@ -1,0 +1,66 @@
+{
+  "name": "跑道坑 UP 与量坑 UV",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [234, 235, 236, 241],
+  "source": "跑道坑UP与量坑UV指股价经过滑行和加速滑行后，在离开地面前进行最后一次震仓洗盘，股价形成价坑，成交量形成地量坑；较强版本的UP回档较浅，以不跌破60日均线为好，随后突破坑上沿或跑道上轨便进入拉升。",
+  "source_summary": "若滑跑后出现浅回档价坑与量坑，随后重新突破坑上沿，可视为UP/UV完成。",
+  "comment": "当前提取为偏强版本：坑底最好不深破60日线，量坑缩量后再突破坑上沿。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_long_window": 60,
+    "setup_lookback": 20,
+    "volume_ma_window": 20,
+    "breakout_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "pit_high", "op": "highest", "field": "close", "window": "$params.setup_lookback", "description": "价坑上沿近似"},
+    {"id": "pit_high_prev", "op": "ref", "field": "pit_high", "window": 1, "description": "前一日价坑上沿"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "量均线"}
+  ],
+  "events": [
+    {"id": "breakout_pit", "op": "breakout_up", "left": "close", "right": "pit_high_prev", "description": "突破价坑上沿"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.breakout_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "close", "operator": ">=", "right": "ma_long"},
+                {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"}
+              ]
+            },
+            "event": "breakout_pit",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "breakout_pit"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在setup_lookback窗口内寻找一次贴近60日线且缩量的回档坑底，近似UP和UV。",
+    "要求坑底阶段成交量低于量均线，且价格不深破60日线。",
+    "其后以收盘突破价坑上沿作为UP/UV完成确认。"
+  ],
+  "signal_day_definition": "以突破价坑上沿的当日作为UP/UV确认日。",
+  "manual_review_needed": [
+    "原文还给出坑底量芝麻区、突破坑上沿和突破跑道上轨三个买点，当前主规则只输出后两者中更通用的坑上沿突破版。"
+  ],
+  "implementation_notes": [
+    "source_pages 包含第73节在 241 页的总结页。"
+  ],
+  "explain": "跑道坑UP与量坑UV被结构化为滑跑末端的浅坑缩量洗盘后再突破。"
+}

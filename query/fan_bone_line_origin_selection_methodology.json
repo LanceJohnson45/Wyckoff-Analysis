@@ -1,0 +1,37 @@
+{
+  "name": "扇骨线一",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [503, 504],
+  "source": "扇骨线是从一个具有技术意义的高点原点出发，连向后续若干高点形成的一组扇形压力线。原文重点强调原点选取一般优先使用最高收盘价，若原点已无法约束后续股价，就需要做原点转移。",
+  "source_summary": "扇骨线一主要讲的是原点如何选、何时做原点转移，属于画线方法论。",
+  "comment": "该节不是单一可执行的最新日布尔信号，而是后续扇骨线规则的前置画线方法。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "选择具有技术意义的原点，原文优先使用最高收盘价。",
+    "从原点连接后续若干高点形成多根扇骨线。",
+    "当原点不再能够约束后续高点时，需要执行原点转移。"
+  ],
+  "signal_day_definition": "本节不定义单一信号完成日，属于画线与选点方法。",
+  "manual_review_needed": [
+    "原点选择、后续高点选择、原点失效判定都依赖人工画线语义，当前无法无歧义自动化。"
+  ],
+  "implementation_notes": [
+    "如果后续要自动化，需要先为‘代表性高点’与‘原点失效’建立统一的波段选点算法。"
+  ],
+  "explain": "该节主要解释扇骨线的原点选取和原点转移，当前不适合作为通用规则引擎里的单一布尔指标。"
+}

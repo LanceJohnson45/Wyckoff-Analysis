@@ -1,0 +1,46 @@
+{
+  "name": "锤阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [308, 309, 310],
+  "source": "锤阴墓碑由一个高位锤头或倒锤头和后一根阴线组成，常见于庄家盘中拉高出货后继续杀跌的过程；如果锤头带量且次日阴线跌破单锤，则头部概率更大。",
+  "source_summary": "若高位锤头后出现阴线跌破锤头关键价位，可视为锤阴墓碑。",
+  "comment": "当前按高位锤头后阴线跌破的核心组合提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_1"},
+          {"op": "compare", "left": "low", "operator": "<", "right": "close_ref_1"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别前一日高位锤头/倒锤头近似形态。",
+    "要求次日阴线跌破前一日锤头关键价位，近似锤阴墓碑。"
+  ],
+  "signal_day_definition": "以阴线跌破锤头位的当日作为锤阴墓碑确认日。",
+  "manual_review_needed": [
+    "原文强调带量锤头更危险，当前未单独并入量能条件。"
+  ],
+  "implementation_notes": [
+    "这是两日头部墓碑组合。"
+  ],
+  "explain": "锤阴墓碑被结构化为锤头后阴线继续杀跌的组合。"
+}

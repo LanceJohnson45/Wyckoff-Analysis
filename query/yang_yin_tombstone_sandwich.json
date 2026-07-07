@@ -1,0 +1,97 @@
+{
+  "name": "阳阴墓碑夹",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [323, 324],
+  "source": "阳阴墓碑夹是三根K线构成的头部组合：第一天冲高收阳，随后两天高点与第一天相仿，三次冲顶不过，最后股价回到第一天阳线低位附近，意味着高位横向震荡出货后开始转跌。",
+  "source_summary": "若三日高点近似水平且第三日回落到第一日低位附近，可视为阳阴墓碑夹头部。",
+  "comment": "当前按三日平台顶 + 第三日回落确认的基础版本提取，未细分中间K线是锤、星、针或杖的增强版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "open_ref_2",
+      "op": "ref",
+      "field": "open",
+      "window": 2,
+      "description": "前两日开盘价，对应第一日阳线开盘位"
+    },
+    {
+      "id": "close_ref_2",
+      "op": "ref",
+      "field": "close",
+      "window": 2,
+      "description": "前两日收盘价，对应第一日阳线收盘位"
+    },
+    {
+      "id": "high_ref_1",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "high_ref_2",
+      "op": "ref",
+      "field": "high",
+      "window": 2,
+      "description": "前两日最高价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_ref_2",
+            "operator": ">",
+            "right": "open_ref_2"
+          },
+          {
+            "op": "compare",
+            "left": "high_ref_1",
+            "operator": "<=",
+            "right": "high_ref_2"
+          },
+          {
+            "op": "compare",
+            "left": "high",
+            "operator": "<=",
+            "right": "high_ref_2"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "open_ref_2"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别三日前为冲高阳线。",
+    "要求最近三日中的后两日高点未能超过第一日高点，近似表达三冲不过。",
+    "要求第三日收盘已回落到第一日开盘位附近，表示头部转跌开始确认。"
+  ],
+  "signal_day_definition": "以第三根K线回落并完成三日平台顶的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文强调三根K线顶端几乎水平，当前未引入显式价差阈值，只保留‘后两日不再创新高’的可执行近似。",
+    "原文还提到中间夹锤、星、针、杖时头部更稳，当前未拆分这些增强版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars 主要来自三日形态识别与信号回看窗口，20根足够。",
+    "后续若引擎支持价差百分比阈值，可把‘几乎水平’进一步参数化。"
+  ],
+  "explain": "阳阴墓碑夹被结构化为三日高点平台化、第三日收盘跌回第一日开盘位的头部组合。"
+}

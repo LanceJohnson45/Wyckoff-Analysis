@@ -1,0 +1,114 @@
+{
+  "name": "均线 2+3（二）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [366, 367, 368],
+  "source": "均线2+3（二）讨论2+3中端与上升2&3区间：在熊牛转换点之后，60日与120日均线之间形成对股价回档有支撑作用的‘暖空气带’，当短期均线再次形成价托、五线顺上时，是买入和持股的重要依据。",
+  "source_summary": "若熊牛转换点成立后五线顺上，可视为均线2+3中端/上升2&3区间的强势状态。",
+  "comment": "当前提取为最可执行的‘五线顺上’结果态版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_longer_window",
+      "description": "120日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "ma_10",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "ma_20",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_20"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求60日均线高于120日均线，确认暖空气带已经打开。",
+    "要求5>10>20>60>120，近似表达原文中的五线顺上与强势持股区。"
+  ],
+  "signal_day_definition": "以五线顺上格局成立并保持在2+3中端的当日作为强势持股信号日。",
+  "manual_review_needed": [
+    "原文强调回档时通气性、回档深浅和量能变化，当前 latest_match 只保留结果态的五线顺上。",
+    "暖空气带支撑本应体现为回档得到60/120带支撑，当前未单独加入回踩过程事件。"
+  ],
+  "implementation_notes": [
+    "这是2+3系统中偏趋势跟随的一类状态信号。"
+  ],
+  "explain": "均线2+3（二）被结构化为熊牛转换点之后的五线顺上强势区。"
+}

@@ -1,0 +1,183 @@
+{
+  "name": "蝶式建仓",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [721, 722, 723],
+  "source": "蝶式建仓描述主力先温和吸筹，再在靠近60/120日均线的小平台上缩量整理，随后通过120线上小平台突破与放量长阳继续加仓；其最大特征是洗盘时股价不跌，甚至还能涨，后续若突破左右翅膀高点连线，则加速上涨可期。",
+  "source_summary": "若股价在60/120日线附近形成不破位的小平台、5/10日线保持通气，随后向上突破平台高点，可视为蝶式建仓完成。",
+  "comment": "当前先提取最可执行的日线近似版，重点表达‘靠近60/120线的强势缩量平台 + 通气 + 向上突破’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_support_window": 60,
+    "ma_anchor_window": 120,
+    "platform_lookback": 20,
+    "volume_ma_window": 10,
+    "platform_min_days": 3,
+    "ventilation_ratio": 0.005,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_support_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "ma_gap",
+      "op": "sub",
+      "field": "ma_5",
+      "field2": "ma_10",
+      "window": 0,
+      "description": "5日与10日均线距离"
+    },
+    {
+      "id": "ventilation_threshold",
+      "op": "mul",
+      "field": "ma_10",
+      "field2": "$params.ventilation_ratio",
+      "window": 0,
+      "description": "5/10日均线通气阈值"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "小平台最高收盘价近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日小平台最高收盘价"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "向上突破120线上小平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">=",
+                  "right": "ma_10"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_60"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_120"
+                },
+                {
+                  "op": "compare",
+                  "left": "ma_gap",
+                  "operator": ">",
+                  "right": "ventilation_threshold"
+                },
+                {
+                  "op": "compare",
+                  "left": "volume",
+                  "operator": "<=",
+                  "right": "volume_ma"
+                }
+              ]
+            },
+            "event": "breakout_platform",
+            "window": "$params.platform_lookback",
+            "min_count": "$params.platform_min_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_platform"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">=",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5、10、60、120日均线，并用5/10日均线距离近似原文中的‘通气’细节。",
+    "在platform_lookback窗口内要求股价维持在10、60、120日线之上且量能缩至量均线附近，近似120线上小平台与洗盘不跌。",
+    "当收盘价向上突破平台高点且当日收阳时，视为蝶式建仓右翅突破完成。"
+  ],
+  "signal_day_definition": "以收盘突破小平台高点并维持5/10日线通气的当日作为蝶式建仓确认日。",
+  "manual_review_needed": [
+    "原文还要求A点后的OBV向上开口、2+3区间位置和B/E两高点速度线突破，当前版本未直接纳入。",
+    "原文中的‘量芝麻点’和‘巨量收集筹码’被分别近似成缩量平台与突破收阳，后续可继续拆强弱版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(ma_anchor_window, platform_lookback, volume_ma_window) + 20。",
+    "该规则是对原文几何图形与OBV语义的日线近似实现，应结合日志中的人工复核项使用。"
+  ],
+  "explain": "蝶式建仓被结构化为靠近60/120日线的强势缩量平台，配合5/10日线通气后向上突破。"
+}

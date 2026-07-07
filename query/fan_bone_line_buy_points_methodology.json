@@ -1,0 +1,37 @@
+{
+  "name": "扇骨线三",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [506, 507, 508],
+  "source": "扇骨线三重点讲扇骨线的买点判别。原文把扇骨线突破后的位置分为不是买入点、怀疑买入点、肯定买入点：如果前面的低点仍在创新低，则突破不是买入点；如果不创新低但高点尚未创新高，则只是怀疑买入点；如果不创新低且高点已经创新高，则才是肯定买入点。",
+  "source_summary": "扇骨线三的核心是结合不创新低、创新高和扇骨线突破来区分买点强弱，属于画线后的判别方法。",
+  "comment": "本节建立在已人工确认的扇骨线突破之上，当前不适合强行压成自动执行的单一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先人工画出有效扇骨线并确认股价发生突破。",
+    "判断突破前的低点是否仍在创新低。",
+    "再判断突破前后的高点是否已经创新高，从而区分不是买点、怀疑买点和肯定买点。"
+  ],
+  "signal_day_definition": "原文定义的是扇骨线突破后的买点等级，不是单一统一的自动信号日。",
+  "manual_review_needed": [
+    "需要先有统一的扇骨线选点与突破确认算法，之后才能把不是买入点、怀疑买入点、肯定买入点进一步结构化。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把人工画线语义误写成确定性规则。"
+  ],
+  "explain": "该节本质上是扇骨线突破后的买点分级方法，目前不适合仅靠日线 O/H/L/C/V 全自动执行。"
+}

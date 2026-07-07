@@ -1,0 +1,58 @@
+{
+  "name": "穿越年线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [705, 706, 707, 708],
+  "source": "穿越年线强调：真正的黑马都要上穿240日年线，但有效的穿越必须建立在年线下长期打桩、涨有量跌缩量、底部抬高或烟斗形等充分建仓痕迹之上，之后股价应以较强爆发性跃出年线。",
+  "source_summary": "若年线下建仓充分、量价配合理想后放量上穿240日年线，可视为有效穿越年线。",
+  "comment": "当前用‘底部抬高 + 放量上穿年线’来近似有效穿越年线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 300,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_year_window": 240,
+    "volume_ma_window": 10,
+    "low_compare_window": 20,
+    "volume_multiplier": 1.5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_240", "op": "sma", "field": "close", "window": "$params.ma_year_window", "description": "240日均线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "10日均量"},
+    {"id": "volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.volume_multiplier", "window": 0, "description": "放量阈值"},
+    {"id": "recent_low", "op": "lowest", "field": "close", "window": "$params.low_compare_window", "description": "近阶段低点"},
+    {"id": "recent_low_prev", "op": "ref", "field": "recent_low", "window": 10, "description": "更早阶段低点"}
+  ],
+  "events": [
+    {"id": "cross_year", "op": "cross_up", "left": "close", "right": "ma_240", "description": "股价上穿240日年线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "recent_low", "operator": ">", "right": "recent_low_prev"},
+          {"op": "condition", "event": "cross_year"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_threshold"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_240"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先比较底部近期低点与更早低点，近似底部建仓区抬高。",
+    "识别股价是否放量上穿240日年线。",
+    "要求穿越年线当日量能放大，近似爆发性跃出年线。"
+  ],
+  "signal_day_definition": "以股价放量穿越240日年线、确认离开年线下建仓区的当日作为成立日。",
+  "manual_review_needed": [
+    "原文还强调烟斗形、涨有量跌缩量和更充分的年线下打桩过程，当前未全部纳入主规则。"
+  ],
+  "implementation_notes": [
+    "这是有效穿越年线的基础日线近似模型。"
+  ],
+  "explain": "该规则用于识别在底部建仓充分背景下，股价有效放量穿越年线的启动形态。"
+}

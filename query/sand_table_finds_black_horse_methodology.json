@@ -1,0 +1,37 @@
+{
+  "name": "沙盘寻找黑马",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [717, 718, 719, 720],
+  "source": "沙盘寻找黑马依赖把每只股票长期的主动性买入量与主动性卖出量分解并累计，得到沙盘余量、灵稳榜和SPW曲线，从而横向比较全市场个股的庄家建仓力度，寻找长期吸顶或快速抬升的黑马脚印。",
+  "source_summary": "这是完全建立在沙盘余量和SPW能量曲线上的黑马筛选方法，不适合直接压成日线规则。",
+  "comment": "原文核心依赖主动性买卖量分解、全市场排序和SPW曲线，当前系统没有这些数据源。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "分解每分钟成交中的主动性买入量和主动性卖出量。",
+    "累计得到沙盘余量、灵稳榜和SPW曲线，并对全市场个股进行横向排序。",
+    "结合K线形态，优先寻找长期吸顶或快速抬升的黑马脚印。"
+  ],
+  "signal_day_definition": "本节描述的是沙盘与SPW驱动的黑马筛选体系，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要接入主动性买卖量分解、全市场沙盘排序和SPW曲线。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把缺失核心能量系统的选股法硬压成日线规则。"
+  ],
+  "explain": "该节核心依赖沙盘余量和SPW能量系统，当前单靠日线O/H/L/C/V无法完整实现。"
+}

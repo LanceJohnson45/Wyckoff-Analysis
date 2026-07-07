@@ -1,0 +1,28 @@
+{
+  "trade_date": "2026-07-07",
+  "sample_size_requested": 3,
+  "sample_size_loaded": 3,
+  "seed": 300,
+  "max_attempts": 10,
+  "computable_spec_count": 206,
+  "snapshot_run_dir": null,
+  "sampled_codes": [
+    "000581",
+    "300619",
+    "603296"
+  ],
+  "skipped_no_cache": [
+    "000581:no_cache_meta",
+    "300619:no_cache_meta",
+    "603296:no_cache_meta"
+  ],
+  "fetch_stats": {
+    "snapshot_hit": 0,
+    "cache_hit": 0,
+    "empty": 57,
+    "no_cache_meta": 3
+  },
+  "report_path": "data/analysis_results/sample_runs/2026-07-07/sample_3_seed_300/2026-07-07_300day记录.txt",
+  "matched_symbols": 0,
+  "matched_indicator_total": 0
+}

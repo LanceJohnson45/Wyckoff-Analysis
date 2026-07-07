@@ -1,0 +1,37 @@
+{
+  "name": "下跌三速度",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [510, 511, 512, 513],
+  "source": "下跌三速度把一轮跌势分成快速下跌、中速下跌、慢速下跌三个阶段，原文强调三种速度都不是买点，甚至慢速上涨也不是买点，真正值得介入的是进入2+3区间并接近向上突破临界点之后。",
+  "source_summary": "下跌三速度更像一套跌势分段与回避买点的方法论，而不是单一形态触发器。",
+  "comment": "该节要求持续识别速度切换与2+3位置，适合作为状态机，不适合直接压成单一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先识别股价跌破均线后的快速下跌段。",
+    "再识别中速下跌、慢速下跌与后续缓慢上涨等阶段切换。",
+    "把这些阶段都视为非买入区，直到股价进入2+3区间并接近上破临界点。"
+  ],
+  "signal_day_definition": "本节定义的是一整段下跌阶段都不是买点，而不是单一固定信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先设计速度分层、阶段切换和2+3位置识别的统一状态机。"
+  ],
+  "implementation_notes": [
+    "当前先保留为方法论占位，避免把多阶段节奏误收缩成单一阈值。"
+  ],
+  "explain": "下跌三速度是跌势分段与买点过滤方法，不是当前规则引擎里可直接执行的单一布尔指标。"
+}

@@ -1,0 +1,46 @@
+{
+  "name": "锤形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [301, 302, 303],
+  "source": "高位出现的锤头或倒锤头，往往是庄家盘中出货后在收盘前拉回所形成；若之后股价反弹不能创新高，尤其再跌破60日均线，则该锤头可视为头部信号。",
+  "source_summary": "若高位出现锤头后无法创新高并转弱，可视为锤形成的头部。",
+  "comment": "当前按高位锤头后短期转弱的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 60,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_3", "op": "ref", "field": "close", "window": 3, "description": "3日前收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "low", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "close"},
+          {"op": "compare", "left": "close_ref_3", "operator": ">=", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别带明显下影线的锤头或天锤近似形态。",
+    "要求之后价格未能继续创新高并转弱，近似确认高位锤头成为头部。"
+  ],
+  "signal_day_definition": "以高位锤头出现后短期转弱的确认日作为信号完成日。",
+  "manual_review_needed": [
+    "原文区分红色天锤、黑色天锤和倒锤头，当前未细分。"
+  ],
+  "implementation_notes": [
+    "这是头部确认版，不是锤头出现当日即判顶。"
+  ],
+  "explain": "锤形成的头部被结构化为高位锤头后未再创新高并转弱。"
+}

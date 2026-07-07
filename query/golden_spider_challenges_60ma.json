@@ -1,0 +1,126 @@
+{
+  "name": "金蜘蛛上挑 60 线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [486, 487, 488, 489],
+  "source": "金蜘蛛上挑60线，是指5日、10日、20日、120日均线在较短时间内形成金叉密集区，构成金蜘蛛，随后股价上挑60日线；该图形常见于庄股洗盘至120线附近后重新启动。",
+  "source_summary": "若短中期均线在短窗内密集形成金叉，并随后向上突破60日线，可视为金蜘蛛上挑60线。",
+  "comment": "当前按多组金叉在短窗内依次出现、随后突破60线的简化版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 130,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "cluster_window": 8,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_5_10",
+      "op": "cross_up",
+      "left": "ma_5",
+      "right": "ma_10",
+      "description": "5日线上穿10日线"
+    },
+    {
+      "id": "cross_10_20",
+      "op": "cross_up",
+      "left": "ma_10",
+      "right": "ma_20",
+      "description": "10日线上穿20日线"
+    },
+    {
+      "id": "cross_20_120",
+      "op": "cross_up",
+      "left": "ma_20",
+      "right": "ma_120",
+      "description": "20日线上穿120日线"
+    },
+    {
+      "id": "cross_close_60",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_60",
+      "description": "收盘上穿60日线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "sequence",
+            "events": [
+              "cross_5_10",
+              "cross_10_20",
+              "cross_20_120",
+              "cross_close_60"
+            ],
+            "window": "$params.cluster_window",
+            "allow_same_day": "$params.allow_same_day"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "识别5、10、20、120日均线在短窗内形成的多组金叉，近似金蜘蛛共振。",
+    "要求之后收盘上穿60日线，并维持在120日线上方。"
+  ],
+  "signal_day_definition": "以收盘上穿60日线且前置金叉簇已完成的当日作为金蜘蛛上挑60线确认日。",
+  "manual_review_needed": [
+    "原文还强调前期洗盘至120线附近、前高T线和筹码峰压力，这里未全部纳入主规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(120 + cluster_window + 1, 60 + 1)。"
+  ],
+  "explain": "该规则用短窗内多组金叉共振加突破60日线来近似‘金蜘蛛上挑60线’。"
+}

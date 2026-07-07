@@ -1,0 +1,58 @@
+{
+  "name": "均线 2+3（四）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [371, 372, 373],
+  "source": "均线2+3（四）讲的是股价由2+3末端、上升2&3末端继续走弱，最终跌入2-3初端；一旦跌入2-3初端，意味着头上五线压顶，后续下跌空间大，应以空仓和清仓为主。",
+  "source_summary": "若股价跌到60日与120日均线下方，且短期均线也同步压在头上，可视为跌入2-3初端。",
+  "comment": "当前提取为‘跌破五线没底了’的结果态版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_120"},
+          {"op": "compare", "left": "ma_5", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "ma_10", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "ma_20", "operator": "<", "right": "ma_60"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求收盘已经跌到60日和120日均线下方。",
+    "要求三条短期均线也位于60日均线下方，近似表达‘头上五线压顶’的2-3初端。"
+  ],
+  "signal_day_definition": "以股价跌入60日和120日均线下方、并形成五线压顶格局的当日作为2-3初端确认日。",
+  "manual_review_needed": [
+    "原文区分首次跌入2-3初端和再次跌入2-3初端的处理差异，当前只保留统一的结果态版本。"
+  ],
+  "implementation_notes": [
+    "这是2+3体系里偏风险控制的清仓信号。"
+  ],
+  "explain": "均线2+3（四）被结构化为跌入2-3初端后的五线压顶清仓信号。"
+}

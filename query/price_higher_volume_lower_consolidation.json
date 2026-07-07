@@ -1,0 +1,54 @@
+{
+  "name": "价越盘越高 量越盘越小",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [665, 666, 667, 668],
+  "source": "价越盘越高量越盘越小是强势股的典型特征：价格在盘整中不断抬高，而成交量却逐步缩小，说明筹码供不应求、庄家控盘较好，后面虽可能借指数回档洗盘，但仍属于不可轻易放过的强势结构。",
+  "source_summary": "若价格在盘整中持续抬高而量能持续收缩，可视为强势控盘整理形态。",
+  "comment": "当前按‘近阶段低点抬高 + 均量下降 + 价格站上中期均线’提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "price_window": 10,
+    "volume_ma_window": 5,
+    "ma_mid_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_20", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "20日均线"},
+    {"id": "recent_low", "op": "lowest", "field": "close", "window": "$params.price_window", "description": "近阶段低点"},
+    {"id": "recent_low_prev", "op": "ref", "field": "recent_low", "window": 5, "description": "更早阶段低点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "volume_ma_prev", "op": "ref", "field": "volume_ma", "window": 3, "description": "三日前5日均量"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "recent_low", "operator": ">", "right": "recent_low_prev"},
+          {"op": "compare", "left": "volume_ma", "operator": "<", "right": "volume_ma_prev"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_20"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "比较近阶段低点与更早阶段低点，近似价格越盘越高。",
+    "比较当前均量与更早均量，近似量越盘越小。",
+    "要求价格仍站在20日均线之上，保持强势整理背景。"
+  ],
+  "signal_day_definition": "以价格持续抬高、均量持续收缩且仍维持强势背景的当日，作为强势整理状态日。",
+  "manual_review_needed": [
+    "原文还强调指数回调时可能借机洗盘，并给出后金叉、重上五线等后续买点，当前只保留强势整理本体。"
+  ],
+  "implementation_notes": [
+    "该规则识别的是强势控盘整理状态，而不是最终突破日。"
+  ],
+  "explain": "该规则用于识别价格越盘越高而量越盘越小的强势控盘整理形态。"
+}

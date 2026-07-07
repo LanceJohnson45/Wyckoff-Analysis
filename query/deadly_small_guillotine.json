@@ -1,0 +1,134 @@
+{
+  "name": "致命小铡刀",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [501, 502, 503],
+  "source": "致命小铡刀是指一根看起来并不显眼的小阴线，却在均线极度密集时一刀切断五条均线，宣告跌势真正开始。原文还强调，若其后再跌破低点连线或低点水平线，往往会演化成五均线向下发散和更猛烈的跌势。",
+  "source_summary": "若均线密集区被一根相对较小的阴线一刀切断，并且收盘落在五线下方，可视为致命小铡刀。",
+  "comment": "当前用小幅阴线跌破全部五线来近似‘致命小铡刀’，未再叠加低点连线二次确认。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 130,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "small_bear_pct": -0.03,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "close_return_1d",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日收盘涨跌幅"
+    },
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_return_1d",
+            "operator": "<=",
+            "right": 0
+          },
+          {
+            "op": "compare",
+            "left": "close_return_1d",
+            "operator": ">=",
+            "right": "$params.small_bear_pct"
+          },
+          {
+            "op": "compare",
+            "left": "open",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算单日涨跌幅与5/10/20/60/120日均线。",
+    "识别单日为阴线且跌幅不超过3%的相对小阴线。",
+    "要求这根小阴线的收盘同时落到五条均线之下，近似‘一刀切断五线’。"
+  ],
+  "signal_day_definition": "以小阴线完成对五条均线切断的当日作为致命小铡刀确认日。",
+  "manual_review_needed": [
+    "原文还强调后续跌破低点连线会进一步恶化，当前规则未把该二次确认写入主信号。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= 120 + 1。"
+  ],
+  "explain": "该规则用于识别均线密集区被一根不起眼的小阴线突然切穿的转势信号。"
+}

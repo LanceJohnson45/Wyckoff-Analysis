@@ -1,0 +1,98 @@
+{
+  "name": "水下死叉沉船快",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [582, 583, 584],
+  "source": "水下死叉沉船快，强调当MACD指标的DIF和DEA位于零轴下方时，若再次出现死亡交叉，往往对应很快、很深、很长的一段跌势；而水下金叉往往也难以真正把船拉起来。",
+  "source_summary": "若MACD在零轴下方再次形成死叉，通常意味着跌势会迅速加剧。",
+  "comment": "当前按日线MACD零下死叉版本提取，是一个典型的风险回避规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 60,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ema_fast_window": 12,
+    "ema_slow_window": 26,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ema_fast",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_fast_window",
+      "description": "MACD快线EMA"
+    },
+    {
+      "id": "ema_slow",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_slow_window",
+      "description": "MACD慢线EMA"
+    },
+    {
+      "id": "macd_dif",
+      "op": "sub",
+      "field": "ema_fast",
+      "field2": "ema_slow",
+      "window": 0,
+      "description": "MACD DIF"
+    },
+    {
+      "id": "macd_dif_prev",
+      "op": "ref",
+      "field": "macd_dif",
+      "window": 1,
+      "description": "前一日MACD DIF"
+    }
+  ],
+  "events": [
+    {
+      "id": "underwater_death_cross",
+      "op": "cross_down",
+      "left": "macd_dif",
+      "right": 0,
+      "description": "DIF进一步下破零轴近似加速恶化"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "macd_dif_prev",
+            "operator": "<",
+            "right": 0
+          },
+          {
+            "op": "compare",
+            "left": "macd_dif",
+            "operator": "<",
+            "right": 0
+          },
+          {
+            "op": "condition",
+            "event": "underwater_death_cross"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算MACD DIF。",
+    "要求前一日和当日DIF都位于零轴下方，确认处于水下区域。",
+    "识别DIF在水下继续向下破位的恶化时点，近似水下死叉风险。"
+  ],
+  "signal_day_definition": "以MACD在零轴下方再次恶化下破的当日作为‘水下死叉沉船快’风险确认日。",
+  "manual_review_needed": [
+    "原文是DIF与DEA在水下形成死叉，当前引擎尚未内建DEA序列与其交叉，先用DIF零下恶化近似表达。"
+  ],
+  "implementation_notes": [
+    "后续若需要更严格表达，可补充MACD DEA序列与真正的DIF/DEA水下死叉。"
+  ],
+  "explain": "该规则用于识别MACD位于零轴下方时的进一步恶化状态，从而规避快速沉船式下跌。"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "五分钟 K 线精确判顶",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [629, 630],
+  "source": "五分钟K线精确判顶通过5、10、20与60、120单位均线在5分钟图上的位置关系，结合2+3理论、120下小平台和起飞线，来判断暴涨股的精细顶部与超短线卖点。",
+  "source_summary": "这是完全建立在5分钟K线结构上的精细判顶方法，不适合直接压成日线规则。",
+  "comment": "原文核心语义来自5分钟K线与120下小平台，当前只有日线 O/H/L/C/V，因此保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "把K线切到5分钟级别，观察快慢均线是否跌入60、120单位均线下方。",
+    "识别120下小平台、起飞线和2+3区间的切换。",
+    "在顶部结构完成时寻找更精细的超短线退出点。"
+  ],
+  "signal_day_definition": "本节描述的是5分钟级别精确判顶流程，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入5分钟原始K线与多周期2+3状态机。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把分钟级结构误压成日线规则。"
+  ],
+  "explain": "该节依赖5分钟K线和多条分钟均线的结构关系，当前不能仅用日线数据完整实现。"
+}

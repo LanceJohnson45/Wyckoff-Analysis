@@ -1,0 +1,36 @@
+{
+  "name": "2T-1L",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [253, 254, 255],
+  "source": "2T-1L 是用于计算股价有效突破T线后最低上升幅度的广通空间公式，也可用于箱体突破后的最少目标位计算，属于空间估算工具。",
+  "source_summary": "这是一个上升空间估算公式，不是单一即时布尔形态。",
+  "comment": "核心是测量目标位，而不是判断‘最新日是否满足某指标’。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求确定T线和L价后，用2T-1L公式估算突破后的至少上涨空间。",
+    "这属于空间测量方法，不是 latest_match 型布尔规则。"
+  ],
+  "signal_day_definition": "原文未定义单一信号完成日。",
+  "manual_review_needed": [
+    "如果后续规则系统支持数值型目标位输出，可把2T-1L实现为 target_price 计算器。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "2T-1L 是目标位估算公式，不是纯布尔信号。"
+}

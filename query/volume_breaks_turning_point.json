@@ -1,0 +1,61 @@
+{
+  "name": "放量打拐",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [689, 690, 691, 692, 693],
+  "source": "放量打拐指庄家在60线之上、压力线之下缓慢推高股价完成建仓后，股价突然放量突破原有上升速度线或高点连线，进入更快的第二上升速度，从而形成理想的打拐买点。",
+  "source_summary": "若建仓末期的缓慢推升被放量突破加速所替代，可视为放量打拐成立。",
+  "comment": "当前用‘60/120线上方的缓慢平台 + 放量突破前高’来近似第一速度切换到第二速度。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 140,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "platform_lookback": 20,
+    "ma_mid_window": 60,
+    "ma_long_window": 120,
+    "volume_ma_window": 5,
+    "volume_multiplier": 2,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"},
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "建仓末端压力位近似"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日压力位"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.volume_multiplier", "window": 0, "description": "放量阈值"}
+  ],
+  "events": [
+    {"id": "break_turning", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "收盘突破第一速度压力"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"},
+          {"op": "condition", "event": "break_turning"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_threshold"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认股价运行在60/120线以上，近似处于2+3区间。",
+    "计算近平台高点，近似第一上升速度上方的压力线。",
+    "若最新放量突破该压力线，视为进入第二上升速度的放量打拐点。"
+  ],
+  "signal_day_definition": "以放量突破建仓末端压力线、进入加速上升阶段的当日作为打拐点。",
+  "manual_review_needed": [
+    "原文还区分缩量打拐与放量打拐，当前主规则只保留更通用的放量版。",
+    "这里用平台高点近似速度线拐点，后续可继续引入更细的斜率计算。"
+  ],
+  "implementation_notes": [
+    "这是从第一上升速度切换到第二上升速度的日线近似模型。"
+  ],
+  "explain": "该规则用于识别建仓末端放量突破压力、股价开始加速拉升的打拐时刻。"
+}

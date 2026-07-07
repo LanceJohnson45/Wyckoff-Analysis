@@ -1,0 +1,164 @@
+{
+  "name": "多方炮过金三角",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [613, 614, 615, 616],
+  "source": "多方炮过金三角指股价长期潜伏在两条高点连线下方后，借助两阳夹一阴的多方炮组合冲过两条压力线形成的金三角夹角区域，从而发出明确买入信号。",
+  "source_summary": "若标准多方炮正好出现在关键压力夹角突破位，可视为多方炮过金三角。",
+  "comment": "当前先把金三角近似为关键头部压力区，核心识别放在‘关键位多方炮 + 突破前高’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakout_lookback": 40,
+    "volume_ma_window": 5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "关键头部压力位近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日关键头部压力位"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "open_prev_1",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一日开盘价"
+    },
+    {
+      "id": "close_prev_1",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "high_prev_1",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "volume_prev_1",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    },
+    {
+      "id": "open_prev_2",
+      "op": "ref",
+      "field": "open",
+      "window": 2,
+      "description": "前两日开盘价"
+    },
+    {
+      "id": "close_prev_2",
+      "op": "ref",
+      "field": "close",
+      "window": 2,
+      "description": "前两日收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "收盘突破关键头部压力位"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_head"
+          },
+          {
+            "op": "compare",
+            "left": "close_prev_2",
+            "operator": ">",
+            "right": "open_prev_2"
+          },
+          {
+            "op": "compare",
+            "left": "close_prev_1",
+            "operator": "<",
+            "right": "open_prev_1"
+          },
+          {
+            "op": "compare",
+            "left": "volume_prev_1",
+            "operator": "<",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "low",
+            "operator": ">=",
+            "right": "open_prev_2"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "high_prev_1"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先用最近 breakout_lookback 日最高收盘价近似金三角上沿压力位。",
+    "识别前三日是否构成标准两阳夹一阴的多方炮结构。",
+    "要求第三日收盘突破关键压力位，并伴随量能不弱于5日均量。"
+  ],
+  "signal_day_definition": "以第三根重新转强并突破关键压力位的阳线当日作为多方炮过金三角完成日。",
+  "manual_review_needed": [
+    "原文中的金三角来自两条人工高点连线的夹角，当前先用关键头部压力位突破近似表达。",
+    "原文还区分金三角下多方炮、金三角内多方炮等变形，当前主规则只覆盖过金三角版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= breakout_lookback + 2。",
+    "该规则本质上是‘关键位多方炮 + 收盘突破压力位’的日线近似。"
+  ],
+  "explain": "该规则用于筛出标准多方炮恰好出现在关键压力夹角突破位的买入形态。"
+}

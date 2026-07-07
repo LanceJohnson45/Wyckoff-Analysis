@@ -1,0 +1,86 @@
+{
+  "name": "宝塔头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [339, 340, 341, 342, 343],
+  "source": "宝塔头指股价先快速拉出上升塔身，短暂在塔尖处停留后又快速下跌形成下降塔身；塔身层数越多，头部越牢，若塔尖出现避雷针长上影线则更稳定。",
+  "source_summary": "若近期快速拉升后又快速转跌并失守数日前价格，可视为宝塔头头部。",
+  "comment": "当前按‘短期急涨后急跌’的基础宝塔头提取，未细分震仓洗盘版与彻底出货版。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "close"],
+  "warmup_bars": 30,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "rise_window": 4,
+    "rise_threshold": 0.12,
+    "fall_window": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_rise_pct",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.rise_window",
+      "description": "近N日累计涨幅"
+    },
+    {
+      "id": "close_ref_3",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.fall_window",
+      "description": "几日前收盘价，用于近似塔尖前位置"
+    },
+    {
+      "id": "high_ref_1",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "recent_rise_pct",
+            "operator": ">=",
+            "right": "$params.rise_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "high_ref_1",
+            "operator": ">",
+            "right": "high"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "close_ref_3"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "要求前期存在短期快速拉升，近似表达上升塔身。",
+    "要求最近最高点已经出现在前一日之前，当前不再创新高，表示塔尖后转弱。",
+    "要求当前收盘跌回数日前价格附近，近似表达下降塔身形成。"
+  ],
+  "signal_day_definition": "以快速拉升后确认转跌并跌回塔尖前价位的当日作为宝塔头完成日。",
+  "manual_review_needed": [
+    "原文强调塔身层数和塔尖避雷针长上影线，当前未把层数与长上影线增强条件单独量化。",
+    "‘快速拉升’与‘快速下跌’阈值仍需后续回测校准。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= rise_window + fall_window + 1，当前取30便于稳定回放。"
+  ],
+  "explain": "宝塔头被结构化为短期急涨后的急跌反转头部。"
+}

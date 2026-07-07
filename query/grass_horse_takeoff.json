@@ -1,0 +1,95 @@
+{
+  "name": "黑马草上飞",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [134, 135, 136, 137, 138],
+  "source": "黑马草上飞要求60日均线稳步上扬，股价沿60日均线斜率长期震荡上行，经过较长时间的‘草原式’推进后再向上突破原有上升通道，进入飞扬阶段。",
+  "source_summary": "若60日均线长期上行、股价多数时间沿线运行，并最终突破近阶段通道高点，可视为黑马草上飞。",
+  "comment": "当前主规则强调‘沿60日线上行一段时间后再突破’这一主干，不单独量化原文里的隐蔽建仓量区。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 200,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "slope_lookback": 20,
+    "channel_lookback": 120,
+    "breakout_lookback": 40,
+    "path_min_days": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_long_ref",
+      "op": "ref",
+      "field": "ma_long",
+      "window": "$params.slope_lookback",
+      "description": "向前平移后的60日均线"
+    },
+    {
+      "id": "channel_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "近阶段通道最高收盘价"
+    },
+    {
+      "id": "channel_high_prev",
+      "op": "ref",
+      "field": "channel_high",
+      "window": 1,
+      "description": "前一日通道最高收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "fly_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "channel_high_prev",
+      "description": "突破原有震荡通道"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_long", "operator": ">", "right": "ma_long_ref"},
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": ">=", "right": "ma_long"},
+            "event": "fly_breakout",
+            "window": "$params.channel_lookback",
+            "min_count": "$params.path_min_days"
+          },
+          {"op": "condition", "event": "fly_breakout"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线，并与slope_lookback日前的60日均线比较，要求其保持上行。",
+    "在channel_lookback日内统计股价沿60日线运行的天数，要求不少于path_min_days。",
+    "以收盘价向上突破近阶段breakout_lookback日通道高点作为飞扬确认。"
+  ],
+  "signal_day_definition": "以沿60日均线推进后向上突破通道高点的当日作为黑马草上飞完成日。",
+  "manual_review_needed": [
+    "原文中的‘大约半年’当前被收敛成 channel_lookback=120 与 path_min_days=60，需要后续回测确认。",
+    "原文还提到飞扬前后未明显放量，当前未将量能约束写入主规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + channel_lookback + 1。",
+    "该规则更偏向中期趋势突破信号，而不是底部建仓识别。"
+  ],
+  "explain": "黑马草上飞被表达为长期沿60日均线上行后的中期通道突破。"
+}

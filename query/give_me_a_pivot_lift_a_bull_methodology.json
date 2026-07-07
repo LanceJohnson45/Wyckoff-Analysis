@@ -1,0 +1,38 @@
+{
+  "name": "给我一个支点 撬起一头大牛",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [599, 600, 601],
+  "source": "给我一个支点，撬起一头大牛，是通过寻找领先于指数底部抬高的个股，再以近期高点做支点，向历史高点和底部区高点各画出一根杠杆线，等待股价放量突破这两根杠杆后向上喷发。",
+  "source_summary": "这是一套围绕关键支点和双杠杆线的选股与跟踪方法，不适合直接压成单一布尔规则。",
+  "comment": "原文依赖人工选股、手工确定支点和两根杠杆线，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先找到领先于指数底部抬高的个股。",
+    "以近期高点做支点，画出两根关键杠杆线。",
+    "等待股价放量突破两根杠杆后再考虑追击。"
+  ],
+  "signal_day_definition": "本节描述的是围绕支点和杠杆的跟踪方法，不是单一统一的信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要统一底部抬高筛选、支点选取和双杠杆突破条件。"
+  ],
+  "implementation_notes": [
+    "当前先以方法论文档保留，避免误把人工几何判断写成日线固定模板。",
+    "source_pages 覆盖双杠杆与支点选取的主体描述。"
+  ],
+  "explain": "该节是围绕关键支点与双杠杆突破寻找大牛股的方法，不适合直接转成 latest_match。"
+}

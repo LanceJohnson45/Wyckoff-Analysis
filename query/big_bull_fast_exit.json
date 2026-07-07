@@ -1,0 +1,108 @@
+{
+  "name": "大阳快速卖出法",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [569, 570],
+  "source": "大阳快速卖出法强调：对于通过长阳快速买入介入的股票，应优先在上方明显压力位、筹码峰下沿或颈线附近减仓；若快速大涨后出现巨量不涨、分时走弱或跌破均价线，就要先退出来，避免短线主力派发反手套人。",
+  "source_summary": "若长阳拉起后迅速放巨量但无法继续创高并收弱，应优先快速退出。",
+  "comment": "当前用‘近几日内已有长阳启动背景 + 今日巨量但未再创新高且收弱’来近似快速卖出条件。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "lookback_recent_high": 20,
+    "volume_ma_window": 10,
+    "giant_volume_multiplier": 2,
+    "recent_signal_window": 5,
+    "prior_rally_pct": 0.08,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "double_volume_ma",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.giant_volume_multiplier",
+      "window": 0,
+      "description": "两倍10日均量"
+    },
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "high",
+      "window": "$params.lookback_recent_high",
+      "description": "近窗口最高价"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近窗口最高价"
+    },
+    {
+      "id": "close_return_5d",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.recent_signal_window",
+      "description": "近5日累计涨幅"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_return_5d",
+            "operator": ">=",
+            "right": "$params.prior_rally_pct"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "double_volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "high",
+            "operator": "<=",
+            "right": "recent_high_prev"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认近5日已有较明显的快速上冲背景。",
+    "识别当前是否放出至少两倍均量的巨量。",
+    "要求巨量日未能再创新高且收盘转弱，近似快速卖出条件。"
+  ],
+  "signal_day_definition": "以快速上涨后出现巨量不涨并收弱的当日作为大阳快速卖出确认日。",
+  "manual_review_needed": [
+    "原文还强调筹码峰下沿、颈线位和分时均价线破位，当前主规则只保留最可执行的巨量转弱核心。"
+  ],
+  "implementation_notes": [
+    "该规则与巨量不涨先退场语义接近，但这里额外要求前面已有一段快速长阳上涨背景。"
+  ],
+  "explain": "该规则用于识别长阳快速买入后的短线派发风险区，便于及时止盈退出。"
+}

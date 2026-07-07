@@ -1,0 +1,50 @@
+{
+  "name": "回光返照",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [380],
+  "source": "回光返照是股价在60线天灵盖形成后，短暂反弹重新冲过60日均线，制造向上突破假象，引诱技术型买盘接货；但反弹之后往往就是暴跌。",
+  "source_summary": "若60日均线已转头向下后，股价短暂重新站上60日均线，可视为回光返照。",
+  "comment": "当前按‘60线天灵盖之后重新站上60日均线’的假突破版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"}
+  ],
+  "events": [
+    {"id": "reclaim_60", "op": "cross_up", "left": "close", "right": "ma_60", "description": "股价重新上穿60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_60_prev"},
+          {"op": "condition", "event": "reclaim_60"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线及其前一日值。",
+    "要求60日均线仍处于向下状态，表示天灵盖已形成。",
+    "检测收盘价重新上穿60日均线，近似表达最后一冲的假突破。"
+  ],
+  "signal_day_definition": "以60日均线向下时股价重新上穿60日均线的当日作为回光返照信号日。",
+  "manual_review_needed": [
+    "原文强调这是头部区的诱多反弹，当前未额外加入头部历史背景和后续再跌确认。"
+  ],
+  "implementation_notes": [
+    "与60线天灵盖搭配使用时更接近原文语义。"
+  ],
+  "explain": "回光返照被结构化为60日均线转弱之后的短暂重返60日均线之上。"
+}

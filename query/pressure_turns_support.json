@@ -1,0 +1,90 @@
+{
+  "name": "压转托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [185, 186, 187, 188],
+  "source": "压转托指三条均线先形成价压，股价却没有明显下跌，而是在三均线下方粘合运行，随后重新爬上三条均线，并在震荡一段时间后形成价托并冲过前头部。",
+  "source_summary": "若先形成价压，后又完成价托并突破前头部，可视为压转托。",
+  "comment": "当前按‘先价压、后价托、再突破前高’的主干顺序提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "pressure_lookback": 20,
+    "support_lookback": 20,
+    "breakout_lookback": 40,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_slow", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"},
+    {"id": "head_high", "op": "highest", "field": "close", "window": "$params.breakout_lookback", "description": "前头部最高收盘价"},
+    {"id": "head_high_prev", "op": "ref", "field": "head_high", "window": 1, "description": "前一日头部高点"}
+  ],
+  "events": [
+    {"id": "cross_fast_mid_down", "op": "cross_down", "left": "ma_fast", "right": "ma_mid", "description": "5日均线下穿10日均线"},
+    {"id": "cross_fast_slow_down", "op": "cross_down", "left": "ma_fast", "right": "ma_slow", "description": "5日均线下穿20日均线"},
+    {"id": "cross_mid_slow_down", "op": "cross_down", "left": "ma_mid", "right": "ma_slow", "description": "10日均线下穿20日均线"},
+    {"id": "cross_fast_mid_up", "op": "cross_up", "left": "ma_fast", "right": "ma_mid", "description": "5日均线上穿10日均线"},
+    {"id": "cross_fast_slow_up", "op": "cross_up", "left": "ma_fast", "right": "ma_slow", "description": "5日均线上穿20日均线"},
+    {"id": "cross_mid_slow_up", "op": "cross_up", "left": "ma_mid", "right": "ma_slow", "description": "10日均线上穿20日均线"},
+    {"id": "breakout_head", "op": "breakout_up", "left": "close", "right": "head_high_prev", "description": "突破前头部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "sequence",
+              "window": "$params.pressure_lookback",
+              "allow_same_day": "$params.allow_same_day",
+              "conditions": [
+                {"op": "condition", "event": "cross_fast_mid_down"},
+                {"op": "condition", "event": "cross_fast_slow_down"},
+                {"op": "condition", "event": "cross_mid_slow_down"}
+              ]
+            },
+            "event": "cross_fast_mid_up",
+            "window": "$params.support_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "sequence",
+            "window": "$params.support_lookback",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {"op": "condition", "event": "cross_fast_mid_up"},
+              {"op": "condition", "event": "cross_fast_slow_up"},
+              {"op": "condition", "event": "cross_mid_slow_up"}
+            ]
+          },
+          {"op": "condition", "event": "breakout_head"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别三均线向下交叉簇，近似形成价压。",
+    "再识别三均线向上交叉簇，近似价托重新建立。",
+    "以收盘突破前头部作为压转托完成确认。"
+  ],
+  "signal_day_definition": "以价托建立后突破前头部的当日作为压转托信号完成日。",
+  "manual_review_needed": [
+    "原文中的‘麻花结’与‘三天不回落加码’尚未单独建模。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_slow_window + breakout_lookback + 1。"
+  ],
+  "explain": "压转托被结构化为先价压、后价托、最后突破前头部的顺序形态。"
+}

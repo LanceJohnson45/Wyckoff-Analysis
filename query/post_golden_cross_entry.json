@@ -1,0 +1,60 @@
+{
+  "name": "后金叉买入",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [447, 448],
+  "source": "后金叉买入强调：庄股在三死叉见顶后先退出，随后等待较大级别的价金叉、量金叉、MACD金叉出现；尤其五线之上的后金叉、后三金叉以及位于2+3初端的后金叉，更值得拦截。",
+  "source_summary": "若股价在五线之上形成后金叉，并伴随量能转强，可视为后金叉买点。",
+  "comment": "当前按五线之上的价金叉 + 量能转强的日线版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "volume_ma_short": 5,
+    "volume_ma_long": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "vol_ma_5", "op": "sma", "field": "volume", "window": "$params.volume_ma_short", "description": "5日均量"},
+    {"id": "vol_ma_10", "op": "sma", "field": "volume", "window": "$params.volume_ma_long", "description": "10日均量"}
+  ],
+  "events": [
+    {"id": "price_golden_cross", "op": "cross_up", "left": "ma_5", "right": "ma_10", "description": "5日均线上穿10日均线"},
+    {"id": "volume_golden_cross", "op": "cross_up", "left": "vol_ma_5", "right": "vol_ma_10", "description": "5日均量线上穿10日均量线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "price_golden_cross"},
+          {"op": "condition", "event": "volume_golden_cross"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_20"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算价格均线与量能均线。",
+    "检测价格金叉与量能金叉是否形成。",
+    "要求股价位于20/60/120日均线之上，近似表达五线之上的后金叉。"
+  ],
+  "signal_day_definition": "以价格和量能后金叉形成且股价位于五线之上的当日作为后金叉买点确认日。",
+  "manual_review_needed": [
+    "原文还强调MACD金叉、庄股背景和2+3初端位置，当前只保留可直接从日线O/H/L/C/V推导的主结构。"
+  ],
+  "implementation_notes": [
+    "这是庄股波段跟随规则的简化日线版本。"
+  ],
+  "explain": "后金叉买入被结构化为五线之上的价格金叉和量能金叉共振。"
+}

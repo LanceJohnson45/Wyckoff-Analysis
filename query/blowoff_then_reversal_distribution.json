@@ -1,0 +1,104 @@
+{
+  "name": "暴涨回马枪",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [493, 494, 495],
+  "source": "暴涨回马枪是庄家在低位难以出货时，先快速暴涨制造赚钱效应，再在高位掉头缓慢派发的出货方式。原文强调快速拉高、随后三死叉、断头铡刀、死蜘蛛、120下小平台等顶部与派发特征。",
+  "source_summary": "若前面存在短期暴涨背景，随后出现死叉并跌回弱势均线区，可视为暴涨回马枪进入派发阶段。",
+  "comment": "当前规则用‘前面有暴涨背景 + 之后出现5/10日死叉并跌回20日线下方’来近似派发段开始。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "trend_rule",
+  "params": {
+    "pre_rally_window": 20,
+    "pre_rally_pct": 0.25,
+    "death_cross_window": 20,
+    "signal_keep_days": 10
+  },
+  "series": [
+    {
+      "id": "close_return_20d",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.pre_rally_window",
+      "description": "20日累计涨幅"
+    },
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "death_cross_5_10",
+      "op": "cross_down",
+      "left": "ma_5",
+      "right": "ma_10",
+      "description": "5日线下穿10日线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close_return_20d",
+              "operator": ">=",
+              "right": "$params.pre_rally_pct"
+            },
+            "event": "death_cross_5_10",
+            "window": "$params.death_cross_window",
+            "min_count": 1
+          },
+          {
+            "op": "condition",
+            "event": "death_cross_5_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_20"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20日累计涨幅，识别前期快速暴涨背景。",
+    "识别之后出现的5日线下穿10日线死叉。",
+    "要求死叉出现时股价已跌回20日线下方，近似进入回马枪派发段。"
+  ],
+  "signal_day_definition": "以前面存在暴涨背景、随后出现5/10日死叉并跌回20日线下方的当日作为派发确认日。",
+  "manual_review_needed": [
+    "原文还结合三死叉、断头铡刀、死蜘蛛和120下小平台等多个顶部特征，当前只保留可稳定执行的最小主干。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= pre_rally_window + death_cross_window + 1。"
+  ],
+  "explain": "该规则把‘暴涨回马枪’压缩为前期暴涨后进入均线死叉派发阶段的顶部信号。"
+}

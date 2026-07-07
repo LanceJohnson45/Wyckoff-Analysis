@@ -1,0 +1,55 @@
+{
+  "name": "顶紧右上角",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [281, 282, 283],
+  "source": "顶紧右上角指股价成功上穿水平压力线后，K线持续顶住右上方天花板运行，原来的压力线变成支撑线，只要股价仍紧贴支撑向上推进，就说明向上推进力量较大。",
+  "source_summary": "若股价突破平台后持续贴近支撑线向上运行，可视为顶紧右上角。",
+  "comment": "当前提取为突破后不远离平台支撑、并继续站在其上方的持续状态规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "trend_rule",
+  "params": {
+    "platform_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "平台顶部近似"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日平台顶部"}
+  ],
+  "events": [
+    {"id": "breakout_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "突破平台顶部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "condition", "event": "breakout_platform"},
+            "event": "breakout_platform",
+            "window": "$params.signal_keep_days",
+            "min_count": 1
+          },
+          {"op": "compare", "left": "close", "operator": ">=", "right": "platform_high_prev"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别平台顶部突破。",
+    "突破后要求收盘仍能顶在平台支撑之上，近似‘顶紧右上角’。"
+  ],
+  "signal_day_definition": "当突破平台后最新交易日仍能紧贴支撑运行时，视为顶紧右上角有效。",
+  "manual_review_needed": [
+    "原文还区分上升通道情形与‘向上推进空间公式’，当前未并入主规则。"
+  ],
+  "implementation_notes": [
+    "这是突破后的跟踪强势规则。"
+  ],
+  "explain": "顶紧右上角被结构化为平台突破后持续贴近支撑上行。"
+}

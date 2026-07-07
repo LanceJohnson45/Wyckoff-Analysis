@@ -1,0 +1,47 @@
+{
+  "name": "横阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [311, 312],
+  "source": "横阴墓碑由一根横线和一根长阴线组成，是高位很常见且杀伤力极强的头部信号；其变形包括横锤墓碑等，本质都是高位整理后快速转弱。",
+  "source_summary": "若高位横线后出现长阴杀跌，可视为横阴墓碑。",
+  "comment": "当前按横线后阴线向下破位的核心组合提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "open_ref_1", "op": "ref", "field": "open", "window": 1, "description": "前一日开盘价"},
+    {"id": "close_ref_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "open_ref_1", "operator": "==", "right": "close_ref_1"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_1"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别前一日横线近似形态。",
+    "要求当前阴线向下跌破横线关键价位。"
+  ],
+  "signal_day_definition": "以横线后长阴确认的当日作为横阴墓碑确认日。",
+  "manual_review_needed": [
+    "原文还包含横锤墓碑等变形，当前只保留最基础的横阴墓碑。"
+  ],
+  "implementation_notes": [
+    "这是两日高位快速转弱组合。"
+  ],
+  "explain": "横阴墓碑被结构化为横线后长阴杀跌的头部组合。"
+}

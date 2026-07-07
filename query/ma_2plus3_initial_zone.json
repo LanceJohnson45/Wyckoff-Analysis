@@ -1,0 +1,128 @@
+{
+  "name": "均线 2+3（一）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [361, 362, 363],
+  "source": "均线2+3（一）定义了股价在60日、120日均线上方的‘2+3区间’，并指出真正值得关注的是股价第二次放量进入2+3区间、底部抬高、60与120日均线走平或向上之后的进入2+3初端。",
+  "source_summary": "若5/10/20日均线与股价同步站上60/120日均线，可视为进入2+3初端。",
+  "comment": "当前提取为日线‘进入2+3初端’的基础版本，不强制要求二次进入与反压确认。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_longer_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日量均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_10",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_20",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线与20日量均线。",
+    "要求股价与三条短期均线全部位于60日均线之上，且收盘位于120日均线之上，近似表达进入2+3区间。",
+    "要求成交量不弱于量均线，近似表达原文中的放量进入。"
+  ],
+  "signal_day_definition": "以股价和短期均线同步进入60/120日均线上方的当日作为2+3初端进入日。",
+  "manual_review_needed": [
+    "原文强调第二次放量进入、底部抬高和反压后支撑，当前仅保留更通用的首次结果态规则。",
+    "‘60、120日均线至少走平甚至向上’当前未强制纳入，后续可补充斜率条件。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_longer_window + 20 + 1，当前取150。"
+  ],
+  "explain": "均线2+3（一）被结构化为股价与短期均线进入60/120日均线上方的2+3初端信号。"
+}

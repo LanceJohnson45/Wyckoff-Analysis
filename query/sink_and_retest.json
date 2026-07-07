@@ -1,0 +1,58 @@
+{
+  "name": "沉下去看看",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [397, 398],
+  "source": "沉下去看看强调股价第一次上穿120日均线时不急于买入，而要等待它回落接受考验；只有股价沉不下去、并再次放量突破颈线时，才是较可靠的买点。",
+  "source_summary": "若股价先上穿120日均线、回落不深、再放量突破前高，可视为沉下去看看后的确认买点。",
+  "comment": "当前按‘先上穿120线，再回踩不破，随后放量突破前高’提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 180,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "neckline_lookback": 20,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"},
+    {"id": "neckline_high", "op": "highest", "field": "close", "window": "$params.neckline_lookback", "description": "近N日颈线高点近似"},
+    {"id": "neckline_high_prev", "op": "ref", "field": "neckline_high", "window": 1, "description": "前一日颈线高点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "break_neckline", "op": "breakout_up", "left": "close", "right": "neckline_high_prev", "description": "放量突破颈线位"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "condition", "event": "break_neckline"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先观察股价是否重新站上120日与60日均线。",
+    "把近一段时间前高近似为颈线位。",
+    "要求放量突破颈线，作为‘沉不下去’后的确认买点。"
+  ],
+  "signal_day_definition": "以回踩考验后再次放量突破颈线的当日作为沉下去看看买点确认日。",
+  "manual_review_needed": [
+    "原文强调先沉下去再观察能否浮出水面，当前没有显式建模第一次上穿后的回踩过程事件，只保留确认态。"
+  ],
+  "implementation_notes": [
+    "该规则与东方红、大阳升、顶天立地量等信号联用更贴近原文。"
+  ],
+  "explain": "沉下去看看被结构化为回踩考验后重新站稳并放量突破颈线的确认买点。"
+}

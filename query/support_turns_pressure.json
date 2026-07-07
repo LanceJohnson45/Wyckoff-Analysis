@@ -1,0 +1,90 @@
+{
+  "name": "托转压",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [188, 189, 190, 191, 192],
+  "source": "托转压指三条均线先形成价托，但股价上扬不多，随后缓慢滑落并重新跌破三条均线，在震荡一段时期后形成价压并下穿前底部。",
+  "source_summary": "若先形成价托，后又转成价压并跌破前底部，可视为托转压。",
+  "comment": "当前按‘先价托、后价压、再跌破前低’的主干顺序提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "support_lookback": 20,
+    "pressure_lookback": 20,
+    "breakdown_lookback": 40,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_slow", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"},
+    {"id": "bottom_low", "op": "lowest", "field": "close", "window": "$params.breakdown_lookback", "description": "前底部最低收盘价"},
+    {"id": "bottom_low_prev", "op": "ref", "field": "bottom_low", "window": 1, "description": "前一日前底部低点"}
+  ],
+  "events": [
+    {"id": "cross_fast_mid_up", "op": "cross_up", "left": "ma_fast", "right": "ma_mid", "description": "5日均线上穿10日均线"},
+    {"id": "cross_fast_slow_up", "op": "cross_up", "left": "ma_fast", "right": "ma_slow", "description": "5日均线上穿20日均线"},
+    {"id": "cross_mid_slow_up", "op": "cross_up", "left": "ma_mid", "right": "ma_slow", "description": "10日均线上穿20日均线"},
+    {"id": "cross_fast_mid_down", "op": "cross_down", "left": "ma_fast", "right": "ma_mid", "description": "5日均线下穿10日均线"},
+    {"id": "cross_fast_slow_down", "op": "cross_down", "left": "ma_fast", "right": "ma_slow", "description": "5日均线下穿20日均线"},
+    {"id": "cross_mid_slow_down", "op": "cross_down", "left": "ma_mid", "right": "ma_slow", "description": "10日均线下穿20日均线"},
+    {"id": "breakdown_bottom", "op": "breakout_down", "left": "close", "right": "bottom_low_prev", "description": "跌破前底部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "sequence",
+              "window": "$params.support_lookback",
+              "allow_same_day": "$params.allow_same_day",
+              "conditions": [
+                {"op": "condition", "event": "cross_fast_mid_up"},
+                {"op": "condition", "event": "cross_fast_slow_up"},
+                {"op": "condition", "event": "cross_mid_slow_up"}
+              ]
+            },
+            "event": "cross_fast_mid_down",
+            "window": "$params.pressure_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "sequence",
+            "window": "$params.pressure_lookback",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {"op": "condition", "event": "cross_fast_mid_down"},
+              {"op": "condition", "event": "cross_fast_slow_down"},
+              {"op": "condition", "event": "cross_mid_slow_down"}
+            ]
+          },
+          {"op": "condition", "event": "breakdown_bottom"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先识别三均线向上交叉簇，近似形成价托。",
+    "再识别三均线向下交叉簇，近似价压重新建立。",
+    "以收盘跌破前底部作为托转压完成确认。"
+  ],
+  "signal_day_definition": "以价压形成后跌破前底部的当日作为托转压信号完成日。",
+  "manual_review_needed": [
+    "原文中的8字形麻花结与三天不反弹加码清仓尚未单独建模。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_slow_window + breakdown_lookback + 1。"
+  ],
+  "explain": "托转压被结构化为先价托、后价压、最后跌破前底部的顺序形态。"
+}

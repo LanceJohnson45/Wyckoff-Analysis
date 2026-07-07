@@ -1,0 +1,76 @@
+{
+  "name": "青龙取水",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [159, 160, 161, 162, 163],
+  "source": "青龙取水指股价在60日均线上方震荡上行较长时间，随后回到60日均线附近形成龙头取水，同时出现量芝麻点，洗筹完毕后再突破前平台进入加速上涨。",
+  "source_summary": "若股价长期沿60日线上行，回踩60日线缩量后再突破前平台，可视为青龙取水完成。",
+  "comment": "当前主规则聚焦‘沿60日线上行背景 + 回踩缩量 + 平台突破’的主干。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 180,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_long_window": 60,
+    "trend_lookback": 80,
+    "trend_min_days": 40,
+    "setup_lookback": 20,
+    "volume_ma_window": 20,
+    "platform_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "前平台最高收盘价"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日平台高点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "成交量均线"}
+  ],
+  "events": [
+    {"id": "breakout_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "取水后突破前平台"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": ">=", "right": "ma_long"},
+            "event": "breakout_platform",
+            "window": "$params.trend_lookback",
+            "min_count": "$params.trend_min_days"
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "close", "operator": "<=", "right": "ma_long"},
+                {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"}
+              ]
+            },
+            "event": "breakout_platform",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "breakout_platform"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在trend_lookback窗口内统计收盘位于60日均线上方的天数，近似‘龙体’长期盘升背景。",
+    "在突破前的setup_lookback窗口内寻找一次贴近60日线且缩量的回踩，近似‘取水 + 水坑’。",
+    "以收盘突破前平台高点作为青龙取水完成日。"
+  ],
+  "signal_day_definition": "以取水后突破前平台高点的当日作为青龙取水信号完成日。",
+  "manual_review_needed": [
+    "原文提到盘升时间可达半年，当前用trend_lookback与trend_min_days参数近似，需要后续回测调优。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + trend_lookback + 1。"
+  ],
+  "explain": "青龙取水被结构化为沿60日线上行后的缩量回踩与再次平台突破。"
+}

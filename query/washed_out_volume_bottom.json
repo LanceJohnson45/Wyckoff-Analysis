@@ -1,0 +1,107 @@
+{
+  "name": "洗到无量方为底",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [745, 746, 747],
+  "source": "洗到无量方为底强调：主力建仓后会反复洗盘，直到成交量极度萎缩、半天没几笔成交，洗盘才接近尾声；随后股价重新放量走强时，才是更适合的大量买入阶段。",
+  "source_summary": "若一段洗盘后出现极度缩量，再重新放量突破短期反弹高点，可视为洗到无量方为底成立。",
+  "comment": "当前把原文中的‘无量尾声 + 再度放量上涨’收敛成日线可执行版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_ma_window": 20,
+    "shrink_ratio": 0.5,
+    "washout_lookback": 20,
+    "min_shrink_days": 2,
+    "breakout_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日均量"
+    },
+    {
+      "id": "shrink_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.shrink_ratio",
+      "window": 0,
+      "description": "极度缩量阈值"
+    },
+    {
+      "id": "rebound_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "洗盘尾声后的短期反弹高点"
+    },
+    {
+      "id": "rebound_high_prev",
+      "op": "ref",
+      "field": "rebound_high",
+      "window": 1,
+      "description": "前一日短期反弹高点"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_rebound_high",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "rebound_high_prev",
+      "description": "放量突破洗盘尾声后的短期高点"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": "<=",
+              "right": "shrink_volume_threshold"
+            },
+            "event": "breakout_rebound_high",
+            "window": "$params.washout_lookback",
+            "min_count": "$params.min_shrink_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_rebound_high"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20日均量，并用其一半近似原文中的‘极度萎缩’成交量阈值。",
+    "要求在washout_lookback窗口内，突破前至少出现若干个极度缩量交易日，近似洗盘尾声。",
+    "当收盘价放量突破近期反弹高点时，视为洗到无量方为底的确认日。"
+  ],
+  "signal_day_definition": "以极度缩量洗盘后重新放量突破短期高点的当日作为确认日。",
+  "manual_review_needed": [
+    "原文还区分低吸试探与大举买入时点，当前主规则优先输出更稳妥的放量再起确认版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(volume_ma_window, washout_lookback, breakout_lookback) + 1。"
+  ],
+  "explain": "该规则把洗盘尾声表达为极度缩量，再用放量突破短期高点确认底部成立。"
+}

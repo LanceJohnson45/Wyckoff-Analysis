@@ -1,0 +1,63 @@
+{
+  "name": "三连托 三连地上井",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [399, 400, 401],
+  "source": "三连托指月托、季托、半年托依次形成；三连地上井指多组短中期均线依次上穿长期均线形成井字共振。两者叠加时常是底部区间较可靠的启动信号，若出现两组则往往对应跨度更长的W底。",
+  "source_summary": "若多组托和井字形均线交叉在较短窗口内依次完成，可视为三连托三连地上井信号。",
+  "comment": "当前按托与井字信号在同一窗口内密集出现的结果态版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 180,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_window": 30,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"}
+  ],
+  "events": [
+    {"id": "monthly_support", "op": "cross_up", "left": "ma_5", "right": "ma_20", "description": "月托近似"},
+    {"id": "seasonal_support", "op": "cross_up", "left": "ma_10", "right": "ma_60", "description": "季托近似"},
+    {"id": "halfyear_support", "op": "cross_up", "left": "ma_20", "right": "ma_120", "description": "半年托近似"},
+    {"id": "ground_well_a", "op": "cross_up", "left": "ma_5", "right": "ma_60", "description": "第一组地上井近似"},
+    {"id": "ground_well_b", "op": "cross_up", "left": "ma_5", "right": "ma_120", "description": "第二组地上井近似"},
+    {"id": "ground_well_c", "op": "cross_up", "left": "ma_10", "right": "ma_120", "description": "第三组地上井近似"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "monthly_support"}, "gte": 1},
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "seasonal_support"}, "gte": 1},
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "halfyear_support"}, "gte": 1},
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "ground_well_a"}, "gte": 1},
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "ground_well_b"}, "gte": 1},
+          {"op": "count", "window": "$params.signal_window", "condition": {"op": "condition", "event": "ground_well_c"}, "gte": 1}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "在一个较短窗口内分别检查三组托与三组井字交叉是否出现。",
+    "当托与井的共振在窗口内基本完成时，将其视为底部较强启动信号。"
+  ],
+  "signal_day_definition": "以三连托与三连地上井的主要交叉在近窗口内完成、并纳入信号保持期的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文对月托、季托、半年托的定义是三线托结构，当前用最关键的交叉事件近似表达。",
+    "原文还提到两组三连托三连地上井对应W底，当前未单独加入双组条件。"
+  ],
+  "implementation_notes": [
+    "这是一个多事件共振型底部规则。"
+  ],
+  "explain": "三连托三连地上井被结构化为多组中短长期均线交叉在近窗口内完成的底部共振信号。"
+}

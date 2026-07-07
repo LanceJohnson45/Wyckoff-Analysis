@@ -1,0 +1,162 @@
+{
+  "name": "半年托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [783, 784, 785],
+  "source": "半年托是20、60、120日均线交叉形成的三角托举结构，通常意味着在月托、季托之后进一步完成的中期底部转强；若再伴随平台突破、强势K线组合和较好的市场环境，则理论上有较长上涨周期。",
+  "source_summary": "若20/60/120日均线形成向上托举，并配合价格突破近期平台，可视为半年托成立。",
+  "comment": "当前先提取日线版‘20/60/120三线托举 + 平台突破’主干，不引入L3能量与分时回档买点。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 200,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 20,
+    "ma_mid_window": 60,
+    "ma_slow_window": 120,
+    "sequence_lookback": 60,
+    "breakout_lookback": 40,
+    "volume_ma_window": 10,
+    "signal_keep_days": 8,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "近期平台或头部压力位近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日平台高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_20_60_up",
+      "op": "cross_up",
+      "left": "ma_20",
+      "right": "ma_60",
+      "description": "20日均线上穿60日均线"
+    },
+    {
+      "id": "cross_20_120_up",
+      "op": "cross_up",
+      "left": "ma_20",
+      "right": "ma_120",
+      "description": "20日均线上穿120日均线"
+    },
+    {
+      "id": "cross_60_120_up",
+      "op": "cross_up",
+      "left": "ma_60",
+      "right": "ma_120",
+      "description": "60日均线上穿120日均线"
+    },
+    {
+      "id": "breakout_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "突破近期平台压力位"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "sequence",
+            "window": "$params.sequence_lookback",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "cross_20_60_up"
+              },
+              {
+                "op": "condition",
+                "event": "cross_20_120_up"
+              },
+              {
+                "op": "condition",
+                "event": "cross_60_120_up"
+              }
+            ]
+          },
+          {
+            "op": "condition",
+            "event": "breakout_platform"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "ma_20",
+            "operator": ">=",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">=",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20、60、120日均线，并识别三条均线的向上交叉序列。",
+    "要求在sequence_lookback窗口内完成20/60/120三线托举，近似半年托形成。",
+    "以放量突破近期平台高点作为半年托成立后的买入确认。"
+  ],
+  "signal_day_definition": "以半年托形成后放量突破平台的当日作为半年托确认日。",
+  "manual_review_needed": [
+    "原文还结合OBV通气、两阳夹一阴、多方炮和指数环境，当前未纳入这些增强条件。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_slow_window + sequence_lookback + 1。"
+  ],
+  "explain": "半年托被结构化为20/60/120三线托举完成后，价格放量突破平台的中期转强信号。"
+}

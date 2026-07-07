@@ -1,0 +1,58 @@
+{
+  "name": "快速买进当天涨停板的技术",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [656, 657, 658, 659],
+  "source": "快速买进当天涨停板的技术强调：小平台已经做好，开盘后若出现巨量跳空向上攻击，盘中快速切入，若回档不补缺口再度放量，则当日很容易冲向涨停。",
+  "source_summary": "若小平台上方出现巨量跳空突破，且回档不补缺口，则可视为快速买进当天涨停板形态。",
+  "comment": "当前按日线版本提取，重点保留小平台突破、巨量和跳空三要素。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "platform_lookback": 20,
+    "volume_ma_window": 5,
+    "volume_multiplier": 2,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "小平台高点"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日小平台高点"},
+    {"id": "prev_high", "op": "ref", "field": "high", "window": 1, "description": "前一日最高价"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.volume_multiplier", "window": 0, "description": "巨量阈值"}
+  ],
+  "events": [
+    {"id": "break_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "收盘突破小平台"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "break_platform"},
+          {"op": "compare", "left": "open", "operator": ">", "right": "prev_high"},
+          {"op": "compare", "left": "low", "operator": ">", "right": "prev_high"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_threshold"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算小平台高点、前一日最高价和5日均量。",
+    "要求最新交易日跳空高开且盘中不回补前一日缺口。",
+    "要求成交量达到巨量阈值并收盘突破小平台。"
+  ],
+  "signal_day_definition": "以巨量跳空突破小平台且当日保持强势的交易日作为快速打入信号日。",
+  "manual_review_needed": [
+    "原文强调盘中15分钟就能发现，当前只能输出日线收盘确认版本。"
+  ],
+  "implementation_notes": [
+    "这是一种‘巨量跳空过平台’的日线确认模型。"
+  ],
+  "explain": "该规则用于识别小平台上方的巨量跳空突破，当天具备冲击涨停潜质的形态。"
+}

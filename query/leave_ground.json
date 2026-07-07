@@ -1,0 +1,43 @@
+{
+  "name": "离开地面",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [241, 242, 243],
+  "source": "离开地面强调在滑跑与UP/UV之后，股价需要突破长期滑跑阶段的最高收盘价T线；有时还会出现2T线反压确认，但核心是一旦冲过T线，股价就进入离开地面的爬升阶段。",
+  "source_summary": "若股价在滑跑后向上突破T线，可视为离开地面成立。",
+  "comment": "当前先提取基础T线突破版，不把2T和2T-1L空间公式并入主规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "滑跑阶段最高收盘价近似T线"},
+    {"id": "t_line_prev", "op": "ref", "field": "t_line", "window": 1, "description": "前一日T线"}
+  ],
+  "events": [
+    {"id": "breakout_t_line", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "突破T线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {"op": "condition", "event": "breakout_t_line"}
+    }
+  },
+  "calculation_steps": [
+    "用滑跑阶段最近t_line_lookback日最高收盘价近似T线。",
+    "检测收盘价是否向上突破该T线。"
+  ],
+  "signal_day_definition": "以收盘突破T线的当日作为离开地面确认日。",
+  "manual_review_needed": [
+    "原文中的2T线、反压确认与2T-1L目标空间公式尚未并入主规则。"
+  ],
+  "implementation_notes": [
+    "当前先保留最核心的T线突破定义。"
+  ],
+  "explain": "离开地面被结构化为滑跑完成后向上突破T线的瞬间。"
+}

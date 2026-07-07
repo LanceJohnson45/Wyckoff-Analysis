@@ -1,0 +1,37 @@
+{
+  "name": "能量分解",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [726, 727, 728, 729],
+  "source": "能量分解通过把普通成交量进一步拆成主动性买入量与主动性卖出量，并对一段时期的主动性买卖量进行累积，从而观察庄家在某个阶段的收集筹码或派发行为；原书依赖广通灵稳榜的L3数据。",
+  "source_summary": "这是基于L3主动性买卖量的能量观察体系，不适合仅凭日线O/H/L/C/V压成统一布尔规则。",
+  "comment": "原文核心不是单一图形，而是把成交量分解为主动买卖盘累积能量的分析方法。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先获取日内成交量的主动性买入量与主动性卖出量。",
+    "将一段时期的主动性买卖量分别累积，形成能量柱体图。",
+    "结合日K线与能量累积变化判断主力吸筹或派发方向。"
+  ],
+  "signal_day_definition": "本节描述的是L3主动性买卖量分解方法，不存在统一的单日 latest_match 完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入逐笔或至少分时级别的主动性买卖量数据，而不是单日总成交量。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免误把L3能量体系压缩成伪精确的日线规则。"
+  ],
+  "explain": "能量分解依赖L3主动性买卖量累积体系，当前单靠日线O/H/L/C/V无法完整实现。"
+}

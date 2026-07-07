@@ -1,0 +1,53 @@
+{
+  "name": "跌破五线没底了",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [454, 455],
+  "source": "跌破五线没底了强调：当庄家开始出货后，股价一旦跌破5日、10日、20日、60日、120日五条均线，下方就再无明显支撑，常意味着还要走很长一段跌势。",
+  "source_summary": "若股价跌到五条均线之下，可视为‘跌破五线没底了’的强烈看空信号。",
+  "comment": "当前按收盘位于五条均线之下的结果态版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_5"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_10"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_20"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求收盘同时位于五条均线之下。",
+    "把这种无明显均线支撑的状态视作强烈看空信号。"
+  ],
+  "signal_day_definition": "以收盘跌到五条均线之下的当日作为‘跌破五线没底了’信号日。",
+  "manual_review_needed": [
+    "原文强调该规则不适用于庄家建仓区间的深洗盘和少数例外，当前 latest_match 未加入背景过滤。"
+  ],
+  "implementation_notes": [
+    "这是偏保守的硬性风控规则。"
+  ],
+  "explain": "跌破五线没底了被结构化为收盘位于五条均线之下的强烈看空信号。"
+}

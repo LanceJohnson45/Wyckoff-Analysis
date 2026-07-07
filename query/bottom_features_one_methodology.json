@@ -1,0 +1,36 @@
+{
+  "name": "底部特征一",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [388, 389, 390],
+  "source": "底部特征一讨论2-3区间为何通常不应买入、何时只能怀疑这里是底、以及弱洗盘/中洗盘/强洗盘三种底部洗盘位置的经验框架，重点是底部区域的理解而非单一触发点。",
+  "source_summary": "这是底部区间与洗盘强弱的分析方法论，不是单一布尔指标。",
+  "comment": "原文核心是如何理解2-3区间、120线‘桅杆’和三种洗盘强弱，当前不适合压成一个统一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要综合判断2-3区间、120日均线位置、前期放量、是否属于洗盘和洗盘强弱。",
+    "这些内容更接近底部认知框架，而非固定长度、固定参数的即时布尔规则。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的信号完成日。",
+  "manual_review_needed": [
+    "后续若需要，可把‘弱洗盘/中洗盘/强洗盘’拆成三个独立状态spec。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "底部特征一是底部区间与洗盘强弱的方法论，不是单一布尔指标。"
+}

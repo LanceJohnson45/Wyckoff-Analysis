@@ -1,0 +1,116 @@
+{
+  "name": "双阳阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [332, 333, 334],
+  "source": "双阳阴墓碑是在高位由四根K线构成的加强版墓碑头部，可理解为两次阳线诱多、两次阴线杀跌，震荡出货时间更长，因此比单个阳阴墓碑更稳定。",
+  "source_summary": "若高位四日内两次先阳后阴反复诱多杀跌，可视为双阳阴墓碑。",
+  "comment": "当前按四日中两次阳后阴的加强版墓碑结构提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "open_ref_1",
+      "op": "ref",
+      "field": "open",
+      "window": 1,
+      "description": "前一日开盘价"
+    },
+    {
+      "id": "close_ref_1",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    },
+    {
+      "id": "open_ref_2",
+      "op": "ref",
+      "field": "open",
+      "window": 2,
+      "description": "前两日开盘价"
+    },
+    {
+      "id": "close_ref_2",
+      "op": "ref",
+      "field": "close",
+      "window": 2,
+      "description": "前两日收盘价"
+    },
+    {
+      "id": "open_ref_3",
+      "op": "ref",
+      "field": "open",
+      "window": 3,
+      "description": "前三日开盘价"
+    },
+    {
+      "id": "close_ref_3",
+      "op": "ref",
+      "field": "close",
+      "window": 3,
+      "description": "前三日收盘价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_ref_3",
+            "operator": ">",
+            "right": "open_ref_3"
+          },
+          {
+            "op": "compare",
+            "left": "close_ref_2",
+            "operator": "<",
+            "right": "open_ref_2"
+          },
+          {
+            "op": "compare",
+            "left": "close_ref_1",
+            "operator": ">",
+            "right": "open_ref_1"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "open"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "close_ref_1"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别四日K线次序为阳、阴、阳、阴。",
+    "要求最后一根阴线重新压回最近阳线收盘位之下，确认反复诱多后转弱。",
+    "把第四日视为加强版墓碑头部的完成日。"
+  ],
+  "signal_day_definition": "以第四根K线收阴并完成第二次诱多杀跌的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文强调高位宽幅震荡与周K线版本更稳，当前只抽取日线四日主结构。",
+    "当前未单独量化‘高位清仓时间更长’这一分布语义。"
+  ],
+  "implementation_notes": [
+    "这是一种对单个阳阴墓碑的四日扩展。"
+  ],
+  "explain": "双阳阴墓碑被结构化为四日两次先阳后阴的加强型头部组合。"
+}

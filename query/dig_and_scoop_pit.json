@@ -1,0 +1,92 @@
+{
+  "name": "挖坑掏坑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [825, 826, 827, 828],
+  "source": "挖坑掏坑描述庄家在启动前故意把股价从2+3区间快速打回2-3区间甚至更低，摆出弃庄姿态吓出筹码，随后再快速掏坑把股价重新拉回，并最终突破前头部，暴露其仍在做庄。",
+  "source_summary": "若股价先出现深坑回落，再重新突破坑前头部，可视为挖坑掏坑成立。",
+  "comment": "当前直接提取最关键的识别点：不在坑底赌，而是在重新过前头时确认。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "head_lookback": 40,
+    "pit_drop_lookback": 20,
+    "pit_drop_pct": -0.12,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "坑前头部高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日头部高点"
+    },
+    {
+      "id": "pit_drop_pct",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.pit_drop_lookback",
+      "description": "近20日累计跌幅"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "重新突破坑前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "pit_drop_pct",
+              "operator": "<=",
+              "right": "$params.pit_drop_pct"
+            },
+            "event": "breakout_head",
+            "window": "$params.head_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算坑前头部高点以及坑段累计跌幅。",
+    "要求在重新突破头部之前，近期曾出现一段较大幅度的下挖动作。",
+    "当收盘价重新突破坑前头部时，视为挖坑掏坑身份暴露并成立。"
+  ],
+  "signal_day_definition": "以股价重新突破坑前头部的当日作为挖坑掏坑确认日。",
+  "manual_review_needed": [
+    "原文强调坑底无法区分弃庄与挖坑，所以当前刻意不输出坑底抄底信号，只输出过前头确认。"
+  ],
+  "implementation_notes": [
+    "这是对‘不赌坑底，只等过前头’原则的直接结构化。"
+  ],
+  "explain": "挖坑掏坑被结构化为先有深坑，再重新突破坑前头部的启动确认。"
+}

@@ -1,0 +1,75 @@
+{
+  "name": "三连阴",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [327, 328, 329, 330, 331],
+  "source": "三连阴指股价在较大涨幅或反弹高位之后，连续出现三根较长阴线，空方从此主导行情；若同时放量、随后出现三死叉或跌破60日线，则头部可靠性更高。",
+  "source_summary": "若高位或大幅反弹后连续三日收阴并快速吞没前期涨幅，可视为三连阴头部。",
+  "comment": "当前按‘先有上涨背景，再连续三根阴线’的核心版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "background_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "close_ref_3",
+      "op": "ref",
+      "field": "close",
+      "window": 3,
+      "description": "三日前收盘价"
+    },
+    {
+      "id": "close_ref_10",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.background_lookback",
+      "description": "上涨背景参考收盘价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_ref_3",
+            "operator": ">",
+            "right": "close_ref_10"
+          },
+          {
+            "op": "consecutive",
+            "length": 3,
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "open"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先检查三日前相对更早周期存在上涨或反弹背景。",
+    "要求最近三日连续为阴线。",
+    "把第三根阴线完成日作为由升转跌的拐点确认。"
+  ],
+  "signal_day_definition": "以第三根连续阴线收盘的当日作为三连阴信号完成日。",
+  "manual_review_needed": [
+    "原文强调‘较长阴线’与‘放量更可靠’，当前未对实体大小和量能做硬约束。",
+    "原文强调高位或大幅获利背景，当前用近10日上涨背景近似表达，参数仍需回测。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= background_lookback + 3 + 1，当前取30以覆盖回看和稳定执行。"
+  ],
+  "explain": "三连阴被结构化为上涨背景之后的连续三根阴线头部信号。"
+}

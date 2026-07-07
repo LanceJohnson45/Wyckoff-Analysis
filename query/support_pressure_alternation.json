@@ -1,0 +1,62 @@
+{
+  "name": "托压互转",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [192, 193, 194, 195],
+  "source": "托压互转指股价在横向震荡中围绕三条均线反复上下波动，先形成价压，再形成价托，以后再形成价压，如此循环；其中震荡中轴为三条均线，上倾的托压互转最强。",
+  "source_summary": "若近期在三均线附近出现托与压的来回切换，并最终向上突破前头部，可视为偏强的托压互转完成。",
+  "comment": "当前优先提取偏强版本：均线中轴缓慢上倾，近期同时出现过压与托，并向上突破前头部。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "lookback": 40,
+    "breakout_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_slow", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"},
+    {"id": "ma_slow_ref", "op": "ref", "field": "ma_slow", "window": 10, "description": "10日前的20日均线"},
+    {"id": "head_high", "op": "highest", "field": "close", "window": "$params.breakout_lookback", "description": "前头部最高收盘价"},
+    {"id": "head_high_prev", "op": "ref", "field": "head_high", "window": 1, "description": "前一日头部高点"}
+  ],
+  "events": [
+    {"id": "cross_fast_mid_up", "op": "cross_up", "left": "ma_fast", "right": "ma_mid", "description": "5日均线上穿10日均线"},
+    {"id": "cross_fast_mid_down", "op": "cross_down", "left": "ma_fast", "right": "ma_mid", "description": "5日均线下穿10日均线"},
+    {"id": "breakout_head", "op": "breakout_up", "left": "close", "right": "head_high_prev", "description": "突破前头部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "count", "window": "$params.lookback", "condition": {"op": "condition", "event": "cross_fast_mid_up"}, "gte": 1},
+          {"op": "count", "window": "$params.lookback", "condition": {"op": "condition", "event": "cross_fast_mid_down"}, "gte": 1},
+          {"op": "compare", "left": "ma_slow", "operator": ">", "right": "ma_slow_ref"},
+          {"op": "condition", "event": "breakout_head"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "统计lookback窗口内是否同时出现过一次向上交叉和一次向下交叉，近似托压来回切换。",
+    "要求20日均线高于10日前自身，近似上倾震荡中轴。",
+    "以收盘突破前头部作为偏强托压互转完成确认。"
+  ],
+  "signal_day_definition": "以上倾托压互转后突破前头部的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文还区分下倾、水平、上倾三种方向，当前只提取更强的上倾版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_slow_window + breakout_lookback + 10 + 1。"
+  ],
+  "explain": "托压互转被结构化为近期托压都出现过、均线中轴上倾、最终向上突破前头部。"
+}

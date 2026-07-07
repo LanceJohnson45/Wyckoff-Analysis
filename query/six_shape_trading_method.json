@@ -1,0 +1,132 @@
+{
+  "name": "6字买卖法",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [764, 765, 766, 767, 768],
+  "source": "6字买卖法要求：当K线重新爬到5、10、20、60、120日均线之上时作买入；随后只要收盘跌破5日均线就作卖出，从而形成一个‘O’加一条刹车线的6字形交易闭环。",
+  "source_summary": "若股价重新站上五线之上，可视作6字买卖法的买入触发；后续跌破5日均线则是卖出触发。",
+  "comment": "当前latest_match优先输出该方法的买入触发日，卖出条件保留在说明与步骤里。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_short_window": 10,
+    "ma_mid_window": 20,
+    "ma_long_window": 60,
+    "ma_anchor_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_short_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "buy_circle",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_120",
+      "description": "收盘价重回120日均线之上，近似买入圆圈"
+    },
+    {
+      "id": "sell_line",
+      "op": "cross_down",
+      "left": "close",
+      "right": "ma_5",
+      "description": "收盘跌破5日均线，近似卖出刹车线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "buy_circle"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5、10、20、60、120日均线。",
+    "当收盘价重新站上五条均线时，输出6字买卖法的买入圆圈。",
+    "后续若收盘跌破5日均线，则视为该圆圈对应的一字卖出线。"
+  ],
+  "signal_day_definition": "latest_match用于表示6字买卖法的买入触发；卖出触发日为收盘跌破5日均线之日。",
+  "manual_review_needed": [
+    "原文说明专业用户可用四坨理论过滤低位卖点，当前未纳入。"
+  ],
+  "implementation_notes": [
+    "该方法本质是交易闭环，当前JSON主要输出买入侧的即时布尔信号，同时保留卖出定义供后续引擎扩展。"
+  ],
+  "explain": "6字买卖法被压成重返五线之上的买入触发，卖出条件则是后续跌破5日均线。"
+}

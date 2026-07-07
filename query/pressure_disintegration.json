@@ -1,0 +1,157 @@
+{
+  "name": "压瓦解",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [872, 873, 874],
+  "source": "压瓦解描述股价在压力之下横向盘整，成交量逐步萎缩到芝麻点，随后重新回到五线之上并放量突破前头部，从而彻底瓦解原有的‘压’，并往往进一步演变成压转托。",
+  "source_summary": "若股价在压力下缩量盘整后重回五线并突破前头部，可视为压瓦解成立。",
+  "comment": "当前用‘缩量盘整 + 重回五线 + 放量突破前头部’来近似表达压瓦解。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "volume_ma_window": 10,
+    "washout_lookback": 10,
+    "breakout_lookback": 30,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "前头部高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日前头部高点"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "突破前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": "<=",
+              "right": "volume_ma"
+            },
+            "event": "breakout_head",
+            "window": "$params.washout_lookback",
+            "min_count": 2
+          },
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算五线系统、10日均量和前头部高点。",
+    "要求突破前的盘整阶段出现缩量，近似洗盘接近尾声。",
+    "当股价重新回到五线之上并突破前头部时，视为压瓦解成立。"
+  ],
+  "signal_day_definition": "以重回五线并突破前头部的当日作为压瓦解确认日。",
+  "manual_review_needed": [
+    "原文还强调后续常演变为压转托，当前主规则只输出压被瓦解的关键点。"
+  ],
+  "implementation_notes": [
+    "这是‘压下缩量盘整后再突破’的日线版本。"
+  ],
+  "explain": "压瓦解被结构化为缩量盘整后重回五线并突破前头部的转强信号。"
+}

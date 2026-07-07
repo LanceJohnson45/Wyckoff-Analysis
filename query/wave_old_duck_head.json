@@ -1,0 +1,100 @@
+{
+  "name": "波浪老鸭头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [814, 815, 816],
+  "source": "波浪老鸭头是在老鸭头基础上增加更长时间的波浪式盘整蓄势，主力通过多次类似启动但不真正突破的波浪结构延长准备时间，最终一旦有效突破头顶并放量加速，往往涨势比普通老鸭头更凌厉。",
+  "source_summary": "若股价经历更长时间的波浪式老鸭头蓄势后，放量突破头顶并较前高抬升，可视为波浪老鸭头成立。",
+  "comment": "当前把‘波浪’近似成更长的准备窗口和突破头顶后再加3%确认。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 120,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "head_lookback": 60,
+    "confirm_rise_pct": 0.03,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "鸭头顶高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日鸭头顶高点"
+    },
+    {
+      "id": "confirm_price",
+      "op": "mul",
+      "field": "head_high_prev",
+      "field2": 1.03,
+      "window": 0,
+      "description": "突破后再加3%的确认价"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "突破鸭头顶"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "confirm_price"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "用较长窗口近似波浪老鸭头的更长准备期。",
+    "要求收盘价先突破鸭头顶。",
+    "再要求价格较鸭头顶高出约3%，并伴随不弱于均量的成交量，以近似原文的‘放量加速后再确认买入’。"
+  ],
+  "signal_day_definition": "以突破鸭头顶并完成约3%确认的当日作为波浪老鸭头确认日。",
+  "manual_review_needed": [
+    "原文更强调分批买入与‘跌不下去翘头就买’，当前只输出最终有效突破确认版本。"
+  ],
+  "implementation_notes": [
+    "这是老鸭头的延长准备期版本。"
+  ],
+  "explain": "波浪老鸭头被结构化为更长准备窗口后的头顶突破，并加3%过滤掉假启动。"
+}

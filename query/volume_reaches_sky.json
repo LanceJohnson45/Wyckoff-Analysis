@@ -1,0 +1,69 @@
+{
+  "name": "量顶天立地",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [87, 88, 89, 90],
+  "source": "量顶天立地强调某日出现半年以上级别的巨量柱体，常见于底部建仓或关键突破时，是对价格转折的重要确认。",
+  "source_summary": "若某日成交量创半年新高并伴随阳线，可视为量顶天立地。",
+  "comment": "当前按日线半年量能新高近似提取；原文区分建仓初期与建仓末期的细节未纳入主规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 160,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "lookback": 120,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_high_lookback",
+      "op": "highest",
+      "field": "volume",
+      "window": "$params.lookback",
+      "description": "最近N日最大成交量"
+    },
+    {
+      "id": "volume_high_prev",
+      "op": "ref",
+      "field": "volume_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日最大成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "absolute_volume_peak",
+      "op": "breakout_up",
+      "left": "volume",
+      "right": "volume_high_prev",
+      "description": "成交量创半年新高"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "absolute_volume_peak"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "统计最近lookback日的最大成交量。",
+    "识别当前成交量是否向上突破前一日的最大成交量记录。",
+    "要求当日为阳线，近似表达绝对量顶天立地。"
+  ],
+  "signal_day_definition": "以成交量创半年新高且收阳的当日作为量顶天立地信号日。",
+  "manual_review_needed": [
+    "原文强调底部区间或压力位附近的量顶天立地更有效，当前未加入价格位置过滤。",
+    "也存在两根连续顶天立地的扩展形态，当前主规则只保留单日版本。"
+  ],
+  "implementation_notes": [
+    "当前默认半年≈120个交易日。"
+  ],
+  "explain": "量顶天立地是创较长周期量能新高的关键放量信号。"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "喷出",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [711, 712, 713, 714],
+  "source": "喷出描述的是股价在暖气带上方、前头部附近小阴小阳缓慢推高，同时SPW沙盘位曲线显示主动性买入量长期充足，待庄家把‘气门芯’拧松到极限后，股价会突然快速喷出并远离成本区。",
+  "source_summary": "这是建立在SPW主动性买入量和缓慢推高后突然爆发上的方法，不适合直接压成日线规则。",
+  "comment": "原文核心依赖 SPW/沙盘位 曲线与主动性买入量数据，当前系统没有该能量源。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先确认股价位于暖气带之上并缓慢推高到前头部附近。",
+    "通过SPW/沙盘位曲线确认主动性买入量长期充足、庄家在不断收集筹码。",
+    "等待股价突然快速喷出，作为正式启动信号。"
+  ],
+  "signal_day_definition": "本节描述的是依赖SPW能量数据的突发启动过程，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要接入SPW/沙盘位曲线或等价的主动性买卖量序列。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把缺失核心能量源的形态硬压成日线规则。"
+  ],
+  "explain": "该节核心依赖SPW主动性买入量与暖气带缓慢推高后的突然喷出，当前单靠日线O/H/L/C/V无法完整实现。"
+}

@@ -1,0 +1,68 @@
+{
+  "name": "赤脚大仙",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [709, 710, 711],
+  "source": "赤脚大仙是赤脚底的年线版：加速赶底形成脚跟，长期潜伏在60日和120日均线之下形成脚底，随后脚趾位置放量上攻，最终股价冲过年线这个脚背和前头部颈线，完成庄家建仓后的启动。",
+  "source_summary": "若脚底不再创新低、脚趾处均线重新发散，并放量突破年线与前头部，可视为赤脚大仙成立。",
+  "comment": "当前按‘脚底抬高 + 重新站上60/120线 + 放量穿越年线与前头部’近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "low", "volume"],
+  "warmup_bars": 300,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_mid_window": 60,
+    "ma_long_window": 120,
+    "ma_year_window": 240,
+    "low_compare_window": 40,
+    "neck_lookback": 40,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"},
+    {"id": "ma_240", "op": "sma", "field": "close", "window": "$params.ma_year_window", "description": "240日均线/年线"},
+    {"id": "recent_low", "op": "lowest", "field": "low", "window": "$params.low_compare_window", "description": "近阶段低点"},
+    {"id": "recent_low_prev", "op": "ref", "field": "recent_low", "window": 10, "description": "更早阶段低点"},
+    {"id": "neck_high", "op": "highest", "field": "close", "window": "$params.neck_lookback", "description": "前头部颈线近似"},
+    {"id": "neck_high_prev", "op": "ref", "field": "neck_high", "window": 1, "description": "前一日颈线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "10日均量"}
+  ],
+  "events": [
+    {"id": "cross_year", "op": "cross_up", "left": "close", "right": "ma_240", "description": "股价上穿年线"},
+    {"id": "break_neck", "op": "breakout_up", "left": "close", "right": "neck_high_prev", "description": "突破前头部颈线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "recent_low", "operator": ">=", "right": "recent_low_prev"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"},
+          {"op": "condition", "event": "cross_year"},
+          {"op": "condition", "event": "break_neck"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先比较脚底区域近期低点与更早低点，要求脚底不再创新低或略有抬高。",
+    "要求股价在脚趾区域重新站上60/120线，近似五线重新发散。",
+    "以放量上穿240日年线并同时突破前头部颈线，作为赤脚大仙完成确认。"
+  ],
+  "signal_day_definition": "以股价放量突破年线和前头部颈线的当日作为赤脚大仙完成日。",
+  "manual_review_needed": [
+    "原文还强调脚趾处可能先缩量反压60线、再重返五线之上，当前主规则只保留最终右侧确认版。",
+    "本节和前面的赤脚底属于同源形态，这里加入了年线脚背语义。"
+  ],
+  "implementation_notes": [
+    "这是赤脚底的年线增强版本。",
+    "warmup_bars >= ma_year_window + neck_lookback + 1。"
+  ],
+  "explain": "该规则用于识别赤脚底在年线维度完成建仓、并最终放量突破年线和颈线的启动形态。"
+}

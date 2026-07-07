@@ -1,0 +1,117 @@
+{
+  "name": "长阴倒拔杨柳",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [111, 112, 113, 114, 115],
+  "source": "长阴倒拔杨柳要求均线系统保持多头排列，先出现顶天立地的巨量阴线但跌幅不深，随后股价不再深跌并重新上扬，可把这根巨量阴线视同洗盘性质的巨量阳线。",
+  "source_summary": "多头趋势中的巨量阴线洗盘后，若股价很快重新走强，可视为长阴倒拔杨柳。",
+  "comment": "当前按日线近似提取为多头均线背景下，先出现巨量阴线，再重新上穿5日均线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_long_window": 60,
+    "volume_peak_lookback": 60,
+    "setup_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "volume_high_lookback",
+      "op": "highest",
+      "field": "volume",
+      "window": "$params.volume_peak_lookback",
+      "description": "最近N日最大成交量"
+    },
+    {
+      "id": "volume_high_prev",
+      "op": "ref",
+      "field": "volume_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日最大成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "giant_volume_day",
+      "op": "breakout_up",
+      "left": "volume",
+      "right": "volume_high_prev",
+      "description": "出现顶天立地式的巨量柱"
+    },
+    {
+      "id": "reclaim_ma_fast",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_fast",
+      "description": "股价重新站回5日均线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "condition", "event": "giant_volume_day"},
+                {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+                {"op": "compare", "left": "close", "operator": ">", "right": "ma_long"}
+              ]
+            },
+            "event": "reclaim_ma_fast",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "reclaim_ma_fast"},
+          {"op": "compare", "left": "ma_fast", "operator": ">=", "right": "ma_mid"},
+          {"op": "compare", "left": "ma_mid", "operator": ">", "right": "ma_long"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日、60日均线与最近volume_peak_lookback日最大成交量。",
+    "识别处于60日线上方的巨量阴线日，近似表达洗盘用的顶天立地长阴。",
+    "要求其后setup_lookback日内股价重新上穿5日均线，且均线系统仍保持多头。"
+  ],
+  "signal_day_definition": "以股价重新上穿5日均线、确认长阴洗盘结束的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文强调‘跌幅不深’与‘关键阻力位附近’的语义，当前仅用收盘仍在60日线上方作近似。",
+    "原文还给出更谨慎的‘放量冲过前头部’确认，当前未并入主规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(ma_long_window, volume_peak_lookback) + setup_lookback + 1。",
+    "该规则把巨量阴线视为洗盘事件，而不是直接把当天定义为买点。"
+  ],
+  "explain": "长阴倒拔杨柳被结构化为多头趋势中的巨量阴线洗盘后快速修复。"
+}

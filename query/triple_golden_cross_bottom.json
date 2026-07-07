@@ -1,0 +1,83 @@
+{
+  "name": "三金叉见底",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [163, 164, 165, 166],
+  "source": "三金叉见底指在长期下跌后，5/10日价格均线、5/10日量均线和MACD几乎同时发生黄金交叉，表示股价见底回升并有望脱离底部。",
+  "source_summary": "若长期下跌后出现价、量、MACD三金叉共振，可视为三金叉见底。",
+  "comment": "当前用价格、量能与MACD三组金叉在短窗口内集中出现来表达三金叉。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "price_fast_window": 5,
+    "price_slow_window": 10,
+    "volume_fast_window": 5,
+    "volume_slow_window": 10,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "cluster_window": 5,
+    "background_lookback": 20,
+    "background_min_bearish_days": 8,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {"id": "price_ma_fast", "op": "sma", "field": "close", "window": "$params.price_fast_window", "description": "5日价格均线"},
+    {"id": "price_ma_slow", "op": "sma", "field": "close", "window": "$params.price_slow_window", "description": "10日价格均线"},
+    {"id": "volume_ma_fast", "op": "sma", "field": "volume", "window": "$params.volume_fast_window", "description": "5日量均线"},
+    {"id": "volume_ma_slow", "op": "sma", "field": "volume", "window": "$params.volume_slow_window", "description": "10日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "macd_dea", "op": "ema", "field": "macd_dif", "window": "$params.macd_signal_window", "description": "MACD DEA"}
+  ],
+  "events": [
+    {"id": "price_cross_up", "op": "cross_up", "left": "price_ma_fast", "right": "price_ma_slow", "description": "价格金叉"},
+    {"id": "volume_cross_up", "op": "cross_up", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "量均线金叉"},
+    {"id": "macd_cross_up", "op": "cross_up", "left": "macd_dif", "right": "macd_dea", "description": "MACD金叉"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "price_ma_fast", "operator": "<=", "right": "price_ma_slow"},
+            "event": "price_cross_up",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_bearish_days"
+          },
+          {
+            "op": "sequence",
+            "window": "$params.cluster_window",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {"op": "condition", "event": "price_cross_up"},
+              {"op": "condition", "event": "volume_cross_up"},
+              {"op": "condition", "event": "macd_cross_up"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算价均线、量均线与MACD的三组交叉。",
+    "在price_cross_up前要求存在一定天数的价格均线空头背景，近似长期下跌后启稳。",
+    "当三组金叉在cluster_window内集中出现时，视为三金叉见底。"
+  ],
+  "signal_day_definition": "以三组金叉中的最后一个完成日作为三金叉见底信号完成日。",
+  "manual_review_needed": [
+    "原文还提到多方炮、出水芙蓉、量顶天立地等伴生形态，当前未并入主规则。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + macd_signal_window + background_lookback + 1。"
+  ],
+  "explain": "三金叉见底被结构化为长期弱势后价、量、MACD三组金叉共振。"
+}

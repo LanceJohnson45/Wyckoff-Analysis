@@ -1,0 +1,92 @@
+{
+  "name": "加速赶底",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [584, 585, 586],
+  "source": "加速赶底，是指在长期下跌末期，主力为了打出时间、空间和恐慌量，而突然加快打压速度，制造快速跳空、长阴和放量下跌，把市场最后的恐慌筹码逼出来。原文强调这是最恐慌、却又最没有必要恐慌的阶段。",
+  "source_summary": "若长期下跌末期突然出现放量跳空式加速杀跌，往往属于赶底阶段的恐慌释放。",
+  "comment": "当前用长期跌势后出现放量大阴线来近似加速赶底状态，作为风险观察而非抄底信号。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "decline_window": 40,
+    "min_decline_pct": -0.25,
+    "panic_drop_pct": -0.06,
+    "volume_ma_window": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "decline_pct_40d",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.decline_window",
+      "description": "长期累计跌幅"
+    },
+    {
+      "id": "day_return",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日涨跌幅"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日均量"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "decline_pct_40d",
+            "operator": "<=",
+            "right": "$params.min_decline_pct"
+          },
+          {
+            "op": "compare",
+            "left": "day_return",
+            "operator": "<=",
+            "right": "$params.panic_drop_pct"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认过去40日已有较大累计跌幅。",
+    "再识别单日大跌并伴随放量的恐慌释放日。",
+    "把这种长期跌势末期的放量大阴线近似看作加速赶底状态。"
+  ],
+  "signal_day_definition": "以长期跌势后出现放量大阴线加速杀跌的当日作为‘加速赶底’状态确认日。",
+  "manual_review_needed": [
+    "原文更强调这是底部逼仓和恐慌释放阶段，而不是立即买点；当前规则只负责识别该状态。"
+  ],
+  "implementation_notes": [
+    "该规则适合作为赶底观察信号，不能单独作为抄底触发器。"
+  ],
+  "explain": "该规则用于识别长期下跌末期突然放量加速杀跌的恐慌赶底阶段。"
+}

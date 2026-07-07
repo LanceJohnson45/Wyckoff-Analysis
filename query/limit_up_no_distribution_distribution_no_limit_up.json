@@ -1,0 +1,75 @@
+{
+  "name": "涨停不出货 出货不涨停",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [623, 624, 625, 626, 627],
+  "source": "涨停不出货出货不涨停强调：只要个股还能强势封在涨停板上，就不急于卖出；真正需要警惕的是不能继续涨停的时候，尤其在已有较大涨幅之后，就该结合分时和短周期信号找卖点。",
+  "source_summary": "若强势股仍能封住涨停板，则优先视为未进入明确出货状态；不能涨停后再考虑退出。",
+  "comment": "当前先提取‘涨停不出货’的日线近似版：已有短期涨幅后，今日仍强势封板。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "close"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {
+    "limit_up_threshold": 0.098,
+    "recent_gain_window": 3,
+    "recent_gain_threshold": 0.15
+  },
+  "series": [
+    {
+      "id": "close_pct_1",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日涨幅"
+    },
+    {
+      "id": "close_pct_recent",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.recent_gain_window",
+      "description": "近N日累计涨幅"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "compare",
+          "left": "close_pct_recent",
+          "operator": ">=",
+          "right": "$params.recent_gain_threshold"
+        },
+        {
+          "op": "compare",
+          "left": "close_pct_1",
+          "operator": ">=",
+          "right": "$params.limit_up_threshold"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": "==",
+          "right": "high"
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "先确认个股近期已经有较明显涨幅。",
+    "再判断最新一日是否接近日线涨停涨幅阈值。",
+    "要求收盘价等于最高价，近似表达仍然封住涨停板。"
+  ],
+  "signal_day_definition": "以最新交易日仍强势封在涨停板上的当日，视为‘涨停不出货’状态日。",
+  "manual_review_needed": [
+    "原文里的‘出货不涨停’卖点还依赖盘中不能封板、5分钟线和更细的头部信号，当前没有完整并入。",
+    "不同市场与不同历史阶段的涨停幅度规则不同，limit_up_threshold=0.098 是A股日线近似默认值，后续需按市场细化。"
+  ],
+  "implementation_notes": [
+    "这是日线版持有状态识别，不是完整的卖出执行系统。",
+    "若后续需要完整覆盖原文，应再拆出‘不能涨停后的退出规则’子 spec。"
+  ],
+  "explain": "该规则用于日线层面识别强势股仍能封住涨停板、尚不宜轻易出货的状态。"
+}

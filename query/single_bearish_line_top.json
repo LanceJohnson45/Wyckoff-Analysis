@@ -1,0 +1,46 @@
+{
+  "name": "单阴线形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [291, 292],
+  "source": "当股价接近头部时，多方攻击接近尾声，空方开始进攻；这时一根突然从高位打下来的长阴线，往往意味着头部形成，而且未来较长时间难以再冲过该阴线顶部。",
+  "source_summary": "若高位出现突然长阴线且随后几日股价一直运行在其下方，可视为单阴线头部。",
+  "comment": "当前按高位长阴线后持续低位运行的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "close_ref_3", "op": "ref", "field": "close", "window": 3, "description": "3日前收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close_ref_3", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close_ref_3", "operator": "<", "right": "close"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_3"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "寻找一根高位长阴线近似位点。",
+    "要求当前价格仍未收复该阴线附近位置，近似未来几天持续低位运行。"
+  ],
+  "signal_day_definition": "以长阴线出现后持续运行在其下方的确认日作为单阴线头部确认日。",
+  "manual_review_needed": [
+    "原文强调‘突然性’与较长时间难以冲过头部，当前只用短期确认近似。"
+  ],
+  "implementation_notes": [
+    "这是头部确认版规则。"
+  ],
+  "explain": "单阴线形成的头部被结构化为高位长阴线后持续受压。"
+}

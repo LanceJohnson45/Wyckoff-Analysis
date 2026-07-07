@@ -1,0 +1,110 @@
+{
+  "name": "飞碟",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [845, 846, 847],
+  "source": "飞碟描述个股因复牌等原因大幅跳空并放出巨量后，股价并不跌回地面，而是在高位巨量附近长期悬浮盘整，像飞碟一样停在空中；一旦洗盘完毕向上突破，往往需要立即跟进。",
+  "source_summary": "若跳空巨量后股价在高位悬空盘整并最终向上突破，可视为飞碟成立。",
+  "comment": "当前先提取日线版‘跳空巨量 + 高位盘整悬浮 + 向上突破’主干。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "gap_lookback": 1,
+    "platform_lookback": 20,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "prev_high",
+      "op": "ref",
+      "field": "high",
+      "window": 1,
+      "description": "前一日最高价"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "飞碟盘整上沿近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日平台上沿"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "gap_up",
+      "op": "breakout_up",
+      "left": "open",
+      "right": "prev_high",
+      "description": "向上跳空开盘"
+    },
+    {
+      "id": "breakout_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "向上突破飞碟平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "condition",
+              "event": "gap_up"
+            },
+            "event": "breakout_platform",
+            "window": "$params.platform_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "condition",
+            "event": "breakout_platform"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别向上跳空开盘，近似形成飞碟的起飞动作。",
+    "在后续高位平台窗口内观察股价是否悬浮盘整。",
+    "当收盘价放量突破飞碟平台上沿时，视为飞碟启动确认。"
+  ],
+  "signal_day_definition": "以高位悬浮平台向上突破的当日作为飞碟确认日。",
+  "manual_review_needed": [
+    "原文还提到天线、喷火与理论高度等形象语义，当前未纳入量化规则。"
+  ],
+  "implementation_notes": [
+    "这是悬浮类跳空平台突破形态的日线版本。"
+  ],
+  "explain": "飞碟被结构化为跳空巨量后高位悬浮盘整，再向上突破的强势启动信号。"
+}

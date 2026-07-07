@@ -1,0 +1,85 @@
+{
+  "name": "巨量不涨先退场",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [519, 520, 521, 522],
+  "source": "巨量不涨先退场强调：股价在高位或已有较大涨幅后，若突然放出巨量却没有继续上涨，应先把资金退出来再说。原文在30分钟图里给出“四根K线不涨就出货”的经验，并建议之后以巨量K线高低点管理三角形阻尼震荡，等待方向选择。",
+  "source_summary": "若高位放出巨量但价格未能继续创新高，应优先撤出等待后续方向确认。",
+  "comment": "原文的30分钟‘4根K线不涨’已近似为日线版本：巨量当日未创近高且收弱时先退场。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_ma_window": 20,
+    "high_lookback": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    },
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "high",
+      "window": "$params.high_lookback",
+      "description": "近窗口最高价"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近窗口最高价"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "high",
+            "operator": "<=",
+            "right": "recent_high_prev"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<=",
+            "right": "open"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20日均量与近20日最高价。",
+    "识别当日成交量显著放大，但股价高点未能刷新前高的情形。",
+    "要求当日收盘不强于开盘，近似‘巨量不涨’并触发先退场。"
+  ],
+  "signal_day_definition": "以放出巨量却未能继续创新高、且当日收弱的交易日作为先退场信号日。",
+  "manual_review_needed": [
+    "原文给出的‘30分钟4根K线不涨就出货’已被近似成日线规则，后续若引擎支持更短周期可再细化。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= high_lookback + 1。",
+    "该规则更适合作为高位风险退出提示，而非独立做空信号。"
+  ],
+  "explain": "该规则把‘巨量不涨先退场’落成高位巨量但无法继续走强时的主动撤退提示。"
+}

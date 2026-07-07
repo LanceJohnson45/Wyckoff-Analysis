@@ -1,0 +1,100 @@
+{
+  "name": "冲击钻过硬层",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [839, 840, 841, 842],
+  "source": "冲击钻过硬层描述股价在连续暴涨后遇到强压力层，虽然出现巨量、震荡甚至锤头阴线等假弱迹象，但若多方持续承接、横盘后再度向上突破前头部，则像冲击钻打穿硬层一样，后续往往还有惯性上冲。",
+  "source_summary": "若暴涨后高位横盘承接住抛压，并再次向上突破前头部，可视为冲击钻过硬层成立。",
+  "comment": "当前先提取日线版‘连续强涨后高位硬层震荡，再向上突破’主干，不纳入分时细节。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "pre_surge_lookback": 5,
+    "pre_surge_pct": 0.2,
+    "platform_lookback": 8,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "pre_surge_pct",
+      "op": "pct_change",
+      "field": "close",
+      "window": "$params.pre_surge_lookback",
+      "description": "前期快速上涨幅度"
+    },
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "硬层前头部高点近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日前头部高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "向上突破硬层前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "pre_surge_pct",
+            "operator": ">=",
+            "right": "$params.pre_surge_pct"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_head"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先要求股价在较短窗口内已有较大涨幅，近似原文中的连续暴涨阶段。",
+    "在高位短横盘窗口内寻找前头部高点，近似遇到硬层后的承压震荡。",
+    "当股价再次放量突破前头部时，视为冲击钻过硬层成立。"
+  ],
+  "signal_day_definition": "以高位硬层震荡后再次突破前头部的当日作为冲击钻过硬层确认日。",
+  "manual_review_needed": [
+    "原文更依赖分时承接与‘锤头阴线是假象’的盘中判断，当前只保留日线可执行版本。"
+  ],
+  "implementation_notes": [
+    "这是冲击钻系列在高位强承接后的再突破版本。"
+  ],
+  "explain": "冲击钻过硬层被结构化为暴涨后高位硬层震荡承接，再次放量突破前头部。"
+}

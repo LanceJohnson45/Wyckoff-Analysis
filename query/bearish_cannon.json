@@ -1,0 +1,106 @@
+{
+  "name": "两阴夹一阳——空方炮",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [83, 84, 85, 86, 87, 324, 325, 326],
+  "source": "空方炮是多方炮的镜像形态：第一天阴线走弱，第二天阳线反弹，第三天再度阴线下压，常见于价压之下、跌破平台附近或高位宽幅震荡出货区；后续章节进一步强调它是高位头部构筑的重要形态。",
+  "source_summary": "两阴夹一阳并向下倾斜时，可视为空方炮，高位出现时尤其偏向头部。",
+  "comment": "当前按标准三日空方炮近似提取；后续头部章节提到锤、T线等第一根变形和空方叠叠炮增强版，这些只在说明里保留。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "close", "volume"],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "breakdown_lookback": 20,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {
+      "id": "close_low_lookback",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.breakdown_lookback",
+      "description": "最近N日收盘最低值"
+    },
+    {
+      "id": "close_low_prev",
+      "op": "ref",
+      "field": "close_low_lookback",
+      "window": 1,
+      "description": "前一日最近N日收盘最低值"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    },
+    {
+      "id": "low_prev_close",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "first_breakdown",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "close_low_prev",
+      "description": "收盘价向下跌破前期平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "sequence",
+        "window": 3,
+        "allow_same_day": false,
+        "conditions": [
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "condition", "event": "first_breakdown"},
+              {"op": "compare", "left": "close", "operator": "<", "right": "open"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+              {"op": "compare", "left": "close", "operator": "<=", "right": "low_prev_close"}
+            ]
+          },
+          {
+            "op": "and",
+            "conditions": [
+              {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+              {"op": "compare", "left": "close", "operator": "<", "right": "close_low_prev"},
+              {"op": "compare", "left": "volume", "operator": ">=", "right": "vol_ma_5"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别第一天向下走弱阴线并跌破近期平台。",
+    "第二天出现弱反弹阳线。",
+    "第三天再次转阴并重新跌破近期低位。"
+  ],
+  "signal_day_definition": "以第三天再度转阴并重新下破的当日作为空方炮信号日。",
+  "manual_review_needed": [
+    "当前未严格要求三根K线顶部/底部绝对水平或整体向下倾斜，只保留主要结构。",
+    "价压之下、断头铡刀共振、高位宽幅震荡背景等增强条件未纳入主规则。",
+    "第一根K线可为锤、T线、针等变形版，当前主规则仍以标准阴线起手处理。"
+  ],
+  "implementation_notes": [
+    "这是多方炮的镜像规则。"
+  ],
+  "explain": "空方炮是三日向下反扑结构：走弱、反弹、再下压。"
+}

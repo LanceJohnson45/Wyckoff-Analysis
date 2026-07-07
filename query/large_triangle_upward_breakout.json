@@ -1,0 +1,99 @@
+{
+  "name": "大三角向上突破",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [553, 554, 555],
+  "source": "大三角向上突破，是指股价经过较长时间的阻尼震荡和量能萎缩后，形成稳定的大三角形整理，并在成交量支持下向上突破。原文强调三角形整理时间越长越有意义，理想突破位置应在三角形构筑三分之二附近，而不是拖到末端才盘出形态。",
+  "source_summary": "若长时间收敛整理后放量突破平台上沿，可视为大三角向上突破。",
+  "comment": "当前用‘长时间平台 + 突破前缩量 + 突破时放量’近似大三角上破。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "triangle_lookback": 60,
+    "breakout_lookback": 20,
+    "pre_break_volume_window": 5,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "triangle_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.triangle_lookback",
+      "description": "大三角整理区近似上沿"
+    },
+    {
+      "id": "triangle_high_prev",
+      "op": "ref",
+      "field": "triangle_high",
+      "window": 1,
+      "description": "前一日大三角整理区上沿"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日均量"
+    },
+    {
+      "id": "volume_ma_short",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.pre_break_volume_window",
+      "description": "突破前短期均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_triangle",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "triangle_high_prev",
+      "description": "收盘突破大三角上沿近似边界"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "break_triangle"
+          },
+          {
+            "op": "compare",
+            "left": "volume_ma_short",
+            "operator": "<",
+            "right": "volume_ma"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近60日整理区高点，近似大三角上边线。",
+    "要求突破前短期均量低于中期均量，近似量能萎缩。",
+    "要求突破当日收盘站上整理区上沿，且成交量重新放大。"
+  ],
+  "signal_day_definition": "以放量收盘突破大三角整理区上沿的当日作为大三角向上突破确认日。",
+  "manual_review_needed": [
+    "原文还强调突破最好发生在三角形构筑三分之二附近，当前未显式引入三角时间进度约束。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= triangle_lookback + 1。"
+  ],
+  "explain": "该规则把大三角向上突破结构化为长时间收敛整理后的放量上破。"
+}

@@ -1,0 +1,98 @@
+{
+  "name": "牛角攻击",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [816, 817, 818],
+  "source": "牛角攻击要求股价高点形成一对抬高的牛角，同时成交量高点也形成一对更强的牛角；中间回档阶段成交量缩成量芝麻点，说明洗盘彻底，随后再度放量并创新高，体现主力对个股的持续运作。",
+  "source_summary": "若价格高点和量能高点都呈抬高式双峰，且中间洗盘缩量，随后再创新高，可视为牛角攻击成立。",
+  "comment": "当前把原文的双牛角收敛成‘后量超前量 + 后高超前高 + 中间缩量’的组合。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "price_lookback": 20,
+    "volume_ma_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.price_lookback",
+      "description": "近期价格高点"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近期价格高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "volume_prev",
+      "op": "ref",
+      "field": "volume",
+      "window": 1,
+      "description": "前一日成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_recent_high",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "recent_high_prev",
+      "description": "价格创新高"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "breakout_recent_high"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_prev"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近期价格高点与10日均量。",
+    "要求最新交易日价格再次创新高，近似后一个牛角高于前一个牛角。",
+    "同时要求成交量较前一日继续放大且高于均量，近似后量超前量的牛角攻击。"
+  ],
+  "signal_day_definition": "以价格和量能同步形成更强第二个牛角并创新高的当日作为牛角攻击确认日。",
+  "manual_review_needed": [
+    "原文还强调中间谷底对应量芝麻点和分时通气，当前主规则只保留最核心的价格/量能双牛角。"
+  ],
+  "implementation_notes": [
+    "这是一个连续运作、后量超前量的强势攻击信号。"
+  ],
+  "explain": "牛角攻击被结构化为价格创新高且后量超前量的持续运作信号。"
+}

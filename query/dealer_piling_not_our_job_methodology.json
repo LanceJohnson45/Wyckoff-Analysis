@@ -1,0 +1,37 @@
+{
+  "name": "庄家打桩我不帮忙",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [555, 556, 557],
+  "source": "庄家打桩我不帮忙，强调庄家在2-3区间底部建仓是一个需要时间和空间的过程，期间要通过放量打桩、震荡吸筹来完成筹码收集。原文建议不要过早参与这类水下施工阶段，而是等待庄家建仓完毕、股价接近2+3区间时再关注。",
+  "source_summary": "这是对庄家底部建仓区的回避原则，属于位置与阶段方法论，而不是单一买卖点。",
+  "comment": "原文核心依赖2-3/2+3区间语义、底部累计换手率和UP/UV等条件，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "识别庄家仍在底部区间打桩建仓的阶段。",
+    "观察其是否完成足够的时间、空间和筹码收集。",
+    "等待股价由2-3区间过渡到2+3区间后再考虑参与。"
+  ],
+  "signal_day_definition": "本节定义的是底部建仓阶段的回避原则，不是单一统一的信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先统一2-3/2+3区间、累计换手率、UP/UV和建仓完成信号的表达。"
+  ],
+  "implementation_notes": [
+    "当前仓库只有日线 O/H/L/C/V，缺少原文依赖的底部累计换手率与UP/UV完整语义。"
+  ],
+  "explain": "该节是‘不要提前陪庄家水下建仓’的阶段性方法论，不适合压成单一布尔指标。"
+}

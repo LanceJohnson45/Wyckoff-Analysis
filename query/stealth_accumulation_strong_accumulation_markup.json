@@ -1,0 +1,86 @@
+{
+  "name": "潜收集、强收集、拉高",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [141, 142, 143, 144, 145],
+  "source": "该形态描述庄股建仓三阶段：先在低位以极小成交量潜收集，随后在5/10日价均线、5/10日量均线和MACD同时金叉时进入强收集，最后转入拉高阶段。",
+  "source_summary": "低位潜收集之后若出现价、量、MACD三金叉共振并放量上攻，可视为强收集转入拉高的信号。",
+  "comment": "当前 latest_match 落在‘潜收集背景后的三金叉强收集启动’这一最可执行的日线节点。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "price_fast_window": 5,
+    "price_slow_window": 10,
+    "volume_fast_window": 5,
+    "volume_slow_window": 10,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "cluster_window": 5,
+    "background_lookback": 20,
+    "background_min_low_volume_days": 5,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {"id": "price_ma_fast", "op": "sma", "field": "close", "window": "$params.price_fast_window", "description": "5日价格均线"},
+    {"id": "price_ma_slow", "op": "sma", "field": "close", "window": "$params.price_slow_window", "description": "10日价格均线"},
+    {"id": "volume_ma_fast", "op": "sma", "field": "volume", "window": "$params.volume_fast_window", "description": "5日量均线"},
+    {"id": "volume_ma_slow", "op": "sma", "field": "volume", "window": "$params.volume_slow_window", "description": "10日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "macd_dea", "op": "ema", "field": "macd_dif", "window": "$params.macd_signal_window", "description": "MACD DEA"},
+    {"id": "volume_ma_mid", "op": "sma", "field": "volume", "window": 20, "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "price_cross_up", "op": "cross_up", "left": "price_ma_fast", "right": "price_ma_slow", "description": "5日价均线上穿10日价均线"},
+    {"id": "volume_cross_up", "op": "cross_up", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "5日量均线上穿10日量均线"},
+    {"id": "macd_cross_up", "op": "cross_up", "left": "macd_dif", "right": "macd_dea", "description": "MACD DIF上穿DEA"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "volume", "operator": "<", "right": "volume_ma_mid"},
+            "event": "price_cross_up",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_low_volume_days"
+          },
+          {
+            "op": "sequence",
+            "window": "$params.cluster_window",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {"op": "condition", "event": "price_cross_up"},
+              {"op": "condition", "event": "volume_cross_up"},
+              {"op": "condition", "event": "macd_cross_up"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10日价格均线、5/10日量均线，以及MACD的DIF与DEA。",
+    "用background_lookback窗口内多日低于20日量均线的缩量状态近似潜收集背景。",
+    "要求价、量、MACD三金叉在cluster_window内集中出现，近似强收集启动。"
+  ],
+  "signal_day_definition": "以三金叉共振完成、强收集被确认的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文还区分潜收集、强收集与最终拉高三阶段，当前主规则只输出最可执行的强收集启动节点。",
+    "原文强调低位背景，当前仅用缩量潜伏近似，尚未加入更严格的长期下跌或底部位置过滤。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + macd_signal_window + background_lookback + 1。",
+    "sub 算子用于标准化表达 DIF = EMA12 - EMA26。"
+  ],
+  "explain": "该规则把庄股三阶段收敛成‘潜收集后出现三金叉强收集’的可执行信号。"
+}

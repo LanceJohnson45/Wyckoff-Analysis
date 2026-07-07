@@ -1,0 +1,97 @@
+{
+  "name": "长阴不接货",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [490, 491, 492],
+  "source": "当一只股票构筑头部之后，或者反弹完毕之后，出现一根破位长阴线的时候，就是下跌行情开始的时候，这个时候坚决不能去抢反弹。所谓长阴不接货，就是等待长阴后的弹跳逐步衰竭，不能在第一根破位长阴线后贸然抄底。",
+  "source_summary": "若出现破位长阴线并跌入弱势区，应视为不能抢反弹的回避信号。",
+  "comment": "当前用单日大跌并跌破近低点、位于20日线下方来近似‘长阴不接货’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "long_bear_pct": -0.07,
+    "breakdown_lookback": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "close_return_1d",
+      "op": "pct_change",
+      "field": "close",
+      "window": 1,
+      "description": "单日收盘涨跌幅"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "lowest_close",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.breakdown_lookback",
+      "description": "近窗口最低收盘价"
+    },
+    {
+      "id": "lowest_close_prev",
+      "op": "ref",
+      "field": "lowest_close",
+      "window": 1,
+      "description": "前一日近窗口最低收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakdown_recent_low",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "lowest_close_prev",
+      "description": "收盘跌破近窗口最低收盘价"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close_return_1d",
+            "operator": "<=",
+            "right": "$params.long_bear_pct"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "ma_20"
+          },
+          {
+            "op": "condition",
+            "event": "breakdown_recent_low"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算单日收盘涨跌幅与20日均线。",
+    "识别单日跌幅达到长阴阈值的阴线。",
+    "要求该阴线同时跌破近20日最低收盘价并位于20日均线下方。"
+  ],
+  "signal_day_definition": "以出现破位长阴线的当日作为‘长阴不接货’信号完成日。",
+  "manual_review_needed": [
+    "原文还强调头部完成或反弹完毕背景，当前未显式做波段顶部识别。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= breakdown_lookback + 1。"
+  ],
+  "explain": "该规则把‘长阴不接货’落成破位长阴线出现后的回避信号。"
+}

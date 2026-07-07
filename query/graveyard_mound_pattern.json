@@ -1,0 +1,37 @@
+{
+  "name": "墓碑坟头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [349, 350, 351, 352, 353],
+  "source": "墓碑坟头描述的是庄家快速拉高形成墓碑顶部后回落，再以较慢斜率推高到前墓碑附近构筑坟头并出货的全过程；坟头与墓碑通常高度相仿，但会受回档深浅、指数环境和题材等因素影响，最终跌破60日均线则坟头完成。",
+  "source_summary": "这是一个由双顶部高度关系、回档深浅和再拉升斜率共同定义的顶部出货框架，不是固定长度单日形态。",
+  "comment": "原文核心是墓碑顶部、碑底深浅、坟头高度和跌破60日线的组合关系，当前规则引擎不适合无歧义压成单一固定模板。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["high", "low", "close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要同时识别前墓碑、回落后的碑底、坟头顶部高度与推高斜率。",
+    "其中‘坟头通常与墓碑高度相仿’‘碑底深则坟头不高’等约束属于多锚点价格关系。",
+    "当前规则引擎缺少多波段锚点、相似高度阈值和趋势斜率的通用表达。"
+  ],
+  "signal_day_definition": "原文更强调在坟头跌破60日均线时确认，而不是单一模板日。",
+  "manual_review_needed": [
+    "后续若引擎支持 swing 高低点、价格相似度阈值和双顶波段结构，可把墓碑与坟头拆成可执行的多阶段规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "墓碑坟头本质上是双顶出货过程的波段结构，当前不适合压成单一布尔规则。"
+}

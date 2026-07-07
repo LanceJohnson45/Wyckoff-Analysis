@@ -1,0 +1,108 @@
+{
+  "name": "向上通气不出货",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [481, 482, 483, 484, 485],
+  "source": "向上通气不出货，是指5日、10日、20日、60日、120日均线之间保持向上通气，没有闭塞，尤其60日与120日线之间保持向上通气时，即便出现巨阴量或回档阴线，也没有立即出货的理由。该原则主要适用于低中位区，不适用于庄家获利丰厚且处于2+3末端的股票。",
+  "source_summary": "若多条均线保持向上通气并处于低中位区，则回档阴线不应被视为立即卖出信号。",
+  "comment": "当前用标准多头排列近似“向上通气”，2+3末端位置只在人工复核中提醒。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 130,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "ma_10",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "ma_20",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "ma_20"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求均线呈标准多头顺序排列，近似表示均线之间向上通气。",
+    "要求收盘至少维持在20日均线上方，避免把弱势反弹也算作向上通气。"
+  ],
+  "signal_day_definition": "以满足向上通气排列且收盘维持强势结构的当日作为不出货信号日。",
+  "manual_review_needed": [
+    "原文特别强调该原则只适用于低中位区，不适用于2+3末端；当前未引入位置识别过滤。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= 120 + 1。"
+  ],
+  "explain": "该规则把‘向上通气不出货’落成多头均线通道保持畅通的持股条件。"
+}

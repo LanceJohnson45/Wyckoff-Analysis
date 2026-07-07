@@ -1,0 +1,130 @@
+{
+  "name": "冲击钻顶紧天花板",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [790, 791, 792, 793],
+  "source": "冲击钻顶紧天花板是顶紧右上角中的强势形态：股价前期通气性良好，靠近60日线附近充分盘整，盘整平台贴近天花板压力位，期间先有量芝麻点，突破前再出现高大成交量，随后一旦向上穿越平台高点，往往容易连续加速上涨。",
+  "source_summary": "若股价在60日线上方形成贴近压力位的缩量平台，并以放量方式向上突破，可视为冲击钻顶紧天花板成立。",
+  "comment": "当前把原文中的钻头、把手和电扳扣等几何语义收敛成‘60线附近通气平台 + 缩量蓄势 + 放量突破’。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 140,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_support_window": 60,
+    "ma_anchor_window": 120,
+    "platform_lookback": 20,
+    "volume_ma_window": 10,
+    "platform_min_days": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_support_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "天花板平台高点近似"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日平台高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_ceiling",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "收盘突破天花板平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_60"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_120"
+                },
+                {
+                  "op": "compare",
+                  "left": "volume",
+                  "operator": "<=",
+                  "right": "volume_ma"
+                }
+              ]
+            },
+            "event": "breakout_ceiling",
+            "window": "$params.platform_lookback",
+            "min_count": "$params.platform_min_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_ceiling"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日、120日均线和平台高点，近似原文的暖气带依托与天花板位置。",
+    "要求突破前在平台窗口内出现若干缩量整理日，近似量芝麻点与横盘充分。",
+    "当收盘价放量突破平台高点时，视为冲击钻顶紧天花板成立。"
+  ],
+  "signal_day_definition": "以收盘放量突破平台高点的当日作为冲击钻顶紧天花板确认日。",
+  "manual_review_needed": [
+    "原文还强调平台高点连线与60日均线不能相距太远，当前只用站上60/120线和贴近平台来近似表达。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_anchor_window + platform_lookback + 1。"
+  ],
+  "explain": "该规则把冲击钻形态收敛为60/120线之上的缩量平台，随后放量突破天花板。"
+}

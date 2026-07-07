@@ -1,0 +1,61 @@
+{
+  "name": "水上金叉",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [671, 672, 673, 674],
+  "source": "水上金叉指MACD中的DIF与DEA在零轴线上方发生金叉，且最好出现在2+3初中期、波长一波比一波有力、回档一波比一波浅、MACD还能继续创新高的阶段，这样的金叉才更有爆发力。",
+  "source_summary": "若DIF和DEA在零轴线上方金叉，并处于2+3初中期强势背景，可视为可靠的水上金叉。",
+  "comment": "当前优先提取最通用的日线版：DIF/DEA零上金叉 + 价格站在60/120线之上。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ema_fast_window": 12,
+    "ema_slow_window": 26,
+    "dea_window": 9,
+    "ma_mid_window": 60,
+    "ma_long_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.ema_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.ema_slow_window", "description": "MACD慢线EMA"},
+    {"id": "dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "dea", "op": "ema", "field": "dif", "window": "$params.dea_window", "description": "MACD DEA"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"}
+  ],
+  "events": [
+    {"id": "water_cross", "op": "cross_up", "left": "dif", "right": "dea", "description": "DIF上穿DEA"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "water_cross"},
+          {"op": "compare", "left": "dif", "operator": ">", "right": 0},
+          {"op": "compare", "left": "dea", "operator": ">", "right": 0},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算DIF、DEA以及60/120日均线。",
+    "识别DIF是否在零轴上方金叉DEA。",
+    "要求价格同步站在60/120线之上，近似2+3初中期的强势背景。"
+  ],
+  "signal_day_definition": "以DIF和DEA在零轴线上方形成金叉，且价格保持强势背景的当日作为水上金叉确认日。",
+  "manual_review_needed": [
+    "原文还强调波长一波比一波有力、回档一波比一波浅以及MACD持续创新高，当前未全部纳入主规则。"
+  ],
+  "implementation_notes": [
+    "这是水上金叉最基础可执行的日线版本。"
+  ],
+  "explain": "该规则用于识别MACD零轴上方的强势金叉，并要求价格仍处于中期上升结构中。"
+}

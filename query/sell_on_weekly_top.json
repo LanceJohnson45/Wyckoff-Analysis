@@ -1,0 +1,36 @@
+{
+  "name": "卖出在周 K 线的顶部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [198, 199, 200],
+  "source": "本节强调日线会出现假头部，真正稳健的中长线卖点应结合周K线、月K线甚至60分钟头部共振来判断，尤其关注连续涨势后的周K线头部、上影线、放量和颈线反抽等特征。",
+  "source_summary": "这是一个依赖周K线、月K线和多周期头部共振的中长线卖出方法，不适合直接落成只基于日线O/H/L/C/V的单一布尔信号。",
+  "comment": "核心依赖周线与多周期共振。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求结合周K线、月K线与60分钟头部共振判断中长线卖点。",
+    "当前系统只提供日线O/H/L/C/V，无法完整还原多周期头部共振与周线颈线反抽。"
+  ],
+  "signal_day_definition": "原文未定义单一日线信号完成日。",
+  "manual_review_needed": [
+    "若后续允许使用周线聚合和分钟线数据，可重新提炼多周期头部共振规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "这是一个依赖周线与多周期共振的卖出方法，不是纯日线规则。"
+}

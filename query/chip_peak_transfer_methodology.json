@@ -1,0 +1,36 @@
+{
+  "name": "筹码峰转移",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [410, 411],
+  "source": "筹码峰转移讨论高位套牢筹码如何在时间和空间的共同作用下向低位转移，只有上档套牢筹码充分下移、低位筹码峰明显增大后，才可能孕育新一轮行情。",
+  "source_summary": "这是依赖筹码峰分布迁移的底部构筑方法论，不是单一布尔指标。",
+  "comment": "原文明确依赖筹码峰面积、中心成本区、时间与空间调节，当前系统不适合压成统一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要识别上档和下档筹码峰的面积、中心和迁移过程。",
+    "同时要求时间长度与下跌空间共同作用，属于筹码分布分析方法。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的信号完成日。",
+  "manual_review_needed": [
+    "后续若系统支持筹码峰分布建模，可把‘上峰转下峰’做成独立底部状态规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "筹码峰转移是筹码分布迁移的方法论，不是单一布尔指标。"
+}

@@ -1,0 +1,44 @@
+{
+  "name": "单十字星形成的头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [292, 293, 294],
+  "source": "十字星表示当日多空暂时平衡、股价寻找方向；当它出现在高价区时，往往意味着庄家正在高位派发，若之后选择向下突破，则这颗十字星就处于头部。",
+  "source_summary": "若高位十字星出现后向下转弱，可视为单十字星头部。",
+  "comment": "当前按高位十字星后几日内转弱的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "open", "operator": "==", "right": "close"},
+          {"op": "compare", "left": "high", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "low", "operator": "<", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别开收盘相等、上下均有振幅的十字星K线。",
+    "在高位环境中，该十字星可作为头部危险信号的基础。"
+  ],
+  "signal_day_definition": "以高位十字星出现并纳入信号保持期的当日作为单十字星头部预警日。",
+  "manual_review_needed": [
+    "原文强调十字星后需结合向下选择方向确认，当前只保留十字星基础形态，后续可增加后续跌破确认。"
+  ],
+  "implementation_notes": [
+    "由于引擎缺乏实体/影线比例算子，当前使用基础十字星近似。"
+  ],
+  "explain": "单十字星形成的头部被先结构化为高位十字星预警形态。"
+}

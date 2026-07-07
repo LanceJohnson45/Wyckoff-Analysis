@@ -1,0 +1,52 @@
+{
+  "name": "牛熊转换点",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [374, 375, 376],
+  "source": "牛熊转换点指60日均线从上向下跌破120日均线的死亡交叉点，它是牛市结束、熊市开始的分界点；该点前后常有反抽死叉点的死叉引力。",
+  "source_summary": "若60日均线下穿120日均线且股价位于其下，可视为牛熊转换点成立。",
+  "comment": "当前按标准60/120日均线死叉版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"}
+  ],
+  "events": [
+    {"id": "bull_bear_cross", "op": "cross_down", "left": "ma_60", "right": "ma_120", "description": "60日均线下穿120日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "bull_bear_cross"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日与120日均线。",
+    "检测60日均线是否自上而下跌破120日均线。",
+    "要求股价位于两条均线之下，以近似表达进入熊市后的弱势状态。"
+  ],
+  "signal_day_definition": "以60日均线下穿120日均线且股价在线下的当日作为牛熊转换点完成日。",
+  "manual_review_needed": [
+    "原文还讨论死叉引力与反抽确认，当前只保留转换点本体。"
+  ],
+  "implementation_notes": [
+    "与熊牛转换点构成对称的中期趋势反转坐标。"
+  ],
+  "explain": "牛熊转换点被结构化为60日均线下穿120日均线的牛转熊分界信号。"
+}

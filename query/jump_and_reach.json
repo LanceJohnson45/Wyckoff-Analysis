@@ -1,0 +1,80 @@
+{
+  "name": "跳一跳 够得着",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [696, 697, 698, 699],
+  "source": "跳一跳够得着强调：股价在突破前头部T线时，起涨点离前头部不能太远，最好随便一跳、稍一抬头就够得着颈线，这样突破时惯性更足，更容易发动快速行情。",
+  "source_summary": "若当前价格距前头部不远、稍一发力即可放量突破，则更容易走出有力度的突破。",
+  "comment": "当前先把‘够得着’参数化为距前高不超过一定比例。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "reach_threshold_pct": 0.08,
+    "volume_ma_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "前头部T线近似"},
+    {"id": "t_line_prev", "op": "ref", "field": "t_line", "window": 1, "description": "前一日T线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"}
+  ],
+  "events": [
+    {"id": "break_t_line", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "收盘突破前头部T线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": ">=",
+              "right": 0
+            },
+            "event": "break_t_line",
+            "window": 3,
+            "min_count": 1
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "t_line_prev"
+          },
+          {
+            "op": "condition",
+            "event": "break_t_line"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前头部T线，作为突破目标位。",
+    "要求突破当日就是一次直接有效上攻，且量能不弱于5日均量。",
+    "该形态的核心是离前高不远、突破动作轻快，当前通过短窗口直接突破近似表达。"
+  ],
+  "signal_day_definition": "以轻快放量突破前头部T线的当日作为‘跳一跳够得着’确认日。",
+  "manual_review_needed": [
+    "原文更准确的核心是‘起涨点到前头部的距离不能太远’，当前还没有把距离比例显式落成数值序列比较。",
+    "后续可补一个 `distance_to_t_line_pct` 系列算子后再强化。"
+  ],
+  "implementation_notes": [
+    "当前规则先保留最可执行的轻快突破版本。"
+  ],
+  "explain": "该规则用于识别离前头部不远、稍一发力就能放量突破的强势突破形态。"
+}

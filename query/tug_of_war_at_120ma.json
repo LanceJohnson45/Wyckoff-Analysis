@@ -1,0 +1,133 @@
+{
+  "name": "120 线拉锯战",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [648, 649, 650],
+  "source": "120线拉锯战指股价从底部上攻时，围绕120日均线反复震荡换手，让前期套牢盘和低位获利盘在半年线附近完成交接，待成交量萎缩后再放量向上突破。",
+  "source_summary": "若股价在120日均线附近反复拉锯换手，随后缩量结束并放量向上突破，可视为120线拉锯战完成。",
+  "comment": "当前提取的是标准版‘120线附近拉锯后放量突破’，未单独拆出120上拉大锯的更强版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 160,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "tug_window": 20,
+    "ma_long_window": 120,
+    "volume_ma_window": 5,
+    "breakout_volume_multiplier": 2,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.tug_window",
+      "description": "拉锯区平台高点"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日拉锯区平台高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "breakout_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.breakout_volume_multiplier",
+      "window": 0,
+      "description": "突破放量阈值"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "收盘突破120线附近拉锯平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<=",
+              "right": "ma_120"
+            },
+            "event": "break_platform",
+            "window": "$params.tug_window",
+            "min_count": 3
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": ">=",
+              "right": "ma_120"
+            },
+            "event": "break_platform",
+            "window": "$params.tug_window",
+            "min_count": 3
+          },
+          {
+            "op": "condition",
+            "event": "break_platform"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "breakout_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先计算120日均线和近 tug_window 日拉锯平台高点。",
+    "要求突破前在 tug_window 窗口内，收盘曾多次位于120线之上和之下，近似表达围绕半年线拉锯换手。",
+    "以放量突破拉锯平台并重新站稳120线作为120线拉锯战完成信号。"
+  ],
+  "signal_day_definition": "以120线附近拉锯结束后放量突破平台、重新站稳120线的当日作为完成日。",
+  "manual_review_needed": [
+    "原文还区分120上拉大锯、120线拉大锯和120下拉大锯强弱层次，当前主规则只保留中性标准版。",
+    "如果后续需要更强版本，可增加‘突破前更多时间位于120线上方’的附加条件。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + tug_window + 1。",
+    "该规则用上下两侧反复出现来近似半年线附近的换手拉锯。"
+  ],
+  "explain": "该规则用于识别股价围绕120日均线反复换手后，最终放量向上突破的启动形态。"
+}

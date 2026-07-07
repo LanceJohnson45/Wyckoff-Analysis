@@ -1,0 +1,37 @@
+{
+  "name": "下降通道内的横向小通道",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [573, 574, 575, 576],
+  "source": "下降通道内的横向小通道，是指股价在长期下降通道内，每靠近下轨就构筑一个临时稳定的小横向通道，随后再向下破位并展开下一轮跌势。原文还配合2T-1H和2T-1L来测量上下空间，并强调最终要放量突破下降通道上轨才可能真正扭转趋势。",
+  "source_summary": "这是下降通道内小平台反复破位与空间测量的方法论，不适合直接压成单一日线规则。",
+  "comment": "本节依赖人工画下降通道、高低点连线和平台空间测量，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "人工画出下降通道上下轨。",
+    "识别靠近下轨时形成的横向小通道及其后续向下破位。",
+    "用通道或小平台振幅估算后续空间，并等待上轨放量突破确认趋势反转。"
+  ],
+  "signal_day_definition": "本节描述的是下降通道中的节奏和空间管理，不是单一统一的信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要统一下降通道和横向小通道边界的画法，以及2T-1H/2T-1L的空间映射。"
+  ],
+  "implementation_notes": [
+    "当前先作为方法论保留，避免把人工画线空间分析误收缩成固定阈值。"
+  ],
+  "explain": "该节属于下降通道中的平台破位与空间测量框架，不适合直接转成 latest_match 布尔信号。"
+}

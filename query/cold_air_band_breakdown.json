@@ -1,0 +1,55 @@
+{
+  "name": "冷空气带下易暴跌",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [408, 409],
+  "source": "冷空气带下易暴跌强调：当股价位于60日与120日均线之下的2-3区间时，任何小平台盘整都不应乐观，尤其一旦冷空气带下的小平台前底被打穿，往往会出现向下巨量跳空和快速暴跌。",
+  "source_summary": "若股价处于2-3区间并向下跌破冷空气带下平台底边，可视为暴跌风险信号。",
+  "comment": "当前按‘位于60/120均线下方 + 平台破位’的确认版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 160,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "platform_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"},
+    {"id": "platform_low", "op": "lowest", "field": "close", "window": "$params.platform_lookback", "description": "冷空气带下平台底边"},
+    {"id": "platform_low_prev", "op": "ref", "field": "platform_low", "window": 1, "description": "前一日平台底边"}
+  ],
+  "events": [
+    {"id": "break_platform_down", "op": "breakout_down", "left": "close", "right": "platform_low_prev", "description": "向下跌破冷空气带下平台底边"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "ma_120"},
+          {"op": "condition", "event": "break_platform_down"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日、120日均线和平台底边。",
+    "要求股价已位于60日与120日均线下方，近似表达冷空气带下。",
+    "检测向下跌破冷空气带下平台底边的瞬间，作为暴跌风险确认。"
+  ],
+  "signal_day_definition": "以股价在冷空气带下向下跌破平台底边的当日作为暴跌信号日。",
+  "manual_review_needed": [
+    "原文强调指数环境与前底部打穿后的跳空暴跌，当前只保留日线结果态，不强制要求跳空。"
+  ],
+  "implementation_notes": [
+    "可与五线顺下、120下小平台等规则联用。"
+  ],
+  "explain": "冷空气带下易暴跌被结构化为2-3区间内的平台向下破位信号。"
+}

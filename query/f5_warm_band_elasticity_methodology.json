@@ -1,0 +1,38 @@
+{
+  "name": "F5 暖气带弹性",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [859, 860, 861, 862, 863],
+  "source": "F5暖气带弹性强调用5分钟级别的暖气带和快速系统弹性来提前判断趋势强弱：如果每次回档底部抬高、反弹能创新高、量价配合良好，则弹性仍在；若弹性持续减弱，甚至回不到2+3区间，则风险增大。",
+  "source_summary": "这是基于F5分钟级暖气带弹性观察的超短线强弱判断方法，当前不能仅凭日线数据直接执行。",
+  "comment": "原文明确依赖F5分钟K线和更细的回档/反弹弹性观察。"
+  ,
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "在F5分钟K线上计算5/10/20/60/120单位均线和暖气带状态。",
+    "观察回档深浅、反弹是否创新高以及量价配合，评估暖气带弹性是否良好。",
+    "若弹性持续减弱甚至无法重新站回2+3区间，则提高风险警惕。"
+  ],
+  "signal_day_definition": "本节描述的是分钟级弹性评估框架，不存在可由日线统一输出的完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要接入5分钟K线并增加弹性度量逻辑。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免用日线替代分钟级弹性观察造成失真。"
+  ],
+  "explain": "F5暖气带弹性依赖5分钟级暖气带和回档弹性，当前单靠日线无法完整实现。"
+}

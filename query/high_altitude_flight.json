@@ -1,0 +1,42 @@
+{
+  "name": "高空飞行",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [249, 250, 251],
+  "source": "高空飞行指股价进入庄家目标价位后开始高位横向运行、逐步爬高或过冲式运行，其核心目的是高位出货；一旦跌破60日均线或平台下沿，往往会出现大跌。",
+  "source_summary": "若高位平台最终跌破60日均线，可视为高空飞行结束并转入风险区。",
+  "comment": "当前输出的是偏风险识别版本，不去建模水平、爬高、过冲三种高空飞行内部形态。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"}
+  ],
+  "events": [
+    {"id": "cross_below_ma_long", "op": "cross_down", "left": "close", "right": "ma_long", "description": "跌破60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {"op": "condition", "event": "cross_below_ma_long"}
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线。",
+    "检测收盘价是否由上向下跌破60日均线，近似表达高空飞行结束。"
+  ],
+  "signal_day_definition": "以跌破60日均线的当日作为高空飞行风险确认日。",
+  "manual_review_needed": [
+    "原文中的高位平台类型、过冲式出货和箱体下沿尚未单独建模，当前保留最核心的60日线失守。"
+  ],
+  "implementation_notes": [
+    "这是风险退出规则。"
+  ],
+  "explain": "高空飞行被结构化为高位运行后最终失守60日均线的风险信号。"
+}

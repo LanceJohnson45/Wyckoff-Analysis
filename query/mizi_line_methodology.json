@@ -1,0 +1,37 @@
+{
+  "name": "米字线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [742, 743, 744],
+  "source": "米字线是把上升筷子线与下降筷子线叠加在一起形成的多重拦截线体系，股价依次上穿这些拦截线时会出现多个买入点，且已突破的拦截线还会对后续回档形成支撑。",
+  "source_summary": "这是一个围绕上升筷子线、下降筷子线和多根拦截线的人工作图分析方法，不适合仅凭日线O/H/L/C/V压成单一规则。",
+  "comment": "原文重点是多根手动画线的拦截与支撑作用，而不是一个固定参数即可表达的布尔形态。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先画出上升筷子线和下降筷子线。",
+    "把两组线叠加形成多根拦截线，观察股价对各拦截线的上穿过程。",
+    "用已突破的拦截线分析后续回档支撑和新的买入点。"
+  ],
+  "signal_day_definition": "本节描述的是多拦截线画法与逐级买点分析方法，不存在统一单日信号完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先统一筷子线原点、高点选择和多根拦截线的生成规则。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把强依赖人工画线的图形强行压成伪精确日线规则。"
+  ],
+  "explain": "米字线依赖多根人工作图拦截线与支撑判断，当前不能仅凭日线O/H/L/C/V无歧义执行。"
+}

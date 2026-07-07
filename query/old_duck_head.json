@@ -1,0 +1,131 @@
+{
+  "name": "老鸭头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [96, 97, 98, 99, 100],
+  "source": "老鸭头采用5、10、60日均线：先是5日和10日均线放量上穿60日均线形成鸭颈部，回档形成鸭头顶，再次金叉形成鸭嘴部，最后放量突破鸭头顶。",
+  "source_summary": "5/10日均线先上穿60日线，回调后再次转强并突破前高，可视为老鸭头。",
+  "comment": "当前按日线‘首次上穿60线 + 再次金叉 + 突破前高’近似提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "signal_keep_days": 5,
+    "setup_lookback": 60
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "close_high_30",
+      "op": "highest",
+      "field": "close",
+      "window": 30,
+      "description": "最近30日最高收盘"
+    },
+    {
+      "id": "close_high_30_prev",
+      "op": "ref",
+      "field": "close_high_30",
+      "window": 1,
+      "description": "前一日最近30日最高收盘"
+    },
+    {
+      "id": "vol_ma_5",
+      "op": "sma",
+      "field": "volume",
+      "window": 5,
+      "description": "5日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "neck_setup",
+      "op": "cross_up",
+      "left": "ma_10",
+      "right": "ma_60",
+      "description": "10日均线上穿60日均线，近似鸭颈部"
+    },
+    {
+      "id": "beak_setup",
+      "op": "cross_up",
+      "left": "ma_5",
+      "right": "ma_10",
+      "description": "5日均线上穿10日均线，近似鸭嘴部"
+    },
+    {
+      "id": "head_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "close_high_30_prev",
+      "description": "放量突破鸭头顶"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "condition", "event": "neck_setup"},
+            "event": "beak_setup",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {
+            "op": "within",
+            "window": "$params.setup_lookback",
+            "condition": {"op": "condition", "event": "beak_setup"}
+          },
+          {
+            "op": "condition",
+            "event": "head_breakout"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">",
+            "right": "vol_ma_5"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别10日均线上穿60日均线的鸭颈部近似事件。",
+    "识别5日均线上穿10日均线的鸭嘴部近似事件。",
+    "要求鸭嘴部出现在鸭颈部之后，且随后放量突破近30日高点。"
+  ],
+  "signal_day_definition": "以放量突破鸭头顶近似位的当日作为老鸭头确认日。",
+  "manual_review_needed": [
+    "鸭头顶、鸭鼻孔、通气性等细节当前未完全量化。",
+    "若要更贴近原文，可继续拆出鸭鼻孔和量芝麻点附加条件。"
+  ],
+  "implementation_notes": [
+    "这是一个多阶段建仓-洗盘-突破的组合形态。"
+  ],
+  "explain": "老鸭头用5/10/60均线的先上穿、回调、再突破来表达。"
+}

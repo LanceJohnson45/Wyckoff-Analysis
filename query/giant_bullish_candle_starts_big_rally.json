@@ -1,0 +1,61 @@
+{
+  "name": "巨量长阳往往是大涨的开端",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [659, 660, 661, 662],
+  "source": "巨量长阳往往是大涨的开端强调：当股价已经暴露庄家建仓痕迹后，一旦在2+3初中期放巨量向上突破平台，后面通常会走出一段有力度的上涨行情。",
+  "source_summary": "若2+3初中期的平台被巨量长阳突破，往往意味着一轮较大的上升开始。",
+  "comment": "当前用‘站上60/120线 + 巨量长阳突破平台’来近似2+3初中期的启动长阳。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 140,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "platform_lookback": 30,
+    "ma_mid_window": 60,
+    "ma_long_window": 120,
+    "volume_ma_window": 5,
+    "volume_multiplier": 2,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "120日均线"},
+    {"id": "platform_high", "op": "highest", "field": "close", "window": "$params.platform_lookback", "description": "平台高点"},
+    {"id": "platform_high_prev", "op": "ref", "field": "platform_high", "window": 1, "description": "前一日平台高点"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "5日均量"},
+    {"id": "volume_threshold", "op": "mul", "field": "volume_ma", "field2": "$params.volume_multiplier", "window": 0, "description": "巨量阈值"}
+  ],
+  "events": [
+    {"id": "break_platform", "op": "breakout_up", "left": "close", "right": "platform_high_prev", "description": "收盘突破平台"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "break_platform"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_threshold"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先用60/120日均线近似股价已进入2+3初中期。",
+    "计算平台高点和巨量阈值。",
+    "若最新出现巨量长阳并收盘突破平台，视为大涨开端确认。"
+  ],
+  "signal_day_definition": "以巨量长阳突破平台并站稳60/120线的当日作为大涨开端确认日。",
+  "manual_review_needed": [
+    "原文还要求结合平台所处区间判断后续涨幅大小，当前主规则只识别启动本身。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + platform_lookback + 1。"
+  ],
+  "explain": "该规则用于识别建仓完成后，巨量长阳突破平台所对应的一轮大涨起点。"
+}

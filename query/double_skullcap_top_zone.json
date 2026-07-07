@@ -1,0 +1,53 @@
+{
+  "name": "天灵盖",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [442, 443, 444],
+  "source": "天灵盖章节强调：60日均线和120日均线一旦分别出现极大值并转头向下，就说明股价长时间没再创新高、顶部区间已经形成；若随后跌入2-3区间或跌破120下小平台，则头部压力更重。",
+  "source_summary": "若60日与120日均线都由升转降，可视为天灵盖顶部区成立。",
+  "comment": "当前提取为60线和120线双天灵盖共振的顶部区版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 10
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"},
+    {"id": "ma_60_prev_2", "op": "ref", "field": "ma_60", "window": 2, "description": "前两日60日均线"},
+    {"id": "ma_120_prev", "op": "ref", "field": "ma_120", "window": 1, "description": "前一日120日均线"},
+    {"id": "ma_120_prev_2", "op": "ref", "field": "ma_120", "window": 2, "description": "前两日120日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_60_prev", "operator": ">=", "right": "ma_60_prev_2"},
+          {"op": "compare", "left": "ma_60", "operator": "<", "right": "ma_60_prev"},
+          {"op": "compare", "left": "ma_120_prev", "operator": ">=", "right": "ma_120_prev_2"},
+          {"op": "compare", "left": "ma_120", "operator": "<", "right": "ma_120_prev"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日和120日均线及其前两日方向。",
+    "要求60日均线由升转降，形成60线天灵盖。",
+    "要求120日均线也由升转降，形成120线天灵盖，并把两者共振视为顶部区成立。"
+  ],
+  "signal_day_definition": "以60线与120线天灵盖在近窗口内完成共振的当日作为顶部区确认日。",
+  "manual_review_needed": [
+    "原文还强调牛熊转换点和跌破120下小平台后的进一步确认，当前只保留双天灵盖本体。"
+  ],
+  "implementation_notes": [
+    "这是对单独60线天灵盖与120线天灵盖的顶部区组合提炼。"
+  ],
+  "explain": "天灵盖被结构化为60日与120日均线双重拐头向下形成的顶部区信号。"
+}

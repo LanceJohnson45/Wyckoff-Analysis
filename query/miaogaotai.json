@@ -1,0 +1,125 @@
+{
+  "name": "妙高台",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [777, 778, 779],
+  "source": "妙高台是股价刚进入2+3区间后，在60日和120日均线之上构筑的第一个小平台；主力借助这个平台继续压盘吸筹，平台时间越长、越接近量芝麻点，后续向上突破后的上涨空间通常越大。",
+  "source_summary": "若股价刚进入60/120日均线上方后构筑缩量小平台，并向上突破平台高点，可视为妙高台成立。",
+  "comment": "当前把原文中的‘2+3区间后第一个小平台’近似为60/120日线上方的初段缩量平台突破。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_support_window": 60,
+    "ma_anchor_window": 120,
+    "platform_lookback": 20,
+    "volume_ma_window": 10,
+    "platform_min_days": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_support_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_anchor_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_lookback",
+      "description": "小平台最高收盘价"
+    },
+    {
+      "id": "platform_high_prev",
+      "op": "ref",
+      "field": "platform_high",
+      "window": 1,
+      "description": "前一日小平台最高收盘价"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "平台阶段量均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_platform",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "platform_high_prev",
+      "description": "向上突破妙高台平台"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_60"
+                },
+                {
+                  "op": "compare",
+                  "left": "close",
+                  "operator": ">",
+                  "right": "ma_120"
+                },
+                {
+                  "op": "compare",
+                  "left": "volume",
+                  "operator": "<=",
+                  "right": "volume_ma"
+                }
+              ]
+            },
+            "event": "breakout_platform",
+            "window": "$params.platform_lookback",
+            "min_count": "$params.platform_min_days"
+          },
+          {
+            "op": "condition",
+            "event": "breakout_platform"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日与120日均线，确认平台位于暖气带之上。",
+    "在platform_lookback窗口内要求出现若干个缩量整理日，近似‘妙高台’吸筹平台。",
+    "当收盘价向上突破平台高点时，视为妙高台完成。"
+  ],
+  "signal_day_definition": "以位于60/120日均线上方的缩量平台被向上突破的当日作为妙高台确认日。",
+  "manual_review_needed": [
+    "原文强调必须是进入2+3区间后的第一个小平台，当前仅用60/120线之上的初段平台近似表达。",
+    "原文还提到平台越长涨幅越大，当前未把平台长度映射成后续收益预估。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_anchor_window + platform_lookback + 1。"
+  ],
+  "explain": "妙高台被结构化为60/120日均线上方的初段缩量平台及其向上突破。"
+}

@@ -151,7 +151,12 @@ class IndicatorRuleEngine:
             op = item["op"]
             field = item["field"]
             window = self._resolve_value(item.get("window"), params)
-            series_map[series_id] = self._compute_series(op, field, window, series_map, params)
+            local_params = dict(params)
+            if "field2" in item:
+                local_params["_field2"] = self._resolve_value(item["field2"], params)
+            series_map[series_id] = self._compute_series(
+                op, field, window, series_map, local_params
+            )
         return series_map
 
     def _compute_series(
@@ -177,6 +182,15 @@ class IndicatorRuleEngine:
             return source.shift(int(window))
         if op == "pct_change":
             return source.pct_change(periods=int(window))
+        if op == "sub":
+            other = self._resolve_series_reference(params["_field2"], series_map)
+            return source - other
+        if op == "mul":
+            other_ref = params["_field2"]
+            if isinstance(other_ref, (int, float)):
+                return source * other_ref
+            other = self._resolve_series_reference(other_ref, series_map)
+            return source * other
         raise ValueError(f"Unsupported series op: {op}")
 
     def _build_event_map(

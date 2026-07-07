@@ -1,0 +1,37 @@
+{
+  "name": "涨跌五势二",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [906, 907, 908, 909, 910, 911],
+  "source": "原文把所有下跌线路概括成五种基本跌势：跌斜下、跌直横、跌横直、跌拱、跌凹，并进一步提出跌小拱、跌小凹等改良线路。其核心用途是从整体路径上判断主力是快跌派发还是慢跌派发，以及不同出货节奏的路径差异。",
+  "source_summary": "下跌五势是用于描述股价整体下跌路径的形态学地图，不是单一日触发指标。",
+  "comment": "原文讨论的是连续路径、弧形快慢和派发节奏，更像走势分类方法论而非一个 latest_match 规则。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "识别股价当前下跌路径更接近跌斜下、跌拱、跌凹还是其改良形态。",
+    "结合路径快慢判断主力是在快速派发还是拖延派发。",
+    "用该路径框架辅助解释后续反弹、平台和加速下跌段的意义。"
+  ],
+  "signal_day_definition": "本节没有单一固定的信号完成日，描述的是下跌线路分类框架。",
+  "manual_review_needed": [
+    "若未来要自动化，需要先定义曲率、斜率变化、阶段切换点和不同派发路径的识别算法。"
+  ],
+  "implementation_notes": [
+    "建议未来把它作为高阶走势分类器，而不是单一卖出布尔规则。"
+  ],
+  "explain": "下跌五势更适合做路径分类和状态解释，当前仅保留方法论结构。"
+}

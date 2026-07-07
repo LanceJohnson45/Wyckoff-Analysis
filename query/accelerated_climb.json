@@ -1,0 +1,59 @@
+{
+  "name": "加速爬升",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [243, 244, 245],
+  "source": "加速爬升指庄家在建仓与洗盘全部完成后，将股价快速拉离成本区，常见表现为连续涨停或快速上攻到目标位的一半后稍作休整再继续上冲。",
+  "source_summary": "若离开地面后股价在短窗口内出现显著加速上涨，可视为进入加速爬升。",
+  "comment": "当前用短窗口累计涨幅显著增加来近似加速爬升。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "trend_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "accel_window": 10,
+    "accel_pct_threshold": 0.15,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "T线近似"},
+    {"id": "t_line_prev", "op": "ref", "field": "t_line", "window": 1, "description": "前一日T线"},
+    {"id": "close_pct_10", "op": "pct_change", "field": "close", "window": "$params.accel_window", "description": "近N日累计涨幅近似"}
+  ],
+  "events": [
+    {"id": "breakout_t_line", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "突破T线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "condition", "event": "breakout_t_line"},
+            "event": "breakout_t_line",
+            "window": "$params.accel_window",
+            "min_count": 1
+          },
+          {"op": "compare", "left": "close_pct_10", "operator": ">=", "right": "$params.accel_pct_threshold"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先确认近期已经离开地面式突破T线。",
+    "再计算近accel_window日累计涨幅。",
+    "当累计涨幅达到accel_pct_threshold以上时，近似视为进入加速爬升阶段。"
+  ],
+  "signal_day_definition": "以短窗口累计涨幅明显放大的最新交易日作为加速爬升有效日。",
+  "manual_review_needed": [
+    "原文中的连续涨停板与分段拉升版本目前统一收敛成累计涨幅阈值，需要后续回测。"
+  ],
+  "implementation_notes": [
+    "accel_pct_threshold 目前为建议默认值。"
+  ],
+  "explain": "加速爬升被结构化为离开地面后短窗口快速上攻阶段。"
+}

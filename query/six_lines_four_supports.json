@@ -1,0 +1,228 @@
+{
+  "name": "六线四托",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [723, 724, 725, 726],
+  "source": "六线四托以5、10、20、60、120、240日均线为基础，依次观察月托、季托、半年托、年托四层均线托举；若长期下跌后逐步形成四托，量能放大，且股价最终突破前头部颈线，则是难得的中长期买点。",
+  "source_summary": "若六条均线依次完成四层托举并最终突破前头部颈线，可视为六线四托成立。",
+  "comment": "当前把原文中的四托分解为一组关键均线金叉序列，并要求最终处于完整多头排列后突破颈线。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 320,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_short_window": 10,
+    "ma_mid_window": 20,
+    "ma_long_window": 60,
+    "ma_halfyear_window": 120,
+    "ma_year_window": 240,
+    "support_sequence_lookback": 180,
+    "breakout_lookback": 40,
+    "volume_ma_window": 20,
+    "signal_keep_days": 10,
+    "allow_same_day": true
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_short_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_halfyear_window",
+      "description": "120日均线"
+    },
+    {
+      "id": "ma_240",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_year_window",
+      "description": "240日均线"
+    },
+    {
+      "id": "neckline_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.breakout_lookback",
+      "description": "颈线高点的收盘近似"
+    },
+    {
+      "id": "neckline_high_prev",
+      "op": "ref",
+      "field": "neckline_high",
+      "window": 1,
+      "description": "前一日颈线高点"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "成交量均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_5_10",
+      "op": "cross_up",
+      "left": "ma_5",
+      "right": "ma_10",
+      "description": "5日线上穿10日线"
+    },
+    {
+      "id": "cross_10_20",
+      "op": "cross_up",
+      "left": "ma_10",
+      "right": "ma_20",
+      "description": "10日线上穿20日线"
+    },
+    {
+      "id": "cross_10_60",
+      "op": "cross_up",
+      "left": "ma_10",
+      "right": "ma_60",
+      "description": "10日线上穿60日线"
+    },
+    {
+      "id": "cross_20_120",
+      "op": "cross_up",
+      "left": "ma_20",
+      "right": "ma_120",
+      "description": "20日线上穿120日线"
+    },
+    {
+      "id": "cross_120_240",
+      "op": "cross_up",
+      "left": "ma_120",
+      "right": "ma_240",
+      "description": "120日线上穿240日线"
+    },
+    {
+      "id": "breakout_neckline",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "neckline_high_prev",
+      "description": "收盘突破前头部颈线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "sequence",
+            "window": "$params.support_sequence_lookback",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "cross_5_10"
+              },
+              {
+                "op": "condition",
+                "event": "cross_10_20"
+              },
+              {
+                "op": "condition",
+                "event": "cross_10_60"
+              },
+              {
+                "op": "condition",
+                "event": "cross_20_120"
+              },
+              {
+                "op": "condition",
+                "event": "cross_120_240"
+              }
+            ]
+          },
+          {
+            "op": "condition",
+            "event": "breakout_neckline"
+          },
+          {
+            "op": "compare",
+            "left": "ma_5",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "ma_10",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "ma_20",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "ma_60",
+            "operator": ">",
+            "right": "ma_120"
+          },
+          {
+            "op": "compare",
+            "left": "ma_120",
+            "operator": ">",
+            "right": "ma_240"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5、10、20、60、120、240日均线，并识别关键的多头交叉事件。",
+    "在support_sequence_lookback窗口内按顺序要求短中长期均线逐步完成托举，近似月托、季托、半年托、年托的形成过程。",
+    "当股价完成完整多头排列后放量突破近阶段颈线高点，视为六线四托确认。"
+  ],
+  "signal_day_definition": "以六线完成多头托举后收盘突破颈线的当日作为六线四托确认日。",
+  "manual_review_needed": [
+    "原文每个‘托’都包含三次更细的金叉关系，当前提炼为最关键的五个交叉节点，后续可继续扩展。",
+    "原文强调‘缩量反压不破年托’也是买点，当前主规则只输出突破前头部的主买点。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_year_window + support_sequence_lookback + 1。",
+    "四托本质是长周期均线托举的阶段序列，当前规则优先保证解释器可执行与无歧义。"
+  ],
+  "explain": "六线四托被结构化为关键均线托举序列完成后，股价放量突破前头部颈线的中长期转强信号。"
+}

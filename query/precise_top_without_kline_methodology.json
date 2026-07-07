@@ -1,0 +1,37 @@
+{
+  "name": "不看 K 线精确判定股价最高点",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [635, 636, 637, 638],
+  "source": "不看K线精确判定股价最高点通过5分钟OBV微能量来倒推价格头部：先观察能量不创新高，再看扇骨线跌破、会创新低还有新低以及下降趋势线形成，最后反推股价最高区域。",
+  "source_summary": "这是完全建立在5分钟OBV微能量和扇骨线上的精确判顶方法，不适合直接压成日线规则。",
+  "comment": "原文的四条判头法则都依赖5分钟OBV和人工扇骨线，当前保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "在5分钟K线上计算OBV微能量并观察其高低点结构。",
+    "依次判断不创新高、跌破扇骨线、继续创新低和下降趋势线形成。",
+    "根据OBV转弱的区间反推股价头部区域，作为精确撤退参考。"
+  ],
+  "signal_day_definition": "本节描述的是通过5分钟OBV倒推头部区间的方法，不是可直接统一落成的日线信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入5分钟OBV、扇骨线自动画线和头部区间反推逻辑。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把5分钟微能量判头压成日线假规则。"
+  ],
+  "explain": "该节的关键判断来自5分钟OBV和扇骨线破位，当前单靠日线O/H/L/C/V无法完整实现。"
+}

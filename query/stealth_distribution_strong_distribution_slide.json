@@ -1,0 +1,83 @@
+{
+  "name": "潜派发、强派发、滑落",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [145, 146, 147, 148, 149],
+  "source": "该形态描述庄股出货三阶段：先在头部区温和潜派发，然后在5/10日价均线、5/10日量均线和MACD同时死叉时进入强派发，最后转入自由滑落阶段。",
+  "source_summary": "头部区潜派发之后若出现价、量、MACD三死叉共振，可视为强派发走向滑落的信号。",
+  "comment": "当前 latest_match 落在‘头部分配背景后的三死叉强派发启动’这一可执行日线节点。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 90,
+  "indicator_type": "trend_rule",
+  "params": {
+    "price_fast_window": 5,
+    "price_slow_window": 10,
+    "volume_fast_window": 5,
+    "volume_slow_window": 10,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "cluster_window": 5,
+    "background_lookback": 20,
+    "background_min_bullish_days": 8,
+    "signal_keep_days": 5,
+    "allow_same_day": true
+  },
+  "series": [
+    {"id": "price_ma_fast", "op": "sma", "field": "close", "window": "$params.price_fast_window", "description": "5日价格均线"},
+    {"id": "price_ma_slow", "op": "sma", "field": "close", "window": "$params.price_slow_window", "description": "10日价格均线"},
+    {"id": "volume_ma_fast", "op": "sma", "field": "volume", "window": "$params.volume_fast_window", "description": "5日量均线"},
+    {"id": "volume_ma_slow", "op": "sma", "field": "volume", "window": "$params.volume_slow_window", "description": "10日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "macd_dea", "op": "ema", "field": "macd_dif", "window": "$params.macd_signal_window", "description": "MACD DEA"}
+  ],
+  "events": [
+    {"id": "price_cross_down", "op": "cross_down", "left": "price_ma_fast", "right": "price_ma_slow", "description": "5日价均线下穿10日价均线"},
+    {"id": "volume_cross_down", "op": "cross_down", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "5日量均线下穿10日量均线"},
+    {"id": "macd_cross_down", "op": "cross_down", "left": "macd_dif", "right": "macd_dea", "description": "MACD DIF下穿DEA"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "price_ma_fast", "operator": ">=", "right": "price_ma_slow"},
+            "event": "price_cross_down",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_bullish_days"
+          },
+          {
+            "op": "sequence",
+            "window": "$params.cluster_window",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {"op": "condition", "event": "price_cross_down"},
+              {"op": "condition", "event": "volume_cross_down"},
+              {"op": "condition", "event": "macd_cross_down"}
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10日价格均线、5/10日量均线，以及MACD的DIF与DEA。",
+    "用price_ma_fast持续位于price_ma_slow上方的背景近似头部高位派发阶段。",
+    "要求价、量、MACD三死叉在cluster_window内集中出现，近似强派发启动。"
+  ],
+  "signal_day_definition": "以三死叉共振完成、强派发被确认的当日作为信号完成日。",
+  "manual_review_needed": [
+    "当前主规则只提取‘头部背景后的三死叉强派发’，未把潜派发与最终滑落拆成完整状态链。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + macd_signal_window + background_lookback + 1。"
+  ],
+  "explain": "该规则把庄股派发三阶段收敛成‘头部背景后出现三死叉强派发’的可执行信号。"
+}

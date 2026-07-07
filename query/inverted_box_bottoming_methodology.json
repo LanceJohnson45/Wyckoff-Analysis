@@ -1,0 +1,37 @@
+{
+  "name": "倒箱问底",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [516, 517, 518, 519],
+  "source": "倒箱问底法通过复制前一段箱体或反弹幅度，去测量股价下一段下跌的理论空间，并随着反弹幅度越来越小来估计底部区间。原文强调这是一种测量未来下跌空间和预测底部的方法，而不是看到测量位就立刻买入。",
+  "source_summary": "倒箱问底是用箱体高度逐段复制来测量未来跌幅和底部区间的方法论。",
+  "comment": "该节属于空间测量框架，不是单一可执行的最新日布尔信号。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先识别当前震荡箱体的上下边界。",
+    "把该箱体向下复制，测量下一段理论跌幅。",
+    "随着反弹幅度逐渐缩小，估算底部更接近的位置。"
+  ],
+  "signal_day_definition": "原文关注的是未来空间测量与底部估计，不存在单一统一的信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要先统一箱体识别、复制映射和多段阻尼震荡的定义。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把空间测量误写成确定性入场信号。"
+  ],
+  "explain": "倒箱问底是底部空间测量方法，当前不适合仅靠日线 O/H/L/C/V 落成单一 latest_match。"
+}

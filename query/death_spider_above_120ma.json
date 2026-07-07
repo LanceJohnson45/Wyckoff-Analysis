@@ -1,0 +1,54 @@
+{
+  "name": "120 上死蜘蛛",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [426, 427],
+  "source": "120上死蜘蛛指股价仍在120日均线上方时，5/10/20/60日均线形成四线死蜘蛛，随后股价再跌破120日均线；这会造成不同周期持股者集体恐慌，后续看跌概率很大。",
+  "source_summary": "若四线均线先形成死蜘蛛，随后股价再跌破120日均线，可视为120上死蜘蛛。",
+  "comment": "当前按‘四线死蜘蛛 + 跌破120线’的复合版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 150,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"}
+  ],
+  "events": [
+    {"id": "break_120_down", "op": "cross_down", "left": "close", "right": "ma_120", "description": "股价跌破120日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_5", "operator": "<", "right": "ma_10"},
+          {"op": "compare", "left": "ma_10", "operator": "<", "right": "ma_20"},
+          {"op": "compare", "left": "ma_20", "operator": "<", "right": "ma_60"},
+          {"op": "condition", "event": "break_120_down"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20/60/120日均线。",
+    "要求短中期均线已经呈现死蜘蛛式的向下层级排列。",
+    "要求随后股价向下跌破120日均线，作为复合头部确认。"
+  ],
+  "signal_day_definition": "以四线死蜘蛛形成后股价跌破120日均线的当日作为120上死蜘蛛完成日。",
+  "manual_review_needed": [
+    "原文强调死蜘蛛先发生在120线之上、随后再跌破120线；当前未显式锁定死蜘蛛必须发生在跌破前的某一段时间内，只保留结果态。"
+  ],
+  "implementation_notes": [
+    "可与三死叉见顶、白量滔天等头部规则联用。"
+  ],
+  "explain": "120上死蜘蛛被结构化为四线死蜘蛛之后的跌破120日均线复合头部信号。"
+}

@@ -1,0 +1,40 @@
+{
+  "name": "三死叉见顶（四）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [180, 181],
+  "source": "本节讨论如何提高日K线三死叉见顶时的出货价格，核心做法是借助60分钟、30分钟三死叉以及5分钟OBV等更短周期信号来提前确认头部，从而在日线三死叉彻底显现前提高卖出价位。",
+  "source_summary": "这是一个依赖更短周期共振与5分钟OBV辅助确认的出货方法，不适合直接落成只基于日线O/H/L/C/V的单一布尔信号。",
+  "comment": "核心依赖60分钟、30分钟和5分钟级别信息，当前仓库只有日线数据。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9
+  },
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求结合60分钟、30分钟三死叉与5分钟OBV能量潮等更短周期信号。",
+    "由于当前系统只提供日线O/H/L/C/V，无法还原这些短周期确认与多周期共振。"
+  ],
+  "signal_day_definition": "原文未定义单一的日线信号完成日，而是强调多周期卖出优化。",
+  "manual_review_needed": [
+    "若后续接入分钟线和OBV序列，可将本节拆成多周期确认规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "这是一套依赖分钟线与OBV的出货优化方法，不是纯日线规则。"
+}

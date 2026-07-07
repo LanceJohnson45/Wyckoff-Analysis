@@ -1,0 +1,47 @@
+{
+  "name": "下跌中继",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [444, 445, 446],
+  "source": "下跌中继指股价在下跌过程中围绕筹码峰或横向震荡带短暂休息，随后再由一根较长阴线向下击穿震荡带，继续原有跌势。",
+  "source_summary": "若股价在弱势平台震荡后向下跌破平台底边，可视为下跌中继成立。",
+  "comment": "当前按‘弱势平台 + 向下跌破平台底边’的核心版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "platform_lookback": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "platform_low", "op": "lowest", "field": "close", "window": "$params.platform_lookback", "description": "震荡带底边"},
+    {"id": "platform_low_prev", "op": "ref", "field": "platform_low", "window": 1, "description": "前一日震荡带底边"}
+  ],
+  "events": [
+    {"id": "break_platform_down", "op": "breakout_down", "left": "close", "right": "platform_low_prev", "description": "向下跌破下跌中继平台底边"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "condition",
+        "event": "break_platform_down"
+      }
+    }
+  },
+  "calculation_steps": [
+    "用近窗口最低收盘价近似平台底边。",
+    "检测股价是否向下跌破该平台底边。",
+    "把平台破位当作下跌中继完成。"
+  ],
+  "signal_day_definition": "以向下跌破下跌中继平台底边的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文还依赖筹码峰中心位置和上下边带，当前只保留最核心的平台向下突破。"
+  ],
+  "implementation_notes": [
+    "这是弱势平台继续下跌的通用规则。"
+  ],
+  "explain": "下跌中继被结构化为弱势平台向下破位后的跌势延续信号。"
+}

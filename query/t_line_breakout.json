@@ -1,0 +1,43 @@
+{
+  "name": "T 线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [251, 252, 253],
+  "source": "T线表示长期盘整区间中无法通过的最高收盘价，一轮大行情往往先从向上突破代表性的T线开始；有代表意义的T线应能压制较多收盘价，最好有量支持，并在突破前已经确认庄家控盘或具备UP/UV特征。",
+  "source_summary": "若股价向上突破长期盘整区的代表性最高收盘价，可视为T线突破。",
+  "comment": "当前提取为基础T线突破版，不把UP/UV前置要求强行写入主规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "t_line", "op": "highest", "field": "close", "window": "$params.t_line_lookback", "description": "长期盘整区最高收盘价近似T线"},
+    {"id": "t_line_prev", "op": "ref", "field": "t_line", "window": 1, "description": "前一日T线"}
+  ],
+  "events": [
+    {"id": "breakout_t_line", "op": "breakout_up", "left": "close", "right": "t_line_prev", "description": "突破T线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {"op": "condition", "event": "breakout_t_line"}
+    }
+  },
+  "calculation_steps": [
+    "在较长盘整窗口内取最高收盘价近似T线。",
+    "检测收盘价是否向上突破该T线。"
+  ],
+  "signal_day_definition": "以收盘突破T线的当日作为T线突破确认日。",
+  "manual_review_needed": [
+    "原文强调要选代表性T线并最好结合UP/UV、反压确认，当前仅输出最核心的突破本体。"
+  ],
+  "implementation_notes": [
+    "与‘离开地面’中的T线突破不同，这里保留为更通用的独立定义。"
+  ],
+  "explain": "T线被结构化为长期盘整最高收盘价的突破信号。"
+}

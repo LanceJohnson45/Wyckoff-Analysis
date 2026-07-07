@@ -1,0 +1,53 @@
+{
+  "name": "蚂蚁功",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [196, 197],
+  "source": "蚂蚁功强调在上升趋势中让股价始终运行在5日、10日、20日均线之上或其间，只要这只‘蚂蚁’还能沿均线区间向上爬行，就继续持股；对于更稳健的中线版本，可观察10日与20日均线之间的持股安全带。",
+  "source_summary": "若股价仍位于短中期均线安全带上方，且5/10日均线未死叉，可视为蚂蚁仍在向上爬行。",
+  "comment": "当前提取为偏持股规则，而不是买点规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_slow", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_fast", "operator": ">=", "right": "ma_mid"},
+          {"op": "compare", "left": "ma_mid", "operator": ">=", "right": "ma_slow"},
+          {"op": "compare", "left": "close", "operator": ">=", "right": "ma_mid"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日、20日均线。",
+    "要求均线保持多头顺序，且收盘价仍位于10日均线上方。",
+    "用此近似表达‘蚂蚁仍沿均线安全带向上爬行’。"
+  ],
+  "signal_day_definition": "当最新交易日仍满足均线安全带条件时，视为蚂蚁功仍有效。",
+  "manual_review_needed": [
+    "原文还区分更强版本‘连5日均线都不碰’和更稳健版本‘10日与20日之间’，当前输出的是折中版持股规则。",
+    "原文建议在庄家建仓完毕后的启动点再放入蚂蚁，当前未把入场前置条件并入主规则。"
+  ],
+  "implementation_notes": [
+    "这是持股跟踪规则，不是单日买点。"
+  ],
+  "explain": "蚂蚁功被结构化为均线多头安全带仍然完好的持股条件。"
+}

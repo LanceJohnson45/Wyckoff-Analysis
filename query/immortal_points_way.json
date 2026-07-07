@@ -1,0 +1,61 @@
+{
+  "name": "仙人指路",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [214, 215, 216],
+  "source": "仙人指路指股价在底部建仓并形成价托、量托等形态后，继续走高时收出一根带长上影线的K线试探上方抛压，随后回落整理洗盘，只要洗盘结束后重新走强，这根长上影线的高点往往会成为后续目标位。",
+  "source_summary": "若底部启动后出现一根带长上影线的试盘K线，随后整理并再次向上突破，可视为仙人指路成立。",
+  "comment": "当前主规则提取为‘长上影试盘后回落，再次突破试盘高点’的确认版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close"],
+  "warmup_bars": 80,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "setup_lookback": 20,
+    "breakout_keep_days": 5
+  },
+  "series": [
+    {"id": "trial_high", "op": "highest", "field": "high", "window": "$params.setup_lookback", "description": "试盘阶段最高价近似"},
+    {"id": "trial_high_prev", "op": "ref", "field": "trial_high", "window": 1, "description": "前一日试盘高点"}
+  ],
+  "events": [
+    {"id": "breakout_trial_high", "op": "breakout_up", "left": "close", "right": "trial_high_prev", "description": "再次突破试盘高点"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.breakout_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "high", "operator": ">", "right": "close"},
+                {"op": "compare", "left": "high", "operator": ">", "right": "open"}
+              ]
+            },
+            "event": "breakout_trial_high",
+            "window": "$params.setup_lookback",
+            "min_count": 1
+          },
+          {"op": "condition", "event": "breakout_trial_high"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "在setup_lookback窗口内寻找一根高点明显高于开收盘的上影试盘K线。",
+    "其后若股价整理完毕并再次向上突破该试盘高点，则视为仙人指路成立。"
+  ],
+  "signal_day_definition": "以整理后再次突破试盘高点的当日作为仙人指路确认日。",
+  "manual_review_needed": [
+    "原文对上影线长度、回档时间和回档幅度有更强图形语义，当前未单独参数化。"
+  ],
+  "implementation_notes": [
+    "当前主规则使用确认版而非上影线出现当天即触发。"
+  ],
+  "explain": "仙人指路被结构化为长上影试盘后的洗盘再突破形态。"
+}

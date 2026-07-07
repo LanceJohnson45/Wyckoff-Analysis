@@ -1,0 +1,62 @@
+{
+  "name": "吸住天花板",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [379, 380],
+  "source": "吸住天花板是股价跌破60日均线之后，庄家为了在更高价位出货，故意把股价控制吸附在60日均线之下的一小段走势；这种吸附维持不久，最终还是会跌下去。",
+  "source_summary": "若股价连续数日被压在60日均线下方附近横向震荡，可视为吸住天花板。",
+  "comment": "当前按‘连续位于60日均线下方但未远离’的吸附版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 80,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_long_window": 60,
+    "cling_days": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "consecutive",
+            "length": "$params.cling_days",
+            "condition": {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "ma_60"
+            }
+          },
+          {
+            "op": "compare",
+            "left": "high",
+            "operator": ">=",
+            "right": "ma_60"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线。",
+    "要求连续数日收盘位于60日均线下方。",
+    "要求当前日盘中最高价仍能靠近或触及60日均线，近似表达被天花板吸附。"
+  ],
+  "signal_day_definition": "以连续吸附在60日均线下方并仍能盘中触及60日均线的当日作为吸住天花板信号日。",
+  "manual_review_needed": [
+    "原文强调‘在60线下方的一小段走势’，当前未单独加入与60日均线距离的百分比阈值。"
+  ],
+  "implementation_notes": [
+    "后续若引擎支持价差阈值，可把‘吸附’表达得更精确。"
+  ],
+  "explain": "吸住天花板被结构化为股价连续收在60日均线下方、但盘中仍反复贴近60日均线的出货走势。"
+}

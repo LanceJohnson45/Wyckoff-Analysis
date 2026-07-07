@@ -1,0 +1,133 @@
+{
+  "name": "条条防线堵黑马",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [591, 592, 593],
+  "source": "条条防线堵黑马强调：在指数持续创新低时，真正强势的个股往往底部抬高并跳空放量。面对这样的潜在黑马，不应一次性满仓，而应沿着下降趋势线、60日线、年线、前头部T线等一道道防线逐步加仓，直到有效突破关键T线后才完成满仓。",
+  "source_summary": "若个股在弱市中底部抬高并逐步突破关键均线和前头部，可作为潜在黑马分层加仓对象。",
+  "comment": "当前先提取最核心的日线版：底部抬高后，突破60日线与前头部T线。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 130,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "head_lookback": 60,
+    "low_compare_window": 20,
+    "volume_ma_window": 10,
+    "sequence_lookback": 20,
+    "allow_same_day": true,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "head_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "前头部T线近似"
+    },
+    {
+      "id": "head_high_prev",
+      "op": "ref",
+      "field": "head_high",
+      "window": 1,
+      "description": "前一日头部T线近似"
+    },
+    {
+      "id": "recent_low",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.low_compare_window",
+      "description": "近阶段低点"
+    },
+    {
+      "id": "recent_low_prev",
+      "op": "ref",
+      "field": "recent_low",
+      "window": 5,
+      "description": "更早一段时间的低点近似"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_60ma",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_60",
+      "description": "收盘上穿60日线"
+    },
+    {
+      "id": "break_head",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_high_prev",
+      "description": "收盘突破前头部T线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "recent_low",
+            "operator": ">",
+            "right": "recent_low_prev"
+          },
+          {
+            "op": "sequence",
+            "window": "$params.sequence_lookback",
+            "allow_same_day": "$params.allow_same_day",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "break_60ma"
+              },
+              {
+                "op": "condition",
+                "event": "break_head"
+              }
+            ]
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": ">=",
+            "right": "volume_ma"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先比较近阶段低点与更早一段时间低点，近似底部抬高。",
+    "再识别股价依次上穿60日线并突破前头部T线。",
+    "要求突破阶段量能不弱于10日均量。"
+  ],
+  "signal_day_definition": "以底部抬高后依次突破关键防线、最终越过前头部T线的当日作为潜在黑马确认日。",
+  "manual_review_needed": [
+    "原文还强调下降趋势线、年线、更多层防线与分批加仓比例，当前只保留最核心的60日线与头部T线版本。"
+  ],
+  "implementation_notes": [
+    "这是‘逐步突破多条防线’的简化日线版本。",
+    "warmup_bars >= max(head_lookback + 1, low_compare_window + 5, 60 + sequence_lookback + 1)"
+  ],
+  "explain": "该规则用于筛出弱市里底部抬高并逐步越过关键防线的潜在黑马。"
+}

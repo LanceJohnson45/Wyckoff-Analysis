@@ -132,3 +132,88 @@ def test_missing_required_field_returns_non_match():
     assert result.latest_match is False
     assert result.required_fields_ok is False
     assert result.missing_fields == ("volume",)
+
+
+def test_sub_series_op_supports_macd_style_spread():
+    engine = IndicatorRuleEngine()
+    spec = {
+        "name": "sub_series_test",
+        "timeframe": "1d",
+        "required_fields": ["close"],
+        "params": {},
+        "series": [
+            {
+                "id": "close_ref",
+                "op": "ref",
+                "field": "close",
+                "window": 1,
+                "description": "前一日收盘价",
+            },
+            {
+                "id": "close_delta",
+                "op": "sub",
+                "field": "close",
+                "field2": "close_ref",
+                "window": 0,
+                "description": "收盘价差",
+            },
+        ],
+        "events": [],
+        "rules": {
+            "latest_match": {
+                "op": "compare",
+                "left": "close_delta",
+                "operator": ">",
+                "right": 0,
+            }
+        },
+    }
+    df = _make_ohlcv([10.0, 11.0, 12.0])
+
+    result = engine.evaluate(df, spec)
+
+    assert result.latest_match is True
+    assert result.series_values["close_delta"].iloc[-1] == 1.0
+
+
+def test_mul_series_op_supports_scalar_multiplier():
+    engine = IndicatorRuleEngine()
+    spec = {
+        "name": "mul_series_test",
+        "timeframe": "1d",
+        "required_fields": ["volume"],
+        "params": {},
+        "series": [
+            {
+                "id": "volume_ma",
+                "op": "sma",
+                "field": "volume",
+                "window": 2,
+                "description": "两日均量",
+            },
+            {
+                "id": "double_volume_ma",
+                "op": "mul",
+                "field": "volume_ma",
+                "field2": 2,
+                "window": 0,
+                "description": "两倍均量",
+            },
+        ],
+        "events": [],
+        "rules": {
+            "latest_match": {
+                "op": "compare",
+                "left": "double_volume_ma",
+                "operator": ">",
+                "right": "volume_ma",
+            }
+        },
+    }
+    df = _make_ohlcv([10.0, 11.0, 12.0])
+    df["volume"] = [100.0, 120.0, 140.0]
+
+    result = engine.evaluate(df, spec)
+
+    assert result.latest_match is True
+    assert result.series_values["double_volume_ma"].iloc[-1] == 260.0

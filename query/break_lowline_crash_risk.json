@@ -1,0 +1,47 @@
+{
+  "name": "跌破低点连线有暴跌可能",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [449, 450, 451],
+  "source": "在头部特征已经出现后，若股价长时间盘整在低点连线之上，只是庄家拖延出货时间、维持高位空间的手段；一旦低点连线被跌破，所有参与者都会意识到走坏，从而容易引发集体杀跌。",
+  "source_summary": "若弱势盘整后向下跌破低点连线近似边界，可视为暴跌风险信号。",
+  "comment": "当前用近窗口平台底边近似低点连线，提取其向下破位的风险版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "line_lookback": 15,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "line_low", "op": "lowest", "field": "close", "window": "$params.line_lookback", "description": "低点连线近似边界"},
+    {"id": "line_low_prev", "op": "ref", "field": "line_low", "window": 1, "description": "前一日低点连线近似边界"}
+  ],
+  "events": [
+    {"id": "break_lowline", "op": "breakout_down", "left": "close", "right": "line_low_prev", "description": "跌破低点连线近似边界"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "condition",
+        "event": "break_lowline"
+      }
+    }
+  },
+  "calculation_steps": [
+    "用近窗口最低收盘价近似低点连线支撑边界。",
+    "检测股价是否向下跌破该边界。",
+    "把低点连线破位视为暴跌风险提升。"
+  ],
+  "signal_day_definition": "以股价向下跌破低点连线近似边界的当日作为暴跌风险信号日。",
+  "manual_review_needed": [
+    "原文强调低点连线是由两个或多个代表性低点手工连接，当前只用窗口底边近似表达。"
+  ],
+  "implementation_notes": [
+    "该规则适合作为头部区后续破位确认。"
+  ],
+  "explain": "跌破低点连线有暴跌可能被结构化为弱势边界向下破位的风险信号。"
+}

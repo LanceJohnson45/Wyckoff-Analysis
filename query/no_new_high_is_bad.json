@@ -1,0 +1,91 @@
+{
+  "name": "不创新高就是不妙",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [576, 577, 578],
+  "source": "不创新高就是不妙，强调股价一旦在敏感反弹点位未能继续创新高，就有可能转而创新低，恶化趋势从最细微处开始。原文在30分钟图上说明：若不创新高且随后再创新低，就说明局面明显恶化，应尽早提高警惕甚至先撤退。",
+  "source_summary": "若反弹后高点不再抬升，且随后又跌破近阶段低点，往往意味着趋势恶化。",
+  "comment": "当前用‘近期高点未刷新 + 当前又跌破近低点’来近似表达不妙局面。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "trend_rule",
+  "params": {
+    "high_lookback": 10,
+    "low_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.high_lookback",
+      "description": "近阶段最高收盘价"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近阶段最高收盘价"
+    },
+    {
+      "id": "recent_low",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.low_lookback",
+      "description": "近阶段最低收盘价"
+    },
+    {
+      "id": "recent_low_prev",
+      "op": "ref",
+      "field": "recent_low",
+      "window": 1,
+      "description": "前一日近阶段最低收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_recent_low",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "recent_low_prev",
+      "description": "收盘跌破近阶段低点"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "recent_high_prev"
+          },
+          {
+            "op": "condition",
+            "event": "break_recent_low"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近10日高点和近20日低点。",
+    "要求当前未能刷新近阶段高点，近似不创新高。",
+    "再要求当前收盘跌破近阶段低点，确认局面恶化。"
+  ],
+  "signal_day_definition": "以未能刷新高点后又跌破近低点的当日作为‘不创新高就是不妙’确认日。",
+  "manual_review_needed": [
+    "原文是在30分钟图上观察最敏感的恶化过程，当前先输出日线近似版本。"
+  ],
+  "implementation_notes": [
+    "该规则更适合作为风险预警，而不是独立做空信号。"
+  ],
+  "explain": "该规则用于捕捉反弹高点不再抬升后，局面进一步恶化并跌破近低点的风险状态。"
+}

@@ -1,0 +1,60 @@
+{
+  "name": "底部特征二",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [391, 392, 393],
+  "source": "底部特征二分析在下跌途中把股价上穿60日均线当作买点时需要的附加条件：下跌空间足够、底部抬高、60日和120日均线下跌趋缓甚至走平、并在上穿60日均线前后得到量能支持。",
+  "source_summary": "若下跌充分后底部抬高、60/120线趋缓且放量上穿60日均线，可视为较可靠的底部买点。",
+  "comment": "当前提取为文中总结的四条件共振版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 160,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "ma_longer_window": 120,
+    "volume_ma_window": 20,
+    "bottom_raise_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": "$params.ma_longer_window", "description": "120日均线"},
+    {"id": "ma_60_prev", "op": "ref", "field": "ma_60", "window": 1, "description": "前一日60日均线"},
+    {"id": "ma_120_prev", "op": "ref", "field": "ma_120", "window": 1, "description": "前一日120日均线"},
+    {"id": "close_ref_20", "op": "ref", "field": "close", "window": "$params.bottom_raise_lookback", "description": "更早周期收盘价，用于近似底部抬高"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "cross_60", "op": "cross_up", "left": "close", "right": "ma_60", "description": "股价上穿60日均线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "cross_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_ref_20"},
+          {"op": "compare", "left": "ma_60", "operator": ">=", "right": "ma_60_prev"},
+          {"op": "compare", "left": "ma_120", "operator": ">=", "right": "ma_120_prev"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日、120日均线及其前一日方向，并计算20日量均线。",
+    "要求股价放量上穿60日均线。",
+    "要求更早周期到当前存在底部抬高，且60/120日均线下跌趋缓或走平。"
+  ],
+  "signal_day_definition": "以上穿60日均线并满足底部抬高、均线趋缓和放量条件的当日作为底部买点确认日。",
+  "manual_review_needed": [
+    "原文强调‘前头部有足够下跌空间’，当前未直接量化与前头部距离，只保留底部抬高和均线方向等可执行条件。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_longer_window + volume_ma_window + 1，当前取160。"
+  ],
+  "explain": "底部特征二被结构化为四条件共振后的放量上穿60日均线买点。"
+}

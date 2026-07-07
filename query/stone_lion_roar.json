@@ -1,0 +1,132 @@
+{
+  "name": "石狮怒吼，海鸟飞天",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [129, 130],
+  "source": "石狮怒吼、海鸟飞天描述庄家先故意破坏图形，制造均线与指标死叉的空头陷阱，然后某一天突然放出巨量长阳，快速修复图形并接近或冲过前头部。",
+  "source_summary": "若此前存在均线空头破坏，随后出现巨量长阳并突破前头部，可视为石狮怒吼、海鸟飞天。",
+  "comment": "当前主规则聚焦‘先破坏、后巨量修复’这一核心，其他KD、RSI、MACD描述未纳入。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "head_lookback": 40,
+    "volume_lookback": 60,
+    "background_lookback": 20,
+    "background_min_bearish_days": 5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_fast_window",
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_mid_window",
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_slow_window",
+      "description": "20日均线"
+    },
+    {
+      "id": "head_close_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.head_lookback",
+      "description": "前头部最高收盘价近似"
+    },
+    {
+      "id": "head_close_high_prev",
+      "op": "ref",
+      "field": "head_close_high",
+      "window": 1,
+      "description": "前一日的头部最高收盘价"
+    },
+    {
+      "id": "volume_high_lookback",
+      "op": "highest",
+      "field": "volume",
+      "window": "$params.volume_lookback",
+      "description": "最近N日最大成交量"
+    },
+    {
+      "id": "volume_high_prev",
+      "op": "ref",
+      "field": "volume_high_lookback",
+      "window": 1,
+      "description": "前一日最近N日最大成交量"
+    }
+  ],
+  "events": [
+    {
+      "id": "volume_roar",
+      "op": "breakout_up",
+      "left": "volume",
+      "right": "volume_high_prev",
+      "description": "巨量怒吼日"
+    },
+    {
+      "id": "repair_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "head_close_high_prev",
+      "description": "长阳修复并突破前头部"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "and",
+              "conditions": [
+                {"op": "compare", "left": "ma_fast", "operator": "<=", "right": "ma_mid"},
+                {"op": "compare", "left": "ma_mid", "operator": "<=", "right": "ma_slow"}
+              ]
+            },
+            "event": "volume_roar",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_bearish_days"
+          },
+          {"op": "condition", "event": "volume_roar"},
+          {"op": "condition", "event": "repair_breakout"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日、10日、20日均线，识别是否存在一段均线空头破坏背景。",
+    "检测成交量是否向上突破最近volume_lookback日的最大量能。",
+    "要求同日收盘向上突破前头部最高收盘价，近似表达巨量长阳单日修好图形。"
+  ],
+  "signal_day_definition": "以巨量长阳修复图形并突破前头部的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文还提到KD、RSI、MACD等反技术破坏后再修复，当前只保留日线均线与量价主结构。",
+    "‘接近前高点’当前被收敛为直接突破前头部最高收盘价，属于偏严格版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(head_lookback, volume_lookback) + background_lookback + 1。",
+    "如果后续需要更宽松版本，可增加‘接近前高但未突破’的参数化条件。"
+  ],
+  "explain": "石狮怒吼、海鸟飞天被结构化为先破坏均线结构，再以巨量长阳突破前头部的修复信号。"
+}

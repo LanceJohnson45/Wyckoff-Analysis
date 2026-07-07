@@ -1,0 +1,48 @@
+{
+  "name": "60 线弹跳",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [378, 379],
+  "source": "头部出货区间里，股价第一次跌到60日均线附近时，庄家常会借尾盘拉高制造弹跳，以便尽量在60日均线以上高价区继续出货；这种假阳或价格弹跳是走软前兆。",
+  "source_summary": "若股价回到60日均线附近后出现反弹阳线，可视为60线弹跳。",
+  "comment": "当前按‘靠近60日均线后的反弹阳线’基础版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 80,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "ma_long_window": 60,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {"id": "ma_60", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "low", "operator": "<=", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线。",
+    "要求当日低点已回到60日均线附近或之下。",
+    "要求收盘重新站上60日均线并收阳，近似表达60线处的人为弹跳。"
+  ],
+  "signal_day_definition": "以股价触及60日均线后反弹收阳的当日作为60线弹跳信号日。",
+  "manual_review_needed": [
+    "原文强调这是头部出货环境中的假阳反弹，当前未强制加入头部背景过滤。"
+  ],
+  "implementation_notes": [
+    "后续可与60线天灵盖、吸住天花板等头部背景规则联用。"
+  ],
+  "explain": "60线弹跳被结构化为股价首次回踩60日均线后的反弹阳线。"
+}

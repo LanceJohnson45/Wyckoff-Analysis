@@ -1,0 +1,61 @@
+{
+  "name": "轻松过头",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [154, 155, 156],
+  "source": "轻松过头指前一头部下方已完成大规模建仓，回档后出现量芝麻点，随后股价再次冲过前一头部时并未明显放量，说明浮筹极少、筹码锁定充分。",
+  "source_summary": "若缩量回档后股价在低量状态下突破前头部，可视为轻松过头。",
+  "comment": "当前用缩量背景 + 无明显放量突破前头部的日线近似版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "head_lookback": 40,
+    "volume_ma_window": 20,
+    "background_lookback": 15,
+    "background_min_low_volume_days": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "head_close_high", "op": "highest", "field": "close", "window": "$params.head_lookback", "description": "前头部最高收盘价近似"},
+    {"id": "head_close_high_prev", "op": "ref", "field": "head_close_high", "window": 1, "description": "前一日头部最高收盘价"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "成交量均线"}
+  ],
+  "events": [
+    {"id": "breakout_head", "op": "breakout_up", "left": "close", "right": "head_close_high_prev", "description": "收盘突破前头部"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"},
+            "event": "breakout_head",
+            "window": "$params.background_lookback",
+            "min_count": "$params.background_min_low_volume_days"
+          },
+          {"op": "condition", "event": "breakout_head"},
+          {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前head_lookback日最高收盘价，近似前一头部。",
+    "在突破前要求background_lookback内出现不少于background_min_low_volume_days天的缩量状态。",
+    "当收盘价突破前头部且当日仍未明显放量时，视为轻松过头。"
+  ],
+  "signal_day_definition": "以缩量状态下突破前头部的当日作为轻松过头信号完成日。",
+  "manual_review_needed": [
+    "原文强调前头部下方已有巨大建仓量，当前只保留量芝麻点背景，未单独量化前期建仓量。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(head_lookback, volume_ma_window) + background_lookback + 1。"
+  ],
+  "explain": "轻松过头被结构化为缩量洗筹完成后在低量状态下突破前头部。"
+}

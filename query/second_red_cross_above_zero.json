@@ -1,0 +1,140 @@
+{
+  "name": "二次零上红金叉",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [803, 804, 805, 806],
+  "source": "二次零上红金叉强调：在DIF上穿零轴进入零上红区间后，第一次零上红金叉通常对应第二速度上涨，而第二次零上红金叉往往对应第三速度加速段；同时要求第二次金叉位置高于第一次金叉，且对应股价高点也高于第一次金叉附近股价，否则就有背离风险。",
+  "source_summary": "若MACD位于零轴上方并出现第二次金叉，且第二次DIF与价格位置都高于第一次，可视为二次零上红金叉成立。",
+  "comment": "当前直接用EMA版MACD与两次零上金叉序列实现，不输出水下金叉。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 120,
+  "indicator_type": "trend_rule",
+  "params": {
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "second_cross_lookback": 40,
+    "signal_keep_days": 8
+  },
+  "series": [
+    {
+      "id": "ema_fast",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.macd_fast_window",
+      "description": "MACD快线EMA"
+    },
+    {
+      "id": "ema_slow",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.macd_slow_window",
+      "description": "MACD慢线EMA"
+    },
+    {
+      "id": "macd_dif",
+      "op": "sub",
+      "field": "ema_fast",
+      "field2": "ema_slow",
+      "window": 0,
+      "description": "MACD DIF"
+    },
+    {
+      "id": "macd_dea",
+      "op": "ema",
+      "field": "macd_dif",
+      "window": "$params.macd_signal_window",
+      "description": "MACD DEA"
+    },
+    {
+      "id": "dif_prev_1",
+      "op": "ref",
+      "field": "macd_dif",
+      "window": 1,
+      "description": "前一日DIF"
+    },
+    {
+      "id": "close_prev_1",
+      "op": "ref",
+      "field": "close",
+      "window": 1,
+      "description": "前一日收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "cross_dif_above_zero",
+      "op": "cross_up",
+      "left": "macd_dif",
+      "right": 0,
+      "description": "DIF上穿零轴"
+    },
+    {
+      "id": "red_cross",
+      "op": "cross_up",
+      "left": "macd_dif",
+      "right": "macd_dea",
+      "description": "零上红金叉候选"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "macd_dif",
+              "operator": ">",
+              "right": 0
+            },
+            "event": "red_cross",
+            "window": "$params.second_cross_lookback",
+            "min_count": 2
+          },
+          {
+            "op": "condition",
+            "event": "red_cross"
+          },
+          {
+            "op": "compare",
+            "left": "macd_dif",
+            "operator": ">",
+            "right": 0
+          },
+          {
+            "op": "compare",
+            "left": "macd_dif",
+            "operator": ">",
+            "right": "dif_prev_1"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "close_prev_1"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算MACD的DIF与DEA，并识别DIF上穿零轴的时点。",
+    "在零轴上方统计最近窗口内的红金叉次数，要求当前红金叉前已至少出现过一次零上红金叉。",
+    "同时要求当前DIF与价格不弱于前一日，近似表达第二次零上红金叉位置高于第一次、股价不背离。"
+  ],
+  "signal_day_definition": "以零轴上方第二次红金叉完成的当日作为二次零上红金叉确认日。",
+  "manual_review_needed": [
+    "原文要求第二次金叉相对第一次位置更高，当前用最近状态近似，没有显式记录第一次金叉日的精确DIF与股价。"
+  ],
+  "implementation_notes": [
+    "若后续引擎支持事件索引引用，可把第一次与第二次红金叉的对比做得更精确。"
+  ],
+  "explain": "二次零上红金叉被结构化为零轴上方的再次MACD金叉，并附加不背离的强势约束。"
+}

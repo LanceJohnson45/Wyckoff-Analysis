@@ -1,0 +1,66 @@
+{
+  "name": "折腾避险",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [832, 833, 834],
+  "source": "折腾避险是一套动态风控方法：上涨初期可用20日均线避险，中涨段可用10日均线避险，末涨段应提高灵敏度改用5日均线；股价跌破对应避险线就先卖出，重新站回去再买回，以小折腾换大避险。",
+  "source_summary": "若股价跌破所选避险均线则应卖出，重新站回则可再买回；当前先结构化最灵敏的5日避险版本。",
+  "comment": "当前latest_match聚焦‘重新站回5日均线后的再买回触发’，卖出规则写入说明。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "trend_rule",
+  "params": {
+    "risk_ma_window": 5,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "risk_ma",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.risk_ma_window",
+      "description": "当前折腾避险线，默认5日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "reclaim_risk_ma",
+      "op": "cross_up",
+      "left": "close",
+      "right": "risk_ma",
+      "description": "股价重新站回折腾避险线"
+    },
+    {
+      "id": "break_risk_ma",
+      "op": "cross_down",
+      "left": "close",
+      "right": "risk_ma",
+      "description": "股价跌破折腾避险线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "condition",
+        "event": "reclaim_risk_ma"
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算当前使用的避险均线，默认采用最灵敏的5日均线版本。",
+    "若股价跌破该均线，则触发避险卖出；若随后重新站回，则触发再买回。",
+    "根据行情阶段，也可把risk_ma_window替换成10或20实现更稳健版本。"
+  ],
+  "signal_day_definition": "latest_match表示重新站回折腾避险线后的再买回触发；卖出触发日为跌破避险线之日。",
+  "manual_review_needed": [
+    "原文强调应按上涨阶段动态切换5/10/20日避险线，当前默认输出最灵敏的5日版本。"
+  ],
+  "implementation_notes": [
+    "这是一个交易管理方法，当前JSON以再买回布尔触发为主，卖出事件已显式给出供后续引擎扩展。"
+  ],
+  "explain": "折腾避险被结构化为跌破均线先避险、重新站回再买回的动态风控框架。"
+}

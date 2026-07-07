@@ -1,0 +1,143 @@
+{
+  "name": "千年等一回",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [616, 617, 618],
+  "source": "千年等一回强调三个瞄准镜同时共振：股价突破T线或高点连线、成交量达到单位时间两倍量、MACD中的DIF上穿零轴或水上金叉，此时才是值得追击的千载难逢时刻。",
+  "source_summary": "若突破关键压力、量能爆发且DIF上穿零轴共振，可视为千年等一回。",
+  "comment": "当前按日线版本提取三个瞄准镜共振，优先保留突破、放量和 DIF 上穿零轴。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "t_line_lookback": 40,
+    "volume_ma_window": 5,
+    "volume_multiplier": 2,
+    "ema_fast_window": 12,
+    "ema_slow_window": 26,
+    "resonance_window": 2,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "t_line",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.t_line_lookback",
+      "description": "前头部T线近似"
+    },
+    {
+      "id": "t_line_prev",
+      "op": "ref",
+      "field": "t_line",
+      "window": 1,
+      "description": "前一日T线"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.volume_multiplier",
+      "window": 0,
+      "description": "两倍量阈值"
+    },
+    {
+      "id": "ema_fast",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_fast_window",
+      "description": "MACD快线EMA"
+    },
+    {
+      "id": "ema_slow",
+      "op": "ema",
+      "field": "close",
+      "window": "$params.ema_slow_window",
+      "description": "MACD慢线EMA"
+    },
+    {
+      "id": "dif",
+      "op": "sub",
+      "field": "ema_fast",
+      "field2": "ema_slow",
+      "window": 0,
+      "description": "MACD DIF"
+    }
+  ],
+  "events": [
+    {
+      "id": "break_t_line",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "t_line_prev",
+      "description": "股价突破T线"
+    },
+    {
+      "id": "dif_cross_zero",
+      "op": "cross_up",
+      "left": "dif",
+      "right": 0,
+      "description": "DIF上穿零轴"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "within",
+            "window": "$params.resonance_window",
+            "condition": {
+              "op": "condition",
+              "event": "break_t_line"
+            }
+          },
+          {
+            "op": "within",
+            "window": "$params.resonance_window",
+            "condition": {
+              "op": "condition",
+              "event": "dif_cross_zero"
+            }
+          },
+          {
+            "op": "within",
+            "window": "$params.resonance_window",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": ">=",
+              "right": "volume_threshold"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算前头部T线、5日均量和两倍量阈值。",
+    "计算 MACD 中的 DIF，并识别其上穿零轴时点。",
+    "在 resonance_window 窗口内同时检查股价突破、量能两倍放大与 DIF 上穿零轴三项共振。"
+  ],
+  "signal_day_definition": "以三个瞄准镜在同日或前后一天内共振完成的交易日作为千年等一回信号日。",
+  "manual_review_needed": [
+    "原文允许 DIF 水上金叉作为替代条件，当前优先保留更通用的 DIF 上穿零轴版本。",
+    "resonance_window=2 用于表达‘同一天或前后一天’的共振含义，后续可回测微调。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= max(t_line_lookback + 1, ema_slow_window + resonance_window)。",
+    "这是三个瞄准镜共振的日线可执行版本。"
+  ],
+  "explain": "该规则用于识别关键压力突破、量能爆发和 DIF 由弱转强同步出现的追击信号。"
+}

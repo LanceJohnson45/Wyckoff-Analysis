@@ -1,0 +1,36 @@
+{
+  "name": "涨势中莫把腰部当头部",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [196, 197, 198],
+  "source": "本节强调上升途中常出现像头部的腰部震仓区，判断时不仅要看5/10/20均线形成的三角压，还要结合基本面、第一波成交量与换手率、腰部下跌量能以及分时打压痕迹综合辨别，不宜轻易把腰部误判为头部。",
+  "source_summary": "这是一个依赖基本面、换手率和分时细节的腰部辨识方法，不适合直接落成只基于日线O/H/L/C/V的单一布尔信号。",
+  "comment": "原文判断条件超过日线O/H/L/C/V范畴。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 20,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要综合基本面、换手率和分时打压痕迹判断腰部而非头部。",
+    "当前系统只有日线O/H/L/C/V，无法完整还原这些判断条件。"
+  ],
+  "signal_day_definition": "原文未定义单一日线信号完成日。",
+  "manual_review_needed": [
+    "若后续引入换手率、分时和基本面特征，可把腰部误判过滤拆成独立规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "这是一套腰部与头部误判过滤方法，不是纯日线单指标。"
+}

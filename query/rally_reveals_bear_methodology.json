@@ -1,0 +1,37 @@
+{
+  "name": "涨势见狗熊",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [627, 628, 629],
+  "source": "涨势见狗熊强调：在指数明显上涨的环境中，个股却逆势连跌、出现刀刃波与弱三角整理，往往说明主力在出货，这样的股票应尽快换掉。",
+  "source_summary": "这是一套建立在个股相对指数弱势表现上的出货方法，核心依赖指数对照与盘中痕迹。",
+  "comment": "原文的核心条件是‘指数上涨而个股下跌’，当前缺少指数对照序列与刀刃波分时刻画，因此保留为方法论。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先观察指数是否处于明显上涨环境。",
+    "再检查个股是否逆势连跌并出现刀刃波等出货痕迹。",
+    "若确认主力弱于大盘且有出货迹象，则考虑快速换股。"
+  ],
+  "signal_day_definition": "本节更偏相对强弱与盘中痕迹的出货方法，不是可直接统一落成的单一信号完成日。",
+  "manual_review_needed": [
+    "若后续要自动化，需要引入指数基准序列与分时级刀刃波识别。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免误把相对强弱和盘中痕迹压成伪精确规则。"
+  ],
+  "explain": "该节核心在于‘指数涨、个股跌’的相对弱势出货判断，当前单票日线 O/H/L/C/V 无法完整表达。"
+}

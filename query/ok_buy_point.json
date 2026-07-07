@@ -1,0 +1,57 @@
+{
+  "name": "OK 买入点",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [276, 277],
+  "source": "OK买入点要求60日均线已经出现价托，之后一段时间持续放量，股价底部逐步抬高，最终冲过最近几个月高点连线的压力线；这个放量过线的瞬间就是OK买入点。",
+  "source_summary": "若60日均线出现价托后，股价底部抬高并放量突破建仓区压力线，可视为OK买入点成立。",
+  "comment": "当前按60日线上方的底部抬高 + 放量突破压力线提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "ma_long_window": 60,
+    "pressure_lookback": 60,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "pressure_high", "op": "highest", "field": "close", "window": "$params.pressure_lookback", "description": "建仓区压力线近似"},
+    {"id": "pressure_high_prev", "op": "ref", "field": "pressure_high", "window": 1, "description": "前一日压力线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"},
+    {"id": "close_ref_20", "op": "ref", "field": "close", "window": 20, "description": "20日前收盘价"}
+  ],
+  "events": [
+    {"id": "breakout_pressure", "op": "breakout_up", "left": "close", "right": "pressure_high_prev", "description": "突破建仓区压力线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_long"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_ref_20"},
+          {"op": "compare", "left": "volume", "operator": ">", "right": "volume_ma"},
+          {"op": "condition", "event": "breakout_pressure"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "要求股价已位于60日均线之上。",
+    "要求近一段时间底部抬高，当前收盘高于20日前收盘近似表达底部逐步抬高。",
+    "以放量突破压力线的瞬间作为OK买入点。"
+  ],
+  "signal_day_definition": "以放量突破建仓区压力线的当日作为OK买入点确认日。",
+  "manual_review_needed": [
+    "原文强调UP、UV出现后再确认压力线，当前只保留结果态的放量突破。"
+  ],
+  "implementation_notes": [
+    "这是飞行理论中的核心买点之一。"
+  ],
+  "explain": "OK买入点被结构化为60日线上方底部抬高后的放量突破。"
+}

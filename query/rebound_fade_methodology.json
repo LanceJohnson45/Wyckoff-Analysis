@@ -1,0 +1,36 @@
+{
+  "name": "弹不动就走",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [409, 410],
+  "source": "弹不动就走强调：头部下跌后的反弹只是庄家延长出货时间、提高出货价位的手段，通常反弹到前头部筹码峰下沿就容易乏力，若弹不动就应离场。",
+  "source_summary": "这是反弹出货思路和筹码峰压力分析的方法论，不是单一布尔指标。",
+  "comment": "原文核心依赖前头部筹码峰下沿与反弹乏力判断，当前不压成统一 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文需要先识别前头部筹码峰位置，再观察反弹高度与乏力程度。",
+    "这是反弹出货思路，不是固定参数的即时布尔规则。"
+  ],
+  "signal_day_definition": "原文未定义单一统一的信号完成日。",
+  "manual_review_needed": [
+    "后续若引擎支持筹码峰与反弹失败事件，可拆成独立反弹出货规则。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "弹不动就走是反弹出货的方法论，不是单一布尔指标。"
+}

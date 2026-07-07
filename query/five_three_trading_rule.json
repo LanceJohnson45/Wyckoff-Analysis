@@ -1,0 +1,128 @@
+{
+  "name": "五三买卖法则",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [863, 864, 865],
+  "source": "五三买卖法则总结为：五线之上买入，三线之下卖出；反弹不上五线时，逢高清仓。它用于在强势股中一路持有到头部，并在头部及时退出。",
+  "source_summary": "若股价重新站上五线可视作买入触发；若跌到三线之下则是卖出触发；反弹不上五线时应清仓。",
+  "comment": "当前latest_match聚焦买入触发，卖出与反弹不上五线的清仓逻辑保留在事件和说明里。"
+  ,
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_5",
+      "op": "sma",
+      "field": "close",
+      "window": 5,
+      "description": "5日均线"
+    },
+    {
+      "id": "ma_10",
+      "op": "sma",
+      "field": "close",
+      "window": 10,
+      "description": "10日均线"
+    },
+    {
+      "id": "ma_20",
+      "op": "sma",
+      "field": "close",
+      "window": 20,
+      "description": "20日均线"
+    },
+    {
+      "id": "ma_60",
+      "op": "sma",
+      "field": "close",
+      "window": 60,
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_120",
+      "op": "sma",
+      "field": "close",
+      "window": 120,
+      "description": "120日均线"
+    }
+  ],
+  "events": [
+    {
+      "id": "reclaim_five_lines",
+      "op": "cross_up",
+      "left": "close",
+      "right": "ma_120",
+      "description": "收盘重新站上五线的关键触发"
+    },
+    {
+      "id": "fall_below_three_lines",
+      "op": "cross_down",
+      "left": "close",
+      "right": "ma_20",
+      "description": "收盘跌到三线之下的关键触发"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "condition",
+            "event": "reclaim_five_lines"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_5"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_10"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_20"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_60"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "ma_120"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算五线和三线所需的各条均线。",
+    "当股价重新站上五线时输出买入触发。",
+    "后续若跌到三线之下则视为卖出触发；若反弹无法重新站上五线则应逢高清仓。"
+  ],
+  "signal_day_definition": "latest_match表示五三法则中的买入触发；卖出触发日为跌到三线之下或反弹不上五线之日。",
+  "manual_review_needed": [
+    "原文强调该法必须配合强势股使用，当前规则本身不包含强势股筛选。"
+  ],
+  "implementation_notes": [
+    "这是一个买卖一体的操作法则，当前JSON优先输出买入侧latest_match，卖出事件已显式保留。"
+  ],
+  "explain": "五三买卖法则被结构化为重返五线买入、跌到三线卖出的交易框架。"
+}

@@ -1,0 +1,83 @@
+{
+  "name": "碰 撤 穿 压",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [772, 773, 774, 777],
+  "source": "碰撤穿压描述股价在重要压力线附近先碰撞回撤，再向上穿越，之后回压原压力线并确认其转为支撑，确认成功后往往会再发动一段上涨行情。",
+  "source_summary": "若股价先突破重要压力位，再在短期内回压但不失守，可视为碰撤穿压成立。",
+  "comment": "当前把原文中的任意重要技术线近似为近阶段前高压力线，并把‘压’定义为回测后仍收在线上方。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "low", "close"],
+  "warmup_bars": 60,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "line_lookback": 30,
+    "retest_window": 5,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "pressure_line",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.line_lookback",
+      "description": "近阶段重要压力线近似"
+    },
+    {
+      "id": "pressure_line_prev",
+      "op": "ref",
+      "field": "pressure_line",
+      "window": 1,
+      "description": "前一日压力线"
+    }
+  ],
+  "events": [
+    {
+      "id": "breakout_line",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "pressure_line_prev",
+      "description": "向上穿越重要压力线"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "within",
+          "window": "$params.retest_window",
+          "condition": {
+            "op": "condition",
+            "event": "breakout_line"
+          }
+        },
+        {
+          "op": "compare",
+          "left": "low",
+          "operator": "<=",
+          "right": "pressure_line_prev"
+        },
+        {
+          "op": "compare",
+          "left": "close",
+          "operator": ">",
+          "right": "pressure_line_prev"
+        }
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算近阶段压力线的收盘近似。",
+    "识别收盘向上穿越压力线的突破日。",
+    "在突破后的短窗口内，若股价回压至该线附近但收盘仍站在线上方，则视为碰撤穿压成立。"
+  ],
+  "signal_day_definition": "以突破后回压支撑成功的当日作为碰撤穿压确认日。",
+  "manual_review_needed": [
+    "原文中的压力线可以是整数关口或其他重要技术位，当前统一近似为近阶段前高压力线。"
+  ],
+  "implementation_notes": [
+    "当前以‘回测但不失守’来表达碰、撤、穿、压四步中的结果态。"
+  ],
+  "explain": "碰撤穿压被结构化为突破前高后，回压原压力线并成功转化为支撑。"
+}

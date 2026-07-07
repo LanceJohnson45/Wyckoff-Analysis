@@ -1,0 +1,85 @@
+{
+  "name": "会创新高还有新高直到不创新高",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [438, 439, 440],
+  "source": "本节强调只要股价不创新低且还能创新高，就说明筹码仍然供不应求，趋势大概率延续；只有等到它不能再创新高时，才开始怀疑可能做头。",
+  "source_summary": "若低点不断抬高且高点继续抬高，可视为趋势仍在延续。",
+  "comment": "当前按‘不创新低 + 创新高’的趋势延续版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 40,
+  "indicator_type": "trend_rule",
+  "params": {
+    "higher_low_lookback": 20,
+    "higher_high_window": 10,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "close_ref_20",
+      "op": "ref",
+      "field": "close",
+      "window": "$params.higher_low_lookback",
+      "description": "更早周期收盘价，用于近似底部抬高"
+    },
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.higher_high_window",
+      "description": "近N日最高收盘价"
+    },
+    {
+      "id": "recent_high_prev",
+      "op": "ref",
+      "field": "recent_high",
+      "window": 1,
+      "description": "前一日近N日最高收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "new_high_breakout",
+      "op": "breakout_up",
+      "left": "close",
+      "right": "recent_high_prev",
+      "description": "收盘价创新高"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "close_ref_20"
+          },
+          {
+            "op": "condition",
+            "event": "new_high_breakout"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "先检查当前收盘相对更早周期是否保持抬高，近似表达不创新低。",
+    "再检测收盘价是否突破前一日近窗口最高收盘价，近似表达还能创新高。",
+    "满足两者时，把趋势视为仍在延续。"
+  ],
+  "signal_day_definition": "以不创新低背景下再次创新高的当日作为趋势延续确认日。",
+  "manual_review_needed": [
+    "原文更强调一串高低点的结构化抬升，当前用固定窗口和更早周期收盘比较近似表达。",
+    "‘直到不创新高’的反向失效条件当前未单独拆成 sister spec。"
+  ],
+  "implementation_notes": [
+    "这是偏趋势跟随的延续规则，而不是顶部规则。"
+  ],
+  "explain": "会创新高还有新高直到不创新高被结构化为底部抬高背景下的再次创新高。"
+}

@@ -1,0 +1,37 @@
+{
+  "name": "斜面突破",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [759, 760, 761, 762],
+  "source": "斜面突破指股价在圆弧式建仓后，不直接大幅拉升，而是在靠近建仓区头部T线前采用平缓的斜面推高方式继续收集筹码；最终当股价同时突破斜面压力线和前头部T线时，往往会出现共振加速上涨。",
+  "source_summary": "这是围绕圆弧底、斜面推高通道与双重突破的几何分析方法，当前不宜直接压成固定规则。",
+  "comment": "原文强调‘一个圆 + 一个斜面推高 + 双重突破’，并辅以L3主动性买卖量确认。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "先识别建仓完成后的圆弧基础区。",
+    "观察股价是否沿平缓斜面通道推高并靠近前头部T线。",
+    "当斜面压力线和前头部T线被同时突破时，视为共振式加速点。"
+  ],
+  "signal_day_definition": "本节描述的是几何图形和能量共振分析方法，不存在统一单日信号完成定义。",
+  "manual_review_needed": [
+    "若后续要自动化，需要统一圆弧底、斜面通道和T线的识别算法，并决定是否引入L3能量辅助。"
+  ],
+  "implementation_notes": [
+    "当前保留为方法论占位，避免把双重几何突破误简化成一般平台突破。"
+  ],
+  "explain": "斜面突破依赖圆弧底、斜面推高和双重手动画线突破，当前不适合仅凭日线规则引擎直接执行。"
+}

@@ -1,0 +1,36 @@
+{
+  "name": "跑道倾斜度",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [228, 229, 230, 231],
+  "source": "跑道倾斜度用于分析进入起飞线后回落盘整带的方向，分为向下倾斜、水平、向上倾斜三种，且还要结合盘整带长度和特殊的2MP情况，来估计庄家重新吸筹力度与未来上涨空间。",
+  "source_summary": "这是一个用于衡量跑道方向与强弱的分析框架，不是单一即时布尔形态。",
+  "comment": "原文重点是方向分类与长度分析，不是单一 latest_match 规则。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 60,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "原文要求分类识别跑道表面的向下、水平、向上三种倾斜度。",
+    "还要结合盘整带长度与2MP等空间估算方法。"
+  ],
+  "signal_day_definition": "原文未定义单一信号完成日。",
+  "manual_review_needed": [
+    "如果后续系统支持分类输出，可将其表达为 slope_class 而不是 latest_match。"
+  ],
+  "implementation_notes": [
+    "当前 intentionally 标记为 computable_from_daily_ocvhl = false。"
+  ],
+  "explain": "跑道倾斜度是方向分类和强弱测量方法，不是纯布尔信号。"
+}

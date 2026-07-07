@@ -1,0 +1,86 @@
+{
+  "name": "三死叉见顶（三）",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [174, 175, 176, 177, 178, 179],
+  "source": "该节讨论量死叉的真假：上升过程中可能先出现一次无效量死叉，之后再次量金叉进入拉升；真正有效的量死叉，必须得到价死叉和MACD死叉的配合，才是三死叉见顶的一部分。",
+  "source_summary": "若先出现无效量死叉与量金叉，随后第二次量死叉并获得价格死叉和MACD死叉配合，可视为有效量死叉。",
+  "comment": "当前用‘量死叉 -> 量金叉 -> 再次量死叉，并在末次量死叉附近伴随价死叉与MACD死叉’的顺序规则表达。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 100,
+  "indicator_type": "trend_rule",
+  "params": {
+    "price_fast_window": 5,
+    "price_slow_window": 10,
+    "volume_fast_window": 5,
+    "volume_slow_window": 10,
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "sequence_lookback": 40,
+    "confirm_window": 3,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "price_ma_fast", "op": "sma", "field": "close", "window": "$params.price_fast_window", "description": "5日价格均线"},
+    {"id": "price_ma_slow", "op": "sma", "field": "close", "window": "$params.price_slow_window", "description": "10日价格均线"},
+    {"id": "volume_ma_fast", "op": "sma", "field": "volume", "window": "$params.volume_fast_window", "description": "5日量均线"},
+    {"id": "volume_ma_slow", "op": "sma", "field": "volume", "window": "$params.volume_slow_window", "description": "10日量均线"},
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"},
+    {"id": "macd_dea", "op": "ema", "field": "macd_dif", "window": "$params.macd_signal_window", "description": "MACD DEA"}
+  ],
+  "events": [
+    {"id": "price_cross_down", "op": "cross_down", "left": "price_ma_fast", "right": "price_ma_slow", "description": "价格死叉"},
+    {"id": "volume_cross_down", "op": "cross_down", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "量均线死叉"},
+    {"id": "volume_cross_up", "op": "cross_up", "left": "volume_ma_fast", "right": "volume_ma_slow", "description": "量均线金叉"},
+    {"id": "macd_cross_down", "op": "cross_down", "left": "macd_dif", "right": "macd_dea", "description": "MACD死叉"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "sequence",
+            "window": "$params.sequence_lookback",
+            "allow_same_day": false,
+            "conditions": [
+              {"op": "condition", "event": "volume_cross_down"},
+              {"op": "condition", "event": "volume_cross_up"},
+              {"op": "condition", "event": "volume_cross_down"}
+            ]
+          },
+          {
+            "op": "within",
+            "window": "$params.confirm_window",
+            "condition": {"op": "condition", "event": "price_cross_down"}
+          },
+          {
+            "op": "within",
+            "window": "$params.confirm_window",
+            "condition": {"op": "condition", "event": "macd_cross_down"}
+          },
+          {"op": "condition", "event": "volume_cross_down"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别量均线先死叉、后金叉、再二次死叉的顺序结构。",
+    "将末次量死叉附近confirm_window日内是否出现价格死叉和MACD死叉作为有效性确认。",
+    "满足上述条件时，视为得到价死叉和MACD配合的有效量死叉。"
+  ],
+  "signal_day_definition": "以第二次量死叉形成且得到价死叉、MACD死叉配合的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文讨论的是整段上升行情中多堆量结构，当前保留其对最终有效量死叉最关键的顺序与共振部分。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + macd_signal_window + sequence_lookback + 1。"
+  ],
+  "explain": "该规则把‘量死叉的真假’收敛为第二次量死叉必须获得价格死叉和MACD死叉配合。"
+}

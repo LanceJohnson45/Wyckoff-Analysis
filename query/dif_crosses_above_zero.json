@@ -1,0 +1,46 @@
+{
+  "name": "DIF 上穿零线",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [183, 184, 185],
+  "source": "当股价长期下跌后，MACD 的 DIF 通常运行在零线下方；当股价底部抬高或冲过季均线时，DIF 上穿零线，往往对未来涨势有预报作用。",
+  "source_summary": "若下跌后MACD DIF上穿零线，可视为偏多预警或买入信号。",
+  "comment": "当前以标准MACD DIF向上穿越0轴来表达。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 50,
+  "indicator_type": "trend_rule",
+  "params": {
+    "macd_fast_window": 12,
+    "macd_slow_window": 26,
+    "macd_signal_window": 9,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ema_fast", "op": "ema", "field": "close", "window": "$params.macd_fast_window", "description": "MACD快线EMA"},
+    {"id": "ema_slow", "op": "ema", "field": "close", "window": "$params.macd_slow_window", "description": "MACD慢线EMA"},
+    {"id": "macd_dif", "op": "sub", "field": "ema_fast", "field2": "ema_slow", "window": 0, "description": "MACD DIF"}
+  ],
+  "events": [
+    {"id": "dif_cross_above_zero", "op": "cross_up", "left": "macd_dif", "right": 0, "description": "DIF上穿零线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {"op": "condition", "event": "dif_cross_above_zero"}
+    }
+  },
+  "calculation_steps": [
+    "计算EMA12、EMA26，并取其差值得到DIF。",
+    "检测DIF是否由下向上穿越0轴。"
+  ],
+  "signal_day_definition": "以DIF从负值上穿零线的当日作为信号完成日。",
+  "manual_review_needed": [
+    "原文还提到可与三金叉见底配合使用，当前主规则只输出零轴上穿本体。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= macd_slow_window + 1。"
+  ],
+  "explain": "DIF上穿零线被结构化为MACD快慢差值向上穿越0轴。"
+}

@@ -1,0 +1,115 @@
+{
+  "name": "没有动静就快了",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [532, 533, 534],
+  "source": "没有动静就快了，指的是价格波动幅度逐渐收敛，形成形态凝固，同时成交量越来越小，形成量凝固。在这种没有任何动静的时刻，往往是方向性突变的前夜，要为向上或向下突破做好准备。",
+  "source_summary": "若价格波动和成交量都明显收敛，往往意味着临近方向性突破。",
+  "comment": "当前按短期振幅小于中期振幅且短期均量低于中期均量，来近似形态凝固与量凝固。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["high", "low", "volume"],
+  "warmup_bars": 50,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "short_window": 5,
+    "long_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "high_short",
+      "op": "highest",
+      "field": "high",
+      "window": "$params.short_window",
+      "description": "短期最高价"
+    },
+    {
+      "id": "low_short",
+      "op": "lowest",
+      "field": "low",
+      "window": "$params.short_window",
+      "description": "短期最低价"
+    },
+    {
+      "id": "range_short",
+      "op": "sub",
+      "field": "high_short",
+      "field2": "low_short",
+      "window": 0,
+      "description": "短期价格振幅"
+    },
+    {
+      "id": "high_long",
+      "op": "highest",
+      "field": "high",
+      "window": "$params.long_window",
+      "description": "中期最高价"
+    },
+    {
+      "id": "low_long",
+      "op": "lowest",
+      "field": "low",
+      "window": "$params.long_window",
+      "description": "中期最低价"
+    },
+    {
+      "id": "range_long",
+      "op": "sub",
+      "field": "high_long",
+      "field2": "low_long",
+      "window": 0,
+      "description": "中期价格振幅"
+    },
+    {
+      "id": "volume_ma_short",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.short_window",
+      "description": "短期量均线"
+    },
+    {
+      "id": "volume_ma_long",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.long_window",
+      "description": "中期量均线"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "range_short",
+            "operator": "<",
+            "right": "range_long"
+          },
+          {
+            "op": "compare",
+            "left": "volume_ma_short",
+            "operator": "<",
+            "right": "volume_ma_long"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算短期与中期的价格振幅。",
+    "要求短期振幅明显收窄于中期振幅，近似形态凝固。",
+    "同时要求短期均量低于中期均量，近似量凝固。"
+  ],
+  "signal_day_definition": "以价格和成交量同时进入明显收敛状态的当日作为‘没有动静就快了’信号日。",
+  "manual_review_needed": [
+    "原文还强调后续按上下突破方向制定两手准备，当前主规则只识别‘临近变盘前夜’状态。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= long_window + 1。"
+  ],
+  "explain": "该规则用于识别振幅和成交量都逐步凝固的临界压缩状态。"
+}

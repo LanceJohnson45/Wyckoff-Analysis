@@ -1,0 +1,96 @@
+{
+  "name": "石牛海下沉",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [138, 139, 140],
+  "source": "石牛海下沉指股价沿60日均线缓慢下滑，初期下滑斜率与60日均线接近；待庄家出货完毕后，股价转为加速下跌或补跌，因此一切冲过季均线系统的反弹都应视为出货机会。",
+  "source_summary": "若股价已在60日均线下方缓慢滑落一段时间，随后再向下跌破近阶段低点，可视为石牛海下沉的加速阶段。",
+  "comment": "当前输出的是偏卖出/回避侧的加速下跌识别，不把反弹交易写进主规则。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 140,
+  "indicator_type": "trend_rule",
+  "params": {
+    "ma_long_window": 60,
+    "slope_lookback": 20,
+    "slide_lookback": 60,
+    "slide_min_days": 20,
+    "breakdown_lookback": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "ma_long",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.ma_long_window",
+      "description": "60日均线"
+    },
+    {
+      "id": "ma_long_ref",
+      "op": "ref",
+      "field": "ma_long",
+      "window": "$params.slope_lookback",
+      "description": "向前平移后的60日均线"
+    },
+    {
+      "id": "recent_close_low",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.breakdown_lookback",
+      "description": "近阶段最低收盘价"
+    },
+    {
+      "id": "recent_close_low_prev",
+      "op": "ref",
+      "field": "recent_close_low",
+      "window": 1,
+      "description": "前一日近阶段最低收盘价"
+    }
+  ],
+  "events": [
+    {
+      "id": "accelerated_breakdown",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "recent_close_low_prev",
+      "description": "在缓慢下沉后再次创收盘新低"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_long", "operator": "<", "right": "ma_long_ref"},
+          {
+            "op": "before",
+            "condition": {"op": "compare", "left": "close", "operator": "<", "right": "ma_long"},
+            "event": "accelerated_breakdown",
+            "window": "$params.slide_lookback",
+            "min_count": "$params.slide_min_days"
+          },
+          {"op": "condition", "event": "accelerated_breakdown"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线及其与slope_lookback日前的斜率比较，要求均线继续下行。",
+    "在accelerated_breakdown之前，要求过去slide_lookback日内已有不少于slide_min_days天收盘位于60日线下方。",
+    "当收盘价再次向下跌破近阶段最低收盘价时，视为石牛海下沉进入加速段。"
+  ],
+  "signal_day_definition": "以缓慢下沉后的再次破位日作为石牛海下沉信号完成日。",
+  "manual_review_needed": [
+    "原文中的‘今日最低价就是明日最高价’属于更强的加速下跌细节，当前未单独量化。",
+    "原文还强调季压/季均线系统反弹出货，当前规则只保留主下跌段识别。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= ma_long_window + slide_lookback + 1。",
+    "这是一个风险识别规则，不是做多触发规则。"
+  ],
+  "explain": "石牛海下沉被结构化为沿60日线缓慢下滑后再度创低的加速下跌信号。"
+}

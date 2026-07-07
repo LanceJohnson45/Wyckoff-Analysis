@@ -1,0 +1,47 @@
+{
+  "name": "星阴墓碑",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [310, 311],
+  "source": "星阴墓碑由一颗高位十字星和随后一根长阴线组成。十字星让股价面临方向选择，而第二天的阴线替市场选定了向下的方向，因此是典型头部信号。",
+  "source_summary": "若高位十字星后次日出现长阴向下选择方向，可视为星阴墓碑。",
+  "comment": "当前按十字星后长阴的核心组合提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "high", "low"],
+  "warmup_bars": 40,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "open_ref_1", "op": "ref", "field": "open", "window": 1, "description": "前一日开盘价"},
+    {"id": "close_ref_1", "op": "ref", "field": "close", "window": 1, "description": "前一日收盘价"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "open_ref_1", "operator": "==", "right": "close_ref_1"},
+          {"op": "compare", "left": "close", "operator": "<", "right": "open"},
+          {"op": "compare", "left": "close", "operator": "<=", "right": "close_ref_1"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "识别前一日为十字星。",
+    "要求当前出现阴线并把方向明确向下。"
+  ],
+  "signal_day_definition": "以十字星后阴线确立向下方向的当日作为星阴墓碑确认日。",
+  "manual_review_needed": [
+    "原文还强调天针与带量版本更危险，当前未单独区分。"
+  ],
+  "implementation_notes": [
+    "这是两日方向选择型头部组合。"
+  ],
+  "explain": "星阴墓碑被结构化为十字星后阴线向下定向的头部组合。"
+}

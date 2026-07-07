@@ -1,0 +1,95 @@
+{
+  "name": "股价暴涨前的蓄势",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [601, 602],
+  "source": "股价暴涨前的蓄势，强调主力在真正暴涨之前往往会通过缩量盘整、匍匐在关键高低点连线下方、洗出浮筹来隐藏目标。量比或量能萎缩到极小值时，往往说明洗盘已接近尾声，暴涨随时可能到来。",
+  "source_summary": "若股价在关键压力下方缩量潜伏、量能极度萎缩，往往是暴涨前的蓄势阶段。",
+  "comment": "当前用‘缩量盘整 + 量能极度萎缩 + 仍守住平台’来近似暴涨前蓄势。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 60,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "platform_window": 20,
+    "volume_ma_window": 10,
+    "shrink_ratio": 0.7,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "platform_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.platform_window",
+      "description": "蓄势区高点近似"
+    },
+    {
+      "id": "platform_low",
+      "op": "lowest",
+      "field": "close",
+      "window": "$params.platform_window",
+      "description": "蓄势区低点近似"
+    },
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "10日均量"
+    },
+    {
+      "id": "shrink_volume_threshold",
+      "op": "mul",
+      "field": "volume_ma",
+      "field2": "$params.shrink_ratio",
+      "window": 0,
+      "description": "极度缩量阈值"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": "<=",
+            "right": "shrink_volume_threshold"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "platform_high"
+          },
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">",
+            "right": "platform_low"
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近20日蓄势平台高低点。",
+    "要求当前价格仍潜伏在平台区间内，没有明显暴露目标。",
+    "要求当前量能低于10日均量，近似主力洗盘后的极度缩量状态。"
+  ],
+  "signal_day_definition": "以价格仍匍匐在蓄势区内且量能显著萎缩的当日作为暴涨前蓄势状态日。",
+  "manual_review_needed": [
+    "原文还强调沿H线买入、量比极小和随时一举冲过关键线，当前先保留缩量蓄势状态本身。",
+    "shrink_ratio=0.7 是当前用来近似‘量比极小’的默认建议，后续可人工校准。"
+  ],
+  "implementation_notes": [
+    "该规则用于识别潜伏蓄势状态，不是单独的突破买点。",
+    "warmup_bars >= max(platform_window, volume_ma_window) + 1"
+  ],
+  "explain": "该规则用于识别主力在暴涨前通过缩量潜伏洗盘所形成的蓄势阶段。"
+}

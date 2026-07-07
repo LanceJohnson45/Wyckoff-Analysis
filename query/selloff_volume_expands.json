@@ -1,0 +1,70 @@
+{
+  "name": "跌放量 放量跌",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [539, 540, 541, 542],
+  "source": "跌放量、放量跌，强调在下跌过程中一跌就放量，说明恐慌盘和抛压仍然充足，筹码还在从散户手里向主力手里集中，因此后面通常还有跌势。只有跌不放量、涨放量时，才说明价量配合开始转好。",
+  "source_summary": "若下跌日伴随放量并连续出现，说明恐慌抛压仍在释放，跌势通常尚未结束。",
+  "comment": "当前按‘阴线放量且近几日多次出现’来近似‘跌放量 放量跌’的恐慌释放状态。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close", "volume"],
+  "warmup_bars": 40,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_ma_window": 20,
+    "count_window": 5,
+    "min_bear_volume_days": 3,
+    "signal_keep_days": 3
+  },
+  "series": [
+    {
+      "id": "volume_ma",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_ma_window",
+      "description": "20日均量"
+    }
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "count",
+        "window": "$params.count_window",
+        "min_count": "$params.min_bear_volume_days",
+        "condition": {
+          "op": "and",
+          "conditions": [
+            {
+              "op": "compare",
+              "left": "close",
+              "operator": "<",
+              "right": "open"
+            },
+            {
+              "op": "compare",
+              "left": "volume",
+              "operator": ">=",
+              "right": "volume_ma"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算20日均量。",
+    "识别阴线且成交量不低于20日均量的下跌放量日。",
+    "要求近5日内至少出现3次这类放量下跌，近似恐慌盘持续释放。"
+  ],
+  "signal_day_definition": "以最近一段时间内反复出现放量下跌现象的当日作为‘跌放量 放量跌’确认日。",
+  "manual_review_needed": [
+    "原文还讨论了接近反弹前夜时逐渐放量但随后扭转为放量上涨的细微差异，当前主规则只保留明显恐慌释放版本。"
+  ],
+  "implementation_notes": [
+    "warmup_bars >= volume_ma_window + count_window。"
+  ],
+  "explain": "该规则用于识别下跌过程中一跌就放量、恐慌筹码仍在持续释放的风险区。"
+}

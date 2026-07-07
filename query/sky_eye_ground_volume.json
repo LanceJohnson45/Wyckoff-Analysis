@@ -1,0 +1,55 @@
+{
+  "name": "天眼地量",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [210, 211, 212, 213],
+  "source": "天眼地量要求在5/10/20日均线系统中，5日均线轻微跌破20日均线形成很小的‘天眼’，同时成交量极度萎缩形成‘地量’，日K线常带下影线，说明跌势减弱、收缩能力增强。",
+  "source_summary": "若5日均线轻微跌破20日均线、成交量处于极低水平且K线带下影，可视为天眼地量。",
+  "comment": "当前用5日线略低于20日线、量能低于量均线、并有下影线来近似。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "high", "low", "close", "volume"],
+  "warmup_bars": 40,
+  "indicator_type": "pattern_rule",
+  "params": {
+    "ma_fast_window": 5,
+    "ma_mid_window": 10,
+    "ma_slow_window": 20,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_fast", "op": "sma", "field": "close", "window": "$params.ma_fast_window", "description": "5日均线"},
+    {"id": "ma_mid", "op": "sma", "field": "close", "window": "$params.ma_mid_window", "description": "10日均线"},
+    {"id": "ma_slow", "op": "sma", "field": "close", "window": "$params.ma_slow_window", "description": "20日均线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "ma_fast", "operator": "<=", "right": "ma_slow"},
+          {"op": "compare", "left": "ma_mid", "operator": ">=", "right": "ma_slow"},
+          {"op": "compare", "left": "volume", "operator": "<=", "right": "volume_ma"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "low"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线和20日量均线。",
+    "要求5日均线轻微落到20日均线附近或略下方，同时10日线仍未明显走坏。",
+    "要求成交量缩至量均线下方，并保留当日有下影线的K线特征。"
+  ],
+  "signal_day_definition": "当最新交易日满足‘天眼 + 地量 + 下影线’时，视为天眼地量有效。",
+  "manual_review_needed": [
+    "原文强调‘很小的天眼’与‘极其微小的地量’，当前未单独加入距离阈值与极值倍数。"
+  ],
+  "implementation_notes": [
+    "下影线当前用 close > low 近似，后续可加入更严格的影线长度参数。"
+  ],
+  "explain": "天眼地量被结构化为5/20日均线轻微失守下的极度缩量止跌信号。"
+}

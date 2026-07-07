@@ -1,0 +1,37 @@
+{
+  "name": "扇骨线二",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [504, 505],
+  "source": "扇骨线二讲扇骨线的三个核心特性：伺从性、突破性、支撑性。原文用于研判指数或个股后续一段时间是否持续受制于扇骨线，以及突破后回压时前一根扇骨线能否提供支撑。",
+  "source_summary": "扇骨线二主要讲扇骨线突破、伺从和支撑三大性质，属于分析框架而非单一日信号。",
+  "comment": "本节依赖已经人工确定的扇骨线集合，且信号并非单点触发，因此不直接落成 latest_match。",
+  "computable_from_daily_ocvhl": false,
+  "required_fields": ["close"],
+  "warmup_bars": 0,
+  "indicator_type": "other",
+  "params": {},
+  "series": [],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "compare",
+      "left": 1,
+      "operator": "==",
+      "right": 0
+    }
+  },
+  "calculation_steps": [
+    "确认一组有效扇骨线。",
+    "观察股价是否长期伺从某根扇骨线运行。",
+    "观察股价是否突破当前扇骨线，以及回压时是否在前一根扇骨线附近获得支撑。"
+  ],
+  "signal_day_definition": "本节没有单一固定信号完成日，更像一套基于扇骨线的状态分析规则。",
+  "manual_review_needed": [
+    "伺从性、突破性、支撑性都建立在人工画好的扇骨线上，当前系统没有统一的自动画线与前一根扇骨线索引机制。"
+  ],
+  "implementation_notes": [
+    "如果未来要自动化，可考虑先抽象‘已确认扇骨线对象’，再在该对象上定义突破与回压事件。"
+  ],
+  "explain": "该节属于扇骨线的性质说明，暂不适合直接转成仅靠日线O/H/L/C/V执行的通用布尔规则。"
+}

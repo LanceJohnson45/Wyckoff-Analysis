@@ -1,0 +1,170 @@
+{
+  "name": "黑洞",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923],
+  "source": "黑洞是指股价长期上涨后，成交量柱体与5日均量线、60日均量线之间出现明显空穴。原文认为这表示高位放量之后资金撤退，后续若同步出现5日、10日价均线死叉或跌破60日均价线，则头部下跌风险显著增大；若还是虚量后的黑洞，其破坏力更强。",
+  "source_summary": "若股价在高位经历放量后突然缩量到明显低于5日和60日均量，同时伴随短期死叉或跌破60日均价线，可视为黑洞头部预警。",
+  "comment": "原文的‘空穴’带有图形观察语义，当前先转成高位放量后极度缩量并伴随死叉或跌破60日线的日线版本。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 80,
+  "indicator_type": "volume_price_rule",
+  "params": {
+    "volume_fast_window": 5,
+    "volume_slow_window": 60,
+    "price_fast_window": 5,
+    "price_mid_window": 10,
+    "price_slow_window": 60,
+    "high_position_lookback": 60,
+    "high_position_ratio": 0.9,
+    "pre_expansion_lookback": 20,
+    "pre_expansion_multiplier": 1.2,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {
+      "id": "volume_ma_fast",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_fast_window",
+      "description": "5日均量"
+    },
+    {
+      "id": "volume_ma_slow",
+      "op": "sma",
+      "field": "volume",
+      "window": "$params.volume_slow_window",
+      "description": "60日均量"
+    },
+    {
+      "id": "price_ma_fast",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.price_fast_window",
+      "description": "5日均价"
+    },
+    {
+      "id": "price_ma_mid",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.price_mid_window",
+      "description": "10日均价"
+    },
+    {
+      "id": "price_ma_slow",
+      "op": "sma",
+      "field": "close",
+      "window": "$params.price_slow_window",
+      "description": "60日均价"
+    },
+    {
+      "id": "recent_high",
+      "op": "highest",
+      "field": "close",
+      "window": "$params.high_position_lookback",
+      "description": "近60日最高收盘价"
+    },
+    {
+      "id": "recent_high_floor",
+      "op": "mul",
+      "field": "recent_high",
+      "field2": "$params.high_position_ratio",
+      "window": 0,
+      "description": "高位判定下限"
+    },
+    {
+      "id": "volume_expansion_floor",
+      "op": "mul",
+      "field": "volume_ma_fast",
+      "field2": "$params.pre_expansion_multiplier",
+      "window": 0,
+      "description": "前期放量判定下限"
+    }
+  ],
+  "events": [
+    {
+      "id": "death_cross_5_10",
+      "op": "cross_down",
+      "left": "price_ma_fast",
+      "right": "price_ma_mid",
+      "description": "5日均价下穿10日均价"
+    },
+    {
+      "id": "breakdown_60",
+      "op": "breakout_down",
+      "left": "close",
+      "right": "price_ma_slow",
+      "description": "收盘价向下跌破60日均价"
+    }
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {
+            "op": "compare",
+            "left": "close",
+            "operator": ">=",
+            "right": "recent_high_floor"
+          },
+          {
+            "op": "before",
+            "condition": {
+              "op": "compare",
+              "left": "volume",
+              "operator": ">=",
+              "right": "volume_expansion_floor"
+            },
+            "event": "death_cross_5_10",
+            "window": "$params.pre_expansion_lookback",
+            "min_count": 2
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": "<",
+            "right": "volume_ma_fast"
+          },
+          {
+            "op": "compare",
+            "left": "volume",
+            "operator": "<",
+            "right": "volume_ma_slow"
+          },
+          {
+            "op": "or",
+            "conditions": [
+              {
+                "op": "condition",
+                "event": "death_cross_5_10"
+              },
+              {
+                "op": "condition",
+                "event": "breakdown_60"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算5日和60日均量、5/10/60日均价，以及近60日高位区间。",
+    "要求当前股价仍处于近60日高位附近，且死叉或跌破60日线之前的20日内曾有至少两天明显放量。",
+    "当当前成交量同时低于5日和60日均量，并且出现5/10死叉或跌破60日均价线时，视为黑洞头部预警成立。"
+  ],
+  "signal_day_definition": "以出现高位极度缩量并同步触发5/10死叉或跌破60日均价线的当日作为黑洞信号完成日。",
+  "manual_review_needed": [
+    "原文的‘空穴’、‘巨大黑洞’、‘虚量后黑洞’带有图形和背景强弱差异，当前参数仅给出可执行近似版，需后续回测确认。",
+    "如果后续引擎支持更多成交量形态特征，可把虚量、阴沟和黑洞规模再细分。"
+  ],
+  "implementation_notes": [
+    "warmup_bars 至少应满足 max(volume_slow_window, price_slow_window, high_position_lookback) + 1。",
+    "当前把‘黑洞’近似为高位放量后明显缩量，避免直接依赖肉眼识别量柱与均量线之间的几何空穴。"
+  ],
+  "explain": "黑洞被结构化为高位放量后突然缩量，并伴随短期均线转弱或跌破60日线的头部量价预警。"
+}

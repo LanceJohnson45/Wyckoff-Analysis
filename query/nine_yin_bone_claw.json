@@ -1,0 +1,56 @@
+{
+  "name": "九阴白骨爪",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [103, 104, 105],
+  "source": "九阴白骨爪原文强调60分钟级别连续多根阴线与均线向下爪形排列，表示主力密集出货；日线中也可见多阴白骨爪。",
+  "source_summary": "当前优先输出日线近似版本：连续多根阴线并叠加5/10/20日均线空头排列，可视为九阴白骨爪。",
+  "comment": "这是基于日线的近似实现，已偏离原文60分钟级别的主表述。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["open", "close"],
+  "warmup_bars": 30,
+  "indicator_type": "candlestick_rule",
+  "params": {
+    "bearish_days": 5,
+    "signal_keep_days": 2
+  },
+  "series": [
+    {"id": "ma_5", "op": "sma", "field": "close", "window": 5, "description": "5日均线"},
+    {"id": "ma_10", "op": "sma", "field": "close", "window": 10, "description": "10日均线"},
+    {"id": "ma_20", "op": "sma", "field": "close", "window": 20, "description": "20日均线"}
+  ],
+  "events": [],
+  "rules": {
+    "latest_match": {
+      "op": "and",
+      "conditions": [
+        {
+          "op": "consecutive",
+          "length": "$params.bearish_days",
+          "condition": {
+            "op": "compare",
+            "left": "close",
+            "operator": "<",
+            "right": "open"
+          }
+        },
+        {"op": "compare", "left": "ma_5", "operator": "<=", "right": "ma_10"},
+        {"op": "compare", "left": "ma_10", "operator": "<=", "right": "ma_20"}
+      ]
+    }
+  },
+  "calculation_steps": [
+    "计算5/10/20日均线。",
+    "要求连续bearish_days天收阴。",
+    "要求均线系统保持向下空头顺序。"
+  ],
+  "signal_day_definition": "以连续多阴并形成均线下行爪形的最后一天作为信号日。",
+  "manual_review_needed": [
+    "原文主表述偏60分钟级别，当前仅输出日线近似版本。",
+    "‘九’在原文中更多表示多根阴线，不一定严格九根；当前默认取5根作近似。"
+  ],
+  "implementation_notes": [
+    "已按用户规则优先输出日线近似实现。"
+  ],
+  "explain": "九阴白骨爪被近似为连续多根阴线叠加均线空头爪形。"
+}

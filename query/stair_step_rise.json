@@ -1,0 +1,54 @@
+{
+  "name": "拾级盘上",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [217, 218, 219],
+  "source": "拾级盘上指庄家在初涨期一边建仓一边控制涨速，股价每上一个台阶都会先盘整，再继续抬高，逐步夯实成本区；一旦突破建仓区压力线就可能加速上涨。",
+  "source_summary": "若股价呈现逐级抬高的平台式上行，并最终突破建仓区压力线，可视为拾级盘上成立。",
+  "comment": "当前用逐级抬高 + 平台突破的日线近似版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close"],
+  "warmup_bars": 100,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "step_lookback": 40,
+    "ma_long_window": 60,
+    "breakout_keep_days": 5
+  },
+  "series": [
+    {"id": "ma_long", "op": "sma", "field": "close", "window": "$params.ma_long_window", "description": "60日均线"},
+    {"id": "step_high", "op": "highest", "field": "close", "window": "$params.step_lookback", "description": "建仓区压力线近似"},
+    {"id": "step_high_prev", "op": "ref", "field": "step_high", "window": 1, "description": "前一日建仓区高点"},
+    {"id": "close_ref_20", "op": "ref", "field": "close", "window": 20, "description": "20日前收盘价"}
+  ],
+  "events": [
+    {"id": "breakout_step_high", "op": "breakout_up", "left": "close", "right": "step_high_prev", "description": "突破建仓区压力线"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.breakout_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_long"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "close_ref_20"},
+          {"op": "condition", "event": "breakout_step_high"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算60日均线，并要求股价已站在其上方。",
+    "用20日前收盘价作为较早台阶的近似参考，要求股价已逐级抬高。",
+    "以收盘突破近step_lookback日建仓区高点作为拾级盘上完成确认。"
+  ],
+  "signal_day_definition": "以突破建仓区压力线的当日作为拾级盘上确认日。",
+  "manual_review_needed": [
+    "原文中的多个台阶与每级盘整长度未逐段精确建模，当前采用逐级抬高后的平台突破近似。"
+  ],
+  "implementation_notes": [
+    "这是偏确认版规则，而不是最底部参与版。"
+  ],
+  "explain": "拾级盘上被结构化为逐级抬高后的建仓区平台突破。"
+}

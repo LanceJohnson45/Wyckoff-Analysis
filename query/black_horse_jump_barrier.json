@@ -1,0 +1,56 @@
+{
+  "name": "黑马跳栏",
+  "status": "structured",
+  "timeframe": "1d",
+  "source_pages": [455, 456],
+  "source": "黑马跳栏指一只已经通过能量系统确认过的庄股，在下跌洗盘后终于放量突破预先画好的高点连线（栏杆线），并最好伴随跳空、DIF转正和暖气带畅通，从而宣告真正启动。",
+  "source_summary": "若股价放量突破高点连线近似边界并位于暖气带上方，可视为黑马跳栏。",
+  "comment": "当前按‘放量突破近窗口前高 + 站上60/120线’的简化日线版本提取。",
+  "computable_from_daily_ocvhl": true,
+  "required_fields": ["close", "volume"],
+  "warmup_bars": 150,
+  "indicator_type": "breakout_rule",
+  "params": {
+    "barrier_lookback": 20,
+    "volume_ma_window": 20,
+    "signal_keep_days": 5
+  },
+  "series": [
+    {"id": "barrier_high", "op": "highest", "field": "close", "window": "$params.barrier_lookback", "description": "黑马栏杆近似前高"},
+    {"id": "barrier_high_prev", "op": "ref", "field": "barrier_high", "window": 1, "description": "前一日黑马栏杆近似前高"},
+    {"id": "ma_60", "op": "sma", "field": "close", "window": 60, "description": "60日均线"},
+    {"id": "ma_120", "op": "sma", "field": "close", "window": 120, "description": "120日均线"},
+    {"id": "volume_ma", "op": "sma", "field": "volume", "window": "$params.volume_ma_window", "description": "20日量均线"}
+  ],
+  "events": [
+    {"id": "jump_barrier", "op": "breakout_up", "left": "close", "right": "barrier_high_prev", "description": "股价放量突破黑马栏杆"}
+  ],
+  "rules": {
+    "latest_match": {
+      "op": "within",
+      "window": "$params.signal_keep_days",
+      "condition": {
+        "op": "and",
+        "conditions": [
+          {"op": "condition", "event": "jump_barrier"},
+          {"op": "compare", "left": "volume", "operator": ">=", "right": "volume_ma"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_60"},
+          {"op": "compare", "left": "close", "operator": ">", "right": "ma_120"}
+        ]
+      }
+    }
+  },
+  "calculation_steps": [
+    "计算近窗口前高作为黑马栏杆近似边界。",
+    "要求股价放量突破该边界。",
+    "要求同时站在60日与120日均线之上，近似表达暖气带畅通后的启动。"
+  ],
+  "signal_day_definition": "以股价放量跨越黑马栏杆并站稳暖气带的当日作为黑马跳栏确认日。",
+  "manual_review_needed": [
+    "原文还依赖十九强能量系统、DIF转正和跳空缺口，当前只保留从日线O/H/L/C/V可直接推导的主干。"
+  ],
+  "implementation_notes": [
+    "这是黑马启动类规则的简化日线版本。"
+  ],
+  "explain": "黑马跳栏被结构化为放量突破前高栏杆并站稳60/120日均线的启动信号。"
+}
