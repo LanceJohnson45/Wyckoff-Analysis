@@ -1929,31 +1929,6 @@ def run_funnel_job(
         "exit_signals": exit_signals,
         "all_df_map": all_df_map,
     }
-    if market == "cn" and all_df_map:
-        try:
-            from core.three_hundred_day_engine import scan_three_hundred_day
-
-            three_hundred_day_result = scan_three_hundred_day(
-                df_map=all_df_map,
-                name_map=name_map,
-                trade_date=window.end_trade_date.isoformat(),
-                market=market,
-            )
-            metrics["three_hundred_day"] = three_hundred_day_result.to_dict()
-            print(
-                "[funnel] 300day扫描完成: "
-                f"scanned={three_hundred_day_result.scanned_symbols}, "
-                f"matched_symbols={three_hundred_day_result.matched_symbols}, "
-                f"matched_indicators={three_hundred_day_result.matched_indicator_total}, "
-                f"file={three_hundred_day_result.output_path}"
-            )
-        except Exception as e:
-            metrics["three_hundred_day"] = {
-                "market": market,
-                "trade_date": window.end_trade_date.isoformat(),
-                "error": str(e),
-            }
-            print(f"[funnel] 300day扫描失败（已降级，不阻断主流程）: {e}")
     if include_debug_context:
         metrics["_debug"] = {
             "cfg": cfg,

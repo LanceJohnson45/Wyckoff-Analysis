@@ -88,7 +88,7 @@ def test_before_rule_requires_background_to_happen_before_event():
 
 def test_jiatu_rule_matches_on_completion_day_and_expires_after_lookback():
     engine = IndicatorRuleEngine()
-    spec = load_indicator_definition("/Volumes/E/github/Wyckoff-Analysis/query/jiatu.json")
+    spec = load_indicator_definition("/Volumes/E/github/Wyckoff-Analysis/query/001_jiatu.json")
 
     completion_day_closes = (
         [20.0] * 20
@@ -217,3 +217,89 @@ def test_mul_series_op_supports_scalar_multiplier():
 
     assert result.latest_match is True
     assert result.series_values["double_volume_ma"].iloc[-1] == 260.0
+
+
+def test_consecutive_rule_accepts_legacy_days_alias():
+    engine = IndicatorRuleEngine()
+    spec = {
+        "name": "legacy_consecutive_days_test",
+        "timeframe": "1d",
+        "required_fields": ["close"],
+        "params": {"hold_days": 3},
+        "series": [],
+        "events": [],
+        "rules": {
+            "latest_match": {
+                "op": "consecutive",
+                "days": "$params.hold_days",
+                "condition": {
+                    "op": "compare",
+                    "left": "close",
+                    "operator": ">",
+                    "right": 10,
+                },
+            }
+        },
+    }
+    df = _make_ohlcv([9.8, 10.2, 10.5, 10.9])
+
+    result = engine.evaluate(df, spec)
+
+    assert result.latest_match is True
+
+
+def test_symbol_context_reuses_series_and_event_calculations():
+    class CountingIndicatorRuleEngine(IndicatorRuleEngine):
+        def __init__(self):
+            self.series_compute_count = 0
+            self.event_compute_count = 0
+
+        def _compute_series(self, op, field, window, series_map, params):
+            self.series_compute_count += 1
+            return super()._compute_series(op, field, window, series_map, params)
+
+        def _compute_event_series(self, op, left, right):
+            self.event_compute_count += 1
+            return super()._compute_event_series(op, left, right)
+
+    engine = CountingIndicatorRuleEngine()
+    spec = {
+        "name": "cache_test",
+        "timeframe": "1d",
+        "required_fields": ["close"],
+        "params": {"ma_window": 2},
+        "series": [
+            {
+                "id": "close_ma",
+                "op": "sma",
+                "field": "close",
+                "window": "$params.ma_window",
+                "description": "两日均线",
+            }
+        ],
+        "events": [
+            {
+                "id": "cross_close_ma",
+                "op": "cross_up",
+                "left": "close",
+                "right": "close_ma",
+                "description": "收盘价上穿两日均线",
+            }
+        ],
+        "rules": {
+            "latest_match": {
+                "op": "condition",
+                "event": "cross_close_ma",
+            }
+        },
+    }
+    df = _make_ohlcv([10.0, 9.8, 10.2, 10.6])
+    context = engine.build_symbol_context(df)
+
+    first = engine.evaluate(df, spec, context=context)
+    second = engine.evaluate(df, spec, context=context)
+
+    assert first.latest_match is False
+    assert second.latest_match is False
+    assert engine.series_compute_count == 1
+    assert engine.event_compute_count == 1

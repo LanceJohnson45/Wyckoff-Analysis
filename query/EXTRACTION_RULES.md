@@ -20,6 +20,7 @@
   "source_pages": [],
   "source": "指标描述",
   "source_summary": "一句话概括原文含义",
+  "signal_bias": "bullish / bearish / neutral",
   "comment": "需要注意的地方",
   "computable_from_daily_ocvhl": true,
   "required_fields": [],
@@ -39,10 +40,15 @@
 }
 ```
 
+- `signal_bias` 必填，用来标明指标命中后的方向含义
+- `bullish`：偏多、买点、突破、走强、底部启动类
+- `bearish`：偏空、卖点、见顶、破位、风险提示类
+- `neutral`：中性观察、方法论总结、非明确多空触发类
+
 ## 文件命名
 
 - `query/` 下的指标文件名统一使用英文 slug
-- 例如：`jiatu.json`、`liangtuo.json`、`duofangpao.json`
+- 例如：`001_jiatu.json`、`liangtuo.json`、`duofangpao.json`
 - JSON 内的 `name` 字段仍可保留中文指标名，便于和原文对应
 - `extraction_progress.json`、测试脚本、校验脚本中的 `--spec` 参数，都以英文文件名为准
 

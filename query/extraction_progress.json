@@ -461,1447 +461,1447 @@
   "indicators_extracted": [
     {
       "name": "价托",
-      "file": "query/jiatu.json",
+      "file": "query/001_jiatu.json",
       "status": "structured"
     },
     {
       "name": "量托",
-      "file": "query/volume_support_triangle.json",
+      "file": "query/002_volume_support_triangle.json",
       "status": "structured"
     },
     {
       "name": "两阳夹一阴，多方炮",
-      "file": "query/bullish_cannon.json",
+      "file": "query/003_bullish_cannon.json",
       "status": "structured"
     },
     {
       "name": "潜伏式多方炮",
-      "file": "query/bullish_cannon_hidden.json",
+      "file": "query/011_bullish_cannon_hidden.json",
       "status": "structured"
     },
     {
       "name": "两阳夹两阴多方炮",
-      "file": "query/bullish_cannon_two_yang_two_yin.json",
+      "file": "query/012_bullish_cannon_two_yang_two_yin.json",
       "status": "structured"
     },
     {
       "name": "东方红 大阳升",
-      "file": "query/eastern_sun_big_rally.json",
+      "file": "query/004_eastern_sun_big_rally.json",
       "status": "structured"
     },
     {
       "name": "底部芝麻功",
-      "file": "query/sesame_bottom.json",
+      "file": "query/005_sesame_bottom.json",
       "status": "structured"
     },
     {
       "name": "月均线系统的综合运用",
-      "file": "query/monthly_ma_system.json",
+      "file": "query/006_monthly_ma_system.json",
       "status": "structured"
     },
     {
       "name": "季均线挤出大黑马",
-      "file": "query/seasonal_ma_black_horse.json",
+      "file": "query/007_seasonal_ma_black_horse.json",
       "status": "structured"
     },
     {
       "name": "一脚踢出大黑马",
-      "file": "query/red_foot_bottom.json",
+      "file": "query/008_red_foot_bottom.json",
       "status": "structured"
     },
     {
       "name": "短长结合的均线系统",
-      "file": "query/short_long_ma_system.json",
+      "file": "query/009_short_long_ma_system.json",
       "status": "structured"
     },
     {
       "name": "双价托",
-      "file": "query/double_price_support.json",
+      "file": "query/010_double_price_support.json",
       "status": "structured"
     },
     {
       "name": "假托",
-      "file": "query/fake_support_triangle.json",
+      "file": "query/013_fake_support_triangle.json",
       "status": "structured"
     },
     {
       "name": "价压",
-      "file": "query/price_pressure_triangle.json",
+      "file": "query/014_price_pressure_triangle.json",
       "status": "structured"
     },
     {
       "name": "托辐射",
-      "file": "query/support_radiation.json",
+      "file": "query/015_support_radiation.json",
       "status": "structured"
     },
     {
       "name": "压辐射",
-      "file": "query/pressure_radiation.json",
+      "file": "query/016_pressure_radiation.json",
       "status": "structured"
     },
     {
       "name": "量压",
-      "file": "query/volume_pressure_triangle.json",
+      "file": "query/017_volume_pressure_triangle.json",
       "status": "structured"
     },
     {
       "name": "金蜘蛛",
-      "file": "query/golden_spider.json",
+      "file": "query/018_golden_spider.json",
       "status": "structured"
     },
     {
       "name": "死蜘蛛",
-      "file": "query/dead_spider.json",
+      "file": "query/019_dead_spider.json",
       "status": "structured"
     },
     {
       "name": "一阴下穿三角压",
-      "file": "query/one_bear_crosses_pressure.json",
+      "file": "query/020_one_bear_crosses_pressure.json",
       "status": "structured"
     },
     {
       "name": "一阳上穿三角托",
-      "file": "query/one_bull_crosses_support.json",
+      "file": "query/021_one_bull_crosses_support.json",
       "status": "structured"
     },
     {
       "name": "出水芙蓉",
-      "file": "query/rising_lotus.json",
+      "file": "query/022_rising_lotus.json",
       "status": "structured"
     },
     {
       "name": "断头铡刀",
-      "file": "query/guillotine_drop.json",
+      "file": "query/023_guillotine_drop.json",
       "status": "structured"
     },
     {
       "name": "两阴夹一阳——空方炮",
-      "file": "query/bearish_cannon.json",
+      "file": "query/113_bearish_cannon.json",
       "status": "structured"
     },
     {
       "name": "量顶天立地",
-      "file": "query/volume_reaches_sky.json",
+      "file": "query/024_volume_reaches_sky.json",
       "status": "structured"
     },
     {
       "name": "乌云飞刀不可伸手",
-      "file": "query/cloud_knife.json",
+      "file": "query/025_cloud_knife.json",
       "status": "structured"
     },
     {
       "name": "天上井、地上井",
-      "file": "query/heaven_and_earth_well.json",
+      "file": "query/026_heaven_and_earth_well.json",
       "status": "structured"
     },
     {
       "name": "老鸭头",
-      "file": "query/old_duck_head.json",
+      "file": "query/027_old_duck_head.json",
       "status": "structured"
     },
     {
       "name": "倒挂老鸭头",
-      "file": "query/inverted_old_duck_head.json",
+      "file": "query/inverted_027_old_duck_head.json",
       "status": "structured"
     },
     {
       "name": "九阴白骨爪",
-      "file": "query/nine_yin_bone_claw.json",
+      "file": "query/029_nine_yin_bone_claw.json",
       "status": "structured"
     },
     {
       "name": "猎豹出击",
-      "file": "query/cheetah_strike.json",
+      "file": "query/030_cheetah_strike.json",
       "status": "structured"
     },
     {
       "name": "长阳反弹逃命",
-      "file": "query/long_yang_escape.json",
+      "file": "query/031_long_yang_escape.json",
       "status": "structured"
     },
     {
       "name": "长阴倒拔杨柳",
-      "file": "query/long_bear_yangliu.json",
+      "file": "query/032_long_bear_yangliu.json",
       "status": "structured"
     },
     {
       "name": "底量超顶量",
-      "file": "query/bottom_volume_over_top_volume.json",
+      "file": "query/033_bottom_volume_over_top_volume.json",
       "status": "structured"
     },
     {
       "name": "后量超前量",
-      "file": "query/later_volume_over_prior_volume.json",
+      "file": "query/034_later_volume_over_prior_volume.json",
       "status": "structured"
     },
     {
       "name": "实量与虚量",
-      "file": "query/real_volume_vs_fake_volume.json",
+      "file": "query/035_real_volume_vs_fake_volume.json",
       "status": "structured"
     },
     {
       "name": "庄家咽喉部",
-      "file": "query/dealer_throat_zone.json",
+      "file": "query/036_dealer_throat_zone.json",
       "status": "structured"
     },
     {
       "name": "石狮怒吼，海鸟飞天",
-      "file": "query/stone_lion_roar.json",
+      "file": "query/037_stone_lion_roar.json",
       "status": "structured"
     },
     {
       "name": "幸福池养宁天龙",
-      "file": "query/happiness_pool_dragon.json",
+      "file": "query/038_happiness_pool_dragon.json",
       "status": "structured"
     },
     {
       "name": "黑马草上飞",
-      "file": "query/grass_horse_takeoff.json",
+      "file": "query/039_grass_horse_takeoff.json",
       "status": "structured"
     },
     {
       "name": "石牛海下沉",
-      "file": "query/stone_bull_sink.json",
+      "file": "query/040_stone_bull_sink.json",
       "status": "structured"
     },
     {
       "name": "潜收集、强收集、拉高",
-      "file": "query/stealth_accumulation_strong_accumulation_markup.json",
+      "file": "query/041_stealth_accumulation_strong_accumulation_markup.json",
       "status": "structured"
     },
     {
       "name": "潜派发、强派发、滑落",
-      "file": "query/stealth_distribution_strong_distribution_slide.json",
+      "file": "query/042_stealth_distribution_strong_distribution_slide.json",
       "status": "structured"
     },
     {
       "name": "放量过头",
-      "file": "query/volume_breaks_prior_top.json",
+      "file": "query/043_volume_breaks_prior_top.json",
       "status": "structured"
     },
     {
       "name": "轻松过头",
-      "file": "query/easy_breaks_prior_top.json",
+      "file": "query/044_easy_breaks_prior_top.json",
       "status": "structured"
     },
     {
       "name": "金蛤蟆",
-      "file": "query/golden_toad.json",
+      "file": "query/045_golden_toad.json",
       "status": "structured"
     },
     {
       "name": "青龙取水",
-      "file": "query/green_dragon_drinks_water.json",
+      "file": "query/046_green_dragon_drinks_water.json",
       "status": "structured"
     },
     {
       "name": "三金叉见底",
-      "file": "query/triple_golden_cross_bottom.json",
+      "file": "query/047_triple_golden_cross_bottom.json",
       "status": "structured"
     },
     {
       "name": "三死叉见顶（一）",
-      "file": "query/triple_death_cross_top_1.json",
+      "file": "query/048_triple_death_cross_top_1.json",
       "status": "structured"
     },
     {
       "name": "三死叉见顶（二）",
-      "file": "query/triple_death_cross_head_divergence.json",
+      "file": "query/049_triple_death_cross_head_divergence.json",
       "status": "structured"
     },
     {
       "name": "三死叉见顶（三）",
-      "file": "query/valid_volume_death_cross.json",
+      "file": "query/050_valid_volume_death_cross.json",
       "status": "structured"
     },
     {
       "name": "三死叉见顶（四）",
-      "file": "query/improve_daily_triple_death_cross_exit_price.json",
+      "file": "query/051_improve_daily_triple_death_cross_exit_price.json",
       "status": "structured"
     },
     {
       "name": "DIF 下穿零线",
-      "file": "query/dif_crosses_below_zero.json",
+      "file": "query/052_dif_crosses_below_zero.json",
       "status": "structured"
     },
     {
       "name": "DIF 上穿零线",
-      "file": "query/dif_crosses_above_zero.json",
+      "file": "query/053_dif_crosses_above_zero.json",
       "status": "structured"
     },
     {
       "name": "压转托",
-      "file": "query/pressure_turns_support.json",
+      "file": "query/054_pressure_turns_support.json",
       "status": "structured"
     },
     {
       "name": "托转压",
-      "file": "query/support_turns_pressure.json",
+      "file": "query/055_support_turns_pressure.json",
       "status": "structured"
     },
     {
       "name": "托压互转",
-      "file": "query/support_pressure_alternation.json",
+      "file": "query/056_support_pressure_alternation.json",
       "status": "structured"
     },
     {
       "name": "蚂蚁功",
-      "file": "query/ant_climbing_rule.json",
+      "file": "query/057_ant_climbing_rule.json",
       "status": "structured"
     },
     {
       "name": "涨势中莫把腰部当头部",
-      "file": "query/mid_rally_not_true_top.json",
+      "file": "query/058_mid_rally_not_true_top.json",
       "status": "structured"
     },
     {
       "name": "卖出在周 K 线的顶部",
-      "file": "query/sell_on_weekly_top.json",
+      "file": "query/059_sell_on_weekly_top.json",
       "status": "structured"
     },
     {
       "name": "跌势见英雄",
-      "file": "query/hero_in_downtrend.json",
+      "file": "query/060_hero_in_downtrend.json",
       "status": "structured"
     },
     {
       "name": "一江春水向东流",
-      "file": "query/eastward_river_decline.json",
+      "file": "query/061_eastward_river_decline.json",
       "status": "structured"
     },
     {
       "name": "跌势中莫把腰部当底部",
-      "file": "query/downtrend_mid_not_bottom.json",
+      "file": "query/062_downtrend_mid_not_bottom.json",
       "status": "structured"
     },
     {
       "name": "周 K 线看得更清楚",
-      "file": "query/weekly_k_bottom_clearer.json",
+      "file": "query/063_weekly_k_bottom_clearer.json",
       "status": "structured"
     },
     {
       "name": "天眼地量",
-      "file": "query/sky_eye_ground_volume.json",
+      "file": "query/064_sky_eye_ground_volume.json",
       "status": "structured"
     },
     {
       "name": "季托失败后见真底",
-      "file": "query/seasonal_support_failure_true_bottom.json",
+      "file": "query/065_seasonal_support_failure_true_bottom.json",
       "status": "structured"
     },
     {
       "name": "仙人指路",
-      "file": "query/immortal_points_way.json",
+      "file": "query/066_immortal_points_way.json",
       "status": "structured"
     },
     {
       "name": "拾级盘上",
-      "file": "query/stair_step_rise.json",
+      "file": "query/067_stair_step_rise.json",
       "status": "structured"
     },
     {
       "name": "烟斗形",
-      "file": "query/pipe_shape.json",
+      "file": "query/068_pipe_shape.json",
       "status": "structured"
     },
     {
       "name": "进入起飞线",
-      "file": "query/enter_runway_line.json",
+      "file": "query/069_enter_runway_line.json",
       "status": "structured"
     },
     {
       "name": "开始滑跑",
-      "file": "query/start_taxiing.json",
+      "file": "query/070_start_taxiing.json",
       "status": "structured"
     },
     {
       "name": "跑道厚度",
-      "file": "query/runway_thickness.json",
+      "file": "query/071_runway_thickness.json",
       "status": "structured"
     },
     {
       "name": "跑道倾斜度",
-      "file": "query/runway_slope.json",
+      "file": "query/072_runway_slope.json",
       "status": "structured"
     },
     {
       "name": "跑道平整度",
-      "file": "query/runway_flatness.json",
+      "file": "query/073_runway_flatness.json",
       "status": "structured"
     },
     {
       "name": "跑道坑 UP 与量坑 UV",
-      "file": "query/runway_pit_volume_pit.json",
+      "file": "query/074_runway_pit_volume_pit.json",
       "status": "structured"
     },
     {
       "name": "离开地面",
-      "file": "query/leave_ground.json",
+      "file": "query/075_leave_ground.json",
       "status": "structured"
     },
     {
       "name": "加速爬升",
-      "file": "query/accelerated_climb.json",
+      "file": "query/076_accelerated_climb.json",
       "status": "structured"
     },
     {
       "name": "空中盘旋",
-      "file": "query/air_circling.json",
+      "file": "query/077_air_circling.json",
       "status": "structured"
     },
     {
       "name": "空中加油",
-      "file": "query/midair_refuel.json",
+      "file": "query/078_midair_refuel.json",
       "status": "structured"
     },
     {
       "name": "高空飞行",
-      "file": "query/high_altitude_flight.json",
+      "file": "query/079_high_altitude_flight.json",
       "status": "structured"
     },
     {
       "name": "T 线",
-      "file": "query/t_line_breakout.json",
+      "file": "query/080_t_line_breakout.json",
       "status": "structured"
     },
     {
       "name": "2T-1L",
-      "file": "query/formula_2t_1l.json",
+      "file": "query/081_formula_2t_1l.json",
       "status": "structured"
     },
     {
       "name": "2MP",
-      "file": "query/formula_2mp.json",
+      "file": "query/082_formula_2mp.json",
       "status": "structured"
     },
     {
       "name": "压价逼仓",
-      "file": "query/price_suppression_shakeout.json",
+      "file": "query/083_price_suppression_shakeout.json",
       "status": "structured"
     },
     {
       "name": "空中盘旋后的上升空间",
-      "file": "query/post_circling_upside_space.json",
+      "file": "query/084_post_circling_upside_space.json",
       "status": "structured"
     },
     {
       "name": "S 形穿越 60 线",
-      "file": "query/s_shape_cross_60ma.json",
+      "file": "query/085_s_shape_cross_60ma.json",
       "status": "structured"
     },
     {
       "name": "易涨停部位",
-      "file": "query/easy_limit_up_zone.json",
+      "file": "query/086_easy_limit_up_zone.json",
       "status": "structured"
     },
     {
       "name": "冲天导弹",
-      "file": "query/skyrocket_missile.json",
+      "file": "query/087_skyrocket_missile.json",
       "status": "structured"
     },
     {
       "name": "缩量止跌点",
-      "file": "query/shrinking_volume_stop_point.json",
+      "file": "query/088_shrinking_volume_stop_point.json",
       "status": "structured"
     },
     {
       "name": "OK 买入点",
-      "file": "query/ok_buy_point.json",
+      "file": "query/089_ok_buy_point.json",
       "status": "structured"
     },
     {
       "name": "顶紧右上角",
-      "file": "query/press_upper_right_corner.json",
+      "file": "query/090_press_upper_right_corner.json",
       "status": "structured"
     },
     {
       "name": "盘出原有形状",
-      "file": "query/break_out_of_shape.json",
+      "file": "query/091_break_out_of_shape.json",
       "status": "structured"
     },
     {
       "name": "分析一幅 K 线图的要点",
-      "file": "query/kline_analysis_keypoints.json",
+      "file": "query/092_kline_analysis_keypoints.json",
       "status": "structured"
     },
     {
       "name": "单阳线形成的头部",
-      "file": "query/single_bullish_line_top.json",
+      "file": "query/093_single_bullish_line_top.json",
       "status": "structured"
     },
     {
       "name": "单阴线形成的头部",
-      "file": "query/single_bearish_line_top.json",
+      "file": "query/094_single_bearish_line_top.json",
       "status": "structured"
     },
     {
       "name": "单十字星形成的头部",
-      "file": "query/single_doji_top.json",
+      "file": "query/095_single_doji_top.json",
       "status": "structured"
     },
     {
       "name": "单 T 线形成的头部",
-      "file": "query/single_tline_top.json",
+      "file": "query/096_single_tline_top.json",
       "status": "structured"
     },
     {
       "name": "锤形成的头部",
-      "file": "query/hammer_top.json",
+      "file": "query/097_hammer_top.json",
       "status": "structured"
     },
     {
       "name": "擀面杖形成的头部",
-      "file": "query/rolling_pin_top.json",
+      "file": "query/098_rolling_pin_top.json",
       "status": "structured"
     },
     {
       "name": "阳阴墓碑",
-      "file": "query/yang_yin_tombstone.json",
+      "file": "query/099_yang_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "T 阴墓碑",
-      "file": "query/t_yin_tombstone.json",
+      "file": "query/100_t_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "锤阴墓碑",
-      "file": "query/hammer_yin_tombstone.json",
+      "file": "query/101_hammer_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "星阴墓碑",
-      "file": "query/star_yin_tombstone.json",
+      "file": "query/102_star_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "横阴墓碑",
-      "file": "query/horizontal_yin_tombstone.json",
+      "file": "query/103_horizontal_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "品字头",
-      "file": "query/pin_head_top.json",
+      "file": "query/104_pin_head_top.json",
       "status": "structured"
     },
     {
       "name": "阳阴墓碑夹",
-      "file": "query/yang_yin_tombstone_sandwich.json",
+      "file": "query/105_yang_yin_tombstone_sandwich.json",
       "status": "structured"
     },
     {
       "name": "三连阴",
-      "file": "query/three_consecutive_bearish_top.json",
+      "file": "query/106_three_consecutive_bearish_top.json",
       "status": "structured"
     },
     {
       "name": "双阳阴墓碑",
-      "file": "query/double_yang_yin_tombstone.json",
+      "file": "query/double_099_yang_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "阳阴墓碑夹多 K 线",
-      "file": "query/multi_k_yang_yin_tombstone.json",
+      "file": "query/multi_k_099_yang_yin_tombstone.json",
       "status": "structured"
     },
     {
       "name": "天门",
-      "file": "query/heaven_gate_top.json",
+      "file": "query/109_heaven_gate_top.json",
       "status": "structured"
     },
     {
       "name": "宝塔头",
-      "file": "query/pagoda_top.json",
+      "file": "query/110_pagoda_top.json",
       "status": "structured"
     },
     {
       "name": "多连阴",
-      "file": "query/multiple_consecutive_bearish_top.json",
+      "file": "query/111_multiple_consecutive_bearish_top.json",
       "status": "structured"
     },
     {
       "name": "拉链",
-      "file": "query/zipper_top.json",
+      "file": "query/112_zipper_top.json",
       "status": "structured"
     },
     {
       "name": "墓碑坟头",
-      "file": "query/graveyard_mound_pattern.json",
+      "file": "query/114_graveyard_mound_pattern.json",
       "status": "structured"
     },
     {
       "name": "2T-1H",
-      "file": "query/formula_2t_1h.json",
+      "file": "query/115_formula_2t_1h.json",
       "status": "structured"
     },
     {
       "name": "弹性系数",
-      "file": "query/elasticity_coefficient_exit.json",
+      "file": "query/116_elasticity_coefficient_exit.json",
       "status": "structured"
     },
     {
       "name": "均线 2+3（一）",
-      "file": "query/ma_2plus3_initial_zone.json",
+      "file": "query/117_ma_2plus3_initial_zone.json",
       "status": "structured"
     },
     {
       "name": "熊牛转换点",
-      "file": "query/bear_bull_transition_point.json",
+      "file": "query/118_bear_bull_transition_point.json",
       "status": "structured"
     },
     {
       "name": "均线 2+3（二）",
-      "file": "query/ma_2plus3_middle_zone.json",
+      "file": "query/119_ma_2plus3_middle_zone.json",
       "status": "structured"
     },
     {
       "name": "均线 2+3（三）",
-      "file": "query/ma_2plus3_terminal_zone.json",
+      "file": "query/120_ma_2plus3_terminal_zone.json",
       "status": "structured"
     },
     {
       "name": "均线 2+3（四）",
-      "file": "query/ma_2minus3_initial_zone.json",
+      "file": "query/121_ma_2minus3_initial_zone.json",
       "status": "structured"
     },
     {
       "name": "牛熊转换点",
-      "file": "query/bull_bear_transition_point.json",
+      "file": "query/122_bull_bear_transition_point.json",
       "status": "structured"
     },
     {
       "name": "均线 2+3（五）",
-      "file": "query/ma_2plus3_downtrend_zone.json",
+      "file": "query/123_ma_2plus3_downtrend_zone.json",
       "status": "structured"
     },
     {
       "name": "60 线弹跳",
-      "file": "query/sixty_line_bounce.json",
+      "file": "query/124_sixty_line_bounce.json",
       "status": "structured"
     },
     {
       "name": "60 线天灵盖",
-      "file": "query/sixty_line_skullcap.json",
+      "file": "query/125_sixty_line_skullcap.json",
       "status": "structured"
     },
     {
       "name": "吸住天花板",
-      "file": "query/cling_to_ceiling.json",
+      "file": "query/126_cling_to_ceiling.json",
       "status": "structured"
     },
     {
       "name": "回光返照",
-      "file": "query/last_glow_rebound.json",
+      "file": "query/127_last_glow_rebound.json",
       "status": "structured"
     },
     {
       "name": "120 下小平台",
-      "file": "query/platform_below_120ma.json",
+      "file": "query/128_platform_below_120ma.json",
       "status": "structured"
     },
     {
       "name": "头部特征二",
-      "file": "query/top_features_two_methodology.json",
+      "file": "query/129_top_features_two_methodology.json",
       "status": "structured"
     },
     {
       "name": "底部特征一",
-      "file": "query/bottom_features_one_methodology.json",
+      "file": "query/130_bottom_features_one_methodology.json",
       "status": "structured"
     },
     {
       "name": "底部特征二",
-      "file": "query/cross_60ma_bottom_entry.json",
+      "file": "query/131_cross_60ma_bottom_entry.json",
       "status": "structured"
     },
     {
       "name": "底部特征三",
-      "file": "query/cross_120ma_bottom_entry.json",
+      "file": "query/132_cross_120ma_bottom_entry.json",
       "status": "structured"
     },
     {
       "name": "沉下去看看",
-      "file": "query/sink_and_retest.json",
+      "file": "query/133_sink_and_retest.json",
       "status": "structured"
     },
     {
       "name": "三连托 三连地上井",
-      "file": "query/triple_support_triple_ground_well.json",
+      "file": "query/134_triple_support_triple_ground_well.json",
       "status": "structured"
     },
     {
       "name": "选择买入点",
-      "file": "query/buy_point_selection_methodology.json",
+      "file": "query/135_buy_point_selection_methodology.json",
       "status": "structured"
     },
     {
       "name": "60 线是生命线",
-      "file": "query/sixty_line_lifeline.json",
+      "file": "query/136_sixty_line_lifeline.json",
       "status": "structured"
     },
     {
       "name": "提前发现股价顶部技术",
-      "file": "query/early_top_detection_intraday.json",
+      "file": "query/137_early_top_detection_intraday.json",
       "status": "structured"
     },
     {
       "name": "跌到哪里会反弹",
-      "file": "query/rebound_zone_methodology.json",
+      "file": "query/138_rebound_zone_methodology.json",
       "status": "structured"
     },
     {
       "name": "冷空气带下易暴跌",
-      "file": "query/cold_air_band_breakdown.json",
+      "file": "query/139_cold_air_band_breakdown.json",
       "status": "structured"
     },
     {
       "name": "弹不动就走",
-      "file": "query/rebound_fade_methodology.json",
+      "file": "query/140_rebound_fade_methodology.json",
       "status": "structured"
     },
     {
       "name": "筹码峰转移",
-      "file": "query/chip_peak_transfer_methodology.json",
+      "file": "query/141_chip_peak_transfer_methodology.json",
       "status": "structured"
     },
     {
       "name": "死芽是暴跌先兆",
-      "file": "query/dead_bud_crash_signal.json",
+      "file": "query/142_dead_bud_crash_signal.json",
       "status": "structured"
     },
     {
       "name": "后面有个 2+3",
-      "file": "query/behind_has_2plus3_methodology.json",
+      "file": "query/143_behind_has_2plus3_methodology.json",
       "status": "structured"
     },
     {
       "name": "120 上死蜘蛛",
-      "file": "query/death_spider_above_120ma.json",
+      "file": "query/144_death_spider_above_120ma.json",
       "status": "structured"
     },
     {
       "name": "双峰压力跌势难挡",
-      "file": "query/double_peak_pressure_methodology.json",
+      "file": "query/145_double_peak_pressure_methodology.json",
       "status": "structured"
     },
     {
       "name": "白量滔天打鱼翻船",
-      "file": "query/white_volume_surge.json",
+      "file": "query/146_white_volume_surge.json",
       "status": "structured"
     },
     {
       "name": "下跌一张弓",
-      "file": "query/intraday_bow_down_methodology.json",
+      "file": "query/147_intraday_bow_down_methodology.json",
       "status": "structured"
     },
     {
       "name": "资金榜",
-      "file": "query/funds_rank_methodology.json",
+      "file": "query/148_funds_rank_methodology.json",
       "status": "structured"
     },
     {
       "name": "会创新高还有新高直到不创新高",
-      "file": "query/higher_high_until_not.json",
+      "file": "query/149_higher_high_until_not.json",
       "status": "structured"
     },
     {
       "name": "下跌不言底",
-      "file": "query/downtrend_no_bottom_methodology.json",
+      "file": "query/150_downtrend_no_bottom_methodology.json",
       "status": "structured"
     },
     {
       "name": "天灵盖",
-      "file": "query/double_skullcap_top_zone.json",
+      "file": "query/151_double_skullcap_top_zone.json",
       "status": "structured"
     },
     {
       "name": "下跌中继",
-      "file": "query/downtrend_continuation.json",
+      "file": "query/152_downtrend_continuation.json",
       "status": "structured"
     },
     {
       "name": "后金叉买入",
-      "file": "query/post_golden_cross_entry.json",
+      "file": "query/153_post_golden_cross_entry.json",
       "status": "structured"
     },
     {
       "name": "跌破低点连线有暴跌可能",
-      "file": "query/break_lowline_crash_risk.json",
+      "file": "query/154_break_lowline_crash_risk.json",
       "status": "structured"
     },
     {
       "name": "五线顺下",
-      "file": "query/five_lines_down.json",
+      "file": "query/155_five_lines_down.json",
       "status": "structured"
     },
     {
       "name": "利用除权出货",
-      "file": "query/ex_rights_distribution_methodology.json",
+      "file": "query/156_ex_rights_distribution_methodology.json",
       "status": "structured"
     },
     {
       "name": "跌破五线没底了",
-      "file": "query/break_five_lines_no_bottom.json",
+      "file": "query/157_break_five_lines_no_bottom.json",
       "status": "structured"
     },
     {
       "name": "黑马跳栏",
-      "file": "query/black_horse_jump_barrier.json",
+      "file": "query/158_black_horse_jump_barrier.json",
       "status": "structured"
     },
     {
       "name": "均线四挑一",
-      "file": "query/four_vs_one_ma_breakout.json",
+      "file": "query/159_four_vs_one_ma_breakout.json",
       "status": "structured"
     },
     {
       "name": "缺口不补磁悬浮",
-      "file": "query/magnetic_levitation_gap.json",
+      "file": "query/160_magnetic_levitation_gap.json",
       "status": "structured"
     },
     {
       "name": "对突破前头部的确认",
-      "file": "query/confirm_breakout_prior_top.json",
+      "file": "query/161_confirm_breakout_prior_top.json",
       "status": "structured"
     },
     {
       "name": "向上通气不出货",
-      "file": "query/upward_ventilation_hold.json",
+      "file": "query/162_upward_ventilation_hold.json",
       "status": "structured"
     },
     {
       "name": "金蜘蛛上挑 60 线",
-      "file": "query/golden_spider_challenges_60ma.json",
+      "file": "query/163_golden_spider_challenges_60ma.json",
       "status": "structured"
     },
     {
       "name": "长阴不接货",
-      "file": "query/long_bear_no_buy.json",
+      "file": "query/164_long_bear_no_buy.json",
       "status": "structured"
     },
     {
       "name": "暴涨回马枪",
-      "file": "query/blowoff_then_reversal_distribution.json",
+      "file": "query/165_blowoff_then_reversal_distribution.json",
       "status": "structured"
     },
     {
       "name": "五均线向下发散",
-      "file": "query/five_ma_downward_divergence.json",
+      "file": "query/168_five_ma_downward_divergence.json",
       "status": "structured"
     },
     {
       "name": "致命大铡刀",
-      "file": "query/deadly_big_guillotine.json",
+      "file": "query/166_deadly_big_guillotine.json",
       "status": "structured"
     },
     {
       "name": "致命小铡刀",
-      "file": "query/deadly_small_guillotine.json",
+      "file": "query/167_deadly_small_guillotine.json",
       "status": "structured"
     },
     {
       "name": "扇骨线一",
-      "file": "query/fan_bone_line_origin_selection_methodology.json",
+      "file": "query/169_fan_bone_line_origin_selection_methodology.json",
       "status": "structured"
     },
     {
       "name": "扇骨线二",
-      "file": "query/fan_bone_line_properties_methodology.json",
+      "file": "query/170_fan_bone_line_properties_methodology.json",
       "status": "structured"
     },
     {
       "name": "扇骨线三",
-      "file": "query/fan_bone_line_buy_points_methodology.json",
+      "file": "query/171_fan_bone_line_buy_points_methodology.json",
       "status": "structured"
     },
     {
       "name": "跌势两线避险法",
-      "file": "query/downtrend_two_line_risk_off.json",
+      "file": "query/172_downtrend_two_line_risk_off.json",
       "status": "structured"
     },
     {
       "name": "下跌三速度",
-      "file": "query/three_downtrend_speeds_methodology.json",
+      "file": "query/173_three_downtrend_speeds_methodology.json",
       "status": "structured"
     },
     {
       "name": "久跌后第一脚刹车",
-      "file": "query/first_brake_after_long_decline.json",
+      "file": "query/174_first_brake_after_long_decline.json",
       "status": "structured"
     },
     {
       "name": "倒箱问底",
-      "file": "query/inverted_box_bottoming_methodology.json",
+      "file": "query/175_inverted_box_bottoming_methodology.json",
       "status": "structured"
     },
     {
       "name": "巨量不涨先退场",
-      "file": "query/giant_volume_no_rise_exit.json",
+      "file": "query/176_giant_volume_no_rise_exit.json",
       "status": "structured"
     },
     {
       "name": "会创新低还有新低直到不创新低",
-      "file": "query/lower_low_until_not.json",
+      "file": "query/177_lower_low_until_not.json",
       "status": "structured"
     },
     {
       "name": "f30K 线炒作法",
-      "file": "query/f30k_trading_methodology.json",
+      "file": "query/178_f30k_trading_methodology.json",
       "status": "structured"
     },
     {
       "name": "“坨”理论",
-      "file": "query/lump_theory_methodology.json",
+      "file": "query/179_lump_theory_methodology.json",
       "status": "structured"
     },
     {
       "name": "没有动静就快了",
-      "file": "query/stillness_before_break.json",
+      "file": "query/180_stillness_before_break.json",
       "status": "structured"
     },
     {
       "name": "空中加油 60，120 管道畅通",
-      "file": "query/midair_refuel_60_120_pipeline_open.json",
+      "file": "query/181_midair_refuel_60_120_pipeline_open.json",
       "status": "structured"
     },
     {
       "name": "跌放量 放量跌",
-      "file": "query/selloff_volume_expands.json",
+      "file": "query/182_selloff_volume_expands.json",
       "status": "structured"
     },
     {
       "name": "大三角向上突破",
-      "file": "query/large_triangle_upward_breakout.json",
+      "file": "query/183_large_triangle_upward_breakout.json",
       "status": "structured"
     },
     {
       "name": "庄家打桩我不帮忙",
-      "file": "query/dealer_piling_not_our_job_methodology.json",
+      "file": "query/184_dealer_piling_not_our_job_methodology.json",
       "status": "structured"
     },
     {
       "name": "突破方向不确定时的操作方案",
-      "file": "query/uncertain_breakout_operating_plan_methodology.json",
+      "file": "query/185_uncertain_breakout_operating_plan_methodology.json",
       "status": "structured"
     },
     {
       "name": "单位时间两倍量追涨法",
-      "file": "query/double_volume_per_unit_chase.json",
+      "file": "query/186_double_volume_per_unit_chase.json",
       "status": "structured"
     },
     {
       "name": "当大阳升起的时候",
-      "file": "query/when_big_bull_rises.json",
+      "file": "query/187_when_big_bull_rises.json",
       "status": "structured"
     },
     {
       "name": "长阳快速买入法",
-      "file": "query/long_bull_fast_buy.json",
+      "file": "query/188_long_bull_fast_buy.json",
       "status": "structured"
     },
     {
       "name": "大阳快速卖出法",
-      "file": "query/big_bull_fast_exit.json",
+      "file": "query/189_big_bull_fast_exit.json",
       "status": "structured"
     },
     {
       "name": "60K 线三死叉见顶",
-      "file": "query/sixty_min_triple_death_cross_top_methodology.json",
+      "file": "query/190_sixty_min_triple_death_cross_top_methodology.json",
       "status": "structured"
     },
     {
       "name": "下降通道内的横向小通道",
-      "file": "query/down_channel_sideways_subchannel_methodology.json",
+      "file": "query/191_down_channel_sideways_subchannel_methodology.json",
       "status": "structured"
     },
     {
       "name": "不创新高就是不妙",
-      "file": "query/no_new_high_is_bad.json",
+      "file": "query/192_no_new_high_is_bad.json",
       "status": "structured"
     },
     {
       "name": "风吹草低见牛羊",
-      "file": "query/wind_reveals_black_horse.json",
+      "file": "query/193_wind_reveals_black_horse.json",
       "status": "structured"
     },
     {
       "name": "水下死叉沉船快",
-      "file": "query/underwater_death_cross_crash.json",
+      "file": "query/194_underwater_death_cross_crash.json",
       "status": "structured"
     },
     {
       "name": "加速赶底",
-      "file": "query/accelerated_bottoming_crash_methodology.json",
+      "file": "query/195_accelerated_bottoming_crash_methodology.json",
       "status": "structured"
     },
     {
       "name": "条条防线堵黑马",
-      "file": "query/multiple_defense_lines_trap_black_horse.json",
+      "file": "query/196_multiple_defense_lines_trap_black_horse.json",
       "status": "structured"
     },
     {
       "name": "好马不吃回头草",
-      "file": "query/good_horse_no_looking_back.json",
+      "file": "query/197_good_horse_no_looking_back.json",
       "status": "structured"
     },
     {
       "name": "巨量跳空 回档买进",
-      "file": "query/giant_volume_gap_pullback_buy.json",
+      "file": "query/198_giant_volume_gap_pullback_buy.json",
       "status": "structured"
     },
     {
       "name": "黄金支点",
-      "file": "query/golden_pivot_methodology.json",
+      "file": "query/199_golden_pivot_methodology.json",
       "status": "structured"
     },
     {
       "name": "给我一个支点 撬起一头大牛",
-      "file": "query/give_me_a_pivot_lift_a_bull_methodology.json",
+      "file": "query/200_give_me_a_pivot_lift_a_bull_methodology.json",
       "status": "structured"
     },
     {
       "name": "股价暴涨前的蓄势",
-      "file": "query/pre_surge_consolidation.json",
+      "file": "query/201_pre_surge_consolidation.json",
       "status": "structured"
     },
     {
       "name": "多方炮过金三角",
-      "file": "query/bullish_cannon_over_golden_triangle.json",
+      "file": "query/202_bullish_cannon_over_golden_triangle.json",
       "status": "structured"
     },
     {
       "name": "千年等一回",
-      "file": "query/once_in_a_millennium.json",
+      "file": "query/203_once_in_a_millennium.json",
       "status": "structured"
     },
     {
       "name": "电杆小草 暴涨先兆",
-      "file": "query/telegraph_pole_grass_pre_surge.json",
+      "file": "query/204_telegraph_pole_grass_pre_surge.json",
       "status": "structured"
     },
     {
       "name": "多方炮开炮",
-      "file": "query/bullish_cannon_fires.json",
+      "file": "query/205_bullish_cannon_fires.json",
       "status": "structured"
     },
     {
       "name": "涨停不出货 出货不涨停",
-      "file": "query/limit_up_no_distribution_distribution_no_limit_up.json",
+      "file": "query/206_limit_up_no_distribution_distribution_no_limit_up.json",
       "status": "structured"
     },
     {
       "name": "涨势见狗熊",
-      "file": "query/rally_reveals_bear_methodology.json",
+      "file": "query/207_rally_reveals_bear_methodology.json",
       "status": "structured"
     },
     {
       "name": "五分钟 K 线精确判顶",
-      "file": "query/five_minute_precise_top_methodology.json",
+      "file": "query/208_five_minute_precise_top_methodology.json",
       "status": "structured"
     },
     {
       "name": "庄家出货看得清清楚楚",
-      "file": "query/see_distribution_clearly_methodology.json",
+      "file": "query/209_see_distribution_clearly_methodology.json",
       "status": "structured"
     },
     {
       "name": "不看 K 线精确判定股价最高点",
-      "file": "query/precise_top_without_kline_methodology.json",
+      "file": "query/210_precise_top_without_kline_methodology.json",
       "status": "structured"
     },
     {
       "name": "精确的超短线盈利买卖点",
-      "file": "query/precise_intraday_buy_sell_methodology.json",
+      "file": "query/211_precise_intraday_buy_sell_methodology.json",
       "status": "structured"
     },
     {
       "name": "车到山前必有路",
-      "file": "query/road_through_mountain_methodology.json",
+      "file": "query/212_road_through_mountain_methodology.json",
       "status": "structured"
     },
     {
       "name": "尖兵穿刺 2+3",
-      "file": "query/spearhead_probe_2plus3.json",
+      "file": "query/213_spearhead_probe_2plus3.json",
       "status": "structured"
     },
     {
       "name": "120 线拉锯战",
-      "file": "query/tug_of_war_at_120ma.json",
+      "file": "query/214_tug_of_war_at_120ma.json",
       "status": "structured"
     },
     {
       "name": "120 线下拉锯战",
-      "file": "query/tug_of_war_below_120ma.json",
+      "file": "query/215_tug_of_war_below_120ma.json",
       "status": "structured"
     },
     {
       "name": "犄角上攻 力大无比",
-      "file": "query/horn_attack_powerful.json",
+      "file": "query/216_horn_attack_powerful.json",
       "status": "structured"
     },
     {
       "name": "快速买进当天涨停板的技术",
-      "file": "query/fast_buy_same_day_limit_up.json",
+      "file": "query/217_fast_buy_same_day_limit_up.json",
       "status": "structured"
     },
     {
       "name": "巨量长阳往往是大涨的开端",
-      "file": "query/giant_bullish_candle_starts_big_rally.json",
+      "file": "query/218_giant_bullish_candle_starts_big_rally.json",
       "status": "structured"
     },
     {
       "name": "关公挑袍 小心为妙",
-      "file": "query/guan_gong_lifts_robe_caution_methodology.json",
+      "file": "query/219_guan_gong_lifts_robe_caution_methodology.json",
       "status": "structured"
     },
     {
       "name": "价越盘越高 量越盘越小",
-      "file": "query/price_higher_volume_lower_consolidation.json",
+      "file": "query/220_price_higher_volume_lower_consolidation.json",
       "status": "structured"
     },
     {
       "name": "上下夹板强制盘整",
-      "file": "query/upper_lower_clamp_forced_consolidation_methodology.json",
+      "file": "query/221_upper_lower_clamp_forced_consolidation_methodology.json",
       "status": "structured"
     },
     {
       "name": "水上金叉",
-      "file": "query/golden_cross_above_zero.json",
+      "file": "query/222_golden_cross_above_zero.json",
       "status": "structured"
     },
     {
       "name": "饿狼扑食",
-      "file": "query/wolf_pounces_on_prey_methodology.json",
+      "file": "query/223_wolf_pounces_on_prey_methodology.json",
       "status": "structured"
     },
     {
       "name": "相对量顶天立地",
-      "file": "query/relative_volume_towering_methodology.json",
+      "file": "query/224_relative_volume_towering_methodology.json",
       "status": "structured"
     },
     {
       "name": "一张弓",
-      "file": "query/one_bow_methodology.json",
+      "file": "query/225_one_bow_methodology.json",
       "status": "structured"
     },
     {
       "name": "当头炮",
-      "file": "query/head_on_cannon.json",
+      "file": "query/226_head_on_cannon.json",
       "status": "structured"
     },
     {
       "name": "巨量抛盘诱发大跌势",
-      "file": "query/giant_sell_order_triggers_crash_methodology.json",
+      "file": "query/227_giant_sell_order_triggers_crash_methodology.json",
       "status": "structured"
     },
     {
       "name": "放量打拐",
-      "file": "query/volume_breaks_turning_point.json",
+      "file": "query/228_volume_breaks_turning_point.json",
       "status": "structured"
     },
     {
       "name": "水平筷子线",
-      "file": "query/horizontal_chopsticks_line.json",
+      "file": "query/229_horizontal_chopsticks_line.json",
       "status": "structured"
     },
     {
       "name": "跳一跳 够得着",
-      "file": "query/jump_and_reach.json",
+      "file": "query/230_jump_and_reach.json",
       "status": "structured"
     },
     {
       "name": "年金叉",
-      "file": "query/annual_golden_cross.json",
+      "file": "query/231_annual_golden_cross.json",
       "status": "structured"
     },
     {
       "name": "穿越年线",
-      "file": "query/crossing_the_year_line.json",
+      "file": "query/232_crossing_the_year_line.json",
       "status": "structured"
     },
     {
       "name": "赤脚大仙",
-      "file": "query/barefoot_immortal.json",
+      "file": "query/233_barefoot_immortal.json",
       "status": "structured"
     },
     {
       "name": "喷出",
-      "file": "query/spray_out_methodology.json",
+      "file": "query/234_spray_out_methodology.json",
       "status": "structured"
     },
     {
       "name": "锅底拣芝麻",
-      "file": "query/pot_bottom_picks_sesame.json",
+      "file": "query/235_pot_bottom_picks_sesame.json",
       "status": "structured"
     },
     {
       "name": "沙盘寻找黑马",
-      "file": "query/sand_table_finds_black_horse_methodology.json",
+      "file": "query/236_sand_table_finds_black_horse_methodology.json",
       "status": "structured"
     },
     {
       "name": "蝶式建仓",
-      "file": "query/butterfly_accumulation.json",
+      "file": "query/237_butterfly_accumulation.json",
       "status": "structured"
     },
     {
       "name": "六线四托",
-      "file": "query/six_lines_four_supports.json",
+      "file": "query/289_six_lines_four_supports.json",
       "status": "structured"
     },
     {
       "name": "能量分解",
-      "file": "query/energy_decomposition_methodology.json",
+      "file": "query/238_energy_decomposition_methodology.json",
       "status": "structured"
     },
     {
       "name": "突破上升通道",
-      "file": "query/break_ascending_channel.json",
+      "file": "query/240_break_ascending_channel.json",
       "status": "structured"
     },
     {
       "name": "模式选股",
-      "file": "query/pattern_stock_selection_methodology.json",
+      "file": "query/239_pattern_stock_selection_methodology.json",
       "status": "structured"
     },
     {
       "name": "米字线",
-      "file": "query/mizi_line_methodology.json",
+      "file": "query/241_mizi_line_methodology.json",
       "status": "structured"
     },
     {
       "name": "洗到无量方为底",
-      "file": "query/washed_out_volume_bottom.json",
+      "file": "query/242_washed_out_volume_bottom.json",
       "status": "structured"
     },
     {
       "name": "OBV飞行理论",
-      "file": "query/obv_flight_theory_methodology.json",
+      "file": "query/243_obv_flight_theory_methodology.json",
       "status": "structured"
     },
     {
       "name": "重上五线金不换",
-      "file": "query/reclaim_five_lines_no_regret.json",
+      "file": "query/244_reclaim_five_lines_no_regret.json",
       "status": "structured"
     },
     {
       "name": "老鸭头技术要求",
-      "file": "query/old_duck_head_requirements_methodology.json",
+      "file": "query/245_old_duck_head_requirements_methodology.json",
       "status": "structured"
     },
     {
       "name": "黑马亲子鉴定",
-      "file": "query/black_horse_paternity_test_methodology.json",
+      "file": "query/246_black_horse_paternity_test_methodology.json",
       "status": "structured"
     },
     {
       "name": "斜面突破",
-      "file": "query/slope_plane_breakout_methodology.json",
+      "file": "query/247_slope_plane_breakout_methodology.json",
       "status": "structured"
     },
     {
       "name": "6字买卖法",
-      "file": "query/six_shape_trading_method.json",
+      "file": "query/248_six_shape_trading_method.json",
       "status": "structured"
     },
     {
       "name": "一小时两倍量",
-      "file": "query/one_hour_double_volume_methodology.json",
+      "file": "query/249_one_hour_double_volume_methodology.json",
       "status": "structured"
     },
     {
       "name": "碰 撤 穿 压",
-      "file": "query/touch_retreat_break_press.json",
+      "file": "query/250_touch_retreat_break_press.json",
       "status": "structured"
     },
     {
       "name": "碰 撤 穿 抽",
-      "file": "query/touch_retreat_break_pullback.json",
+      "file": "query/251_touch_retreat_break_pullback.json",
       "status": "structured"
     },
     {
       "name": "妙高台",
-      "file": "query/miaogaotai.json",
+      "file": "query/252_miaogaotai.json",
       "status": "structured"
     },
     {
       "name": "大死爪",
-      "file": "query/big_dead_claw.json",
+      "file": "query/253_big_dead_claw.json",
       "status": "structured"
     },
     {
       "name": "半年托",
-      "file": "query/half_year_support.json",
+      "file": "query/254_half_year_support.json",
       "status": "structured"
     },
     {
       "name": "蛤蟆跳空",
-      "file": "query/golden_toad_gap_up.json",
+      "file": "query/255_golden_toad_gap_up.json",
       "status": "structured"
     },
     {
       "name": "悬空 K 线群",
-      "file": "query/suspended_kline_cluster.json",
+      "file": "query/256_suspended_kline_cluster.json",
       "status": "structured"
     },
     {
       "name": "冲击钻顶紧天花板",
-      "file": "query/impact_drill_hits_ceiling.json",
+      "file": "query/257_impact_drill_hits_ceiling.json",
       "status": "structured"
     },
     {
       "name": "甩背包",
-      "file": "query/shake_off_backpack.json",
+      "file": "query/258_shake_off_backpack.json",
       "status": "structured"
     },
     {
       "name": "盘股开天地",
-      "file": "query/pangu_splits_the_market.json",
+      "file": "query/259_pangu_splits_the_market.json",
       "status": "structured"
     },
     {
       "name": "二次零上红金叉",
-      "file": "query/second_red_cross_above_zero.json",
+      "file": "query/260_second_red_cross_above_zero.json",
       "status": "structured"
     },
     {
       "name": "内径线",
-      "file": "query/inner_diameter_line_methodology.json",
+      "file": "query/261_inner_diameter_line_methodology.json",
       "status": "structured"
     },
     {
       "name": "双炮过河",
-      "file": "query/double_cannon_crosses_river.json",
+      "file": "query/262_double_cannon_crosses_river.json",
       "status": "structured"
     },
     {
       "name": "波浪老鸭头",
-      "file": "query/wave_old_duck_head.json",
+      "file": "query/wave_027_old_duck_head.json",
       "status": "structured"
     },
     {
       "name": "牛角攻击",
-      "file": "query/horn_attack.json",
+      "file": "query/264_horn_attack.json",
       "status": "structured"
     },
     {
       "name": "回档不破 OBV",
-      "file": "query/pullback_holds_obv_methodology.json",
+      "file": "query/265_pullback_holds_obv_methodology.json",
       "status": "structured"
     },
     {
       "name": "大刀砍",
-      "file": "query/big_knife_cut.json",
+      "file": "query/266_big_knife_cut.json",
       "status": "structured"
     },
     {
       "name": "挖坑掏坑",
-      "file": "query/dig_and_scoop_pit.json",
+      "file": "query/267_dig_and_scoop_pit.json",
       "status": "structured"
     },
     {
       "name": "折腾避险",
-      "file": "query/chop_for_risk_control.json",
+      "file": "query/268_chop_for_risk_control.json",
       "status": "structured"
     },
     {
       "name": "强于大盘",
-      "file": "query/stronger_than_market_methodology.json",
+      "file": "query/269_stronger_than_market_methodology.json",
       "status": "structured"
     },
     {
       "name": "油管畅通",
-      "file": "query/oil_pipeline_open.json",
+      "file": "query/270_oil_pipeline_open.json",
       "status": "structured"
     },
     {
       "name": "冲击钻过硬层",
-      "file": "query/impact_drill_through_hard_layer.json",
+      "file": "query/271_impact_drill_through_hard_layer.json",
       "status": "structured"
     },
     {
       "name": "拉高建仓",
-      "file": "query/markup_accumulation.json",
+      "file": "query/272_markup_accumulation.json",
       "status": "structured"
     },
     {
       "name": "飞碟",
-      "file": "query/flying_saucer_pattern.json",
+      "file": "query/273_flying_saucer_pattern.json",
       "status": "structured"
     },
     {
       "name": "沙盘要结合 K 线形态",
-      "file": "query/sand_table_with_kline_methodology.json",
+      "file": "query/274_sand_table_with_kline_methodology.json",
       "status": "structured"
     },
     {
       "name": "茶壶",
-      "file": "query/teapot_pattern.json",
+      "file": "query/275_teapot_pattern.json",
       "status": "structured"
     },
     {
       "name": "跌不下去就涨",
-      "file": "query/cannot_fall_then_rises.json",
+      "file": "query/276_cannot_fall_then_rises.json",
       "status": "structured"
     },
     {
       "name": "涨不上去就跌",
-      "file": "query/cannot_rise_then_falls.json",
+      "file": "query/277_cannot_rise_then_falls.json",
       "status": "structured"
     },
     {
       "name": "F5 暖气带弹性",
-      "file": "query/f5_warm_band_elasticity_methodology.json",
+      "file": "query/278_f5_warm_band_elasticity_methodology.json",
       "status": "structured"
     },
     {
       "name": "五三买卖法则",
-      "file": "query/five_three_trading_rule.json",
+      "file": "query/279_five_three_trading_rule.json",
       "status": "structured"
     },
     {
       "name": "引体向上",
-      "file": "query/pull_up_body_methodology.json",
+      "file": "query/280_pull_up_body_methodology.json",
       "status": "structured"
     },
     {
       "name": "美人肩",
-      "file": "query/beauty_shoulder.json",
+      "file": "query/281_beauty_shoulder.json",
       "status": "structured"
     },
     {
       "name": "压瓦解",
-      "file": "query/pressure_disintegration.json",
+      "file": "query/282_pressure_disintegration.json",
       "status": "structured"
     },
     {
       "name": "筷子线",
-      "file": "query/chopsticks_line_methodology.json",
+      "file": "query/283_chopsticks_line_methodology.json",
       "status": "structured"
     },
     {
       "name": "头部扇骨线",
-      "file": "query/head_fan_bone_line_methodology.json",
+      "file": "query/284_head_fan_bone_line_methodology.json",
       "status": "structured"
     },
     {
       "name": "底部扇骨线",
-      "file": "query/bottom_fan_bone_line_methodology.json",
+      "file": "query/285_bottom_fan_bone_line_methodology.json",
       "status": "structured"
     },
     {
       "name": "涨跌五势一",
-      "file": "query/upward_five_forces_methodology.json",
+      "file": "query/286_upward_five_forces_methodology.json",
       "status": "structured"
     },
     {
       "name": "涨跌五势二",
-      "file": "query/downward_five_forces_methodology.json",
+      "file": "query/287_downward_five_forces_methodology.json",
       "status": "structured"
     },
     {
       "name": "黑洞",
-      "file": "query/black_hole_pattern.json",
+      "file": "query/288_black_hole_pattern.json",
       "status": "structured"
     }
   ],

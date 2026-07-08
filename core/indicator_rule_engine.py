@@ -50,6 +50,14 @@ class IndicatorEvaluation:
     matches: tuple[RuleMatch, ...]
 
 
+@dataclass
+class SymbolEvaluationContext:
+    frame: pd.DataFrame
+    base_series_map: dict[str, pd.Series]
+    series_cache: dict[tuple[Any, ...], pd.Series]
+    event_cache: dict[tuple[Any, ...], pd.Series]
+
+
 def load_indicator_definition(path: str | Path) -> dict[str, Any]:
     with Path(path).open("r", encoding="utf-8") as fh:
         return json.load(fh)
@@ -72,17 +80,35 @@ def infer_data_requirements(
 
 
 class IndicatorRuleEngine:
+    def build_symbol_context(self, df: pd.DataFrame) -> SymbolEvaluationContext:
+        frame = self._normalize_frame(df)
+        base_series_map: dict[str, pd.Series] = {}
+        for field in BASE_FIELDS:
+            if field in frame.columns:
+                base_series_map[field] = frame[field]
+        return SymbolEvaluationContext(
+            frame=frame,
+            base_series_map=base_series_map,
+            series_cache={},
+            event_cache={},
+        )
+
     def evaluate(
         self,
         df: pd.DataFrame,
         definition: dict[str, Any],
+        *,
+        context: SymbolEvaluationContext | None = None,
     ) -> IndicatorEvaluation:
-        frame = self._normalize_frame(df)
+        symbol_context = context or self.build_symbol_context(df)
+        frame = symbol_context.frame
         params = dict(definition.get("params", {}))
         required_fields = tuple(definition.get("required_fields", []))
         missing_fields = tuple(field for field in required_fields if field not in frame.columns)
-        series_map = self._build_series_map(frame, definition, params)
-        event_map = self._build_event_map(frame, definition, params, series_map)
+        series_map = self._build_series_map(frame, definition, params, symbol_context)
+        event_map = self._build_event_map(
+            frame, definition, params, series_map, symbol_context
+        )
 
         latest_index = len(frame) - 1 if not frame.empty else None
         if latest_index is None or missing_fields:
@@ -140,23 +166,28 @@ class IndicatorRuleEngine:
         frame: pd.DataFrame,
         definition: dict[str, Any],
         params: dict[str, Any],
+        context: SymbolEvaluationContext,
     ) -> dict[str, pd.Series]:
-        series_map: dict[str, pd.Series] = {}
-        for field in BASE_FIELDS:
-            if field in frame.columns:
-                series_map[field] = pd.to_numeric(frame[field], errors="coerce")
+        series_map: dict[str, pd.Series] = dict(context.base_series_map)
 
         for item in definition.get("series", []):
             series_id = item["id"]
             op = item["op"]
             field = item["field"]
             window = self._resolve_value(item.get("window"), params)
+            cache_key = self._series_cache_key(item, params, window)
+            cached_series = context.series_cache.get(cache_key)
+            if cached_series is not None:
+                series_map[series_id] = cached_series
+                continue
             local_params = dict(params)
             if "field2" in item:
                 local_params["_field2"] = self._resolve_value(item["field2"], params)
-            series_map[series_id] = self._compute_series(
+            computed_series = self._compute_series(
                 op, field, window, series_map, local_params
             )
+            context.series_cache[cache_key] = computed_series
+            series_map[series_id] = computed_series
         return series_map
 
     def _compute_series(
@@ -199,25 +230,41 @@ class IndicatorRuleEngine:
         definition: dict[str, Any],
         params: dict[str, Any],
         series_map: dict[str, pd.Series],
+        context: SymbolEvaluationContext,
     ) -> dict[str, pd.Series]:
         event_map: dict[str, pd.Series] = {}
         for item in definition.get("events", []):
             event_id = item["id"]
             op = item["op"]
+            cache_key = self._event_cache_key(item, params)
+            cached_event = context.event_cache.get(cache_key)
+            if cached_event is not None:
+                event_map[event_id] = cached_event
+                continue
             left = self._resolve_numeric_reference(item["left"], frame, series_map, params)
             right = self._resolve_numeric_reference(item["right"], frame, series_map, params)
-            if op == "cross_up":
-                event_map[event_id] = (left.shift(1) <= right.shift(1)) & (left > right)
-            elif op == "cross_down":
-                event_map[event_id] = (left.shift(1) >= right.shift(1)) & (left < right)
-            elif op == "breakout_up":
-                event_map[event_id] = (left.shift(1) <= right.shift(1)) & (left > right)
-            elif op == "breakout_down":
-                event_map[event_id] = (left.shift(1) >= right.shift(1)) & (left < right)
-            else:
-                raise ValueError(f"Unsupported event op: {op}")
-            event_map[event_id] = event_map[event_id].fillna(False).astype(bool)
+            computed_event = self._compute_event_series(op, left, right)
+            context.event_cache[cache_key] = computed_event
+            event_map[event_id] = computed_event
         return event_map
+
+    def _compute_event_series(
+        self,
+        op: str,
+        left: pd.Series,
+        right: pd.Series,
+    ) -> pd.Series:
+        if op == "cross_up":
+            event_series = (left.shift(1) <= right.shift(1)) & (left > right)
+        elif op == "cross_down":
+            event_series = (left.shift(1) >= right.shift(1)) & (left < right)
+        elif op == "breakout_up":
+            event_series = (left.shift(1) <= right.shift(1)) & (left > right)
+        elif op == "breakout_down":
+            event_series = (left.shift(1) >= right.shift(1)) & (left < right)
+        else:
+            raise ValueError(f"Unsupported event op: {op}")
+        return event_series.fillna(False).astype(bool)
 
     def _evaluate_rule_matches(
         self,
@@ -415,7 +462,10 @@ class IndicatorRuleEngine:
         event_map: dict[str, pd.Series],
         memo: dict[tuple[str, int], list[RuleMatch]],
     ) -> list[RuleMatch]:
-        required = int(self._resolve_value(node["length"], params))
+        length_value = node.get("length", node.get("days"))
+        if length_value is None:
+            raise KeyError("consecutive rule requires 'length' (or legacy alias 'days')")
+        required = int(self._resolve_value(length_value, params))
         count = 0
         idx = day_idx
         while idx >= 0:
@@ -601,6 +651,42 @@ class IndicatorRuleEngine:
         if isinstance(value, str) and value.startswith("$params."):
             key = value[len("$params.") :]
             return params[key]
+        return value
+
+    def _series_cache_key(
+        self,
+        item: dict[str, Any],
+        params: dict[str, Any],
+        window: Any,
+    ) -> tuple[Any, ...]:
+        return (
+            "series",
+            item.get("op"),
+            self._cache_key_part(item.get("field")),
+            self._cache_key_part(window),
+            self._cache_key_part(self._resolve_value(item.get("field2"), params)),
+        )
+
+    def _event_cache_key(
+        self,
+        item: dict[str, Any],
+        params: dict[str, Any],
+    ) -> tuple[Any, ...]:
+        return (
+            "event",
+            item.get("op"),
+            self._cache_key_part(self._resolve_value(item.get("left"), params)),
+            self._cache_key_part(self._resolve_value(item.get("right"), params)),
+        )
+
+    def _cache_key_part(self, value: Any) -> Any:
+        if isinstance(value, dict):
+            return tuple(
+                (str(key), self._cache_key_part(inner_value))
+                for key, inner_value in sorted(value.items())
+            )
+        if isinstance(value, list):
+            return tuple(self._cache_key_part(item) for item in value)
         return value
 
     def _apply_operator(self, left: float, operator: str, right: float) -> bool:

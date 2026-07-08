@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import random
 from pathlib import Path
@@ -14,10 +15,14 @@ from dotenv import load_dotenv
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from core.indicator_rule_engine import load_indicator_definition
+from core.indicator_rule_engine import infer_data_requirements, load_indicator_definition
 from core.stock_cache import get_cache_meta
 from core.stock_cache import normalize_hist_df
-from core.three_hundred_day_engine import DEFAULT_QUERY_DIR, scan_three_hundred_day_lazy
+from core.three_hundred_day_engine import (
+    DEFAULT_QUERY_DIR,
+    MAX_DAILY_BARS,
+    scan_three_hundred_day_lazy,
+)
 from integrations.fetch_a_share_csv import _resolve_trading_window
 from integrations.stock_hist_repository import get_stock_hist
 from tools.symbol_pool import resolve_symbol_pool_from_env
@@ -36,6 +41,9 @@ def _computable_specs_requirements(query_dir: Path) -> tuple[int, int]:
             continue
         definition = load_indicator_definition(path)
         if not definition.get("computable_from_daily_ocvhl", False):
+            continue
+        requirements = infer_data_requirements(definition)
+        if requirements.min_bars > MAX_DAILY_BARS:
             continue
         spec_count += 1
     return spec_count, 0
@@ -227,15 +235,64 @@ def main() -> int:
 
     trade_date = str(resolve_end_calendar_day_for_market("cn"))
     run_output_dir = output_root / trade_date / f"sample_{len(sampled_codes)}_seed_{args.seed}"
-    result = scan_three_hundred_day_lazy(
-        symbols=sampled_codes,
-        name_map=name_map,
-        trade_date=trade_date,
-        history_loader=_history_loader,
-        market="cn",
-        query_dir=query_dir,
-        output_dir=run_output_dir,
+    run_output_dir.mkdir(parents=True, exist_ok=True)
+    progress_jsonl_path = run_output_dir / "indicator_progress.jsonl"
+    progress_log_path = run_output_dir / "indicator_progress.log"
+    progress_jsonl_path.write_text("", encoding="utf-8")
+    progress_log_path.write_text(
+        f"[sample300] start trade_date={trade_date} sampled={len(sampled_codes)} seed={args.seed}\n",
+        encoding="utf-8",
     )
+
+    progress_counts = {
+        "total": 0,
+        "matched": 0,
+        "no_data": 0,
+        "insufficient_bars": 0,
+        "missing_fields": 0,
+    }
+
+    with progress_jsonl_path.open("a", encoding="utf-8", buffering=1) as progress_jsonl_fh, progress_log_path.open(
+        "a", encoding="utf-8", buffering=1
+    ) as progress_log_fh:
+        def _progress_callback(item: dict):
+            progress_counts["total"] += 1
+            if item.get("matched"):
+                progress_counts["matched"] += 1
+            status = str(item.get("status", "") or "")
+            if status in {"no_data", "insufficient_bars", "missing_fields"}:
+                progress_counts[status] += 1
+            payload = {
+                "ts": datetime.now().isoformat(timespec="seconds"),
+                **item,
+            }
+            progress_jsonl_fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
+            log_line = (
+                f"{payload['ts']} code={payload.get('code')} "
+                f"idx={payload.get('indicator_index')} "
+                f"indicator={payload.get('indicator')} "
+                f"bias={payload.get('signal_bias')} "
+                f"spec={payload.get('spec_file')} "
+                f"pages={payload.get('source_pages')} "
+                f"bars={payload.get('required_bars')} loaded={payload.get('loaded_bars')} "
+                f"matched={payload.get('matched')} status={payload.get('status')} "
+                f"signal_date={payload.get('signal_date') or '-'} "
+                f"reason={payload.get('reason')}"
+            )
+            progress_log_fh.write(log_line + "\n")
+            progress_jsonl_fh.flush()
+            progress_log_fh.flush()
+
+        result = scan_three_hundred_day_lazy(
+            symbols=sampled_codes,
+            name_map=name_map,
+            trade_date=trade_date,
+            history_loader=_history_loader,
+            market="cn",
+            query_dir=query_dir,
+            output_dir=run_output_dir,
+            progress_callback=_progress_callback,
+        )
 
     print(
         "[sample300] 扫描完成："
@@ -243,11 +300,17 @@ def main() -> int:
         f"matched_indicators={result.matched_indicator_total}"
     )
     print(f"[sample300] report={result.output_path}")
+    print(f"[sample300] progress_jsonl={progress_jsonl_path}")
+    print(f"[sample300] progress_log={progress_log_path}")
     print(f"[sample300] sampled_codes={','.join(sampled_codes)}")
     if skipped_no_cache:
         print(f"[sample300] skipped_no_cache={','.join(skipped_no_cache[:20])}")
     for item in result.symbols[:10]:
-        hits = "；".join(f"{hit.indicator}" for hit in item.indicators[:5])
+        bias_label_map = {"bullish": "多头", "bearish": "空头", "neutral": "中性"}
+        hits = "；".join(
+            f"[{hit.indicator_index:03d}][{hit.spec_file}][{bias_label_map.get(hit.signal_bias, '中性')}]{hit.indicator}(p{','.join(str(page) for page in hit.source_pages) if hit.source_pages else '?'})"
+            for hit in item.indicators[:5]
+        )
         print(f"[sample300] hit {item.code} {item.name} count={item.hit_count} indicators={hits}")
 
     meta = {
@@ -261,6 +324,9 @@ def main() -> int:
         "sampled_codes": sampled_codes,
         "skipped_no_cache": skipped_no_cache,
         "fetch_stats": fetch_stats,
+        "progress_counts": progress_counts,
+        "progress_jsonl_path": str(progress_jsonl_path),
+        "progress_log_path": str(progress_log_path),
         "report_path": result.output_path,
         "matched_symbols": result.matched_symbols,
         "matched_indicator_total": result.matched_indicator_total,

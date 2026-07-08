@@ -1,9 +1,6 @@
 name: DB Maintenance
 
 on:
-  schedule:
-    # 北京时间 23:05（UTC+8）
-    - cron: "5 15 * * *"
   workflow_dispatch:
 
 concurrency:
