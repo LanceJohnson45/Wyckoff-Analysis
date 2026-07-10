@@ -62,6 +62,10 @@ from core.sector_rotation import (
     SECTOR_STATE_SCORE_BONUS,
     analyze_sector_rotation,
 )
+from core.kline_quality import (
+    check_kline_quality_map,
+    summarize_quality_reports,
+)
 from integrations.data_source import (
     fetch_index_hist,
     fetch_industry_map,
@@ -1792,6 +1796,14 @@ def run_funnel_job(
         bench_df=bench_df,
         smallcap_df=smallcap_df,
     )
+    quality_summary = summarize_quality_reports(check_kline_quality_map(all_df_map))
+    print(
+        "[funnel] K线质量: "
+        f"total={quality_summary.get('total', 0)}, "
+        f"ok={quality_summary.get('ok', 0)}, "
+        f"errors={quality_summary.get('error_symbols', 0)}, "
+        f"warnings={quality_summary.get('warning_symbols', 0)}"
+    )
 
     # Step 0: 大盘总闸 + 全市场广度 + 动态阈值
     breadth_context = _calc_market_breadth(all_df_map, BREADTH_MA_WINDOW)
@@ -1925,6 +1937,7 @@ def run_funnel_job(
         "integrity_expected_dates": len(expected_dates),
         "integrity_expected_dates_source": expected_dates_source,
         "market_cap_runtime_stats": market_cap_runtime_stats,
+        "quality_summary": quality_summary,
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
         "layer1_rejections": l1_rejections,

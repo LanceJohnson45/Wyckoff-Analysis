@@ -267,3 +267,171 @@ class TestStrategyBridge:
         from core.strategy import run_step4
 
         assert callable(run_step4)
+
+
+class TestDataDailyReport:
+    def test_build_report_text_treats_nan_benchmark_as_na(self):
+        from scripts.data_daily_report import build_report_text
+
+        text = build_report_text(
+            {
+                "market": "cn",
+                "end_trade_date": "2026-07-10",
+                "total_symbols": 10,
+                "fetch_ok": 10,
+                "fetch_fail": 0,
+                "integrity_pass": 10,
+                "integrity_fail": 0,
+                "layer1": 5,
+                "layer2": 1,
+                "layer3": 0,
+                "total_hits": 0,
+                "benchmark_context": {
+                    "regime": "NEUTRAL",
+                    "close": float("nan"),
+                    "main_today_pct": float("nan"),
+                    "breadth": {"ratio_pct": float("nan")},
+                },
+            }
+        )
+
+        assert "今日 N/A" in text
+        assert "收盘 N/A" in text
+        assert "面包量（站上MA20占比）: N/A" in text
+
+    def test_build_report_text_includes_quality_summary(self):
+        from scripts.data_daily_report import build_report_text
+
+        text = build_report_text(
+            {
+                "market": "cn",
+                "end_trade_date": "2026-07-10",
+                "total_symbols": 10,
+                "fetch_ok": 10,
+                "fetch_fail": 0,
+                "integrity_pass": 10,
+                "integrity_fail": 0,
+                "layer1": 5,
+                "layer2": 1,
+                "layer3": 0,
+                "total_hits": 0,
+                "quality_summary": {"ok": 8, "error_symbols": 1, "warning_symbols": 1},
+                "benchmark_context": {"regime": "NEUTRAL", "breadth": {"ratio_pct": 50.0}},
+            }
+        )
+
+        assert "K线质量: 通过 **8**" in text
+        assert "严重异常 **1**" in text
+
+
+class TestMainlineCnCompatibility:
+    def test_run_funnel_job_populates_report_compat_metrics(self, monkeypatch):
+        import scripts.wyckoff_funnel_mainline_cn as mod
+
+        sample_df = pd.DataFrame(
+            {
+                "date": pd.to_datetime(["2024-01-02", "2024-01-03", "2024-01-04"]),
+                "open": [10.0, 10.1, 10.2],
+                "high": [10.2, 10.3, 10.4],
+                "low": [9.9, 10.0, 10.1],
+                "close": [10.0, 10.2, 10.3],
+                "volume": [1000, 1100, 1200],
+                "amount": [10_000_000, 11_000_000, 12_000_000],
+                "pct_chg": [0.0, 2.0, 0.98],
+            }
+        )
+
+        class _Window:
+            start_trade_date = date(2024, 1, 2)
+            end_trade_date = date(2024, 1, 4)
+
+        class _Cfg:
+            trading_days = 320
+            require_cn_main_or_chinext = True
+            min_market_cap_yi = 35.0
+            amount_avg_window = 20
+            l1_cap_bypass_amount_wan = 10000.0
+            min_avg_amount_wan = 5000.0
+            ma_short = 2
+            ma_long = 3
+            ma_hold = 2
+            bench_drop_days = 3
+            bench_drop_threshold = -2.0
+            enable_rs_filter = False
+            rs_window_long = 10
+            rs_window_short = 3
+            rs_min_long = 2.0
+            rs_min_short = 1.0
+            momentum_bias_200_max = 0.25
+            enable_evr_trigger = True
+            min_funnel_score = 0.0
+
+        monkeypatch.setattr(mod, "FunnelConfig", lambda trading_days=320: _Cfg())
+        monkeypatch.setattr(mod, "_apply_funnel_cfg_overrides", lambda cfg: None)
+        monkeypatch.setattr(mod, "_resolve_trading_window", lambda **kwargs: _Window())
+        monkeypatch.setattr(mod, "_resolve_funnel_end_calendar_day", lambda: date(2024, 1, 4))
+        monkeypatch.setattr(
+            mod,
+            "_resolve_symbol_pool_from_env",
+            lambda: (
+                ["000001", "000002"],
+                {"000001": "平安银行", "000002": "万科A"},
+                {
+                    "pool_mode": "test",
+                    "pool_main": 2,
+                    "pool_chinext": 0,
+                    "pool_st_excluded": 0,
+                    "pool_limit": 0,
+                },
+            ),
+        )
+        monkeypatch.setattr(mod, "fetch_sector_map", lambda: {"000001": "银行", "000002": "地产"})
+        monkeypatch.setattr(mod, "fetch_market_cap_map", lambda: {"000001": 100.0, "000002": 10.0})
+        monkeypatch.setattr(mod, "_stock_name_map", lambda: {"000001": "平安银行", "000002": "万科A"})
+        monkeypatch.setattr(mod, "fetch_index_hist", lambda *args, **kwargs: sample_df.copy())
+        monkeypatch.setattr(
+            mod,
+            "fetch_all_ohlcv",
+            lambda **kwargs: (
+                {"000001": sample_df.copy(), "000002": sample_df.copy()},
+                {"fetch_ok": 2, "fetch_fail": 0, "elapsed_s": 12.0},
+            ),
+        )
+        monkeypatch.setattr(mod, "_dump_full_fetch_snapshot", lambda **kwargs: None)
+        monkeypatch.setattr(mod, "_calc_market_breadth", lambda *args, **kwargs: {"ratio_pct": 24.3, "sample_size": 2})
+        monkeypatch.setattr(
+            mod,
+            "_analyze_benchmark_and_tune_cfg",
+            lambda *args, **kwargs: {
+                "regime": "NEUTRAL",
+                "close": float("nan"),
+                "ma50": float("nan"),
+                "ma200": float("nan"),
+                "ma50_slope_5d": float("nan"),
+                "recent3_pct": [1.0, 2.0, 3.0],
+                "recent3_cum_pct": 6.0,
+                "main_today_pct": 3.0,
+                "breadth": {"ratio_pct": 24.3, "sample_size": 2},
+                "tuned": {},
+            },
+        )
+        monkeypatch.setattr(mod, "layer1_filter", lambda *args, **kwargs: ["000001"])
+        monkeypatch.setattr(mod, "layer2_strength_detailed", lambda *args, **kwargs: (["000001"], {"000001": "主升通道"}, []))
+        monkeypatch.setattr(mod, "layer3_sector_resonance", lambda *args, **kwargs: (["000001"], ["银行"]))
+        monkeypatch.setattr(mod, "analyze_sector_rotation", lambda *args, **kwargs: {"headline": "测试", "state_map": {}})
+        monkeypatch.setattr(mod, "layer4_triggers", lambda *args, **kwargs: {})
+        monkeypatch.setattr(mod, "detect_markup_stage", lambda *args, **kwargs: [])
+        monkeypatch.setattr(mod, "detect_accum_stage", lambda *args, **kwargs: {})
+        monkeypatch.setattr(mod, "layer5_exit_signals", lambda *args, **kwargs: {})
+        monkeypatch.setattr(mod, "_rank_l3_candidates", lambda **kwargs: (["000001"], {"000001": 80.0}))
+
+        _triggers, metrics = mod.run_funnel_job()
+
+        assert metrics["market"] == "cn"
+        assert metrics["end_trade_date"] == "2024-01-04"
+        assert metrics["integrity_pass"] == 2
+        assert metrics["integrity_fail"] == 0
+        assert metrics["fetch_elapsed_s"] == 12.0
+        assert metrics["layer1_rejection_top"][0]["reason"] == "market_cap_below_threshold"
+        assert metrics["layer2_rejection_top"] == []
+        assert metrics["benchmark_context"]["close"] is None

@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import time
+from collections import Counter
 from datetime import date, datetime
 from pathlib import Path
 
@@ -25,6 +26,10 @@ if __name__ == "__main__" or not __package__:
 from core.sector_rotation import (
     SECTOR_STATE_LABELS,
     analyze_sector_rotation,
+)
+from core.kline_quality import (
+    check_kline_quality_map,
+    summarize_quality_reports,
 )
 from core.wyckoff_engine_mainline import (
     FunnelConfig,
@@ -149,6 +154,274 @@ from tools.symbol_pool import (
 from tools.symbol_pool import (
     resolve_symbol_pool_from_env as _resolve_symbol_pool_from_env,
 )
+
+
+def _sort_hist_df(df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if df is None or df.empty or "date" not in df.columns:
+        return df
+    try:
+        if not df["date"].is_monotonic_increasing:
+            return df.sort_values("date")
+    except Exception:
+        return df.sort_values("date")
+    return df
+
+
+def _latest_trade_date_from_df(df: pd.DataFrame | None):
+    if df is None or df.empty or "date" not in df.columns:
+        return None
+    try:
+        dt = pd.to_datetime(df["date"], errors="coerce").dropna()
+        if dt.empty:
+            return None
+        return dt.iloc[-1].date()
+    except Exception:
+        return None
+
+
+def _finite_float_or_none(value) -> float | None:
+    try:
+        num = float(value)
+    except Exception:
+        return None
+    return num if pd.notna(num) else None
+
+
+def _sanitize_benchmark_context(context: dict | None) -> dict:
+    if not isinstance(context, dict):
+        return {}
+    clean = dict(context)
+    for key in (
+        "close",
+        "ma50",
+        "ma200",
+        "ma50_slope_5d",
+        "recent3_cum_pct",
+        "main_today_pct",
+        "smallcap_close",
+        "smallcap_recent3_cum_pct",
+        "smallcap_today_pct",
+        "main_vol_ma5",
+        "main_vol_ma20",
+        "main_vol_ratio_5_20",
+    ):
+        clean[key] = _finite_float_or_none(clean.get(key))
+    clean["recent3_pct"] = [
+        x for x in (_finite_float_or_none(v) for v in (clean.get("recent3_pct") or [])) if x is not None
+    ]
+    clean["smallcap_recent3_pct"] = [
+        x
+        for x in (_finite_float_or_none(v) for v in (clean.get("smallcap_recent3_pct") or []))
+        if x is not None
+    ]
+    breadth = dict(clean.get("breadth") or {})
+    for key in ("ratio_pct", "prev_ratio_pct", "delta_pct"):
+        breadth[key] = _finite_float_or_none(breadth.get(key))
+    breadth["sample_size"] = int(breadth.get("sample_size") or 0)
+    clean["breadth"] = breadth
+    clean["has_main_benchmark"] = bool(
+        clean.get("close") is not None and clean.get("ma50") is not None and clean.get("ma200") is not None
+    )
+    return clean
+
+
+def _summarize_rejections(rejected_map: dict[str, dict], *, limit: int = 5) -> list[dict]:
+    if not rejected_map:
+        return []
+    counter = Counter(
+        str((payload or {}).get("reason", "unknown") or "unknown")
+        for payload in rejected_map.values()
+    )
+    return [
+        {"reason": reason, "count": int(count)}
+        for reason, count in counter.most_common(max(int(limit), 1))
+    ]
+
+
+def _estimate_layer1_rejections(
+    symbols: list[str],
+    *,
+    name_map: dict[str, str],
+    market_cap_map: dict[str, float],
+    df_map: dict[str, pd.DataFrame],
+    cfg: FunnelConfig,
+    financial_map: dict[str, dict] | None = None,
+) -> dict[str, dict]:
+    rejected: dict[str, dict] = {}
+    cap_available = bool(market_cap_map)
+    fin_available = bool(financial_map)
+    for sym in symbols:
+        if cfg.require_cn_main_or_chinext and not sym.startswith(
+            ("600", "601", "603", "605", "000", "001", "002", "003", "300", "301")
+        ):
+            rejected[sym] = {"reason": "board_not_allowed"}
+            continue
+        name = str(name_map.get(sym, "") or "")
+        if "ST" in name.upper():
+            rejected[sym] = {"reason": "st_filtered"}
+            continue
+        df = df_map.get(sym)
+        if df is None or df.empty:
+            rejected[sym] = {"reason": "missing_hist"}
+            continue
+        df_sorted = _sort_hist_df(df)
+        if cap_available:
+            cap = _finite_float_or_none(market_cap_map.get(sym))
+            if cap is None or cap < float(cfg.min_market_cap_yi):
+                avg_a = None
+                if df_sorted is not None and "amount" in df_sorted.columns:
+                    avg_a = _finite_float_or_none(
+                        pd.to_numeric(df_sorted["amount"], errors="coerce").tail(cfg.amount_avg_window).mean()
+                    )
+                if avg_a is None or avg_a < float(cfg.l1_cap_bypass_amount_wan) * 10000:
+                    rejected[sym] = {
+                        "reason": "market_cap_below_threshold",
+                        "market_cap_yi": cap,
+                        "min_market_cap_yi": float(cfg.min_market_cap_yi),
+                    }
+                    continue
+        if "amount" in df_sorted.columns:
+            avg_amt = _finite_float_or_none(
+                pd.to_numeric(df_sorted["amount"], errors="coerce").tail(cfg.amount_avg_window).mean()
+            )
+            if avg_amt is not None and avg_amt < float(cfg.min_avg_amount_wan) * 10000:
+                rejected[sym] = {
+                    "reason": "avg_amount_below_threshold",
+                    "avg_amount_wan": avg_amt / 10000.0,
+                    "min_avg_amount_wan": float(cfg.min_avg_amount_wan),
+                }
+                continue
+        if fin_available:
+            metrics = (financial_map or {}).get(sym) or {}
+            roe = metrics.get("roe")
+            if roe is not None and roe < -10:
+                rejected[sym] = {"reason": "roe_below_threshold", "roe": roe}
+                continue
+            debt_ratio = metrics.get("debt_to_asset_ratio")
+            if debt_ratio is not None and debt_ratio > 85:
+                rejected[sym] = {
+                    "reason": "debt_ratio_above_threshold",
+                    "debt_to_asset_ratio": debt_ratio,
+                }
+                continue
+    return rejected
+
+
+def _estimate_layer2_rejections(
+    symbols: list[str],
+    *,
+    passed_symbols: list[str],
+    df_map: dict[str, pd.DataFrame],
+    bench_df: pd.DataFrame | None,
+    cfg: FunnelConfig,
+) -> dict[str, dict]:
+    passed_set = set(passed_symbols)
+    rejected: dict[str, dict] = {}
+    bench_sorted = _sort_hist_df(bench_df)
+    bench_latest_date = _latest_trade_date_from_df(bench_sorted)
+    bench_dropping = False
+    if bench_sorted is not None and not bench_sorted.empty and len(bench_sorted) >= cfg.bench_drop_days:
+        bench_pct = pd.to_numeric(bench_sorted.get("pct_chg"), errors="coerce").dropna()
+        recent_bench = bench_pct.tail(cfg.bench_drop_days)
+        if not recent_bench.empty:
+            bench_cum = (recent_bench / 100.0 + 1).prod() - 1
+            bench_dropping = bench_cum * 100 <= cfg.bench_drop_threshold
+
+    def _calc_rs(stock_df: pd.DataFrame) -> tuple[float | None, float | None]:
+        if bench_sorted is None or bench_sorted.empty:
+            return (None, None)
+        stock_p = stock_df[["date", "pct_chg"]].copy()
+        bench_p = bench_sorted[["date", "pct_chg"]].copy()
+        merged = stock_p.merge(bench_p, on="date", how="inner", suffixes=("_s", "_b"))
+        if merged.empty:
+            return (None, None)
+
+        def _cum_return_pct(series: pd.Series) -> float | None:
+            s = pd.to_numeric(series, errors="coerce").dropna()
+            if s.empty:
+                return None
+            return float(((s / 100.0 + 1.0).prod() - 1.0) * 100.0)
+
+        w_long = max(int(cfg.rs_window_long), 1)
+        w_short = max(int(cfg.rs_window_short), 1)
+        if len(merged) < max(w_long, w_short):
+            return (None, None)
+        s_long = _cum_return_pct(merged["pct_chg_s"].tail(w_long))
+        b_long = _cum_return_pct(merged["pct_chg_b"].tail(w_long))
+        s_short = _cum_return_pct(merged["pct_chg_s"].tail(w_short))
+        b_short = _cum_return_pct(merged["pct_chg_b"].tail(w_short))
+        if None in (s_long, b_long, s_short, b_short):
+            return (None, None)
+        return (float(s_long - b_long), float(s_short - b_short))
+
+    for sym in symbols:
+        if sym in passed_set:
+            continue
+        df = df_map.get(sym)
+        if df is None or df.empty or len(df) < cfg.ma_long:
+            rejected[sym] = {"reason": "insufficient_history", "rows": 0 if df is None else len(df)}
+            continue
+        df_sorted = _sort_hist_df(df)
+        if (
+            cfg.require_bench_latest_alignment
+            and bench_latest_date is not None
+            and _latest_trade_date_from_df(df_sorted) != bench_latest_date
+        ):
+            rejected[sym] = {"reason": "benchmark_latest_misaligned"}
+            continue
+        close = pd.to_numeric(df_sorted.get("close"), errors="coerce")
+        if close.empty or close.dropna().empty:
+            rejected[sym] = {"reason": "missing_close"}
+            continue
+        ma_short = close.rolling(cfg.ma_short).mean()
+        ma_long = close.rolling(cfg.ma_long).mean()
+        last_close = _finite_float_or_none(close.iloc[-1])
+        last_ma_short = _finite_float_or_none(ma_short.iloc[-1])
+        last_ma_long = _finite_float_or_none(ma_long.iloc[-1])
+        bullish_alignment = (
+            last_ma_short is not None and last_ma_long is not None and last_ma_short > last_ma_long
+        )
+        holding_ma20 = False
+        if bench_dropping:
+            ma_hold = close.rolling(cfg.ma_hold).mean()
+            last_ma_hold = _finite_float_or_none(ma_hold.iloc[-1])
+            if last_ma_hold is not None and last_close is not None:
+                holding_ma20 = last_close >= last_ma_hold
+
+        rs_long = None
+        rs_short = None
+        rs_ok = True
+        if cfg.enable_rs_filter and bench_sorted is not None and not bench_sorted.empty:
+            rs_long, rs_short = _calc_rs(df_sorted)
+            rs_ok = (
+                rs_long is not None
+                and rs_short is not None
+                and rs_long >= cfg.rs_min_long
+                and rs_short >= cfg.rs_min_short
+            )
+
+        bias_ok = True
+        if last_ma_long is not None and last_ma_long > 0 and last_close is not None:
+            bias_200 = (last_close - last_ma_long) / last_ma_long
+            bias_ok = bias_200 <= getattr(cfg, "momentum_bias_200_max", 0.25)
+        if not bullish_alignment and not holding_ma20:
+            rejected[sym] = {
+                "reason": "trend_alignment_failed",
+                "last_ma_short": last_ma_short,
+                "last_ma_long": last_ma_long,
+                "last_close": last_close,
+            }
+        elif not rs_ok:
+            rejected[sym] = {
+                "reason": "rs_filter_failed",
+                "rs_long": rs_long,
+                "rs_short": rs_short,
+            }
+        elif not bias_ok:
+            rejected[sym] = {"reason": "momentum_bias_too_high"}
+        else:
+            rejected[sym] = {"reason": "no_channel_evidence"}
+    return rejected
 
 
 def _dump_full_fetch_snapshot(
@@ -375,6 +648,14 @@ def run_funnel_job(
         bench_df=bench_df,
         smallcap_df=smallcap_df,
     )
+    quality_summary = summarize_quality_reports(check_kline_quality_map(all_df_map))
+    print(
+        "[funnel] K线质量: "
+        f"total={quality_summary.get('total', 0)}, "
+        f"ok={quality_summary.get('ok', 0)}, "
+        f"errors={quality_summary.get('error_symbols', 0)}, "
+        f"warnings={quality_summary.get('warning_symbols', 0)}"
+    )
 
     # Step 0: 大盘总闸 + 全市场广度 + 动态阈值
     breadth_context = _calc_market_breadth(all_df_map, BREADTH_MA_WINDOW)
@@ -384,6 +665,7 @@ def run_funnel_job(
         cfg,
         breadth=breadth_context,
     )
+    benchmark_context = _sanitize_benchmark_context(benchmark_context)
     print(
         "[funnel] 大盘总闸: "
         f"regime={benchmark_context['regime']}, "
@@ -404,6 +686,16 @@ def run_funnel_job(
     # Layer 1
     l1_input = list(all_df_map.keys())
     l1_passed = layer1_filter(l1_input, name_map, market_cap_map, all_df_map, cfg, financial_map=financial_map)
+    l1_passed_set = set(l1_passed)
+    l1_rejected_map = _estimate_layer1_rejections(
+        [sym for sym in l1_input if sym not in l1_passed_set],
+        name_map=name_map,
+        market_cap_map=market_cap_map,
+        df_map=all_df_map,
+        cfg=cfg,
+        financial_map=financial_map,
+    )
+    l1_rejection_top = _summarize_rejections(l1_rejected_map)
 
     # Layer 2
     l2_passed, l2_channel_map, l2_pre_ignition = layer2_strength_detailed(
@@ -413,6 +705,14 @@ def run_funnel_job(
         cfg,
         rps_universe=l1_input,
     )
+    l2_rejected_map = _estimate_layer2_rejections(
+        l1_passed,
+        passed_symbols=l2_passed,
+        df_map=all_df_map,
+        bench_df=bench_df,
+        cfg=cfg,
+    )
+    l2_rejection_top = _summarize_rejections(l2_rejected_map)
     # 通道标签现在是多标签用 + 拼接，因此用 in 判断包含关系
     l2_momentum = sum(1 for v in l2_channel_map.values() if "主升通道" in v)
     l2_ambush = sum(1 for v in l2_channel_map.values() if "潜伏通道" in v)
@@ -486,6 +786,7 @@ def run_funnel_job(
         sector_rotation_map=(sector_rotation.get("state_map", {}) or {}),
     )
     metrics = {
+        "market": "cn",
         "total_symbols": len(all_symbols),
         "pool_mode": str(pool_stats.get("pool_mode", "") or ""),
         "pool_main": len(main_items),
@@ -497,8 +798,14 @@ def run_funnel_job(
         "fetch_fail": int(fetch_stats.get("fetch_fail", 0) or 0),
         "fetch_date_mismatch": int(fetch_stats.get("fetch_date_mismatch", 0) or 0),
         "fetch_spot_patched": int(fetch_stats.get("fetch_spot_patched", 0) or 0),
+        "fetch_elapsed_s": _finite_float_or_none(fetch_stats.get("elapsed_s")),
+        "integrity_pass": len(all_df_map),
+        "integrity_fail": 0,
+        "quality_summary": quality_summary,
+        "end_trade_date": window.end_trade_date.isoformat(),
         "snapshot_dir": snapshot_dir,
         "layer1": len(l1_passed),
+        "layer1_rejection_top": l1_rejection_top,
         "layer2": len(l2_passed),
         "layer2_momentum": l2_momentum,
         "layer2_ambush": l2_ambush,
@@ -507,6 +814,7 @@ def run_funnel_job(
         "layer2_rs_div": l2_rs_div,
         "layer2_sos": l2_sos,
         "layer2_channel_map": l2_channel_map,
+        "layer2_rejection_top": l2_rejection_top,
         "layer3": len(l3_passed),
         "top_sectors": top_sectors,
         "sector_rotation": sector_rotation,
@@ -546,6 +854,14 @@ def run_funnel_job(
         f"(主升={l2_momentum}, 潜伏={l2_ambush}, 吸筹={l2_accum}, 地量={l2_dry_vol}, 护盘={l2_rs_div}, 点火={l2_sos}), "
         f"L3={metrics['layer3']}, 命中={total_hits}, "
         f"Top行业={top_sectors}, 各触发={metrics['by_trigger']}"
+    )
+    print(
+        "[funnel] L1拒绝Top: "
+        + (", ".join(f"{item['reason']}={item['count']}" for item in l1_rejection_top) if l1_rejection_top else "无")
+    )
+    print(
+        "[funnel] L2拒绝Top: "
+        + (", ".join(f"{item['reason']}={item['count']}" for item in l2_rejection_top) if l2_rejection_top else "无")
     )
     _report_progress("筛选完成", f"命中={total_hits}只", 1.0)
 

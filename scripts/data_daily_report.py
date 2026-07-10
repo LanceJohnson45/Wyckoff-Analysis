@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import os
 import sys
+import math
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -72,6 +73,16 @@ def _market_label(market: str) -> str:
     return {"cn": "A股", "hk": "港股", "us": "美股"}.get(
         str(market).lower(), market.upper()
     )
+
+
+def _finite_number_or_none(value):
+    if value is None:
+        return None
+    try:
+        num = float(value)
+    except Exception:
+        return None
+    return num if math.isfinite(num) else None
 
 
 def _is_premarket(trade_date_str: str) -> bool | None:
@@ -122,6 +133,7 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     integrity_pass = int(metrics.get("integrity_pass", 0) or 0)
     integrity_fail = int(metrics.get("integrity_fail", 0) or 0)
     fetch_elapsed = metrics.get("fetch_elapsed_s")  # 可能没有，来自 fetch_stats 注入
+    quality_summary = metrics.get("quality_summary") or {}
 
     # 缓存命中计数（需 stock_hist_repository 注入，默认 N/A）
     cache_hits = metrics.get("cache_hits")
@@ -146,12 +158,12 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     bench = metrics.get("benchmark_context") or {}
     regime = str(bench.get("regime", "UNKNOWN") or "UNKNOWN").upper()
     regime_emoji = _regime_emoji(regime)
-    main_today = bench.get("main_today_pct")
+    main_today = _finite_number_or_none(bench.get("main_today_pct"))
     main_today_str = f"{main_today:+.2f}%" if main_today is not None else "N/A"
     breadth = bench.get("breadth") or {}
-    breadth_ratio = breadth.get("ratio_pct")
+    breadth_ratio = _finite_number_or_none(breadth.get("ratio_pct"))
     breadth_str = f"{breadth_ratio:.1f}%" if breadth_ratio is not None else "N/A"
-    bench_close = bench.get("close")
+    bench_close = _finite_number_or_none(bench.get("close"))
     bench_close_str = f"{bench_close:.2f}" if bench_close is not None else "N/A"
 
     # ── L1/L2 拒绝 Top ──────────────────────────────────────────
@@ -187,6 +199,10 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
         warnings.append(f"L2 通过率 {_pct(l2, l1)} 异常低（< 2%），可能动量/趋势参数过严")
     if regime in ("CRASH", "RISK_OFF") and l4 > 10:
         warnings.append(f"制度={regime} 但 L4 命中 {l4} 只，请人工复核是否误触发")
+    if quality_summary and int(quality_summary.get("error_symbols", 0) or 0) > 0:
+        warnings.append(
+            f"K线质量存在 {int(quality_summary.get('error_symbols', 0) or 0)} 只严重异常，请优先排查源数据"
+        )
 
     # ── 拼装正文 ──────────────────────────────────────────────────
     lines: list[str] = []
@@ -218,6 +234,13 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
         lines.append(f"缓存命中: **{cache_hits}** ｜ 新拉取: **{new_fetches}**")
     if fetch_elapsed is not None:
         lines.append(f"拉取耗时: {fetch_elapsed:.0f}s")
+    if quality_summary:
+        lines.append(
+            "K线质量: "
+            f"通过 **{int(quality_summary.get('ok', 0) or 0)}** ｜ "
+            f"严重异常 **{int(quality_summary.get('error_symbols', 0) or 0)}** ｜ "
+            f"警告 **{int(quality_summary.get('warning_symbols', 0) or 0)}**"
+        )
     lines.append("")
 
     # 漏斗漏斗漏斗

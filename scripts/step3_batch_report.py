@@ -18,6 +18,10 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.prompts import WYCKOFF_FUNNEL_SYSTEM_PROMPT
+from core.kline_quality import (
+    check_kline_quality_map,
+    summarize_quality_reports,
+)
 from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_hk_window, _resolve_trading_window, _resolve_us_window
 from integrations.llm_client import call_llm
 from integrations.rag_veto import (
@@ -569,6 +573,18 @@ def _build_compliance_brief(
     ops_codes: list[str],
     code_name: dict[str, str],
 ) -> str:
+    try:
+        from core.compliance_report import generate_compliance_brief
+
+        return generate_compliance_brief(
+            benchmark_context=benchmark_context or {},
+            selected_df=selected_df,
+            ops_codes=ops_codes,
+            code_name=code_name,
+        )
+    except Exception as e:
+        print(f"[step3] 新合规简报生成失败，回退旧模板: {e}")
+
     regime = str((benchmark_context or {}).get("regime", "NEUTRAL") or "NEUTRAL").strip().upper()
     main_today_pct = _fmt_pct((benchmark_context or {}).get("main_today_pct"))
     recent3_cum_pct = _fmt_pct((benchmark_context or {}).get("recent3_cum_pct"))
@@ -916,6 +932,14 @@ def run(
         return (True, "no_data_but_no_error", "")
 
     candidates_df = pd.DataFrame(candidate_rows)
+    step3_quality_summary = summarize_quality_reports(check_kline_quality_map(code_to_df))
+    print(
+        "[step3] K线质量: "
+        f"total={step3_quality_summary.get('total', 0)}, "
+        f"ok={step3_quality_summary.get('ok', 0)}, "
+        f"errors={step3_quality_summary.get('error_symbols', 0)}, "
+        f"warnings={step3_quality_summary.get('warning_symbols', 0)}"
+    )
     candidates_df["code"] = candidates_df["code"].astype(str).str.strip()
     candidates_df["input_order"] = pd.to_numeric(candidates_df.get("input_order"), errors="coerce")
     candidates_df["input_order"] = candidates_df["input_order"].fillna(

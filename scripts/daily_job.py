@@ -259,6 +259,16 @@ def main() -> int:
         "output": f"{len(symbols_info)} symbols",
     })
     _log(f"Step2 Wyckoff Funnel: ok={step2_ok}, symbols={len(symbols_info)}, elapsed={elapsed2:.1f}s, err={step2_err}", logs_path)
+    if step2_details:
+        quality_summary = (step2_details.get("metrics") or {}).get("quality_summary") or {}
+        if quality_summary:
+            _log(
+                "Step2 K线质量: "
+                f"ok={int(quality_summary.get('ok', 0) or 0)}, "
+                f"errors={int(quality_summary.get('error_symbols', 0) or 0)}, "
+                f"warnings={int(quality_summary.get('warning_symbols', 0) or 0)}",
+                logs_path,
+            )
     if step2_err:
         has_blocking_failure = True
     elif benchmark_context:
