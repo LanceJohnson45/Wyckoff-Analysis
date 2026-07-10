@@ -108,6 +108,15 @@ FUNNEL_CARD_STYLE = os.getenv("FUNNEL_CARD_STYLE", "legacy_compact").strip().low
 FUNNEL_EVR_POLICY = os.getenv("FUNNEL_EVR_POLICY", "all_regimes").strip().lower()
 
 
+def _report_progress(stage: str, detail: str, ratio: float) -> None:
+    try:
+        from cli.progress import report_progress
+
+        report_progress(stage, detail, ratio)
+    except Exception:
+        return
+
+
 def _resolve_funnel_end_calendar_day() -> date:
     """Resolve the funnel end date, allowing replay jobs to pin a historical day."""
     raw = os.getenv("END_CALENDAR_DAY", "").strip()
@@ -289,9 +298,7 @@ def run_funnel_job(
         f"merged={len(merged_symbols)}, st_excluded={len(st_symbols)}, "
         f"final={len(all_symbols)}, limit={pool_stats.get('pool_limit', 0)}, batches={total_batches} (batch_size={BATCH_SIZE})"
     )
-    from cli.progress import report_progress
-
-    report_progress("股票池加载", f"共{len(all_symbols)}只", 0.05)
+    _report_progress("股票池加载", f"共{len(all_symbols)}只", 0.05)
 
     # 批量元数据
     print("[funnel] 加载行业映射...")
@@ -392,7 +399,7 @@ def run_funnel_job(
 
     # 统一漏斗计算：L1 -> L2 -> L3 -> L4
     print("[funnel] 开始执行全量漏斗筛选...")
-    report_progress("漏斗筛选", "L1~L4 计算中", 0.85)
+    _report_progress("漏斗筛选", "L1~L4 计算中", 0.85)
 
     # Layer 1
     l1_input = list(all_df_map.keys())
@@ -540,7 +547,7 @@ def run_funnel_job(
         f"L3={metrics['layer3']}, 命中={total_hits}, "
         f"Top行业={top_sectors}, 各触发={metrics['by_trigger']}"
     )
-    report_progress("筛选完成", f"命中={total_hits}只", 1.0)
+    _report_progress("筛选完成", f"命中={total_hits}只", 1.0)
 
     return triggers, metrics
 

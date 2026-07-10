@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import os
 import sys
 import time
@@ -57,6 +59,61 @@ _RECENT_GAP_MAX_AGE_DAYS = max(
     int(os.getenv("FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS", "45")),
     0,
 )
+_PREWARM_RUN_STATE_PATH = Path(
+    os.getenv(
+        "FUNNEL_PREWARM_RUN_STATE_PATH",
+        str(ROOT / "data" / "funnel_prewarm_state.json"),
+    )
+)
+
+
+def _symbol_digest(symbols: list[str]) -> str:
+    payload = "\n".join(str(x).strip() for x in symbols if str(x).strip())
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _load_prewarm_run_state() -> dict:
+    try:
+        if not _PREWARM_RUN_STATE_PATH.exists():
+            return {}
+        return json.loads(_PREWARM_RUN_STATE_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _save_prewarm_run_state(payload: dict) -> None:
+    try:
+        _PREWARM_RUN_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _PREWARM_RUN_STATE_PATH.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception as e:
+        _log(f"prewarm state save failed: {type(e).__name__}: {e}")
+
+
+def _should_skip_prewarm_run(
+    *,
+    market: str,
+    trading_days: int,
+    end_trade_date: date,
+    symbols: list[str],
+) -> tuple[bool, dict]:
+    state = _load_prewarm_run_state()
+    market_state = state.get(str(market).lower(), {}) if isinstance(state, dict) else {}
+    if not isinstance(market_state, dict):
+        return (False, {})
+    if market_state.get("status") != "ok":
+        return (False, market_state)
+    if str(market_state.get("end_trade_date") or "") != end_trade_date.isoformat():
+        return (False, market_state)
+    if int(market_state.get("trading_days") or 0) != int(trading_days):
+        return (False, market_state)
+    if int(market_state.get("symbol_count") or 0) != len(symbols):
+        return (False, market_state)
+    if str(market_state.get("symbol_digest") or "") != _symbol_digest(symbols):
+        return (False, market_state)
+    return (True, market_state)
 
 
 def _expected_trade_dates(window, market: str) -> list[date]:
@@ -344,6 +401,7 @@ def main() -> int:
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
     parser.add_argument("--dry-run", action="store_true", help="Only inspect cache gaps; do not fetch or write")
+    parser.add_argument("--force", action="store_true", help="Ignore prewarm run-state cache and execute anyway")
     parser.add_argument("--symbols", default="", help="Comma-separated symbols to inspect instead of pool resolution")
     args = parser.parse_args()
 
@@ -362,9 +420,27 @@ def main() -> int:
         _log(f"prewarm skipped market={market} reason=empty_symbol_pool mode={stats.get('pool_mode')}")
         return 0
 
+    end_day = _job_end_calendar_day()
+    if not args.dry_run and not args.force:
+        should_skip, cached_state = _should_skip_prewarm_run(
+            market=market,
+            trading_days=max(int(args.trading_days), 1),
+            end_trade_date=end_day,
+            symbols=normalized,
+        )
+        if should_skip:
+            _log(
+                "prewarm skipped "
+                f"market={market} reason=run_state_cache "
+                f"trade_date={end_day.isoformat()} "
+                f"symbols={len(normalized)} trading_days={int(args.trading_days)} "
+                f"updated_at={cached_state.get('updated_at', '')}"
+            )
+            return 0
+
     _log(
         f"prewarm start market={market} symbols={len(normalized)} trading_days={args.trading_days} "
-        f"mode={stats.get('pool_mode')} dry_run={args.dry_run}"
+        f"mode={stats.get('pool_mode')} dry_run={args.dry_run} force={args.force}"
     )
     ok = 0
     fail = 0
@@ -437,6 +513,24 @@ def main() -> int:
         f"cache_ready={cache_ready} repaired_symbols={repaired_symbols} "
         f"repaired_ranges={repaired_ranges} repaired_rows={repaired_rows}"
     )
+    if not args.dry_run and fail == 0:
+        state = _load_prewarm_run_state()
+        if not isinstance(state, dict):
+            state = {}
+        state[str(market).lower()] = {
+            "status": "ok",
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "end_trade_date": end_day.isoformat(),
+            "trading_days": int(args.trading_days),
+            "symbol_count": len(normalized),
+            "symbol_digest": _symbol_digest(normalized),
+            "pool_mode": stats.get("pool_mode"),
+            "cache_ready": cache_ready,
+            "repaired_symbols": repaired_symbols,
+            "repaired_ranges": repaired_ranges,
+            "repaired_rows": repaired_rows,
+        }
+        _save_prewarm_run_state(state)
     return 0 if ok > 0 or fail == 0 else 1
 
 

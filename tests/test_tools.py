@@ -2,6 +2,7 @@
 """tools/ 层单元测试 — 测试 Phase 2 提取的纯逻辑 Tool 函数。"""
 from __future__ import annotations
 
+from datetime import date
 import pandas as pd
 import pytest
 
@@ -224,6 +225,38 @@ class TestSymbolPool:
         from tools.symbol_pool import _stock_name_map
 
         assert callable(_stock_name_map)
+
+
+class TestFunnelPrewarm:
+    def test_should_skip_prewarm_run_when_same_day_same_pool(self, tmp_path, monkeypatch):
+        import scripts.funnel_prewarm as mod
+
+        state_path = tmp_path / "prewarm_state.json"
+        monkeypatch.setattr(mod, "_PREWARM_RUN_STATE_PATH", state_path)
+
+        symbols = ["000001", "000002"]
+        mod._save_prewarm_run_state(
+            {
+                "cn": {
+                    "status": "ok",
+                    "end_trade_date": "2026-07-10",
+                    "trading_days": 320,
+                    "symbol_count": 2,
+                    "symbol_digest": mod._symbol_digest(symbols),
+                    "updated_at": "2026-07-10T21:30:00",
+                }
+            }
+        )
+
+        should_skip, state = mod._should_skip_prewarm_run(
+            market="cn",
+            trading_days=320,
+            end_trade_date=date(2026, 7, 10),
+            symbols=symbols,
+        )
+
+        assert should_skip is True
+        assert state["status"] == "ok"
 
 
 # ── core/strategy bridge ──
