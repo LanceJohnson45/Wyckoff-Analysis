@@ -98,7 +98,7 @@ def _member_snapshot(df: pd.DataFrame) -> dict | None:
     ma20 = close.rolling(20).mean()
     ma50 = close.rolling(50).mean()
     vol_ma20 = volume.rolling(20).mean()
-    pct = close.pct_change() * 100.0
+    pct = close.pct_change(fill_method=None) * 100.0
     prev_close = close.shift(1)
     amplitude = (high - low) / prev_close.replace(0, pd.NA) * 100.0
     close_pos = ((close - low) / (high - low).replace(0, pd.NA) * 100.0).clip(0, 100).fillna(50.0)

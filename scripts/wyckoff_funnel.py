@@ -174,6 +174,7 @@ FUNNEL_AI_SELECTION_MODE = (
 )
 FUNNEL_CARD_STYLE = os.getenv("FUNNEL_CARD_STYLE", "legacy_compact").strip().lower()
 FUNNEL_EVR_POLICY = os.getenv("FUNNEL_EVR_POLICY", "all_regimes").strip().lower()
+FUNNEL_CN_ENGINE = os.getenv("FUNNEL_CN_ENGINE", "mainline").strip().lower() or "mainline"
 
 from tools.candidate_ranker import rank_l3_candidates as _shared_rank_l3_candidates
 
@@ -200,6 +201,14 @@ def _resolve_funnel_market() -> str:
     if market not in {"cn", "us", "hk"}:
         return "cn"
     return market
+
+
+def _should_delegate_cn_to_mainline() -> bool:
+    return _resolve_funnel_market() == "cn" and FUNNEL_CN_ENGINE not in {
+        "wxjer",
+        "legacy",
+        "local",
+    }
 
 
 def _benchmark_label(code: str | None, market: str, *, smallcap: bool = False) -> str:
@@ -852,17 +861,30 @@ def _analyze_benchmark_and_tune_cfg(
     small_today_pct = None
     small_prev_pct = None
 
+    def _finite_float_or_none(value) -> float | None:
+        try:
+            if value is None or pd.isna(value):
+                return None
+            return float(value)
+        except Exception:
+            return None
+
     if bench_df is not None and not bench_df.empty:
         b = bench_df.sort_values("date").copy()
         b["close"] = pd.to_numeric(b["close"], errors="coerce")
         b["pct_chg"] = pd.to_numeric(b["pct_chg"], errors="coerce")
         b["volume"] = pd.to_numeric(b.get("volume"), errors="coerce")
         if len(b) >= 60:
-            close = float(b["close"].iloc[-1])
-            ma50 = float(b["close"].rolling(50).mean().iloc[-1])
-            ma200 = float(b["close"].rolling(200).mean().iloc[-1])
+            close = _finite_float_or_none(b["close"].iloc[-1])
+            ma50 = _finite_float_or_none(b["close"].rolling(50).mean().iloc[-1])
+            ma200 = _finite_float_or_none(b["close"].rolling(200).mean().iloc[-1])
             ma50_prev = b["close"].rolling(50).mean().shift(5).iloc[-1]
-            ma50_slope_5d = None if pd.isna(ma50_prev) else float(ma50 - ma50_prev)
+            ma50_prev_f = _finite_float_or_none(ma50_prev)
+            ma50_slope_5d = (
+                None
+                if ma50 is None or ma50_prev_f is None
+                else float(ma50 - ma50_prev_f)
+            )
             recent3 = b["pct_chg"].dropna().tail(3)
             recent3_list = [float(x) for x in recent3.tolist()]
             if not recent3.empty:
@@ -889,7 +911,7 @@ def _analyze_benchmark_and_tune_cfg(
         s["close"] = pd.to_numeric(s["close"], errors="coerce")
         s["pct_chg"] = pd.to_numeric(s["pct_chg"], errors="coerce")
         if len(s) >= 10:
-            small_close = float(s["close"].iloc[-1])
+            small_close = _finite_float_or_none(s["close"].iloc[-1])
             s_recent3 = s["pct_chg"].dropna().tail(3)
             small_recent3_list = [float(x) for x in s_recent3.tolist()]
             if not s_recent3.empty:
@@ -1470,6 +1492,13 @@ def run_funnel_job(
     include_debug_context: bool = False,
 ) -> tuple[dict[str, list[tuple[str, float]]], dict]:
     """执行 Wyckoff Funnel，返回 (triggers, metrics)。"""
+    if _should_delegate_cn_to_mainline():
+        from scripts import wyckoff_funnel_mainline_cn as cn_mainline
+
+        return cn_mainline.run_funnel_job(
+            include_debug_context=include_debug_context
+        )
+
     market = _resolve_funnel_market()
     profile = str(
         os.getenv("FUNNEL_CONFIG_PROFILE")
@@ -1971,6 +2000,15 @@ def run(
     返回 (成功与否, 用于研报的股票信息列表, 大盘上下文)。
     每项为 {"code": str, "name": str, "tag": str}。
     """
+    if _should_delegate_cn_to_mainline():
+        from scripts import wyckoff_funnel_mainline_cn as cn_mainline
+
+        return cn_mainline.run(
+            webhook_url,
+            notify=notify,
+            return_details=return_details,
+        )
+
     triggers, metrics = run_funnel_job()
     all_df_map = metrics.get("all_df_map", {})
     benchmark_context = metrics.get("benchmark_context", {}) or {}

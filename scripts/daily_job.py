@@ -394,7 +394,7 @@ def main() -> int:
         summary.append({"step": "批量研报", "ok": True, "err": None, "elapsed_s": 0, "output": "skipped (no symbols)"})
         _log("Step3 批量研报: 跳过（无筛选结果）", logs_path)
 
-    # 阶段 3：私人账户再平衡（按 SUPABASE_USER_ID 唯一执行）
+    # 阶段 4：私人账户再平衡（按 SUPABASE_USER_ID 唯一执行）
     if is_non_cn_market:
         skip_step4 = True
         summary.append({
@@ -404,9 +404,9 @@ def main() -> int:
             "elapsed_s": 0,
             "output": f"skipped ({market.upper()} mode not enabled for Step4 yet)",
         })
-        _log(f"阶段 3 私人再平衡: 跳过（{market.upper()} 模式暂不启用 Step4）", logs_path)
+        _log(f"Step4 私人再平衡: 跳过（{market.upper()} 模式暂不启用 Step4）", logs_path)
         step4_target = None
-    if skip_step4:
+    elif skip_step4:
         summary.append({
             "step": "私人再平衡",
             "ok": True,
@@ -426,7 +426,7 @@ def main() -> int:
             "elapsed_s": 0,
             "output": f"skipped ({step4_target_reason})",
         })
-        _log(f"阶段 3 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
+        _log(f"Step4 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
     elif not skip_step4 and not is_non_cn_market:
         _log(f"Step4 私人再平衡: 跳过（{step4_target_reason}）", logs_path)
     elif not skip_step4 and not is_non_cn_market:

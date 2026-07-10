@@ -31,6 +31,8 @@ def test_bridge_exports_are_importable():
 def test_cn_funnel_job_no_longer_runs_post_300day_engine(monkeypatch):
     import scripts.wyckoff_funnel as funnel
 
+    monkeypatch.setattr(funnel, "_should_delegate_cn_to_mainline", lambda: False)
+
     sample_df = pd.DataFrame(
         {
             "date": pd.to_datetime(["2024-01-02", "2024-01-03"]),
@@ -145,3 +147,36 @@ def test_cn_funnel_job_no_longer_runs_post_300day_engine(monkeypatch):
 
     assert metrics["market"] == "cn"
     assert "three_hundred_day" not in metrics
+
+
+def test_analyze_benchmark_treats_trailing_nan_as_missing_benchmark():
+    import scripts.wyckoff_funnel as funnel
+    from core.wyckoff_engine import FunnelConfig
+
+    dates = pd.date_range("2024-01-01", periods=220, freq="B")
+    closes = [3000.0 + i for i in range(219)] + [float("nan")]
+    pct = [0.1] * 220
+    pct[-1] = -1.2
+    volume = [1_000_000] * 220
+    bench_df = pd.DataFrame(
+        {
+            "date": dates,
+            "close": closes,
+            "pct_chg": pct,
+            "volume": volume,
+        }
+    )
+
+    context = funnel._analyze_benchmark_and_tune_cfg(
+        bench_df,
+        None,
+        FunnelConfig(),
+        breadth={"ratio_pct": 20.0, "prev_ratio_pct": 35.0, "delta_pct": -15.0, "sample_size": 100},
+    )
+
+    assert context["close"] is None
+    assert context["ma50"] is None
+    assert context["ma200"] is None
+    assert context["ma50_slope_5d"] is None
+    assert context["has_main_benchmark"] is False
+    assert context["regime"] == "RISK_OFF"
