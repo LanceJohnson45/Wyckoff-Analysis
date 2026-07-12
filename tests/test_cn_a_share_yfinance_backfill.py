@@ -145,3 +145,35 @@ def test_run_batch_backfill_downloads_once_for_many_symbols(monkeypatch):
     assert calls == [["000001.SZ", "000002.SZ"], ["000003.SZ"]]
     assert stats["symbols_updated"] == 3
     assert stats["rows_written"] == 6
+
+
+def test_run_batch_backfill_reports_cache_ready_when_no_download_needed(monkeypatch):
+    expected = [date(2025, 7, 7), date(2025, 7, 8)]
+    monkeypatch.setattr(mod, "load_cached_dates", lambda *args, **kwargs: expected)
+    monkeypatch.setattr(
+        mod,
+        "_cn_stock_to_yfinance_symbol",
+        lambda symbol: f"{symbol}.SZ",
+    )
+
+    calls = []
+    monkeypatch.setattr(
+        mod,
+        "_download_batch",
+        lambda *args, **kwargs: calls.append(args),
+    )
+
+    stats = mod._run_batch_backfill(
+        ["000001", "000002", "000003"],
+        start_day=date(2025, 7, 7),
+        end_day=date(2025, 7, 8),
+        expected_dates=expected,
+        batch_size=2,
+        sleep_seconds=0.0,
+        jitter_seconds=0.0,
+        progress_every=1,
+    )
+
+    assert calls == []
+    assert stats["symbols_cache_ready"] == 3
+    assert stats["symbols_need_update"] == 0

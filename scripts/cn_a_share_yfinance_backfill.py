@@ -16,9 +16,11 @@ import pandas as pd
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from core.constants import TABLE_STOCK_HIST_CACHE
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from integrations.data_source import _cn_stock_to_yfinance_symbol, _fetch_stock_yfinance
 from integrations.fetch_a_share_csv import _trade_dates_cached, get_all_stocks
+from integrations.postgres_base import connect_postgres, postgres_enabled
 from utils.trading_clock import resolve_end_calendar_day_for_market
 
 
@@ -131,6 +133,69 @@ def _chunked(items: list[object], size: int) -> Iterable[list[object]]:
     size = max(int(size), 1)
     for i in range(0, len(items), size):
         yield items[i : i + size]
+
+
+def _coerce_cache_date(raw: object) -> date | None:
+    if isinstance(raw, datetime):
+        return raw.date()
+    if isinstance(raw, date):
+        return raw
+    try:
+        parsed = pd.to_datetime(raw, errors="coerce")
+        if pd.isna(parsed):
+            return None
+        return parsed.date()
+    except Exception:
+        return None
+
+
+def _load_cached_dates_many(
+    symbols: list[str],
+    *,
+    adjust: str,
+    start_day: date,
+    end_day: date,
+) -> dict[str, list[date]]:
+    out: dict[str, set[date]] = {symbol: set() for symbol in symbols}
+    if not symbols:
+        return {}
+    if postgres_enabled():
+        try:
+            with connect_postgres() as conn, conn.cursor() as cur:
+                cur.execute(
+                    f"""
+                    select symbol, date
+                    from public.{TABLE_STOCK_HIST_CACHE}
+                    where symbol = any(%s)
+                      and adjust = %s
+                      and date >= %s
+                      and date <= %s
+                    order by symbol, date
+                    """,
+                    (symbols, adjust, start_day, end_day),
+                )
+                rows = cur.fetchall()
+            for row in rows:
+                symbol = str(row.get("symbol") or "")
+                day = _coerce_cache_date(row.get("date"))
+                if symbol in out and day is not None:
+                    out[symbol].add(day)
+            return {symbol: sorted(days) for symbol, days in out.items()}
+        except Exception as e:
+            _log(
+                "bulk cache scan failed, falling back to per-symbol scan: "
+                f"{type(e).__name__}: {e}"
+            )
+    return {
+        symbol: load_cached_dates(
+            symbol,
+            adjust,
+            start_day,
+            end_day,
+            context="background",
+        )
+        for symbol in symbols
+    }
 
 
 def _load_supported_symbols(limit: int = 0) -> tuple[list[str], int]:
@@ -316,10 +381,13 @@ def _collect_backfill_tasks(
     start_day: date,
     end_day: date,
     expected_dates: list[date],
+    progress_every: int = DEFAULT_PROGRESS_EVERY,
 ) -> tuple[list[dict[str, object]], int]:
     tasks: list[dict[str, object]] = []
     cache_ready = 0
-    for symbol in symbols:
+    total = len(symbols)
+    _log(f"cache scan start symbols={total} window={start_day}..{end_day}")
+    for idx, symbol in enumerate(symbols, start=1):
         yf_symbol = _cn_stock_to_yfinance_symbol(symbol)
         if not yf_symbol:
             continue
@@ -341,7 +409,76 @@ def _collect_backfill_tasks(
                 "missing_dates": len(set(expected_dates) - set(cached_dates)),
             }
         )
+        if idx % max(int(progress_every), 1) == 0 or idx == total:
+            _log(
+                f"cache scan progress {idx}/{total} "
+                f"cache_ready={cache_ready} need_update={len(tasks)}"
+            )
     return tasks, cache_ready
+
+
+def _iter_backfill_task_batches(
+    symbols: list[str],
+    *,
+    start_day: date,
+    end_day: date,
+    expected_dates: list[date],
+    batch_size: int,
+    progress_every: int,
+) -> Iterable[tuple[list[dict[str, object]], int, int, int]]:
+    chunk: list[dict[str, object]] = []
+    cache_ready = 0
+    need_update = 0
+    total = len(symbols)
+    size = max(int(batch_size), 1)
+    _log(
+        f"cache scan start symbols={total} window={start_day}..{end_day} "
+        f"stream_batch_size={size}"
+    )
+    idx = 0
+    last_progress_idx = 0
+    for symbol_chunk in _chunked(symbols, size):
+        supported: list[tuple[str, str]] = []
+        for raw_symbol in symbol_chunk:
+            symbol = str(raw_symbol)
+            yf_symbol = _cn_stock_to_yfinance_symbol(symbol)
+            if yf_symbol:
+                supported.append((symbol, yf_symbol))
+        cached_by_symbol = _load_cached_dates_many(
+            [symbol for symbol, _ in supported],
+            adjust="qfq",
+            start_day=start_day,
+            end_day=end_day,
+        )
+        for symbol, yf_symbol in supported:
+            idx += 1
+            cached_dates = cached_by_symbol.get(symbol, [])
+            gap_ranges = _missing_ranges(expected_dates, cached_dates)
+            if not gap_ranges:
+                cache_ready += 1
+            else:
+                need_update += 1
+                chunk.append(
+                    {
+                        "symbol": symbol,
+                        "yf_symbol": yf_symbol,
+                        "missing_dates": len(set(expected_dates) - set(cached_dates)),
+                    }
+                )
+        if idx - last_progress_idx >= max(int(progress_every), 1) or idx >= total:
+            _log(
+                f"cache scan progress {idx}/{total} "
+                f"cache_ready={cache_ready} need_update={need_update} "
+                f"pending_batch={len(chunk)}"
+            )
+            last_progress_idx = idx
+        if len(chunk) >= size:
+            yield chunk, idx, cache_ready, need_update
+            chunk = []
+    if chunk:
+        yield chunk, total, cache_ready, need_update
+    else:
+        yield [], total, cache_ready, need_update
 
 
 def _run_batch_backfill(
@@ -355,31 +492,43 @@ def _run_batch_backfill(
     jitter_seconds: float,
     progress_every: int,
 ) -> dict[str, object]:
-    tasks, cache_ready = _collect_backfill_tasks(
-        symbols,
-        start_day=start_day,
-        end_day=end_day,
-        expected_dates=expected_dates,
-    )
     stats: dict[str, object] = {
         "symbols_total": len(symbols),
-        "symbols_cache_ready": cache_ready,
+        "symbols_cache_ready": 0,
         "symbols_updated": 0,
         "symbols_failed": 0,
         "rows_written": 0,
         "failed_symbols": [],
         "download_batches": 0,
         "download_batch_size": max(int(batch_size), 1),
+        "symbols_need_update": 0,
     }
-    total_batches = (len(tasks) + max(int(batch_size), 1) - 1) // max(int(batch_size), 1)
     _log(
-        f"batch mode: need_update={len(tasks)} cache_ready={cache_ready} "
-        f"batch_size={batch_size} batches={total_batches}"
+        f"batch mode: streaming cache scan and download batch_size={batch_size}"
     )
-    for batch_no, chunk in enumerate(_chunked(tasks, batch_size), start=1):
+    batch_no = 0
+    last_scanned = 0
+    for chunk, scanned, cache_ready, need_update in _iter_backfill_task_batches(
+        symbols,
+        start_day=start_day,
+        end_day=end_day,
+        expected_dates=expected_dates,
+        batch_size=batch_size,
+        progress_every=progress_every,
+    ):
+        stats["symbols_cache_ready"] = cache_ready
+        stats["symbols_need_update"] = need_update
+        last_scanned = scanned
+        if not chunk:
+            continue
+        batch_no += 1
         yf_symbols = [str(item["yf_symbol"]) for item in chunk]
         symbol_by_yf = {str(item["yf_symbol"]): str(item["symbol"]) for item in chunk}
-        _log(f"batch {batch_no}/{total_batches}: downloading {len(yf_symbols)} symbols")
+        _log(
+            f"batch {batch_no}: downloading {len(yf_symbols)} symbols "
+            f"scanned={scanned}/{len(symbols)} cache_ready={cache_ready} "
+            f"need_update={need_update}"
+        )
         try:
             frames = _download_batch(yf_symbols, start_day=start_day, end_day=end_day)
             stats["download_batches"] = int(stats["download_batches"]) + 1
@@ -435,15 +584,18 @@ def _run_batch_backfill(
                 stats["symbols_failed"] = int(stats["symbols_failed"]) + 1
                 stats["failed_symbols"].append({"symbol": symbol, "error": str(e)})
 
-        processed = min(batch_no * max(int(batch_size), 1), len(tasks))
-        if batch_no % max(int(progress_every), 1) == 0 or batch_no == total_batches:
-            _log(
-                f"batch progress {processed}/{len(tasks)} "
-                f"updated={stats['symbols_updated']} failed={stats['symbols_failed']} "
-                f"rows={stats['rows_written']}"
-            )
-        if batch_no < total_batches:
+        _log(
+            f"batch progress batches={batch_no} scanned={scanned}/{len(symbols)} "
+            f"updated={stats['symbols_updated']} failed={stats['symbols_failed']} "
+            f"rows={stats['rows_written']}"
+        )
+        if scanned < len(symbols):
             _sleep_between_symbols(sleep_seconds, jitter_seconds)
+    _log(
+        f"batch mode scan done scanned={last_scanned}/{len(symbols)} "
+        f"cache_ready={stats['symbols_cache_ready']} "
+        f"need_update={stats['symbols_need_update']} batches={batch_no}"
+    )
     return stats
 
 

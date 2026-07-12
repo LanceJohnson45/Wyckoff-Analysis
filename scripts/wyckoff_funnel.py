@@ -44,6 +44,8 @@ from integrations.fetch_a_share_csv import (
 from core.wyckoff_engine import (
     DataIntegrityPolicy,
     FunnelConfig,
+    _market_allowed_tracks,
+    _resolve_l2_market,
     normalize_hist_from_fetch,
     filter_symbols_by_integrity,
     layer1_filter,
@@ -455,6 +457,12 @@ def _sample_rejections(
             detail = (
                 f"ma_short={payload.get('last_ma_short')}, ma_long={payload.get('last_ma_long')}, close={payload.get('last_close')}"
             )
+        elif reason == "track_score_below_min":
+            detail = (
+                f"score={payload.get('selected_score')}, tracks={payload.get('track_scores')}"
+            )
+        elif reason in {"no_track_evidence", "no_track_passed", "no_channel_evidence"}:
+            detail = f"candidate_channels={payload.get('candidate_channels')}"
         else:
             detail = ""
         samples.append(f"{sym}({reason}{', ' + detail if detail else ''})")
@@ -1880,6 +1888,18 @@ def run_funnel_job(
     l1_rejection_samples = _sample_rejections(l1_rejections)
 
     # Layer 2
+    l2_market = _resolve_l2_market(cfg)
+    l2_allowed_tracks = _market_allowed_tracks(cfg, l2_market)
+    print(
+        "[funnel] L2配置: "
+        f"job_market={market}, cfg.profile={getattr(cfg, 'profile', '')}, "
+        f"cfg.market_template={getattr(cfg, 'market_template', '')}, "
+        f"resolved_l2_market={l2_market}, allowed_tracks={list(l2_allowed_tracks)}, "
+        f"rps_fast_min={getattr(cfg, 'rps_fast_min', None)}, "
+        f"rps_slow_min={getattr(cfg, 'rps_slow_min', None)}, "
+        f"track_a_min={getattr(cfg, 'track_a_min_score', None)}, "
+        f"track_b_min={getattr(cfg, 'track_b_min_score', None)}"
+    )
     l2_passed, l2_channel_map, l2_rejections = layer2_strength_detailed(
         l1_passed,
         all_df_map,
@@ -1890,6 +1910,15 @@ def run_funnel_job(
     )
     l2_rejection_top, l2_rejection_summary = _summarize_rejections(l2_rejections)
     l2_rejection_samples = _sample_rejections(l2_rejections)
+    if market in {"us", "hk"} and any(
+        (payload or {}).get("reason") == "no_channel_evidence"
+        for payload in l2_rejections.values()
+    ):
+        print(
+            "[funnel] ⚠️ 非CN市场出现 no_channel_evidence："
+            f"job_market={market}, resolved_l2_market={l2_market}, "
+            f"profile={getattr(cfg, 'profile', '')}, market_template={getattr(cfg, 'market_template', '')}"
+        )
     # C-lite 后 L2 输出唯一主 Track；兼容旧通道名做统计。
     l2_momentum = sum(1 for v in l2_channel_map.values() if "主升通道" in v or "主升确认" in v)
     l2_ambush = sum(1 for v in l2_channel_map.values() if "潜伏通道" in v or "启动确认" in v)
@@ -1982,6 +2011,8 @@ def run_funnel_job(
         "layer1_rejection_top": l1_rejection_top,
         "layer1_rejection_samples": l1_rejection_samples,
         "layer2": len(l2_passed),
+        "layer2_market": l2_market,
+        "layer2_allowed_tracks": list(l2_allowed_tracks),
         "layer2_momentum": l2_momentum,
         "layer2_ambush": l2_ambush,
         "layer2_accum": l2_accum,
