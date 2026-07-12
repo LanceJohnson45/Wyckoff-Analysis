@@ -134,6 +134,7 @@ class L2Decision:
 
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
+    from core.kline_quality import repair_ohlc_relationship
     from core.stock_cache import _COL_MAP
 
     col_map = {**_COL_MAP, "换手率": "turnover", "换手": "turnover"}
@@ -168,6 +169,7 @@ def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
+    out = repair_ohlc_relationship(out)
     return out
 
 
@@ -1234,6 +1236,80 @@ def select_l2_decision(
     )
 
 
+def _non_cn_l2_rejection_reason(
+    metrics: L2Metrics,
+    cfg: FunnelConfig,
+    market: str,
+    decision: L2Decision,
+) -> str:
+    allowed = set(
+        decision.reasons.get("allowed_tracks") or _market_allowed_tracks(cfg, market)
+    )
+    details = decision.reasons.get("track_details") or {}
+    required_passed = [
+        track
+        for track, detail in details.items()
+        if track in allowed and bool((detail or {}).get("required_passed"))
+    ]
+    if required_passed:
+        return "track_score_below_min"
+
+    if "A" in allowed and metrics.ma50 is not None and metrics.ma200 is not None:
+        bias_max = float(
+            getattr(
+                cfg,
+                "track_a_bias_200_max",
+                getattr(cfg, "momentum_bias_200_max", 0.25),
+            )
+        )
+        if metrics.bias_200 is not None and metrics.bias_200 > bias_max:
+            return "momentum_bias_too_high"
+        if metrics.ma50 <= metrics.ma200 or (
+            metrics.close is not None and metrics.close < metrics.ma50
+        ):
+            return "trend_alignment_failed"
+        if (
+            metrics.rps_fast is None
+            or metrics.rps_slow is None
+            or metrics.rps_fast < cfg.track_a_rps_fast_min
+            or metrics.rps_slow < cfg.track_a_rps_slow_min
+        ):
+            return "rps_filter_failed"
+        if metrics.rs_long is not None and metrics.rs_long < cfg.track_a_rs_long_min:
+            return "rs_filter_failed"
+        if (
+            metrics.rps_slope is not None
+            and metrics.rps_slope < cfg.track_a_rps_slope_min
+        ):
+            return "rps_slope_failed"
+
+    if "B" in allowed:
+        close_near_ma = False
+        if metrics.close is not None:
+            close_near_ma = (
+                (metrics.ma20 is not None and metrics.close >= metrics.ma20)
+                or (metrics.ma50 is not None and metrics.close >= metrics.ma50)
+            )
+        breakout_proximity = max(
+            metrics.breakout_proximity_20 or 0.0,
+            metrics.breakout_proximity_60 or 0.0,
+        )
+        if metrics.rps_fast is None or metrics.rps_fast < cfg.track_b_rps_fast_min:
+            return "rps_filter_failed"
+        if metrics.rs_short is not None and metrics.rs_short <= cfg.track_b_rs_short_min:
+            return "rs_filter_failed"
+        if metrics.rps_slope is not None and metrics.rps_slope <= 0:
+            return "rps_slope_failed"
+        if not close_near_ma:
+            return "trend_alignment_failed"
+        if breakout_proximity < cfg.track_b_breakout_proximity_min:
+            return "breakout_proximity_failed"
+
+    if not any(metrics.old_channels.values()):
+        return "no_track_evidence"
+    return "no_track_passed"
+
+
 def layer2_strength_detailed(
     symbols: list[str],
     df_map: dict[str, pd.DataFrame],
@@ -1891,26 +1967,12 @@ def layer2_strength_detailed(
             passed.append(sym)
             channel_map[sym] = _TRACK_LABELS.get(decision.selected_track, decision.selected_track)
         else:
-            rejection_reason = "no_track_passed"
-            if not any(metrics.old_channels.values()):
-                rejection_reason = "no_channel_evidence"
-            elif not bullish_alignment and not holding_ma20 and not (
-                metrics.old_channels.get("accum")
-                or metrics.old_channels.get("dry_vol")
-                or metrics.old_channels.get("rs_div")
-            ):
-                rejection_reason = "trend_alignment_failed"
-            elif cfg.enable_rs_filter and not momentum_rs_ok and not ambush_rs_ok:
-                rejection_reason = "rs_filter_failed"
-            elif (
-                cfg.enable_rps_filter
-                and rps_filter_active
-                and not momentum_rps_ok
-                and not ambush_rps_ok
-            ):
-                rejection_reason = "rps_filter_failed"
-            elif not momentum_bias_ok:
-                rejection_reason = "momentum_bias_too_high"
+            rejection_reason = _non_cn_l2_rejection_reason(
+                metrics,
+                cfg,
+                market,
+                decision,
+            )
 
             rejected[sym] = {
                 "reason": rejection_reason,

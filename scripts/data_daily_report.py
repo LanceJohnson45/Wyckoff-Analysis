@@ -134,6 +134,7 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     integrity_fail = int(metrics.get("integrity_fail", 0) or 0)
     fetch_elapsed = metrics.get("fetch_elapsed_s")  # 可能没有，来自 fetch_stats 注入
     quality_summary = metrics.get("quality_summary") or {}
+    quality_issue_counts = quality_summary.get("issue_counts") or {}
 
     # 缓存命中计数（需 stock_hist_repository 注入，默认 N/A）
     cache_hits = metrics.get("cache_hits")
@@ -241,6 +242,16 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
             f"严重异常 **{int(quality_summary.get('error_symbols', 0) or 0)}** ｜ "
             f"警告 **{int(quality_summary.get('warning_symbols', 0) or 0)}**"
         )
+        if quality_issue_counts:
+            top_quality_issues = sorted(
+                quality_issue_counts.items(),
+                key=lambda item: int(item[1] or 0),
+                reverse=True,
+            )[:3]
+            lines.append(
+                "质量异常Top: "
+                + "、".join(f"{name}={count}" for name, count in top_quality_issues)
+            )
     lines.append("")
 
     # 漏斗漏斗漏斗

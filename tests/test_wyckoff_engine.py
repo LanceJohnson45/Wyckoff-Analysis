@@ -357,6 +357,28 @@ class TestL2CLiteDecision:
         assert "点火破局" not in channel_map[symbol]
         assert rejected == {}
 
+    def test_us_layer2_rejection_reports_track_blocker(self):
+        cfg = FunnelConfig.for_market("us")
+        dates = pd.date_range("2024-01-01", periods=260, freq="B")
+        closes = [10 + i * 0.02 for i in range(260)]
+        df = _make_df(dates.strftime("%Y-%m-%d").tolist(), closes)
+        df["pct_chg"] = pd.Series(df["close"]).pct_change() * 100.0
+        df["amount"] = 100_000_000.0
+        bench = df.copy()
+
+        passed, _channel_map, rejected = layer2_strength_detailed(
+            ["AAPL"],
+            {"AAPL": df},
+            bench,
+            cfg,
+            rps_universe=["AAPL"],
+            return_rejections=True,
+        )
+
+        assert passed == []
+        assert rejected["AAPL"]["reason"] == "rs_filter_failed"
+        assert rejected["AAPL"]["reason"] != "no_channel_evidence"
+
 
 class TestAICandidateAllocation:
     def test_l3_trend_fill_respects_configured_limit(self, monkeypatch):

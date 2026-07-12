@@ -21,6 +21,7 @@ from core.strategy_compare import (
     compare_strategy_runs,
     extract_l4_candidates,
 )
+from core.signal_lifecycle import evaluate_signal_lifecycle
 from core.wyckoff_events import classify_wyckoff_event
 from scripts.wyckoff_funnel import run_funnel_job
 from utils.trading_clock import CN_TZ
@@ -84,17 +85,74 @@ def _run_engine(engine: str) -> tuple[dict[str, list[tuple[str, float]]], dict]:
         return run_funnel_job(include_debug_context=True)
 
 
+def _compute_lifecycle_map(
+    *,
+    run: StrategyRun,
+    metrics: dict,
+    horizons: tuple[int, ...],
+) -> dict[str, dict[str, object]]:
+    df_map = (
+        (metrics.get("_debug") or {}).get("all_df_map")
+        or metrics.get("all_df_map")
+        or {}
+    )
+    signal_date = str(
+        (metrics.get("_debug") or {}).get("end_trade_date")
+        or metrics.get("end_trade_date")
+        or ""
+    ).strip()
+    out: dict[str, dict[str, object]] = {}
+    for candidate in run.candidates:
+        df = df_map.get(candidate.code)
+        lifecycle = evaluate_signal_lifecycle(
+            df,
+            code=candidate.code,
+            signal_date=signal_date or None,
+            horizons=horizons,
+        )
+        done = [item for item in lifecycle.outcomes if item.status == "done"]
+        pending = [item for item in lifecycle.outcomes if item.status == "pending"]
+        out[candidate.code] = {
+            "signal_date": lifecycle.signal_date,
+            "entry_price": lifecycle.entry_price,
+            "outcomes": [asdict(item) for item in lifecycle.outcomes],
+            "done_count": len(done),
+            "pending_count": len(pending),
+        }
+    return out
+
+
+def _fmt_lifecycle_brief(lifecycle_payload: dict[str, object] | None) -> str:
+    if not lifecycle_payload:
+        return "lifecycle=无"
+    outcomes = lifecycle_payload.get("outcomes") or []
+    done = [item for item in outcomes if str(item.get("status", "")) == "done"]
+    if done:
+        first = done[0]
+        ret = first.get("return_pct")
+        mdd = first.get("max_drawdown_pct")
+        return (
+            f"lifecycle H{first.get('horizon')}="
+            f"{float(ret):+.2f}%"
+            f" / mdd={float(mdd):+.2f}%"
+        )
+    pending = sum(1 for item in outcomes if str(item.get("status", "")) == "pending")
+    return f"lifecycle=pending({pending})"
+
+
 def _format_markdown(
     *,
     comparison,
     runs: tuple[StrategyRun, StrategyRun],
     metrics_map: dict[str, dict],
+    lifecycle_map: dict[str, dict[str, dict[str, object]]],
 ) -> str:
     lines = ["# 🔬 Wyckoff CN 双引擎影子对比", ""]
     for run in runs:
         metrics = metrics_map[run.strategy_id]
         quality = metrics.get("quality_summary") or {}
         bench = metrics.get("benchmark_context") or {}
+        lifecycle_by_code = lifecycle_map.get(run.strategy_id, {}) or {}
         lines.extend(
             [
                 f"## {run.strategy_id}",
@@ -115,7 +173,7 @@ def _format_markdown(
                     regime=str(bench.get("regime", "") or ""),
                 )
                 lines.append(
-                    f"- {candidate.code} ｜ score={candidate.score:.2f} ｜ triggers={'+'.join(candidate.triggers)} ｜ event={event.label}"
+                    f"- {candidate.code} ｜ score={candidate.score:.2f} ｜ triggers={'+'.join(candidate.triggers)} ｜ event={event.label} ｜ {_fmt_lifecycle_brief(lifecycle_by_code.get(candidate.code))}"
                 )
         else:
             lines.append("### 命中候选")
@@ -142,7 +200,17 @@ def _format_markdown(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compare CN legacy and mainline funnel outputs")
     parser.add_argument("--output-dir", default="data/strategy_shadow", help="artifact output dir")
+    parser.add_argument("--horizons", default="1,3,5,10", help="comma-separated lifecycle horizons")
     args = parser.parse_args(argv)
+    horizons = tuple(
+        sorted(
+            {
+                max(int(part.strip()), 1)
+                for part in str(args.horizons or "").split(",")
+                if str(part).strip()
+            }
+        )
+    ) or (1, 3, 5, 10)
 
     legacy_triggers, legacy_metrics = _run_engine("legacy")
     mainline_triggers, mainline_metrics = _run_engine("mainline")
@@ -158,6 +226,10 @@ def main(argv: list[str] | None = None) -> int:
         candidates=extract_l4_candidates(_build_result(mainline_metrics, mainline_triggers), "cn_mainline"),
     )
     comparison = compare_strategy_runs((legacy_run, mainline_run))
+    lifecycle_map = {
+        "cn_legacy": _compute_lifecycle_map(run=legacy_run, metrics=legacy_metrics, horizons=horizons),
+        "cn_mainline": _compute_lifecycle_map(run=mainline_run, metrics=mainline_metrics, horizons=horizons),
+    }
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -169,7 +241,12 @@ def main(argv: list[str] | None = None) -> int:
         "cn_legacy": _slim_metrics(legacy_metrics),
         "cn_mainline": _slim_metrics(mainline_metrics),
     }
-    report = _format_markdown(comparison=comparison, runs=(legacy_run, mainline_run), metrics_map=metrics_map)
+    report = _format_markdown(
+        comparison=comparison,
+        runs=(legacy_run, mainline_run),
+        metrics_map=metrics_map,
+        lifecycle_map=lifecycle_map,
+    )
     md_path.write_text(report, encoding="utf-8")
 
     payload = {
@@ -179,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
             "cn_legacy": [asdict(candidate) for candidate in legacy_run.candidates],
             "cn_mainline": [asdict(candidate) for candidate in mainline_run.candidates],
         },
+        "lifecycle": lifecycle_map,
         "metrics": metrics_map,
     }
     json_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=_json_default), encoding="utf-8")

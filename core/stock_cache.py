@@ -12,6 +12,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 
 from core.constants import TABLE_STOCK_HIST_CACHE
+from core.kline_quality import repair_ohlc_relationship
 from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
 from integrations.supabase_base import create_admin_client as _create_admin_client
 
@@ -92,6 +93,7 @@ def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
             out[col] = pd.to_numeric(out[col], errors="coerce")
     if "date" in out.columns:
         out["date"] = out["date"].astype(str)
+    out = repair_ohlc_relationship(out)
     return out
 
 
@@ -303,7 +305,7 @@ def load_cached_history(
                     (symbol, adjust, start_date, end_date),
                 )
                 rows = cur.fetchall()
-            return pd.DataFrame(rows) if rows else None
+            return repair_ohlc_relationship(pd.DataFrame(rows)) if rows else None
         except Exception:
             return None
 
@@ -324,7 +326,7 @@ def load_cached_history(
             .execute()
         )
         if resp.data:
-            return pd.DataFrame(resp.data)
+            return repair_ohlc_relationship(pd.DataFrame(resp.data))
     except APIError:
         return None
     except Exception:

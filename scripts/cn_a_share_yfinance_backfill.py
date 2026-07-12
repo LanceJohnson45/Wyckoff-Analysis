@@ -7,6 +7,7 @@ import os
 import random
 import sys
 import time
+from collections.abc import Iterable
 from datetime import date, datetime, timedelta
 
 import pandas as pd
@@ -31,6 +32,7 @@ DEFAULT_RETRY_BACKOFF_SECONDS = max(
 )
 DEFAULT_GAP_CHUNK_DAYS = max(int(os.getenv("CN_A_BACKFILL_GAP_CHUNK_DAYS", "120")), 10)
 DEFAULT_PROGRESS_EVERY = max(int(os.getenv("CN_A_BACKFILL_PROGRESS_EVERY", "25")), 1)
+DEFAULT_BATCH_SIZE = max(int(os.getenv("CN_A_BACKFILL_BATCH_SIZE", "40")), 1)
 
 
 def _log(msg: str) -> None:
@@ -125,6 +127,12 @@ def _sleep_between_symbols(base_seconds: float, jitter_seconds: float) -> None:
         time.sleep(sleep_for)
 
 
+def _chunked(items: list[object], size: int) -> Iterable[list[object]]:
+    size = max(int(size), 1)
+    for i in range(0, len(items), size):
+        yield items[i : i + size]
+
+
 def _load_supported_symbols(limit: int = 0) -> tuple[list[str], int]:
     supported: list[str] = []
     unsupported = 0
@@ -140,6 +148,120 @@ def _load_supported_symbols(limit: int = 0) -> tuple[list[str], int]:
     if limit > 0:
         supported = supported[:limit]
     return supported, unsupported
+
+
+def _normalize_batch_download(
+    df: pd.DataFrame,
+    yf_symbol: str,
+    *,
+    start_day: date,
+    end_day: date,
+) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame()
+    work = df.copy()
+    if isinstance(work.columns, pd.MultiIndex):
+        level0 = set(str(x) for x in work.columns.get_level_values(0))
+        level_last = set(str(x) for x in work.columns.get_level_values(-1))
+        if yf_symbol in level0:
+            work = work.xs(yf_symbol, axis=1, level=0)
+        elif yf_symbol in level_last:
+            work = work.xs(yf_symbol, axis=1, level=-1)
+        else:
+            return pd.DataFrame()
+    work = work.reset_index()
+    date_col = (
+        "Date"
+        if "Date" in work.columns
+        else ("index" if "index" in work.columns else None)
+    )
+    if date_col is None:
+        return pd.DataFrame()
+    work = work.rename(
+        columns={
+            date_col: "日期",
+            "Open": "开盘",
+            "High": "最高",
+            "Low": "最低",
+            "Close": "收盘",
+            "Volume": "成交量",
+        }
+    )
+    required = ["日期", "开盘", "最高", "最低", "收盘", "成交量"]
+    if any(col not in work.columns for col in required):
+        return pd.DataFrame()
+    work["日期"] = pd.to_datetime(work["日期"], errors="coerce").dt.strftime("%Y-%m-%d")
+    start_iso = start_day.isoformat()
+    end_iso = end_day.isoformat()
+    work = work.loc[(work["日期"] >= start_iso) & (work["日期"] <= end_iso)].copy()
+    if work.empty:
+        return pd.DataFrame()
+    for col in ["开盘", "最高", "最低", "收盘", "成交量"]:
+        work[col] = pd.to_numeric(work[col], errors="coerce")
+    work = work.dropna(subset=["日期", "收盘"]).copy()
+    if work.empty:
+        return pd.DataFrame()
+    work["成交额"] = work["收盘"] * work["成交量"]
+    work["涨跌幅"] = work["收盘"].pct_change(fill_method=None) * 100.0
+    work["换手率"] = pd.NA
+    base = work["收盘"].shift(1)
+    work["振幅"] = (work["最高"] - work["最低"]) / base.replace(0, pd.NA) * 100.0
+    return work[
+        [
+            "日期",
+            "开盘",
+            "最高",
+            "最低",
+            "收盘",
+            "成交量",
+            "成交额",
+            "涨跌幅",
+            "换手率",
+            "振幅",
+        ]
+    ].copy()
+
+
+def _download_batch(
+    yf_symbols: list[str],
+    *,
+    start_day: date,
+    end_day: date,
+) -> dict[str, pd.DataFrame]:
+    if not yf_symbols:
+        return {}
+    try:
+        import yfinance as yf
+    except Exception as e:
+        raise RuntimeError(f"yfinance unavailable: {e}") from e
+
+    fetch_start = pd.Timestamp(start_day) - pd.Timedelta(days=7)
+    fetch_end = pd.Timestamp(end_day) + pd.Timedelta(days=3)
+    joined = " ".join(yf_symbols)
+    data = yf.download(
+        joined,
+        start=fetch_start.strftime("%Y-%m-%d"),
+        end=fetch_end.strftime("%Y-%m-%d"),
+        interval="1d",
+        auto_adjust=True,
+        progress=False,
+        threads=True,
+        group_by="ticker",
+    )
+    if data is None or data.empty:
+        raise RuntimeError(f"yfinance batch empty for {joined}")
+
+    frames: dict[str, pd.DataFrame] = {}
+    for yf_symbol in yf_symbols:
+        frame = _normalize_batch_download(
+            data,
+            yf_symbol,
+            start_day=start_day,
+            end_day=end_day,
+        )
+        if not frame.empty:
+            frames[yf_symbol] = frame
+    return frames
 
 
 def _fetch_gap_frame(
@@ -186,6 +308,143 @@ def _upsert_symbol_range(symbol: str, df: pd.DataFrame) -> int:
         context="background",
     )
     return int(len(norm)) if ok else 0
+
+
+def _collect_backfill_tasks(
+    symbols: list[str],
+    *,
+    start_day: date,
+    end_day: date,
+    expected_dates: list[date],
+) -> tuple[list[dict[str, object]], int]:
+    tasks: list[dict[str, object]] = []
+    cache_ready = 0
+    for symbol in symbols:
+        yf_symbol = _cn_stock_to_yfinance_symbol(symbol)
+        if not yf_symbol:
+            continue
+        cached_dates = load_cached_dates(
+            symbol,
+            "qfq",
+            start_day,
+            end_day,
+            context="background",
+        )
+        gap_ranges = _missing_ranges(expected_dates, cached_dates)
+        if not gap_ranges:
+            cache_ready += 1
+            continue
+        tasks.append(
+            {
+                "symbol": symbol,
+                "yf_symbol": yf_symbol,
+                "missing_dates": len(set(expected_dates) - set(cached_dates)),
+            }
+        )
+    return tasks, cache_ready
+
+
+def _run_batch_backfill(
+    symbols: list[str],
+    *,
+    start_day: date,
+    end_day: date,
+    expected_dates: list[date],
+    batch_size: int,
+    sleep_seconds: float,
+    jitter_seconds: float,
+    progress_every: int,
+) -> dict[str, object]:
+    tasks, cache_ready = _collect_backfill_tasks(
+        symbols,
+        start_day=start_day,
+        end_day=end_day,
+        expected_dates=expected_dates,
+    )
+    stats: dict[str, object] = {
+        "symbols_total": len(symbols),
+        "symbols_cache_ready": cache_ready,
+        "symbols_updated": 0,
+        "symbols_failed": 0,
+        "rows_written": 0,
+        "failed_symbols": [],
+        "download_batches": 0,
+        "download_batch_size": max(int(batch_size), 1),
+    }
+    total_batches = (len(tasks) + max(int(batch_size), 1) - 1) // max(int(batch_size), 1)
+    _log(
+        f"batch mode: need_update={len(tasks)} cache_ready={cache_ready} "
+        f"batch_size={batch_size} batches={total_batches}"
+    )
+    for batch_no, chunk in enumerate(_chunked(tasks, batch_size), start=1):
+        yf_symbols = [str(item["yf_symbol"]) for item in chunk]
+        symbol_by_yf = {str(item["yf_symbol"]): str(item["symbol"]) for item in chunk}
+        _log(f"batch {batch_no}/{total_batches}: downloading {len(yf_symbols)} symbols")
+        try:
+            frames = _download_batch(yf_symbols, start_day=start_day, end_day=end_day)
+            stats["download_batches"] = int(stats["download_batches"]) + 1
+        except Exception as e:
+            _log(f"batch {batch_no}: download failed: {type(e).__name__}: {e}")
+            for item in chunk:
+                stats["symbols_failed"] = int(stats["symbols_failed"]) + 1
+                stats["failed_symbols"].append(
+                    {"symbol": str(item["symbol"]), "error": str(e)}
+                )
+            _sleep_between_symbols(sleep_seconds, jitter_seconds)
+            continue
+
+        for yf_symbol in yf_symbols:
+            symbol = symbol_by_yf[yf_symbol]
+            frame = frames.get(yf_symbol)
+            if frame is None or frame.empty:
+                try:
+                    frame = _fetch_gap_frame(
+                        symbol=symbol,
+                        yf_symbol=yf_symbol,
+                        gap_start=start_day,
+                        gap_end=end_day,
+                        retry_times=2,
+                        retry_backoff_seconds=2.0,
+                    )
+                except Exception as e:
+                    stats["symbols_failed"] = int(stats["symbols_failed"]) + 1
+                    stats["failed_symbols"].append(
+                        {"symbol": symbol, "error": f"empty batch fallback failed: {e}"}
+                    )
+                    continue
+            try:
+                rows = _upsert_symbol_range(symbol, frame)
+                if rows <= 0:
+                    raise RuntimeError("upsert returned 0 rows")
+                refreshed_dates = load_cached_dates(
+                    symbol,
+                    "qfq",
+                    start_day,
+                    end_day,
+                    context="background",
+                )
+                still_missing = sorted(set(expected_dates) - set(refreshed_dates))
+                if still_missing:
+                    raise RuntimeError(
+                        f"write verify missing {len(still_missing)} dates "
+                        f"first_missing={still_missing[:5]}"
+                    )
+                stats["symbols_updated"] = int(stats["symbols_updated"]) + 1
+                stats["rows_written"] = int(stats["rows_written"]) + int(rows)
+            except Exception as e:
+                stats["symbols_failed"] = int(stats["symbols_failed"]) + 1
+                stats["failed_symbols"].append({"symbol": symbol, "error": str(e)})
+
+        processed = min(batch_no * max(int(batch_size), 1), len(tasks))
+        if batch_no % max(int(progress_every), 1) == 0 or batch_no == total_batches:
+            _log(
+                f"batch progress {processed}/{len(tasks)} "
+                f"updated={stats['symbols_updated']} failed={stats['symbols_failed']} "
+                f"rows={stats['rows_written']}"
+            )
+        if batch_no < total_batches:
+            _sleep_between_symbols(sleep_seconds, jitter_seconds)
+    return stats
 
 
 def backfill_symbol(
@@ -290,8 +549,31 @@ def run_backfill(args: argparse.Namespace) -> int:
         f"symbols={len(symbols)} unsupported={unsupported_universe} "
         f"window={start_day}..{end_day} trade_dates={len(expected_dates)} "
         f"sleep={args.sleep_seconds}s jitter={args.jitter_seconds}s "
-        f"gap_chunk_days={args.gap_chunk_days}"
+        f"gap_chunk_days={args.gap_chunk_days} batch_size={args.batch_size}"
     )
+
+    if int(args.batch_size) > 1:
+        batch_stats = _run_batch_backfill(
+            symbols,
+            start_day=start_day,
+            end_day=end_day,
+            expected_dates=expected_dates,
+            batch_size=max(int(args.batch_size), 1),
+            sleep_seconds=float(args.sleep_seconds),
+            jitter_seconds=float(args.jitter_seconds),
+            progress_every=max(int(args.progress_every), 1),
+        )
+        stats.update(batch_stats)
+        stats["symbols_unsupported"] = unsupported_universe
+        stats["expected_trade_dates"] = len(expected_dates)
+        _log(
+            f"cn a-share yfinance backfill done "
+            f"{json.dumps(stats, ensure_ascii=False)}"
+        )
+        return 0 if (
+            int(stats["symbols_updated"]) > 0
+            or int(stats["symbols_cache_ready"]) > 0
+        ) else 1
 
     for idx, symbol in enumerate(symbols, start=1):
         try:
@@ -352,6 +634,15 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_RETRY_BACKOFF_SECONDS,
     )
     parser.add_argument("--gap-chunk-days", type=int, default=DEFAULT_GAP_CHUNK_DAYS)
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=(
+            "Batch yfinance download size. Use 1 for legacy per-symbol mode; "
+            "larger values reduce Yahoo requests dramatically."
+        ),
+    )
     parser.add_argument("--progress-every", type=int, default=DEFAULT_PROGRESS_EVERY)
     parser.add_argument(
         "--limit",

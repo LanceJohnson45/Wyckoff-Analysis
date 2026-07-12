@@ -1053,14 +1053,34 @@ def _analyze_benchmark_and_tune_cfg(
         cfg.rs_min_short = max(cfg.rs_min_short, 1.0)
         cfg.rps_fast_min = max(cfg.rps_fast_min, 80.0)  # 改为 80.0（从 90.0）
         cfg.rps_slow_min = max(cfg.rps_slow_min, 75.0)  # 改为 75.0（从 85.0）
+        cfg.track_a_min_score = max(cfg.track_a_min_score, 78.0)
+        cfg.track_b_min_score = max(cfg.track_b_min_score, 68.0)
+        cfg.track_a_rps_fast_min = max(cfg.track_a_rps_fast_min, 88.0)
+        cfg.track_a_rps_slow_min = max(cfg.track_a_rps_slow_min, 82.0)
+        cfg.track_a_rs_long_min = max(cfg.track_a_rs_long_min, 4.0)
+        cfg.track_a_rps_slope_min = max(cfg.track_a_rps_slope_min, 0.8)
+        cfg.track_b_rps_fast_min = max(cfg.track_b_rps_fast_min, 70.0)
+        cfg.track_b_rs_short_min = max(cfg.track_b_rs_short_min, 1.0)
     elif regime == "PANIC_REPAIR":
-        cfg.min_avg_amount_wan = max(
-            cfg.min_avg_amount_wan, PANIC_REPAIR_MIN_AVG_AMOUNT_WAN
-        )
+        if _resolve_funnel_market() == "cn":
+            cfg.min_avg_amount_wan = max(
+                cfg.min_avg_amount_wan, PANIC_REPAIR_MIN_AVG_AMOUNT_WAN
+            )
         cfg.rs_min_long = max(cfg.rs_min_long, 1.0)
         cfg.rs_min_short = max(cfg.rs_min_short, 0.2)
         cfg.rps_fast_min = max(cfg.rps_fast_min, 75.0)
         cfg.rps_slow_min = max(cfg.rps_slow_min, 65.0)
+        cfg.track_a_min_score = min(cfg.track_a_min_score, 70.0)
+        cfg.track_b_min_score = min(cfg.track_b_min_score, 58.0)
+        cfg.track_a_rps_fast_min = min(cfg.track_a_rps_fast_min, 78.0)
+        cfg.track_a_rps_slow_min = min(cfg.track_a_rps_slow_min, 72.0)
+        cfg.track_a_rs_long_min = min(cfg.track_a_rs_long_min, 1.0)
+        cfg.track_a_rps_slope_min = min(cfg.track_a_rps_slope_min, 0.25)
+        cfg.track_b_rps_fast_min = min(cfg.track_b_rps_fast_min, 55.0)
+        cfg.track_b_rs_short_min = min(cfg.track_b_rs_short_min, 0.0)
+        cfg.track_b_breakout_proximity_min = min(
+            cfg.track_b_breakout_proximity_min, 68.0
+        )
     elif regime == "RISK_OFF":
         cfg.min_avg_amount_wan = max(
             cfg.min_avg_amount_wan, RISK_OFF_MIN_AVG_AMOUNT_WAN
@@ -1069,6 +1089,14 @@ def _analyze_benchmark_and_tune_cfg(
         cfg.rs_min_short = max(cfg.rs_min_short, 0.5)
         cfg.rps_fast_min = max(cfg.rps_fast_min, 80.0)
         cfg.rps_slow_min = max(cfg.rps_slow_min, 75.0)
+        cfg.track_a_min_score = max(cfg.track_a_min_score, 76.0)
+        cfg.track_b_min_score = max(cfg.track_b_min_score, 66.0)
+        cfg.track_a_rps_fast_min = max(cfg.track_a_rps_fast_min, 85.0)
+        cfg.track_a_rps_slow_min = max(cfg.track_a_rps_slow_min, 80.0)
+        cfg.track_a_rs_long_min = max(cfg.track_a_rs_long_min, 3.0)
+        cfg.track_a_rps_slope_min = max(cfg.track_a_rps_slope_min, 0.6)
+        cfg.track_b_rps_fast_min = max(cfg.track_b_rps_fast_min, 68.0)
+        cfg.track_b_rs_short_min = max(cfg.track_b_rs_short_min, 0.8)
         if recent3_cum is not None and recent3_cum <= -4.0:
             cfg.min_avg_amount_wan = max(
                 cfg.min_avg_amount_wan,
@@ -1081,6 +1109,14 @@ def _analyze_benchmark_and_tune_cfg(
         cfg.rs_min_short = max(cfg.rs_min_short, 0.0)
         cfg.rps_fast_min = min(cfg.rps_fast_min, 70.0)
         cfg.rps_slow_min = min(cfg.rps_slow_min, 60.0)
+        cfg.track_a_min_score = min(cfg.track_a_min_score, 70.0)
+        cfg.track_b_min_score = min(cfg.track_b_min_score, 60.0)
+        cfg.track_a_rps_fast_min = min(cfg.track_a_rps_fast_min, 78.0)
+        cfg.track_a_rps_slow_min = min(cfg.track_a_rps_slow_min, 70.0)
+        cfg.track_a_rs_long_min = min(cfg.track_a_rs_long_min, 1.5)
+        cfg.track_a_rps_slope_min = min(cfg.track_a_rps_slope_min, 0.35)
+        cfg.track_b_rps_fast_min = min(cfg.track_b_rps_fast_min, 58.0)
+        cfg.track_b_rs_short_min = min(cfg.track_b_rs_short_min, 0.0)
 
     price_zone = "结构待确认"
     if close is not None and ma50 is not None and ma200 is not None:
@@ -1928,8 +1964,10 @@ def run_funnel_job(
         "pool_merged": len(merged_symbols),
         "pool_st_excluded": len(st_symbols),
         "pool_batches": total_batches,
+        "end_trade_date": window.end_trade_date.isoformat(),
         "fetch_ok": fetch_ok,
         "fetch_fail": fetch_fail,
+        "fetch_elapsed_s": round(total_fetch_elapsed, 2),
         "fetch_date_mismatch": fetch_date_mismatch,
         "fetch_spot_patched": fetch_spot_patched,
         "integrity_pass": len(all_df_map),

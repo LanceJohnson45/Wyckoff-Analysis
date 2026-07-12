@@ -192,6 +192,30 @@ class TestMarketRegime:
         assert result["ratio_pct"] is None
         assert result["sample_size"] == 0
 
+    def test_us_panic_repair_tunes_c_lite_thresholds(self, monkeypatch):
+        from core.wyckoff_engine import FunnelConfig
+        from scripts.wyckoff_funnel import _analyze_benchmark_and_tune_cfg
+
+        monkeypatch.setenv("FUNNEL_MARKET", "us")
+        cfg = FunnelConfig.for_market("us")
+        dates = pd.date_range("2025-01-01", periods=220, freq="B")
+        bench = pd.DataFrame(
+            {
+                "date": dates,
+                "close": [100 + i * 0.5 for i in range(220)],
+                "pct_chg": [0.0] * 217 + [0.0, 0.5, 0.5],
+                "volume": [1_000_000] * 220,
+            }
+        )
+
+        context = _analyze_benchmark_and_tune_cfg(bench, None, cfg)
+
+        assert context["regime"] == "PANIC_REPAIR"
+        assert cfg.min_avg_amount_wan == 0.0
+        assert cfg.track_b_min_score == 58.0
+        assert cfg.track_b_rps_fast_min == 55.0
+        assert cfg.track_a_rs_long_min == 1.0
+
 
 # ── tools/data_fetcher ──
 
@@ -315,13 +339,19 @@ class TestDataDailyReport:
                 "layer2": 1,
                 "layer3": 0,
                 "total_hits": 0,
-                "quality_summary": {"ok": 8, "error_symbols": 1, "warning_symbols": 1},
+                "quality_summary": {
+                    "ok": 8,
+                    "error_symbols": 1,
+                    "warning_symbols": 1,
+                    "issue_counts": {"ohlc_inconsistent": 3, "extreme_return": 1},
+                },
                 "benchmark_context": {"regime": "NEUTRAL", "breadth": {"ratio_pct": 50.0}},
             }
         )
 
         assert "K线质量: 通过 **8**" in text
         assert "严重异常 **1**" in text
+        assert "质量异常Top: ohlc_inconsistent=3、extreme_return=1" in text
 
 
 class TestMainlineCnCompatibility:

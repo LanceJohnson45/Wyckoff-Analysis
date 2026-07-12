@@ -32,6 +32,43 @@ def _issue(severity: str, category: str, message: str, count: int = 0) -> KlineI
     return KlineIssue(severity=severity, category=category, message=message, count=int(count))
 
 
+def repair_ohlc_relationship(df: pd.DataFrame) -> pd.DataFrame:
+    """Repair row-level OHLC bounds by preserving all four quoted prices."""
+    if df is None or df.empty:
+        return df
+    required = {"open", "high", "low", "close"}
+    if not required.issubset(df.columns):
+        return df
+
+    out = df.copy()
+    prices = out[["open", "high", "low", "close"]].apply(
+        pd.to_numeric,
+        errors="coerce",
+    )
+    bad_ohlc = (
+        (prices["high"] < prices["low"])
+        | (prices["high"] < prices["open"])
+        | (prices["high"] < prices["close"])
+        | (prices["low"] > prices["open"])
+        | (prices["low"] > prices["close"])
+    ).fillna(False)
+    repaired_rows = int(bad_ohlc.sum())
+    if repaired_rows <= 0:
+        out.attrs.update(df.attrs)
+        out.attrs["ohlc_repaired_rows"] = int(df.attrs.get("ohlc_repaired_rows", 0) or 0)
+        return out
+
+    row_high = prices.max(axis=1, skipna=True)
+    row_low = prices.min(axis=1, skipna=True)
+    out.loc[bad_ohlc, "high"] = row_high.loc[bad_ohlc]
+    out.loc[bad_ohlc, "low"] = row_low.loc[bad_ohlc]
+    out.attrs.update(df.attrs)
+    out.attrs["ohlc_repaired_rows"] = (
+        int(df.attrs.get("ohlc_repaired_rows", 0) or 0) + repaired_rows
+    )
+    return out
+
+
 def check_kline_quality(
     df: pd.DataFrame | None,
     *,
@@ -150,5 +187,6 @@ __all__ = [
     "KlineQualityReport",
     "check_kline_quality",
     "check_kline_quality_map",
+    "repair_ohlc_relationship",
     "summarize_quality_reports",
 ]

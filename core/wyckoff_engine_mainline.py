@@ -19,6 +19,7 @@ import pandas as pd
 
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
+    from core.kline_quality import repair_ohlc_relationship
     from core.stock_cache import _COL_MAP
 
     col_map = {**_COL_MAP, "换手率": "turnover", "换手": "turnover"}
@@ -34,6 +35,7 @@ def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     for col in ["open", "high", "low", "close", "volume", "amount", "pct_chg", "turnover"]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
+    out = repair_ohlc_relationship(out)
     return out
 
 

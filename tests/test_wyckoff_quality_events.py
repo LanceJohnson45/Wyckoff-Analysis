@@ -4,10 +4,16 @@ from types import SimpleNamespace
 
 import pandas as pd
 
-from core.kline_quality import check_kline_quality, check_kline_quality_map, summarize_quality_reports
+from core.kline_quality import (
+    check_kline_quality,
+    check_kline_quality_map,
+    repair_ohlc_relationship,
+    summarize_quality_reports,
+)
 from core.signal_lifecycle import evaluate_signal_lifecycle
 from core.strategy_compare import compare_strategy_runs, extract_l4_candidates
 from core.wyckoff_events import classify_wyckoff_event
+from scripts.compare_wyckoff_strategies import _compute_lifecycle_map, _fmt_lifecycle_brief
 
 
 def test_classify_wyckoff_event_right_side_ignition():
@@ -61,6 +67,70 @@ def test_kline_quality_summary_counts_symbols():
     assert summary["ok"] == 1
 
 
+def test_repair_ohlc_relationship_rebuilds_row_bounds():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01"],
+            "open": [10.0],
+            "high": [9.9],
+            "low": [10.1],
+            "close": [10.2],
+            "volume": [1000],
+        }
+    )
+
+    repaired = repair_ohlc_relationship(df)
+    report = check_kline_quality(repaired, symbol="000001")
+
+    assert repaired.loc[0, "high"] == 10.2
+    assert repaired.loc[0, "low"] == 9.9
+    assert repaired.attrs["ohlc_repaired_rows"] == 1
+    assert report.ok is True
+
+
+def test_normalize_hist_df_repairs_ohlc_relationship():
+    from core.stock_cache import normalize_hist_df
+
+    raw = pd.DataFrame(
+        {
+            "日期": ["2024-01-01"],
+            "开盘": [10.0],
+            "最高": [9.9],
+            "最低": [10.1],
+            "收盘": [10.2],
+            "成交量": [1000],
+        }
+    )
+
+    normalized = normalize_hist_df(raw)
+    report = check_kline_quality(normalized, symbol="000001")
+
+    assert normalized.loc[0, "high"] == 10.2
+    assert normalized.loc[0, "low"] == 9.9
+    assert report.ok is True
+
+
+def test_kline_quality_keeps_unrepaired_ohlc_noise_as_error():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01"],
+            "open": [10.0],
+            "high": [9.9],
+            "low": [10.1],
+            "close": [10.2],
+            "volume": [1000],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="000001")
+
+    assert report.ok is False
+    assert any(
+        issue.category == "ohlc_inconsistent" and issue.severity == "error"
+        for issue in report.issues
+    )
+
+
 def test_signal_lifecycle_marks_done_and_pending_horizons():
     df = pd.DataFrame(
         {
@@ -107,3 +177,27 @@ def test_strategy_compare_extracts_and_compares_candidates():
     assert "000001" in comparison.intersection
     assert comparison.counts["only_a"] == 1
     assert comparison.counts["only_b"] == 1
+
+
+def test_compare_script_lifecycle_map_and_brief():
+    df = pd.DataFrame(
+        {
+            "date": pd.bdate_range("2024-01-01", periods=6).astype(str),
+            "close": [10, 11, 12, 11, 13, 14],
+            "low": [9.5, 10.5, 11.5, 10.8, 12.2, 13.2],
+        }
+    )
+    run = SimpleNamespace(
+        candidates=(SimpleNamespace(code="000001", triggers=("sos",), score=5.0, stage="Markup", channel="主升通道"),)
+    )
+    metrics = {
+        "_debug": {
+            "all_df_map": {"000001": df},
+            "end_trade_date": "2024-01-02",
+        }
+    }
+    lifecycle_map = _compute_lifecycle_map(run=run, metrics=metrics, horizons=(1, 3))
+    assert "000001" in lifecycle_map
+    assert lifecycle_map["000001"]["done_count"] >= 1
+    brief = _fmt_lifecycle_brief(lifecycle_map["000001"])
+    assert "lifecycle H1=" in brief
