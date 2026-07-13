@@ -1,0 +1,111 @@
+name: US YFinance Backfill
+
+on:
+  schedule:
+    # 北京时间 22:40（UTC+8）
+    - cron: "40 14 * * 0-4"
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Optional start date, e.g. 2025-07-07"
+        required: false
+        type: string
+      end_date:
+        description: "Optional end date, e.g. 2026-07-07"
+        required: false
+        type: string
+      limit:
+        description: "Optional symbol limit for smoke/debug runs"
+        required: false
+        type: string
+
+concurrency:
+  group: us-yfinance-backfill-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      PYTHONUNBUFFERED: "1"
+      TZ: Asia/Shanghai
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PG_ENABLED: ${{ secrets.PG_ENABLED }}
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT }}
+      PG_DATABASE: ${{ secrets.PG_DATABASE }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+      PG_DSN: ${{ secrets.PG_DSN }}
+      US_BACKFILL_SLEEP_SECONDS: "1.8"
+      US_BACKFILL_JITTER_SECONDS: "0.8"
+      US_BACKFILL_RETRY_TIMES: "4"
+      US_BACKFILL_RETRY_BACKOFF_SECONDS: "10"
+      US_BACKFILL_GAP_CHUNK_DAYS: "120"
+      US_BACKFILL_PROGRESS_EVERY: "25"
+      US_BACKFILL_BATCH_SIZE: "10"
+      US_BACKFILL_YF_THREADS: "1"
+      SP500_SNAPSHOT_CACHE_KEY: us-sp500-snapshot-${{ github.ref_name }}-${{ github.run_id }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore S&P500 snapshot cache
+        id: restore-sp500-snapshot
+        uses: actions/cache/restore@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
+          restore-keys: |
+            us-sp500-snapshot-${{ github.ref_name }}-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Backfill one-year US history
+        env:
+          INPUT_START_DATE: ${{ github.event.inputs.start_date }}
+          INPUT_END_DATE: ${{ github.event.inputs.end_date }}
+          INPUT_LIMIT: ${{ github.event.inputs.limit }}
+        run: |
+          ARGS=()
+          if [ -n "${INPUT_START_DATE}" ]; then
+            ARGS+=(--start-date "${INPUT_START_DATE}")
+          fi
+          if [ -n "${INPUT_END_DATE}" ]; then
+            ARGS+=(--end-date "${INPUT_END_DATE}")
+          fi
+          if [ -n "${INPUT_LIMIT}" ]; then
+            ARGS+=(--limit "${INPUT_LIMIT}")
+          fi
+          python -u scripts/us_yfinance_backfill.py "${ARGS[@]}" \
+            2>&1 | tee us_yfinance_backfill.log
+
+      - name: Upload backfill log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: us-yfinance-backfill-${{ github.run_number }}
+          path: us_yfinance_backfill.log
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Save S&P500 snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/us_sp500_constituents.json
+          key: ${{ env.SP500_SNAPSHOT_CACHE_KEY }}
