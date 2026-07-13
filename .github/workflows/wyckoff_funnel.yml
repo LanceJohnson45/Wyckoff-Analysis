@@ -13,6 +13,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
       FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
@@ -43,6 +44,7 @@ jobs:
       STEP4_PROBE_BUDGET_LIMIT: "0.10"
       STEP4_ATTACK_BUDGET_LIMIT: "0.20"
       FUNNEL_PREWARM_DAYS: "320"
+      FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
       TZ: Asia/Shanghai
 
     steps:
@@ -65,9 +67,11 @@ jobs:
         run: mkdir -p logs
 
       - name: Prewarm funnel cache
+        timeout-minutes: 50
         run: |
           echo "::group::Prewarm cache (CN)"
-          python -u scripts/funnel_prewarm.py --market cn --trading-days ${FUNNEL_PREWARM_DAYS} \
+          set -o pipefail
+          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" python -u scripts/funnel_prewarm.py --market cn --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_cn.console.log
           echo "::endgroup::"
 

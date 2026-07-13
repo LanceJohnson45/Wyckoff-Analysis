@@ -106,6 +106,68 @@ def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pyt
     assert "yfinance→tickflow→akshare→baostock→efinance" in str(exc.value)
 
 
+def test_fetch_stock_hist_network_failure_message_does_not_blame_delisting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _disable_other_fallbacks(monkeypatch)
+    monkeypatch.delenv("DATA_SOURCE_DISABLE_BAOSTOCK", raising=False)
+    monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)
+    monkeypatch.setattr(ds, "_TICKFLOW_CLIENT", None)
+    monkeypatch.setattr(ds, "_TICKFLOW_CLIENT_READY", False)
+    monkeypatch.setattr(
+        ds,
+        "_fetch_stock_yfinance",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("yfinance empty after date filter")
+        ),
+    )
+    monkeypatch.setattr(
+        ds,
+        "_fetch_stock_baostock",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            RuntimeError("baostock: 网络接收错误。")
+        ),
+    )
+
+    with pytest.raises(RuntimeError) as exc:
+        ds.fetch_stock_hist("000001", "2026-04-10", "2026-04-18", adjust="qfq")
+
+    message = str(exc.value)
+    assert "诊断提示：疑似上游行情源瞬时断连" in message
+    assert "退市或处于长期停牌期" not in message
+
+
+def test_fetch_stock_baostock_suppresses_vendor_timeout_output(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    class _Result:
+        error_code = "10002007"
+        error_msg = "网络接收错误。"
+        fields = []
+
+        def next(self) -> bool:
+            print("timed out")
+            print("接收数据异常，请稍后再试。")
+            return False
+
+    class _Baostock:
+        def query_history_k_data_plus(self, *args, **kwargs):
+            print("timed out")
+            print("接收数据异常，请稍后再试。")
+            return _Result()
+
+    monkeypatch.setattr(ds, "_DATA_SOURCE_DEBUG", False)
+    monkeypatch.setattr(ds, "_ensure_baostock_login", lambda: _Baostock())
+
+    with pytest.raises(RuntimeError):
+        ds._fetch_stock_baostock("000001", "20260410", "20260418")
+
+    captured = capsys.readouterr()
+    assert "timed out" not in captured.out
+    assert "接收数据异常" not in captured.out
+
+
 def test_fetch_stock_hist_us_prefers_yfinance_then_tickflow(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("TIKFLOW_API_KEY", "dummy")
     monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)

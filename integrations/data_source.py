@@ -13,6 +13,8 @@ US/HK 个股优先 yfinance，失败回退 tickflow；A 股指数优先 yfinance
 from __future__ import annotations
 
 import atexit
+import contextlib
+import io
 import json
 import os
 import re
@@ -129,11 +131,32 @@ def _network_hint_from_details(details: list[str]) -> str:
         return "疑似 DNS/网络异常，请检查代理、DNS、系统防火墙或公司网络策略。"
     if any(k in blob for k in ssl_markers):
         return "疑似 SSL/证书链异常，请检查系统证书与 Python requests/certifi 环境。"
-    if "remotedisconnected" in blob or "remote end closed connection" in blob:
+    transient_markers = [
+        "remotedisconnected",
+        "remote end closed connection",
+        "timed out",
+        "timeout",
+        "connection aborted",
+        "connection reset",
+        "网络接收错误",
+        "接收数据异常",
+    ]
+    if any(k in blob for k in transient_markers):
         return "疑似上游行情源瞬时断连，可稍后重试；服务端已支持自动重试。"
     if "permission denied" in blob and "efinance" in blob:
         return "部署环境对 site-packages 为只读，efinance 本地缓存写入失败；建议依赖 akshare/baostock 或启用兼容修复。"
     return ""
+
+
+@contextlib.contextmanager
+def _vendor_output_guard():
+    if _DATA_SOURCE_DEBUG:
+        yield
+        return
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+        io.StringIO()
+    ):
+        yield
 
 
 def _is_retryable_akshare_error(err: Exception) -> bool:
@@ -402,29 +425,30 @@ def _fetch_stock_baostock(symbol: str, start: str, end: str) -> pd.DataFrame:
         old_sock_timeout = socket.getdefaulttimeout()
         if _BAOSTOCK_SOCKET_TIMEOUT > 0:
             socket.setdefaulttimeout(_BAOSTOCK_SOCKET_TIMEOUT)
-        bs = _ensure_baostock_login()
         try:
-            started = time.monotonic()
-            rs = bs.query_history_k_data_plus(
-                bs_code,
-                "date,open,high,low,close,volume,amount,pctChg",
-                start_date=start_dash,
-                end_date=end_dash,
-                frequency="d",
-                adjustflag="2",  # 前复权
-            )
-            if rs.error_code != "0":
-                raise RuntimeError(f"baostock: {rs.error_msg}")
-            rows: list[list[str]] = []
-            while rs.next():
-                if (
-                    _BAOSTOCK_MAX_SECONDS > 0
-                    and (time.monotonic() - started) > _BAOSTOCK_MAX_SECONDS
-                ):
-                    raise TimeoutError(
-                        f"baostock hard timeout > {_BAOSTOCK_MAX_SECONDS:.2f}s"
-                    )
-                rows.append(rs.get_row_data())
+            with _vendor_output_guard():
+                bs = _ensure_baostock_login()
+                started = time.monotonic()
+                rs = bs.query_history_k_data_plus(
+                    bs_code,
+                    "date,open,high,low,close,volume,amount,pctChg",
+                    start_date=start_dash,
+                    end_date=end_dash,
+                    frequency="d",
+                    adjustflag="2",  # 前复权
+                )
+                if rs.error_code != "0":
+                    raise RuntimeError(f"baostock: {rs.error_msg}")
+                rows: list[list[str]] = []
+                while rs.next():
+                    if (
+                        _BAOSTOCK_MAX_SECONDS > 0
+                        and (time.monotonic() - started) > _BAOSTOCK_MAX_SECONDS
+                    ):
+                        raise TimeoutError(
+                            f"baostock hard timeout > {_BAOSTOCK_MAX_SECONDS:.2f}s"
+                        )
+                    rows.append(rs.get_row_data())
         finally:
             socket.setdefaulttimeout(old_sock_timeout)
     if not rows:
@@ -1198,9 +1222,14 @@ def fetch_stock_hist(
     )
     hint = _network_hint_from_details(failed_details)
     hint_suffix = f" 诊断提示：{hint}" if hint else ""
+    terminal_cause = (
+        "疑似上游网络或行情源瞬时异常。"
+        if hint
+        else "请检查该标的是否已退市或处于长期停牌期。"
+    )
     raise RuntimeError(
         f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 yfinance→tickflow→akshare→baostock→efinance，"
-        f"均无可用 K 线数据。请检查该标的是否已退市或处于长期停牌期。{detail_suffix}{hint_suffix}"
+        f"均无可用 K 线数据。{terminal_cause}{detail_suffix}{hint_suffix}"
     )
 
 

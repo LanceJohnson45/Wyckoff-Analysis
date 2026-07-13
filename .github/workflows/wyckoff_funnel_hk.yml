@@ -13,6 +13,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       PYTHONUNBUFFERED: "1"
       FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/da56e0a3-761a-470f-94a2-bf12a9d21281"
@@ -35,6 +36,7 @@ jobs:
       FUNNEL_POOL_MODE: "hsi_hstech"
       DAILY_JOB_SKIP_STEP4: "1"
       FUNNEL_PREWARM_DAYS: "320"
+      FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
       HK_SYNC_BOOTSTRAP_DAYS: "360"
       HK_POOL_BATCH_SIZE: "30"
       HK_POOL_SLEEP_SECONDS: "0.5"
@@ -77,9 +79,11 @@ jobs:
           echo "::endgroup::"
 
       - name: Prewarm funnel cache
+        timeout-minutes: 50
         run: |
           echo "::group::Prewarm cache (HK)"
-          python -u scripts/funnel_prewarm.py --market hk --trading-days ${FUNNEL_PREWARM_DAYS} \
+          set -o pipefail
+          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" python -u scripts/funnel_prewarm.py --market hk --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_hk.console.log
           echo "::endgroup::"
 
