@@ -844,6 +844,17 @@ def _analyze_benchmark_and_tune_cfg(
             "rs_min_short": cfg.rs_min_short,
             "rps_fast_min": cfg.rps_fast_min,
             "rps_slow_min": cfg.rps_slow_min,
+            "track_a_min_score": getattr(cfg, "track_a_min_score", None),
+            "track_b_min_score": getattr(cfg, "track_b_min_score", None),
+            "track_a_rps_fast_min": getattr(cfg, "track_a_rps_fast_min", None),
+            "track_a_rps_slow_min": getattr(cfg, "track_a_rps_slow_min", None),
+            "track_a_rs_long_min": getattr(cfg, "track_a_rs_long_min", None),
+            "track_a_rps_slope_min": getattr(cfg, "track_a_rps_slope_min", None),
+            "track_b_rps_fast_min": getattr(cfg, "track_b_rps_fast_min", None),
+            "track_b_rs_short_min": getattr(cfg, "track_b_rs_short_min", None),
+            "track_b_breakout_proximity_min": getattr(
+                cfg, "track_b_breakout_proximity_min", None
+            ),
         },
         "breadth": {
             "ratio_pct": None,
@@ -1201,6 +1212,19 @@ def _analyze_benchmark_and_tune_cfg(
                 "rs_min_short": cfg.rs_min_short,
                 "rps_fast_min": cfg.rps_fast_min,
                 "rps_slow_min": cfg.rps_slow_min,
+                "track_a_min_score": getattr(cfg, "track_a_min_score", None),
+                "track_b_min_score": getattr(cfg, "track_b_min_score", None),
+                "track_a_rps_fast_min": getattr(cfg, "track_a_rps_fast_min", None),
+                "track_a_rps_slow_min": getattr(cfg, "track_a_rps_slow_min", None),
+                "track_a_rs_long_min": getattr(cfg, "track_a_rs_long_min", None),
+                "track_a_rps_slope_min": getattr(
+                    cfg, "track_a_rps_slope_min", None
+                ),
+                "track_b_rps_fast_min": getattr(cfg, "track_b_rps_fast_min", None),
+                "track_b_rs_short_min": getattr(cfg, "track_b_rs_short_min", None),
+                "track_b_breakout_proximity_min": getattr(
+                    cfg, "track_b_breakout_proximity_min", None
+                ),
                 "enable_evr_trigger": bool(cfg.enable_evr_trigger),
             },
             "breadth": {
@@ -1848,6 +1872,12 @@ def run_funnel_job(
         f"errors={quality_summary.get('error_symbols', 0)}, "
         f"warnings={quality_summary.get('warning_symbols', 0)}"
     )
+    quality_error_samples = quality_summary.get("sample_error_symbols") or []
+    quality_warning_samples = quality_summary.get("sample_warning_symbols") or []
+    if quality_error_samples:
+        print(f"[funnel] K线严重异常样例: {', '.join(map(str, quality_error_samples))}")
+    if quality_warning_samples:
+        print(f"[funnel] K线警告样例: {', '.join(map(str, quality_warning_samples))}")
 
     # Step 0: 大盘总闸 + 全市场广度 + 动态阈值
     breadth_context = _calc_market_breadth(all_df_map, BREADTH_MA_WINDOW)

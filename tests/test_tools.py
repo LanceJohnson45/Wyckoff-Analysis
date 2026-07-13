@@ -344,6 +344,8 @@ class TestDataDailyReport:
                     "error_symbols": 1,
                     "warning_symbols": 1,
                     "issue_counts": {"ohlc_inconsistent": 3, "extreme_return": 1},
+                    "sample_error_symbols": ["BAD"],
+                    "sample_warning_symbols": ["WARN"],
                 },
                 "benchmark_context": {"regime": "NEUTRAL", "breadth": {"ratio_pct": 50.0}},
             }
@@ -352,6 +354,8 @@ class TestDataDailyReport:
         assert "K线质量: 通过 **8**" in text
         assert "严重异常 **1**" in text
         assert "质量异常Top: ohlc_inconsistent=3、extreme_return=1" in text
+        assert "质量严重样例: BAD" in text
+        assert "质量警告样例: WARN" in text
 
 
 class TestMainlineCnCompatibility:

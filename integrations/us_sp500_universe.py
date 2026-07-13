@@ -11,6 +11,12 @@ from typing import Any
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _SNAPSHOT_PATH = _DATA_DIR / "us_sp500_constituents.json"
+_DELISTED_OR_UNSUPPORTED_SYMBOLS = {
+    # Coterra was removed from the live US funnel because Yahoo Finance no
+    # longer returns a timezone/history payload for this ticker in our source
+    # chain, causing a guaranteed fetch failure on every run.
+    "CTRA",
+}
 _INPUT_PATHS = {
     "dowjones": _DATA_DIR / "dowjones.json",
     "sp500": _DATA_DIR / "sp500.json",
@@ -70,6 +76,8 @@ def _normalize_symbols(symbols: list[str], *, market: str = "us") -> list[str]:
         if market_norm == "us":
             s = s.upper()
             if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", s):
+                continue
+            if s in _DELISTED_OR_UNSUPPORTED_SYMBOLS:
                 continue
         elif market_norm == "hk":
             s = s.upper()

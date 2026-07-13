@@ -90,7 +90,7 @@ def test_us_local_union_combines_three_inputs(monkeypatch):
     monkeypatch.setattr(
         us_mod,
         "_load_json_file",
-        lambda path: [{"symbol": "MSFT"}, {"symbol": "AAPL"}]
+        lambda path: [{"symbol": "MSFT"}, {"symbol": "AAPL"}, {"symbol": "CTRA"}]
         if path.name == "dowjones.json"
         else ([{"symbol": "MSFT"}, {"symbol": "NVDA"}] if path.name == "sp500.json" else [{"symbol": "QQQ"}, {"symbol": "NVDA"}]),
     )

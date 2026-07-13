@@ -65,6 +65,26 @@ def test_kline_quality_summary_counts_symbols():
     assert summary["total"] == 2
     assert summary["error_symbols"] == 1
     assert summary["ok"] == 1
+    assert summary["sample_error_symbols"] == ["000002"]
+
+
+def test_kline_quality_pct_change_does_not_forward_fill_missing_close():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
+            "open": [10.0, 10.0, 30.0],
+            "high": [10.5, 10.5, 31.0],
+            "low": [9.8, 9.8, 29.0],
+            "close": [10.0, None, 30.0],
+            "volume": [1000, 1100, 1200],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="MISS")
+    categories = {issue.category for issue in report.issues}
+
+    assert "numeric_missing" in categories
+    assert "extreme_return" not in categories
 
 
 def test_repair_ohlc_relationship_rebuilds_row_bounds():

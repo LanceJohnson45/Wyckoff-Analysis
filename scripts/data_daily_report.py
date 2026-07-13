@@ -252,6 +252,18 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
                 "质量异常Top: "
                 + "、".join(f"{name}={count}" for name, count in top_quality_issues)
             )
+        sample_error_symbols = [
+            str(x) for x in (quality_summary.get("sample_error_symbols") or []) if str(x)
+        ][:5]
+        sample_warning_symbols = [
+            str(x)
+            for x in (quality_summary.get("sample_warning_symbols") or [])
+            if str(x)
+        ][:5]
+        if sample_error_symbols:
+            lines.append("质量严重样例: " + "、".join(sample_error_symbols))
+        if sample_warning_symbols:
+            lines.append("质量警告样例: " + "、".join(sample_warning_symbols))
     lines.append("")
 
     # 漏斗漏斗漏斗

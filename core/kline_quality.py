@@ -133,7 +133,7 @@ def check_kline_quality(
         ).fillna(False)
         if int(bad_ohlc.sum()):
             issues.append(_issue("error", "ohlc_inconsistent", "OHLC 高低价关系不合理", int(bad_ohlc.sum())))
-        returns = close_s.pct_change().abs()
+        returns = close_s.pct_change(fill_method=None).abs()
         extreme = int((returns > float(extreme_pct_threshold)).sum())
         if extreme:
             issues.append(_issue("warning", "extreme_return", "相邻收盘涨跌幅异常偏大", extreme))
