@@ -45,6 +45,7 @@ jobs:
       STEP4_ATTACK_BUDGET_LIMIT: "0.20"
       FUNNEL_PREWARM_DAYS: "320"
       FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
+      FUNNEL_CACHE_ONLY_AFTER_PREWARM: "1"
       TZ: Asia/Shanghai
 
     steps:
@@ -66,6 +67,16 @@ jobs:
       - name: Prepare logs dir
         run: mkdir -p logs
 
+      - name: Restore prewarm state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/funnel_prewarm_state.json
+            data/yfinance_shares_cache.json
+          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          restore-keys: |
+            funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
+
       - name: Prewarm funnel cache
         timeout-minutes: 50
         run: |
@@ -82,6 +93,15 @@ jobs:
           python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job.log \
             2>&1 | tee -a ${{ github.workspace }}/logs/daily_job.console.log
           echo "::endgroup::"
+
+      - name: Save prewarm state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/funnel_prewarm_state.json
+            data/yfinance_shares_cache.json
+          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
 
       - name: Upload artifacts
         if: always()

@@ -330,6 +330,8 @@ def _fetch_hist(symbol: str, window: TradingWindow, adjust: str) -> pd.DataFrame
         adjust=adjust or "",
         market="cn",
         context=context,
+        cache_only=os.getenv("FUNNEL_CACHE_ONLY_AFTER_PREWARM", "").strip().lower()
+        in {"1", "true", "yes", "on"},
     )
 
 
@@ -359,6 +361,8 @@ def _fetch_hist_with_market(
         adjust=adjust or "",
         market=str(market or "cn").strip().lower(),
         context=context,
+        cache_only=os.getenv("FUNNEL_CACHE_ONLY_AFTER_PREWARM", "").strip().lower()
+        in {"1", "true", "yes", "on"},
     )
 
 

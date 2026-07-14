@@ -37,6 +37,7 @@ jobs:
       DAILY_JOB_SKIP_STEP4: "1"
       FUNNEL_PREWARM_DAYS: "320"
       FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
+      FUNNEL_CACHE_ONLY_AFTER_PREWARM: "1"
       HK_SYNC_BOOTSTRAP_DAYS: "360"
       HK_POOL_BATCH_SIZE: "30"
       HK_POOL_SLEEP_SECONDS: "0.5"
@@ -78,6 +79,16 @@ jobs:
             2>&1 | tee -a ${{ github.workspace }}/logs/hk_pool_sync.console.log
           echo "::endgroup::"
 
+      - name: Restore prewarm state
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            data/funnel_prewarm_state.json
+            data/yfinance_shares_cache.json
+          key: funnel-prewarm-state-hk-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          restore-keys: |
+            funnel-prewarm-state-hk-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
+
       - name: Prewarm funnel cache
         timeout-minutes: 50
         run: |
@@ -93,6 +104,15 @@ jobs:
           python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job_hk.log \
             2>&1 | tee -a ${{ github.workspace }}/logs/daily_job_hk.console.log
           echo "::endgroup::"
+
+      - name: Save prewarm state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            data/funnel_prewarm_state.json
+            data/yfinance_shares_cache.json
+          key: funnel-prewarm-state-hk-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
 
       - name: Upload artifacts
         if: always()

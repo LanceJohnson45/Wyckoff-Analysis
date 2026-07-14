@@ -49,6 +49,7 @@ from integrations.data_source import (
     fetch_market_cap_map,
     fetch_sector_map,
 )
+from integrations.yfinance_enrichment import build_market_cap_map_from_shares
 from integrations.fetch_a_share_csv import (
     _resolve_trading_window,
 )
@@ -85,6 +86,11 @@ BREADTH_RISK_ON_THRESHOLD = float(os.getenv("FUNNEL_BREADTH_RISK_ON_PCT", "60.0"
 BREADTH_RISK_ON_MIN_DELTA = float(os.getenv("FUNNEL_BREADTH_RISK_ON_DELTA", "0.0"))
 BREADTH_CLIFF_DROP_PCT = float(os.getenv("FUNNEL_BREADTH_CLIFF_DROP_PCT", "-10.0"))
 SMALLCAP_BENCH_CODE = os.getenv("FUNNEL_SMALLCAP_BENCH_CODE", "399006").strip() or "399006"
+SMALLCAP_BENCH_FALLBACK_CODES = [
+    x.strip()
+    for x in os.getenv("FUNNEL_SMALLCAP_BENCH_FALLBACK_CODES", "399001").split(",")
+    if x.strip()
+]
 CRASH_MAIN_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_MAIN_DAY_DROP_PCT", "-1.3"))
 CRASH_SMALL_DAY_DROP_PCT = float(os.getenv("FUNNEL_CRASH_SMALL_DAY_DROP_PCT", "-2.5"))
 CRASH_BREADTH_RATIO_PCT = float(os.getenv("FUNNEL_CRASH_BREADTH_RATIO_PCT", "15.0"))
@@ -587,7 +593,7 @@ def run_funnel_job(
         print(f"[funnel] 市值数据加载失败，降级为空映射: {e}")
         market_cap_map = {}
     if not market_cap_map:
-        print("[funnel] ⚠️ 市值数据为空（TUSHARE_TOKEN 可能缺失/失效），Layer1 将跳过市值过滤")
+        print("[funnel] ⚠️ 市值缓存为空，将在日线加载后尝试用 yfinance shares + close 补全")
     # TickFlow 财务指标
     financial_map: dict[str, dict] = {}
     tickflow_api_key = os.getenv("TICKFLOW_API_KEY", "").strip()
@@ -624,11 +630,23 @@ def run_funnel_job(
         print("[funnel] 大盘基准加载成功")
     except Exception as e:
         print(f"[funnel] 大盘基准加载失败: {e}")
-    try:
-        smallcap_df = fetch_index_hist(SMALLCAP_BENCH_CODE, start_s, end_s)
-        print(f"[funnel] 小盘基准加载成功: {SMALLCAP_BENCH_CODE}")
-    except Exception as e:
-        print(f"[funnel] 小盘基准加载失败 {SMALLCAP_BENCH_CODE}: {e}")
+    smallcap_candidates = [
+        SMALLCAP_BENCH_CODE,
+        *[code for code in SMALLCAP_BENCH_FALLBACK_CODES if code != SMALLCAP_BENCH_CODE],
+    ]
+    for smallcap_code in smallcap_candidates:
+        try:
+            smallcap_df = fetch_index_hist(smallcap_code, start_s, end_s)
+            if smallcap_code == SMALLCAP_BENCH_CODE:
+                print(f"[funnel] 小盘基准加载成功: {smallcap_code}")
+            else:
+                print(
+                    f"[funnel] 小盘基准加载成功: {smallcap_code} "
+                    f"(fallback_for={SMALLCAP_BENCH_CODE})"
+                )
+            break
+        except Exception as e:
+            print(f"[funnel] 小盘基准加载失败 {smallcap_code}: {e}")
     # 并发拉取日线（委托 tools/data_fetcher）
     all_df_map, fetch_stats = fetch_all_ohlcv(
         symbols=all_symbols,
@@ -640,6 +658,26 @@ def run_funnel_job(
         batch_sleep=BATCH_SLEEP,
         executor_mode=EXECUTOR_MODE,
     )
+    try:
+        market_cap_map, market_cap_runtime_stats = build_market_cap_map_from_shares(
+            symbols=list(all_df_map.keys()),
+            market="cn",
+            df_map=all_df_map,
+            base_map=market_cap_map,
+            refresh_missing=True,
+        )
+        print(
+            "[funnel] shares市值补全: "
+            f"computed={market_cap_runtime_stats.get('computed')}, "
+            f"refreshed={market_cap_runtime_stats.get('refreshed')}, "
+            f"missing_shares={market_cap_runtime_stats.get('missing_shares')}, "
+            f"missing_close={market_cap_runtime_stats.get('missing_close')}, "
+            f"total={market_cap_runtime_stats.get('total')}"
+        )
+    except Exception as e:
+        print(f"[funnel] shares市值补全失败，继续使用已有市值映射: {e}")
+    if not market_cap_map:
+        print("[funnel] ⚠️ 市值数据仍为空，Layer1 将跳过市值过滤")
     snapshot_dir = _dump_full_fetch_snapshot(
         df_map=all_df_map,
         all_symbols=all_symbols,

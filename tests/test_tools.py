@@ -282,6 +282,28 @@ class TestFunnelPrewarm:
         assert should_skip is True
         assert state["status"] == "ok"
 
+    def test_symbol_manifest_record_is_ready(self, monkeypatch):
+        import scripts.funnel_prewarm as mod
+
+        monkeypatch.setattr(mod, "_RECENT_GAP_MAX_AGE_DAYS", 45)
+        record = mod._ready_symbol_manifest_entry(
+            end_trade_date=date(2026, 7, 10),
+            trading_days=320,
+            expected_count=31,
+            cached_count=320,
+        )
+
+        assert mod._symbol_manifest_record_is_ready(
+            record,
+            end_trade_date=date(2026, 7, 10),
+            trading_days=320,
+        )
+        assert not mod._symbol_manifest_record_is_ready(
+            record,
+            end_trade_date=date(2026, 7, 13),
+            trading_days=320,
+        )
+
 
 # ── core/strategy bridge ──
 

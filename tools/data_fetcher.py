@@ -40,6 +40,9 @@ MAX_WORKERS = int(os.getenv("FUNNEL_MAX_WORKERS", "8"))
 EXECUTOR_MODE = os.getenv("FUNNEL_EXECUTOR_MODE", "process").strip().lower()
 if EXECUTOR_MODE not in {"thread", "process"}:
     EXECUTOR_MODE = "process"
+CACHE_ONLY_AFTER_PREWARM = os.getenv(
+    "FUNNEL_CACHE_ONLY_AFTER_PREWARM", ""
+).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _normalize_hist(df: pd.DataFrame) -> pd.DataFrame:
@@ -275,10 +278,12 @@ def fetch_all_ohlcv(
     fetch_spot_patched = 0
     total_batches = (len(symbols) + batch_size - 1) // batch_size if symbols else 0
 
+    action = "只从缓存加载" if CACHE_ONLY_AFTER_PREWARM else "加载/补齐"
     print(
-        f"[funnel] 开始拉取 {len(symbols)} 只股票日线 "
+        f"[funnel] 开始{action} {len(symbols)} 只股票日线 "
         f"(executor={executor_mode}, batch_size={batch_size}, max_workers={max_workers}, "
-        f"batch_timeout={batch_timeout}s, fetch_timeout={FETCH_TIMEOUT}s, retries={MAX_RETRIES})"
+        f"batch_timeout={batch_timeout}s, fetch_timeout={FETCH_TIMEOUT}s, "
+        f"retries={MAX_RETRIES}, cache_only={CACHE_ONLY_AFTER_PREWARM})"
     )
     total_fetch_started = time.monotonic()
     for i in range(0, len(symbols), batch_size):
@@ -367,7 +372,7 @@ def fetch_all_ohlcv(
     total_fetch_elapsed = time.monotonic() - total_fetch_started
     overall_qps = (fetch_ok / total_fetch_elapsed) if total_fetch_elapsed > 0 else 0.0
     print(
-        f"[funnel] 日线拉取完成: 成功={fetch_ok}, 失败={fetch_fail}, "
+        f"[funnel] 日线{action}完成: 成功={fetch_ok}, 失败={fetch_fail}, "
         f"总耗时={total_fetch_elapsed:.1f}s, 平均qps={overall_qps:.2f}"
     )
     if enforce_target_trade_date:
