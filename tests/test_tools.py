@@ -304,6 +304,150 @@ class TestFunnelPrewarm:
             trading_days=320,
         )
 
+    def test_partial_checkpoint_preserves_ready_symbols_for_resume(
+        self, tmp_path, monkeypatch
+    ):
+        import scripts.funnel_prewarm as mod
+
+        state_path = tmp_path / "prewarm_state.json"
+        monkeypatch.setattr(mod, "_PREWARM_RUN_STATE_PATH", state_path)
+        monkeypatch.setattr(mod, "_RECENT_GAP_MAX_AGE_DAYS", 45)
+        symbols = ["000001", "000002"]
+        end_day = date(2026, 7, 16)
+        ready_record = mod._ready_symbol_manifest_entry(
+            end_trade_date=end_day,
+            trading_days=320,
+            expected_count=31,
+            cached_count=320,
+        )
+
+        manifest_ready = mod._save_prewarm_progress(
+            run_state={},
+            market="cn",
+            status="partial",
+            end_trade_date=end_day,
+            trading_days=320,
+            symbols=symbols,
+            pool_mode="test",
+            cache_ready=1,
+            fast_skipped=0,
+            repaired_symbols=1,
+            repaired_ranges=1,
+            repaired_rows=1,
+            ready_updates={"000001": ready_record},
+        )
+
+        saved = mod._load_prewarm_run_state()["cn"]
+        assert manifest_ready == 1
+        assert saved["status"] == "partial"
+        assert mod._symbol_manifest_record_is_ready(
+            saved["ready_symbols"]["000001"],
+            end_trade_date=end_day,
+            trading_days=320,
+        )
+
+    def test_main_checkpoints_completed_symbols_during_run(
+        self, tmp_path, monkeypatch
+    ):
+        import scripts.funnel_prewarm as mod
+
+        state_path = tmp_path / "prewarm_state.json"
+        end_day = date(2026, 7, 16)
+        checkpoint_statuses = []
+        real_save_progress = mod._save_prewarm_progress
+
+        def fake_prefetch(symbol, market, trading_days, *, dry_run=False):
+            return (symbol, "gap_repaired", 1, 1, 31, 320, [], 0)
+
+        def recording_save_progress(**kwargs):
+            checkpoint_statuses.append(kwargs["status"])
+            return real_save_progress(**kwargs)
+
+        monkeypatch.setattr(mod, "_PREWARM_RUN_STATE_PATH", state_path)
+        monkeypatch.setattr(mod, "_PREWARM_CHECKPOINT_EVERY", 1)
+        monkeypatch.setattr(mod, "_job_end_calendar_day", lambda: end_day)
+        monkeypatch.setattr(
+            mod,
+            "_normalize_symbols",
+            lambda symbols, *, market: list(symbols),
+        )
+        monkeypatch.setattr(mod, "_prefetch_one", fake_prefetch)
+        monkeypatch.setattr(mod, "_save_prewarm_progress", recording_save_progress)
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "funnel_prewarm.py",
+                "--market",
+                "cn",
+                "--symbols",
+                "000001,000002",
+                "--trading-days",
+                "320",
+            ],
+        )
+
+        assert mod.main() == 0
+        saved = mod._load_prewarm_run_state()["cn"]
+        assert checkpoint_statuses == ["partial", "partial", "ok"]
+        assert saved["status"] == "ok"
+        assert set(saved["ready_symbols"]) == {"000001", "000002"}
+
+    def test_prefetch_cache_ready_uses_single_cached_dates_lookup(self, monkeypatch):
+        from types import SimpleNamespace
+
+        import scripts.funnel_prewarm as mod
+
+        expected_dates = [date(2026, 7, 14), date(2026, 7, 15), date(2026, 7, 16)]
+        window = SimpleNamespace(
+            start_trade_date=expected_dates[0],
+            end_trade_date=expected_dates[-1],
+        )
+        calls = []
+
+        monkeypatch.setattr(mod, "_job_end_calendar_day", lambda: expected_dates[-1])
+        monkeypatch.setattr(
+            mod,
+            "_resolve_trading_window",
+            lambda *, end_calendar_day, trading_days: window,
+        )
+        monkeypatch.setattr(
+            mod,
+            "_expected_trade_dates",
+            lambda resolved_window, market: expected_dates,
+        )
+
+        def fake_load_cached_dates(*args, **kwargs):
+            calls.append((args, kwargs))
+            return expected_dates
+
+        monkeypatch.setattr(mod, "load_cached_dates", fake_load_cached_dates)
+        monkeypatch.setattr(
+            mod,
+            "fetch_stock_hist",
+            lambda **kwargs: (_ for _ in ()).throw(
+                AssertionError("cache-ready symbol must not fetch market data")
+            ),
+        )
+
+        result = mod._prefetch_one("000001", "cn", 320)
+
+        assert result[1] == "cache_ready"
+        assert len(calls) == 1
+
+    def test_workflows_explain_timeout_exit_124(self):
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parent.parent
+        for workflow_name in (
+            "wyckoff_funnel.yml",
+            "wyckoff_funnel_us.yml",
+            "wyckoff_funnel_hk.yml",
+        ):
+            workflow = (root / ".github" / "workflows" / workflow_name).read_text()
+            assert "prewarm_status=${PIPESTATUS[0]}" in workflow
+            assert "Prewarm timeout" in workflow
+            assert 'exit "${prewarm_status}"' in workflow
+
 
 # ── core/strategy bridge ──
 

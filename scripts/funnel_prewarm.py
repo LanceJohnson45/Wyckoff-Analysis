@@ -36,7 +36,7 @@ try:
 except ImportError:
     pass
 
-from core.stock_cache import get_cache_meta, load_cached_dates, normalize_hist_df, upsert_cache_data
+from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from integrations.data_source import fetch_index_hist, fetch_stock_hist
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached
 from scripts.wyckoff_funnel import (
@@ -65,6 +65,10 @@ _PREWARM_RUN_STATE_PATH = Path(
         str(ROOT / "data" / "funnel_prewarm_state.json"),
     )
 )
+_PREWARM_CHECKPOINT_EVERY = max(
+    int(os.getenv("FUNNEL_PREWARM_CHECKPOINT_EVERY", "100")),
+    1,
+)
 
 
 def _symbol_digest(symbols: list[str]) -> str:
@@ -92,12 +96,70 @@ def _load_prewarm_run_state() -> dict:
 def _save_prewarm_run_state(payload: dict) -> None:
     try:
         _PREWARM_RUN_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        _PREWARM_RUN_STATE_PATH.write_text(
+        temp_path = _PREWARM_RUN_STATE_PATH.with_suffix(
+            f"{_PREWARM_RUN_STATE_PATH.suffix}.tmp"
+        )
+        temp_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        temp_path.replace(_PREWARM_RUN_STATE_PATH)
     except Exception as e:
         _log(f"prewarm state save failed: {type(e).__name__}: {e}")
+
+
+def _save_prewarm_progress(
+    *,
+    run_state: dict,
+    market: str,
+    status: str,
+    end_trade_date: date,
+    trading_days: int,
+    symbols: list[str],
+    pool_mode: object,
+    cache_ready: int,
+    fast_skipped: int,
+    repaired_symbols: int,
+    repaired_ranges: int,
+    repaired_rows: int,
+    ready_updates: dict[str, dict],
+) -> int:
+    state = run_state if isinstance(run_state, dict) else {}
+    previous_market_state = state.get(str(market).lower(), {})
+    previous_ready_symbols = (
+        previous_market_state.get("ready_symbols", {})
+        if isinstance(previous_market_state, dict)
+        else {}
+    )
+    if not isinstance(previous_ready_symbols, dict):
+        previous_ready_symbols = {}
+    merged_ready_symbols = dict(previous_ready_symbols)
+    merged_ready_symbols.update(ready_updates)
+    current_cache_symbols = {
+        _cache_symbol_for_market(sym, market) for sym in symbols
+    }
+    merged_ready_symbols = {
+        sym: record
+        for sym, record in merged_ready_symbols.items()
+        if sym in current_cache_symbols
+    }
+    state[str(market).lower()] = {
+        "status": status,
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+        "end_trade_date": end_trade_date.isoformat(),
+        "trading_days": int(trading_days),
+        "symbol_count": len(symbols),
+        "symbol_digest": _symbol_digest(symbols),
+        "pool_mode": pool_mode,
+        "cache_ready": int(cache_ready),
+        "fast_skipped": int(fast_skipped),
+        "repaired_symbols": int(repaired_symbols),
+        "repaired_ranges": int(repaired_ranges),
+        "repaired_rows": int(repaired_rows),
+        "ready_symbols": merged_ready_symbols,
+    }
+    _save_prewarm_run_state(state)
+    return len(merged_ready_symbols)
 
 
 def _should_skip_prewarm_run(
@@ -314,7 +376,6 @@ def _prefetch_one(
         else _resolve_trading_window(end_calendar_day=end_day, trading_days=trading_days)
     )
     cache_symbol = _cache_symbol_for_market(symbol, market)
-    meta = get_cache_meta(cache_symbol, "qfq", context="background")
     expected_dates = _expected_trade_dates(window, market)
     if not expected_dates:
         raise RuntimeError("expected trade dates empty")
@@ -325,18 +386,19 @@ def _prefetch_one(
         window.end_trade_date,
         context="background",
     )
+    has_cached_dates = bool(cached_dates)
     effective_expected_dates = expected_dates
-    if meta is not None and _RECENT_GAP_MAX_AGE_DAYS > 0:
+    if has_cached_dates and _RECENT_GAP_MAX_AGE_DAYS > 0:
         effective_expected_dates = _filter_expected_dates_by_recent_window(
             expected_dates,
             end_trade_date=window.end_trade_date,
             max_age_days=_RECENT_GAP_MAX_AGE_DAYS,
         )
     if (
-        meta is not None
+        has_cached_dates
         and effective_expected_dates
-        and meta.end_date >= effective_expected_dates[-1]
-        and meta.end_date >= window.end_trade_date
+        and cached_dates[-1] >= effective_expected_dates[-1]
+        and cached_dates[-1] >= window.end_trade_date
         and len(cached_dates) >= len(effective_expected_dates)
         and set(effective_expected_dates).issubset(set(cached_dates))
     ):
@@ -351,10 +413,8 @@ def _prefetch_one(
             0,
         )
     gap_ranges = _missing_ranges(expected_dates, cached_dates)
-    if not gap_ranges and meta is None:
-        gap_ranges = [(window.start_trade_date, window.end_trade_date)]
     ignored_ranges: list[tuple[date, date]] = []
-    if meta is not None and gap_ranges:
+    if has_cached_dates and gap_ranges:
         gap_ranges, ignored_ranges = _trim_recent_gap_ranges(
             gap_ranges,
             end_trade_date=window.end_trade_date,
@@ -526,6 +586,7 @@ def main() -> int:
             )
 
     ready_updates: dict[str, dict] = {}
+    completed_since_checkpoint = 0
     with ThreadPoolExecutor(max_workers=max(int(args.max_workers), 1)) as executor:
         futures = {
             executor.submit(
@@ -600,6 +661,32 @@ def main() -> int:
             except Exception as e:
                 fail += 1
                 _log(f"prewarm fail {symbol}: {type(e).__name__}: {e}")
+            completed_since_checkpoint += 1
+            if (
+                not args.dry_run
+                and completed_since_checkpoint >= _PREWARM_CHECKPOINT_EVERY
+            ):
+                manifest_ready = _save_prewarm_progress(
+                    run_state=run_state,
+                    market=market,
+                    status="partial",
+                    end_trade_date=end_day,
+                    trading_days=run_trading_days,
+                    symbols=normalized,
+                    pool_mode=stats.get("pool_mode"),
+                    cache_ready=cache_ready,
+                    fast_skipped=fast_skipped,
+                    repaired_symbols=repaired_symbols,
+                    repaired_ranges=repaired_ranges,
+                    repaired_rows=repaired_rows,
+                    ready_updates=ready_updates,
+                )
+                _log(
+                    "prewarm checkpoint "
+                    f"market={market} completed={ok + fail} "
+                    f"manifest_ready={manifest_ready} fail={fail}"
+                )
+                completed_since_checkpoint = 0
             if args.sleep_seconds > 0:
                 time.sleep(max(float(args.sleep_seconds), 0.0))
     _log(
@@ -609,44 +696,22 @@ def main() -> int:
         f"repaired_symbols={repaired_symbols} "
         f"repaired_ranges={repaired_ranges} repaired_rows={repaired_rows}"
     )
-    if not args.dry_run and fail == 0:
-        state = run_state if isinstance(run_state, dict) else {}
-        previous_market_state = (
-            state.get(str(market).lower(), {}) if isinstance(state, dict) else {}
+    if not args.dry_run:
+        _save_prewarm_progress(
+            run_state=run_state,
+            market=market,
+            status="ok" if fail == 0 else "partial",
+            end_trade_date=end_day,
+            trading_days=run_trading_days,
+            symbols=normalized,
+            pool_mode=stats.get("pool_mode"),
+            cache_ready=cache_ready,
+            fast_skipped=fast_skipped,
+            repaired_symbols=repaired_symbols,
+            repaired_ranges=repaired_ranges,
+            repaired_rows=repaired_rows,
+            ready_updates=ready_updates,
         )
-        previous_ready_symbols = (
-            previous_market_state.get("ready_symbols", {})
-            if isinstance(previous_market_state, dict)
-            else {}
-        )
-        if not isinstance(previous_ready_symbols, dict):
-            previous_ready_symbols = {}
-        merged_ready_symbols = dict(previous_ready_symbols)
-        merged_ready_symbols.update(ready_updates)
-        current_cache_symbols = {
-            _cache_symbol_for_market(sym, market) for sym in normalized
-        }
-        merged_ready_symbols = {
-            sym: record
-            for sym, record in merged_ready_symbols.items()
-            if sym in current_cache_symbols
-        }
-        state[str(market).lower()] = {
-            "status": "ok",
-            "updated_at": datetime.now().isoformat(timespec="seconds"),
-            "end_trade_date": end_day.isoformat(),
-            "trading_days": run_trading_days,
-            "symbol_count": len(normalized),
-            "symbol_digest": _symbol_digest(normalized),
-            "pool_mode": stats.get("pool_mode"),
-            "cache_ready": cache_ready,
-            "fast_skipped": fast_skipped,
-            "repaired_symbols": repaired_symbols,
-            "repaired_ranges": repaired_ranges,
-            "repaired_rows": repaired_rows,
-            "ready_symbols": merged_ready_symbols,
-        }
-        _save_prewarm_run_state(state)
     return 0 if ok > 0 or fail == 0 else 1
 
 

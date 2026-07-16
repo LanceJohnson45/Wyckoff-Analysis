@@ -94,9 +94,18 @@ jobs:
         run: |
           echo "::group::Prewarm cache (HK)"
           set -o pipefail
+          set +e
           timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" python -u scripts/funnel_prewarm.py --market hk --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_hk.console.log
+          prewarm_status=${PIPESTATUS[0]}
+          set -e
           echo "::endgroup::"
+          if [ "${prewarm_status}" -eq 124 ]; then
+            echo "::error title=Prewarm timeout::HK prewarm exceeded ${FUNNEL_PREWARM_TIMEOUT_MINUTES} minutes; partial progress was checkpointed and a same-day rerun will resume it."
+          elif [ "${prewarm_status}" -ne 0 ]; then
+            echo "::error title=Prewarm failed::HK prewarm exited with code ${prewarm_status}."
+          fi
+          exit "${prewarm_status}"
 
       - name: Run HK daily job
         run: |
