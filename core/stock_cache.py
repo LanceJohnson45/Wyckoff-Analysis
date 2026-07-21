@@ -405,6 +405,30 @@ def upsert_cache_data(
     if df is None or df.empty:
         return False
 
+    # Drop rows with NULL/NaN OHLC to prevent caching bad data.
+    # yfinance occasionally returns partial rows (volume present, OHLC=NaN)
+    # during rate-limiting or before the daily bar is finalized.
+    # Such rows pollute the cache permanently because cache_only mode
+    # never re-fetches. Better to skip them and let the next prewarm fill the gap.
+    _ohlc_cols = [c for c in ("open", "high", "low", "close") if c in df.columns]
+    if _ohlc_cols:
+        _bad_mask = df[_ohlc_cols].isna().any(axis=1)
+        _bad_count = int(_bad_mask.sum())
+        if _bad_count > 0:
+            print(
+                f"[upsert_cache_data] Dropping {_bad_count} rows with NULL OHLC "
+                f"for symbol={symbol}, adjust={adjust}, source={source}",
+                flush=True,
+            )
+            df = df.loc[~_bad_mask].copy()
+            if df.empty:
+                print(
+                    f"[upsert_cache_data] All rows had NULL OHLC, skipping cache write "
+                    f"for symbol={symbol}, adjust={adjust}",
+                    flush=True,
+                )
+                return False
+
     if postgres_enabled():
         payload = df.copy()
         payload["date"] = payload["date"].astype(str)
