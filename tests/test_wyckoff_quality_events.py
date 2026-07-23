@@ -87,6 +87,63 @@ def test_kline_quality_pct_change_does_not_forward_fill_missing_close():
     assert "extreme_return" not in categories
 
 
+def test_kline_quality_ignores_optional_amount_missing():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02"],
+            "open": [10.0, 10.2],
+            "high": [10.5, 10.6],
+            "low": [9.8, 10.0],
+            "close": [10.2, 10.4],
+            "volume": [1000, 1100],
+            "amount": [None, None],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="AMOUNT")
+    categories = {issue.category for issue in report.issues}
+
+    assert report.ok is True
+    assert "numeric_missing" not in categories
+
+
+def test_kline_quality_allows_large_but_plausible_daily_moves():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02", "2024-01-03"],
+            "open": [10.0, 10.5, 14.0],
+            "high": [10.5, 14.2, 14.8],
+            "low": [9.8, 10.4, 13.8],
+            "close": [10.0, 14.0, 14.2],
+            "volume": [1000, 1100, 1200],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="GAP")
+    categories = {issue.category for issue in report.issues}
+
+    assert report.ok is True
+    assert "extreme_return" not in categories
+
+
+def test_kline_quality_flags_implausible_price_jumps():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02"],
+            "open": [10.0, 19.0],
+            "high": [10.5, 20.0],
+            "low": [9.8, 18.8],
+            "close": [10.0, 19.0],
+            "volume": [1000, 1100],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="BADJUMP")
+
+    assert report.ok is True
+    assert any(issue.category == "extreme_return" for issue in report.issues)
+
+
 def test_repair_ohlc_relationship_rebuilds_row_bounds():
     df = pd.DataFrame(
         {
@@ -128,6 +185,45 @@ def test_normalize_hist_df_repairs_ohlc_relationship():
     assert normalized.loc[0, "high"] == 10.2
     assert normalized.loc[0, "low"] == 9.9
     assert report.ok is True
+
+
+def test_normalize_hist_df_fills_missing_amount_from_price_and_volume():
+    from core.stock_cache import normalize_hist_df
+
+    raw = pd.DataFrame(
+        {
+            "日期": ["2024-01-01", "2024-01-02"],
+            "开盘": [10.0, 10.0],
+            "最高": [10.5, 11.0],
+            "最低": [9.8, 9.9],
+            "收盘": [10.0, 11.0],
+            "成交量": [1000, 1200],
+        }
+    )
+
+    normalized = normalize_hist_df(raw)
+
+    assert normalized["amount"].tolist() == [10000.0, 13200.0]
+
+
+def test_normalize_hist_df_uses_existing_amount_unit_to_fill_gaps():
+    from core.stock_cache import normalize_hist_df
+
+    raw = pd.DataFrame(
+        {
+            "日期": ["2024-01-01", "2024-01-02"],
+            "开盘": [10.0, 10.0],
+            "最高": [10.5, 11.0],
+            "最低": [9.8, 9.9],
+            "收盘": [10.0, 11.0],
+            "成交量": [1000, 1200],
+            "成交额": [1000000.0, None],
+        }
+    )
+
+    normalized = normalize_hist_df(raw)
+
+    assert normalized["amount"].tolist() == [1000000.0, 1320000.0]
 
 
 def test_kline_quality_keeps_unrepaired_ohlc_noise_as_error():

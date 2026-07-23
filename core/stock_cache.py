@@ -56,6 +56,39 @@ _COL_MAP = {
 }
 
 
+def _fill_missing_amount(out: pd.DataFrame) -> pd.DataFrame:
+    if not {"close", "volume"}.issubset(out.columns):
+        return out
+
+    close = pd.to_numeric(out["close"], errors="coerce")
+    volume = pd.to_numeric(out["volume"], errors="coerce")
+    estimated_base = close * volume
+    valid_base = estimated_base.where(estimated_base > 0)
+
+    if "amount" in out.columns:
+        amount = pd.to_numeric(out["amount"], errors="coerce")
+    else:
+        amount = pd.Series(pd.NA, index=out.index, dtype="Float64")
+
+    fill_mask = (amount.isna() | (amount <= 0)) & valid_base.notna()
+    if not bool(fill_mask.any()):
+        out["amount"] = amount
+        return out
+
+    ratio = (amount.where(amount > 0) / valid_base).replace([np.inf, -np.inf], np.nan)
+    ratio = pd.to_numeric(ratio, errors="coerce").dropna()
+    if not ratio.empty:
+        median_ratio = float(ratio.median())
+        candidates = (1.0, 100.0)
+        multiplier = min(candidates, key=lambda x: abs(median_ratio - x))
+    else:
+        multiplier = 1.0
+
+    amount.loc[fill_mask] = valid_base.loc[fill_mask] * multiplier
+    out["amount"] = amount
+    return out
+
+
 def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
     out = df.rename(columns=_COL_MAP).copy()
     keep = [
@@ -93,6 +126,7 @@ def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
             out[col] = pd.to_numeric(out[col], errors="coerce")
     if "date" in out.columns:
         out["date"] = out["date"].astype(str)
+    out = _fill_missing_amount(out)
     out = repair_ohlc_relationship(out)
     return out
 

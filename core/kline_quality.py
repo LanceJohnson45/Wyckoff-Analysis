@@ -74,7 +74,7 @@ def check_kline_quality(
     *,
     symbol: str = "",
     required_columns: Iterable[str] = REQUIRED_COLUMNS,
-    extreme_pct_threshold: float = 0.22,
+    extreme_pct_threshold: float = 0.80,
 ) -> KlineQualityReport:
     symbol_s = str(symbol or "").strip()
     if df is None:
@@ -100,7 +100,7 @@ def check_kline_quality(
     if missing_cols:
         issues.append(_issue("error", "missing_columns", f"缺少字段: {', '.join(missing_cols)}", len(missing_cols)))
 
-    numeric_cols = [col for col in ("open", "high", "low", "close", "volume", "amount") if col in df.columns]
+    numeric_cols = [col for col in ("open", "high", "low", "close", "volume") if col in df.columns]
     numeric = {col: pd.to_numeric(df[col], errors="coerce") for col in numeric_cols}
     for col, series in numeric.items():
         missing_count = int(series.isna().sum())
