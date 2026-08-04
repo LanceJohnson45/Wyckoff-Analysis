@@ -658,6 +658,7 @@ def run_funnel_job(
         batch_sleep=BATCH_SLEEP,
         executor_mode=EXECUTOR_MODE,
     )
+    source_counts = fetch_stats.get("source_counts") or {}
     try:
         market_cap_map, market_cap_runtime_stats = build_market_cap_map_from_shares(
             symbols=list(all_df_map.keys()),
@@ -694,6 +695,9 @@ def run_funnel_job(
         f"errors={quality_summary.get('error_symbols', 0)}, "
         f"warnings={quality_summary.get('warning_symbols', 0)}"
     )
+    quality_warning_details = quality_summary.get("sample_warning_details") or []
+    if quality_warning_details:
+        print(f"[funnel] K线警告详情样例: {', '.join(map(str, quality_warning_details))}")
 
     # Step 0: 大盘总闸 + 全市场广度 + 动态阈值
     breadth_context = _calc_market_breadth(all_df_map, BREADTH_MA_WINDOW)
@@ -837,6 +841,7 @@ def run_funnel_job(
         "fetch_date_mismatch": int(fetch_stats.get("fetch_date_mismatch", 0) or 0),
         "fetch_spot_patched": int(fetch_stats.get("fetch_spot_patched", 0) or 0),
         "fetch_elapsed_s": _finite_float_or_none(fetch_stats.get("elapsed_s")),
+        "source_counts": source_counts,
         "integrity_pass": len(all_df_map),
         "integrity_fail": 0,
         "quality_summary": quality_summary,

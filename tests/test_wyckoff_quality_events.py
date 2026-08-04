@@ -144,6 +144,26 @@ def test_kline_quality_flags_implausible_price_jumps():
     assert any(issue.category == "extreme_return" for issue in report.issues)
 
 
+def test_kline_quality_reports_missing_volume_explicitly():
+    df = pd.DataFrame(
+        {
+            "date": ["2024-01-01", "2024-01-02"],
+            "open": [10.0, 10.2],
+            "high": [10.5, 10.6],
+            "low": [9.8, 10.0],
+            "close": [10.2, 10.4],
+            "volume": [1000, None],
+        }
+    )
+
+    report = check_kline_quality(df, symbol="VOLUME")
+    categories = {issue.category for issue in report.issues}
+
+    assert report.ok is True
+    assert "volume_missing" in categories
+    assert "numeric_missing" not in categories
+
+
 def test_repair_ohlc_relationship_rebuilds_row_bounds():
     df = pd.DataFrame(
         {
@@ -224,6 +244,46 @@ def test_normalize_hist_df_uses_existing_amount_unit_to_fill_gaps():
     normalized = normalize_hist_df(raw)
 
     assert normalized["amount"].tolist() == [1000000.0, 1320000.0]
+
+
+def test_normalize_hist_df_fills_missing_volume_from_amount():
+    from core.stock_cache import normalize_hist_df
+
+    raw = pd.DataFrame(
+        {
+            "日期": ["2024-01-01", "2024-01-02"],
+            "开盘": [10.0, 10.0],
+            "最高": [10.5, 11.0],
+            "最低": [9.8, 9.9],
+            "收盘": [10.0, 11.0],
+            "成交量": [1000, None],
+            "成交额": [10000.0, 13200.0],
+        }
+    )
+
+    normalized = normalize_hist_df(raw)
+
+    assert normalized["volume"].tolist() == [1000.0, 1200.0]
+
+
+def test_normalize_hist_df_uses_existing_volume_unit_to_fill_gaps():
+    from core.stock_cache import normalize_hist_df
+
+    raw = pd.DataFrame(
+        {
+            "日期": ["2024-01-01", "2024-01-02"],
+            "开盘": [10.0, 10.0],
+            "最高": [10.5, 11.0],
+            "最低": [9.8, 9.9],
+            "收盘": [10.0, 11.0],
+            "成交量": [1000, None],
+            "成交额": [1000000.0, 1320000.0],
+        }
+    )
+
+    normalized = normalize_hist_df(raw)
+
+    assert normalized["volume"].tolist() == [1000.0, 1200.0]
 
 
 def test_kline_quality_keeps_unrepaired_ohlc_noise_as_error():

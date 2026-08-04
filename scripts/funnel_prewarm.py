@@ -414,7 +414,15 @@ def _prefetch_one(
         )
     gap_ranges = _missing_ranges(expected_dates, cached_dates)
     ignored_ranges: list[tuple[date, date]] = []
-    if has_cached_dates and gap_ranges:
+    # The recent-gap optimization assumes the historical cache is already
+    # substantially populated. After a failed write, cache meta may exist
+    # while only a handful of rows are real; in that case repair the full
+    # requested window instead of silently ignoring the old gaps.
+    cache_has_sufficient_history = len(cached_dates) >= max(
+        20,
+        int(len(expected_dates) * 0.5),
+    )
+    if has_cached_dates and cache_has_sufficient_history and gap_ranges:
         gap_ranges, ignored_ranges = _trim_recent_gap_ranges(
             gap_ranges,
             end_trade_date=window.end_trade_date,

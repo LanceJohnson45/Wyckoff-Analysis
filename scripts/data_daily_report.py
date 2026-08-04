@@ -135,6 +135,7 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     fetch_elapsed = metrics.get("fetch_elapsed_s")  # 可能没有，来自 fetch_stats 注入
     quality_summary = metrics.get("quality_summary") or {}
     quality_issue_counts = quality_summary.get("issue_counts") or {}
+    source_counts = metrics.get("source_counts") or {}
 
     # 缓存命中计数（需 stock_hist_repository 注入，默认 N/A）
     cache_hits = metrics.get("cache_hits")
@@ -235,6 +236,16 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
         lines.append(f"缓存命中: **{cache_hits}** ｜ 新拉取: **{new_fetches}**")
     if fetch_elapsed is not None:
         lines.append(f"拉取耗时: {fetch_elapsed:.0f}s")
+    if source_counts:
+        top_sources = sorted(
+            source_counts.items(),
+            key=lambda item: int(item[1] or 0),
+            reverse=True,
+        )[:5]
+        lines.append(
+            "数据源分布: "
+            + "、".join(f"{name}={count}" for name, count in top_sources)
+        )
     if quality_summary:
         lines.append(
             "K线质量: "
@@ -260,9 +271,16 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
             for x in (quality_summary.get("sample_warning_symbols") or [])
             if str(x)
         ][:5]
+        sample_warning_details = [
+            str(x)
+            for x in (quality_summary.get("sample_warning_details") or [])
+            if str(x)
+        ][:5]
         if sample_error_symbols:
             lines.append("质量严重样例: " + "、".join(sample_error_symbols))
-        if sample_warning_symbols:
+        if sample_warning_details:
+            lines.append("质量警告样例: " + "、".join(sample_warning_details))
+        elif sample_warning_symbols:
             lines.append("质量警告样例: " + "、".join(sample_warning_symbols))
     lines.append("")
 

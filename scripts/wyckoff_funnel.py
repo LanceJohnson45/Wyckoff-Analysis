@@ -114,6 +114,10 @@ FUNNEL_ENABLE_SPOT_PATCH = os.getenv(
 FUNNEL_SPOT_PATCH_RETRIES = int(os.getenv("FUNNEL_SPOT_PATCH_RETRIES", "2"))
 FUNNEL_SPOT_PATCH_SLEEP = float(os.getenv("FUNNEL_SPOT_PATCH_SLEEP", "0.2"))
 BREADTH_MA_WINDOW = int(os.getenv("FUNNEL_BREADTH_MA_WINDOW", "20"))
+BREADTH_MIN_SAMPLE_SIZE = max(
+    int(os.getenv("FUNNEL_BREADTH_MIN_SAMPLE_SIZE", "20")),
+    1,
+)
 INTEGRITY_MIN_COVERAGE_200 = float(
     os.getenv("FUNNEL_MIN_COVERAGE_200", "0.98")
 )
@@ -977,7 +981,11 @@ def _analyze_benchmark_and_tune_cfg(
         breadth_prev = breadth.get("prev_ratio_pct")
         breadth_delta = breadth.get("delta_pct")
         breadth_sample = int(breadth.get("sample_size") or 0)
-    if breadth_ratio is not None:
+    breadth_reliable = (
+        breadth_ratio is not None
+        and breadth_sample >= BREADTH_MIN_SAMPLE_SIZE
+    )
+    if breadth_reliable:
         if float(breadth_ratio) <= BREADTH_RISK_OFF_THRESHOLD:
             regime = "RISK_OFF"
         elif float(breadth_ratio) >= BREADTH_RISK_ON_THRESHOLD:
@@ -1004,13 +1012,13 @@ def _analyze_benchmark_and_tune_cfg(
         panic_reasons.append(
             f"smallcap_day_drop={small_today_pct:.2f}%<=阈值{CRASH_SMALL_DAY_DROP_PCT:.2f}%"
         )
-    if breadth_ratio is not None and float(breadth_ratio) <= float(
+    if breadth_reliable and float(breadth_ratio) <= float(
         CRASH_BREADTH_RATIO_PCT
     ):
         panic_reasons.append(
             f"breadth_ratio={float(breadth_ratio):.2f}%<=阈值{CRASH_BREADTH_RATIO_PCT:.2f}%"
         )
-    if breadth_delta is not None and float(breadth_delta) <= float(
+    if breadth_reliable and breadth_delta is not None and float(breadth_delta) <= float(
         CRASH_BREADTH_DELTA_PCT
     ):
         panic_reasons.append(
@@ -1232,6 +1240,8 @@ def _analyze_benchmark_and_tune_cfg(
                 "prev_ratio_pct": breadth_prev,
                 "delta_pct": breadth_delta,
                 "sample_size": breadth_sample,
+                "reliable": breadth_reliable,
+                "min_sample_size": BREADTH_MIN_SAMPLE_SIZE,
                 "ma_window": BREADTH_MA_WINDOW,
             },
             "has_main_benchmark": bool(
@@ -1727,7 +1737,7 @@ def run_funnel_job(
                     batch_fail += 1
                     fetch_fail += 1
                     continue
-                if df is not None:
+                if df is not None and not df.empty:
                     if ENFORCE_TARGET_TRADE_DATE:
                         latest_trade_date = _latest_trade_date_from_hist(df)
                         if latest_trade_date != window.end_trade_date:
@@ -1822,6 +1832,10 @@ def run_funnel_job(
                 f"{sym}(cov200={stats['coverage_200']:.2%}, cov20={stats['coverage_20']:.2%}, miss_recent={stats['missing_recent']})"
             )
     all_df_map = qualified_df_map
+    source_counts = Counter(
+        str((getattr(df, "attrs", {}) or {}).get("source") or "unknown")
+        for df in all_df_map.values()
+    )
     print(
         f"[funnel] 数据完整性检查: 通过={len(all_df_map)}, 跳过={integrity_fail}, "
         f"阈值[cov200>={INTEGRITY_MIN_COVERAGE_200:.0%}, cov20>={INTEGRITY_MIN_COVERAGE_20:.0%}, recent{INTEGRITY_STRICT_RECENT_DAYS}=full], "
@@ -1830,6 +1844,9 @@ def run_funnel_job(
     if integrity_examples:
         suffix = "..." if integrity_fail > len(integrity_examples) else ""
         print(f"[funnel] 数据完整性跳过样例: {', '.join(integrity_examples)}{suffix}")
+    if source_counts:
+        source_text = "、".join(f"{name}={count}" for name, count in source_counts.most_common())
+        print(f"[funnel] 数据源分布: {source_text}")
 
     market_cap_map, market_cap_runtime_stats = build_market_cap_map_from_shares(
         symbols=list(all_df_map.keys()),
@@ -1860,6 +1877,7 @@ def run_funnel_job(
             "integrity_fail": integrity_fail,
             "fetch_elapsed_s": round(total_fetch_elapsed, 2),
             "fetch_qps": round(overall_qps, 3),
+            "source_counts": dict(source_counts),
         },
         bench_df=bench_df,
         smallcap_df=smallcap_df,
@@ -1874,8 +1892,11 @@ def run_funnel_job(
     )
     quality_error_samples = quality_summary.get("sample_error_symbols") or []
     quality_warning_samples = quality_summary.get("sample_warning_symbols") or []
+    quality_warning_details = quality_summary.get("sample_warning_details") or []
     if quality_error_samples:
         print(f"[funnel] K线严重异常样例: {', '.join(map(str, quality_error_samples))}")
+    if quality_warning_details:
+        print(f"[funnel] K线警告详情样例: {', '.join(map(str, quality_warning_details))}")
     if quality_warning_samples:
         print(f"[funnel] K线警告样例: {', '.join(map(str, quality_warning_samples))}")
 
@@ -2033,6 +2054,7 @@ def run_funnel_job(
         "integrity_fail": integrity_fail,
         "integrity_expected_dates": len(expected_dates),
         "integrity_expected_dates_source": expected_dates_source,
+        "source_counts": dict(source_counts),
         "market_cap_runtime_stats": market_cap_runtime_stats,
         "quality_summary": quality_summary,
         "snapshot_dir": snapshot_dir,
@@ -2520,8 +2542,13 @@ def run(
             breadth_text = (
                 f"，上涨家数占比 {breadth.get('ratio_pct'):.1f}%"
                 f"（前日 {breadth.get('prev_ratio_pct'):.1f}%，变化 {breadth.get('delta_pct'):+.1f}%，样本 {breadth.get('sample_size')} 只）"
-                if breadth
-                else ""
+                if breadth and breadth.get("reliable", True)
+                else (
+                    f"，广度数据不足（有效样本 {breadth.get('sample_size', 0)}"
+                    f" < {breadth.get('min_sample_size', BREADTH_MIN_SAMPLE_SIZE)}）"
+                    if breadth
+                    else ""
+                )
             )
             repair_text = (
                 f"，修复原因：{benchmark_context.get('repair_reasons')}"
@@ -2551,8 +2578,15 @@ def run(
             breadth = benchmark_context.get("breadth", {}) or {}
             breadth_text = (
                 f"；广度 {breadth.get('ratio_pct'):.1f}%"
-                if breadth and breadth.get("ratio_pct") is not None
-                else ""
+                if breadth
+                and breadth.get("ratio_pct") is not None
+                and breadth.get("reliable", True)
+                else (
+                    f"；广度数据不足（有效样本 {breadth.get('sample_size', 0)}"
+                    f" < {breadth.get('min_sample_size', BREADTH_MIN_SAMPLE_SIZE)}）"
+                    if breadth
+                    else ""
+                )
             )
             bench_line = f"{benchmark_context.get('regime')} | 基准指数数据不可用{breadth_text}"
             pv_line = "大盘量价推演已跳过：基准指数数据不可用"

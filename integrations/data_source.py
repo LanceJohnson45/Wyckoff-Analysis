@@ -215,6 +215,17 @@ def _tag_source(df: pd.DataFrame, source: str) -> pd.DataFrame:
     return df
 
 
+def _has_valid_ohlc(df: pd.DataFrame | None) -> bool:
+    """Return whether a fetched frame contains at least one usable OHLC row."""
+    if df is None or df.empty:
+        return False
+    columns = ("开盘", "最高", "最低", "收盘")
+    if not all(column in df.columns for column in columns):
+        return False
+    numeric = df.loc[:, columns].apply(pd.to_numeric, errors="coerce")
+    return bool(numeric.notna().all(axis=1).any())
+
+
 def _to_float_or_none(v: Any) -> float | None:
     if v is None or pd.isna(v):
         return None
@@ -1024,9 +1035,10 @@ def fetch_stock_hist(
             "on",
         }
         try:
-            return _tag_source(
-                _fetch_stock_yfinance(symbol, start_s, end_s), "yfinance"
-            )
+            yf_frame = _fetch_stock_yfinance(symbol, start_s, end_s)
+            if not _has_valid_ohlc(yf_frame):
+                raise RuntimeError("yfinance returned no valid OHLC rows")
+            return _tag_source(yf_frame, "yfinance")
         except Exception as e:
             _debug_source_fail(f"yfinance({market_norm})", e)
             failed_sources.append("yfinance")

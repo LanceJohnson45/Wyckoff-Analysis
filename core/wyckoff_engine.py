@@ -135,9 +135,10 @@ class L2Decision:
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
     from core.kline_quality import repair_ohlc_relationship
-    from core.stock_cache import _COL_MAP
+    from core.stock_cache import _COL_MAP, fill_missing_amount, fill_missing_volume
 
     col_map = {**_COL_MAP, "换手率": "turnover", "换手": "turnover"}
+    source_attrs = dict(getattr(df, "attrs", {}) or {})
     out = df.rename(columns=col_map)
     keep = [
         c
@@ -169,7 +170,10 @@ def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     ]:
         if col in out.columns:
             out[col] = pd.to_numeric(out[col], errors="coerce")
+    out = fill_missing_volume(out)
+    out = fill_missing_amount(out)
     out = repair_ohlc_relationship(out)
+    out.attrs.update(source_attrs)
     return out
 
 

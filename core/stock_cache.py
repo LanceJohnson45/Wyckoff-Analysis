@@ -56,7 +56,49 @@ _COL_MAP = {
 }
 
 
-def _fill_missing_amount(out: pd.DataFrame) -> pd.DataFrame:
+def _infer_amount_multiplier(
+    close: pd.Series,
+    volume: pd.Series,
+    amount: pd.Series,
+) -> float:
+    close = pd.to_numeric(close, errors="coerce")
+    volume = pd.to_numeric(volume, errors="coerce")
+    amount = pd.to_numeric(amount, errors="coerce")
+    estimated_base = close * volume
+    valid_base = estimated_base.where(estimated_base > 0)
+    ratio = (amount.where(amount > 0) / valid_base).replace([np.inf, -np.inf], np.nan)
+    ratio = pd.to_numeric(ratio, errors="coerce").dropna()
+    if ratio.empty:
+        return 1.0
+    median_ratio = float(ratio.median())
+    candidates = (1.0, 100.0)
+    return min(candidates, key=lambda x: abs(median_ratio - x))
+
+
+def fill_missing_volume(out: pd.DataFrame) -> pd.DataFrame:
+    if not {"close", "amount"}.issubset(out.columns):
+        return out
+
+    close = pd.to_numeric(out["close"], errors="coerce")
+    amount = pd.to_numeric(out["amount"], errors="coerce")
+    if "volume" in out.columns:
+        volume = pd.to_numeric(out["volume"], errors="coerce")
+    else:
+        volume = pd.Series(pd.NA, index=out.index, dtype="Float64")
+
+    valid_close = close.where(close > 0)
+    fill_mask = (volume.isna() | (volume < 0)) & valid_close.notna() & (amount > 0)
+    if not bool(fill_mask.any()):
+        out["volume"] = volume
+        return out
+
+    multiplier = _infer_amount_multiplier(close, volume, amount)
+    volume.loc[fill_mask] = amount.loc[fill_mask] / valid_close.loc[fill_mask] / multiplier
+    out["volume"] = volume
+    return out
+
+
+def fill_missing_amount(out: pd.DataFrame) -> pd.DataFrame:
     if not {"close", "volume"}.issubset(out.columns):
         return out
 
@@ -75,15 +117,7 @@ def _fill_missing_amount(out: pd.DataFrame) -> pd.DataFrame:
         out["amount"] = amount
         return out
 
-    ratio = (amount.where(amount > 0) / valid_base).replace([np.inf, -np.inf], np.nan)
-    ratio = pd.to_numeric(ratio, errors="coerce").dropna()
-    if not ratio.empty:
-        median_ratio = float(ratio.median())
-        candidates = (1.0, 100.0)
-        multiplier = min(candidates, key=lambda x: abs(median_ratio - x))
-    else:
-        multiplier = 1.0
-
+    multiplier = _infer_amount_multiplier(close, volume, amount)
     amount.loc[fill_mask] = valid_base.loc[fill_mask] * multiplier
     out["amount"] = amount
     return out
@@ -126,7 +160,8 @@ def normalize_hist_df(df: pd.DataFrame) -> pd.DataFrame:
             out[col] = pd.to_numeric(out[col], errors="coerce")
     if "date" in out.columns:
         out["date"] = out["date"].astype(str)
-    out = _fill_missing_amount(out)
+    out = fill_missing_volume(out)
+    out = fill_missing_amount(out)
     out = repair_ohlc_relationship(out)
     return out
 

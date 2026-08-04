@@ -106,7 +106,8 @@ def check_kline_quality(
         missing_count = int(series.isna().sum())
         if missing_count:
             severity = "error" if col in {"open", "high", "low", "close"} else "warning"
-            issues.append(_issue(severity, "numeric_missing", f"{col} 存在非数值或缺失", missing_count))
+            category = "volume_missing" if col == "volume" else "numeric_missing"
+            issues.append(_issue(severity, category, f"{col} 存在非数值或缺失", missing_count))
 
     if "date" in df.columns:
         dt = pd.to_datetime(df["date"], errors="coerce")
@@ -168,9 +169,25 @@ def summarize_quality_reports(reports: dict[str, KlineQualityReport]) -> dict[st
         if symbol not in set(error_symbols) and any(x.severity == "warning" for x in report.issues)
     ]
     issue_counts: dict[str, int] = {}
+    sample_error_details: list[str] = []
+    sample_warning_details: list[str] = []
     for report in reports.values():
         for issue in report.issues:
             issue_counts[issue.category] = issue_counts.get(issue.category, 0) + max(issue.count, 1)
+        error_parts = [
+            f"{issue.category}={max(issue.count, 1)}"
+            for issue in report.issues
+            if issue.severity == "error"
+        ]
+        if error_parts and len(sample_error_details) < 8:
+            sample_error_details.append(f"{report.symbol}({', '.join(error_parts)})")
+        warning_parts = [
+            f"{issue.category}={max(issue.count, 1)}"
+            for issue in report.issues
+            if issue.severity == "warning"
+        ]
+        if warning_parts and report.symbol not in set(error_symbols) and len(sample_warning_details) < 8:
+            sample_warning_details.append(f"{report.symbol}({', '.join(warning_parts)})")
     return {
         "total": total,
         "ok": max(total - len(error_symbols), 0),
@@ -179,6 +196,8 @@ def summarize_quality_reports(reports: dict[str, KlineQualityReport]) -> dict[st
         "issue_counts": issue_counts,
         "sample_error_symbols": error_symbols[:8],
         "sample_warning_symbols": warning_symbols[:8],
+        "sample_error_details": sample_error_details,
+        "sample_warning_details": sample_warning_details,
     }
 
 

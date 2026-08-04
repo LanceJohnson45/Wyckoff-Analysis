@@ -114,8 +114,10 @@ def _fetch_gap(
         adjust=adjust,
         market=market,
     )
+    source = str((getattr(df, "attrs", {}) or {}).get("source") or "source")
     norm = normalize_hist_df(df)
-    return norm, "cache"
+    norm.attrs["source"] = source
+    return norm, source
 
 
 def get_stock_hist(
@@ -215,6 +217,7 @@ def get_stock_hist(
 
     gaps = _compute_gap_ranges(start_d, end_d, meta, market=market_norm)
     fetched_frames: list[pd.DataFrame] = []
+    fetched_sources: list[str] = []
     did_fetch = False
 
     for gap_start, gap_end in gaps:
@@ -224,12 +227,13 @@ def get_stock_hist(
             f"range={gap_start}..{gap_end} context={context}"
         )
         try:
-            frame, _ = _fetch_gap(symbol, gap_start, gap_end, adjust, market_norm)
+            frame, source = _fetch_gap(symbol, gap_start, gap_end, adjust, market_norm)
         except Exception as e:
             raise RuntimeError(
                 f"source_fetch failed [{gap_start}..{gap_end}]: {type(e).__name__}: {e}"
             ) from e
         fetched_frames.append(frame)
+        fetched_sources.append(source)
 
     merged = _merge_norm_frames(
         [cached_norm] + fetched_frames if cached_norm is not None else fetched_frames
@@ -240,39 +244,43 @@ def get_stock_hist(
         # （fetch_stock_hist_from_source 内部会提供详细数据源失败信息）
         did_fetch = True
         try:
-            frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+            frame, source = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
         except Exception as e:
             raise RuntimeError(
                 f"source_fetch failed [{start_d}..{end_d}]: {type(e).__name__}: {e}"
             ) from e
         merged = frame
+        fetched_sources.append(source)
 
     result_norm = _slice_df_by_date(merged, start_d, end_d)
     if result_norm.empty:
         # 防御性兜底：强制拉取完整窗口
         did_fetch = True
         try:
-            frame, _ = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
+            frame, source = _fetch_gap(symbol, start_d, end_d, adjust, market_norm)
         except Exception as e:
             raise RuntimeError(
                 f"source_refetch failed [{start_d}..{end_d}]: {type(e).__name__}: {e}"
             ) from e
         result_norm = _slice_df_by_date(frame, start_d, end_d)
         merged = _merge_norm_frames([merged, frame])
-    chosen_source = "cache"
+        fetched_sources.append(source)
+    chosen_source = fetched_sources[-1] if fetched_sources else "cache"
 
     # 有缺口补拉或首次拉取时回写缓存；纯命中时不重复写
     if did_fetch or meta is None:
         new_start = min(start_d, meta.start_date) if meta else start_d
         new_end = max(end_d, meta.end_date) if meta else end_d
         try:
-            upsert_cache_data(
+            cache_written = upsert_cache_data(
                 symbol=cache_symbol,
                 adjust=cache_adjust,
                 source=chosen_source,
                 df=merged,
                 context=context,
             )
+            if not cache_written:
+                raise RuntimeError("cache data write returned false")
             upsert_cache_meta(
                 symbol=cache_symbol,
                 adjust=cache_adjust,

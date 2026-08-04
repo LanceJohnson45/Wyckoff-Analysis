@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import socket
 import time
+from collections import Counter
 from concurrent.futures import (
     ProcessPoolExecutor,
     ThreadPoolExecutor,
@@ -380,6 +381,13 @@ def fetch_all_ohlcv(
             f"[funnel] 交易日对齐检查: mismatch={fetch_date_mismatch}, "
             f"spot_patched={fetch_spot_patched}, target_trade_date={window.end_trade_date}"
         )
+    source_counts = Counter(
+        str((getattr(df, "attrs", {}) or {}).get("source") or "unknown")
+        for df in all_df_map.values()
+    )
+    if source_counts:
+        source_text = "、".join(f"{name}={count}" for name, count in source_counts.most_common())
+        print(f"[funnel] 数据源分布: {source_text}")
 
     stats = {
         "fetch_ok": fetch_ok,
@@ -388,5 +396,6 @@ def fetch_all_ohlcv(
         "fetch_spot_patched": fetch_spot_patched,
         "fetch_elapsed_s": round(total_fetch_elapsed, 2),
         "fetch_qps": round(overall_qps, 3),
+        "source_counts": dict(source_counts),
     }
     return (all_df_map, stats)
