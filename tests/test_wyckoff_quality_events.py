@@ -286,6 +286,57 @@ def test_normalize_hist_df_uses_existing_volume_unit_to_fill_gaps():
     assert normalized["volume"].tolist() == [1000.0, 1200.0]
 
 
+def test_upsert_cache_data_drops_rows_with_unrecoverable_missing_volume(monkeypatch):
+    from core import stock_cache
+
+    written: list[dict] = []
+
+    class DummyCursor:
+        def execute(self, *args, **kwargs):
+            return None
+
+    class DummyConnection:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def cursor(self):
+            return self
+
+        def execute(self, *args, **kwargs):
+            return None
+
+    monkeypatch.setattr(stock_cache, "postgres_enabled", lambda: True)
+    monkeypatch.setattr(stock_cache, "connect_postgres", lambda: DummyConnection())
+    monkeypatch.setattr(
+        stock_cache,
+        "upsert_rows",
+        lambda table, records, conflict_columns: written.extend(records),
+    )
+
+    ok = stock_cache.upsert_cache_data(
+        symbol="BADVOL",
+        adjust="qfq",
+        source="unit",
+        df=pd.DataFrame(
+            {
+                "date": ["2024-01-01", "2024-01-02"],
+                "open": [10.0, 10.2],
+                "high": [10.5, 10.6],
+                "low": [9.8, 10.0],
+                "close": [10.2, 10.4],
+                "volume": [1000.0, None],
+            }
+        ),
+    )
+
+    assert ok is True
+    assert [row["date"] for row in written] == ["2024-01-01"]
+    assert written[0]["volume"] == 1000.0
+
+
 def test_kline_quality_keeps_unrepaired_ohlc_noise_as_error():
     df = pd.DataFrame(
         {

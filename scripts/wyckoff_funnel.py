@@ -2054,6 +2054,7 @@ def run_funnel_job(
         "integrity_fail": integrity_fail,
         "integrity_expected_dates": len(expected_dates),
         "integrity_expected_dates_source": expected_dates_source,
+        "integrity_rejection_samples": integrity_examples,
         "source_counts": dict(source_counts),
         "market_cap_runtime_stats": market_cap_runtime_stats,
         "quality_summary": quality_summary,

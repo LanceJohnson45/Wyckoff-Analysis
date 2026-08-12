@@ -474,25 +474,33 @@ def upsert_cache_data(
     if df is None or df.empty:
         return False
 
-    # Drop rows with NULL/NaN OHLC to prevent caching bad data.
+    # Drop rows with unrecoverable NULL/NaN essentials to prevent caching bad data.
     # yfinance occasionally returns partial rows (volume present, OHLC=NaN)
     # during rate-limiting or before the daily bar is finalized.
     # Such rows pollute the cache permanently because cache_only mode
     # never re-fetches. Better to skip them and let the next prewarm fill the gap.
+    essential_masks: list[pd.Series] = []
     _ohlc_cols = [c for c in ("open", "high", "low", "close") if c in df.columns]
-    if _ohlc_cols:
-        _bad_mask = df[_ohlc_cols].isna().any(axis=1)
+    for col in _ohlc_cols:
+        essential_masks.append(pd.to_numeric(df[col], errors="coerce").isna())
+    if "volume" in df.columns:
+        volume = pd.to_numeric(df["volume"], errors="coerce")
+        essential_masks.append(volume.isna() | (volume < 0))
+    if essential_masks:
+        _bad_mask = essential_masks[0]
+        for mask in essential_masks[1:]:
+            _bad_mask = _bad_mask | mask
         _bad_count = int(_bad_mask.sum())
         if _bad_count > 0:
             print(
-                f"[upsert_cache_data] Dropping {_bad_count} rows with NULL OHLC "
+                f"[upsert_cache_data] Dropping {_bad_count} rows with invalid OHLCV "
                 f"for symbol={symbol}, adjust={adjust}, source={source}",
                 flush=True,
             )
             df = df.loc[~_bad_mask].copy()
             if df.empty:
                 print(
-                    f"[upsert_cache_data] All rows had NULL OHLC, skipping cache write "
+                    f"[upsert_cache_data] All rows had invalid OHLCV, skipping cache write "
                     f"for symbol={symbol}, adjust={adjust}",
                     flush=True,
                 )
@@ -654,7 +662,7 @@ def _trim_symbol_history_window_pg(
     adjust: str,
     retention_days: int,
 ) -> None:
-    cutoff_date = datetime.utcnow().date() - timedelta(days=max(retention_days, 1))
+    cutoff_date = datetime.now(timezone.utc).date() - timedelta(days=max(retention_days, 1))
     cur.execute(
         """
         delete from public.stock_hist_cache

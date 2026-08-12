@@ -523,6 +523,36 @@ class TestDataDailyReport:
         assert "质量严重样例: BAD" in text
         assert "质量警告样例: WARN" in text
 
+    def test_build_report_text_includes_integrity_diagnostics(self):
+        from scripts.data_daily_report import build_report_text
+
+        text = build_report_text(
+            {
+                "market": "us",
+                "end_trade_date": "2026-08-11",
+                "total_symbols": 100,
+                "fetch_ok": 100,
+                "fetch_fail": 0,
+                "integrity_pass": 92,
+                "integrity_fail": 8,
+                "integrity_expected_dates": 320,
+                "integrity_expected_dates_source": "benchmark_main",
+                "integrity_rejection_samples": [
+                    "ZS(cov200=96.00%, cov20=80.00%, miss_recent=2)"
+                ],
+                "snapshot_dir": "data/funnel_snapshots/full_fetch_20260812_132951",
+                "layer1": 90,
+                "layer2": 10,
+                "layer3": 4,
+                "total_hits": 0,
+                "benchmark_context": {"regime": "NEUTRAL", "breadth": {"ratio_pct": 50.0}},
+            }
+        )
+
+        assert "完整性基准交易日: 320 source=benchmark_main" in text
+        assert "完整性淘汰样例: ZS(cov200=96.00%, cov20=80.00%, miss_recent=2)" in text
+        assert "快照目录: data/funnel_snapshots/full_fetch_20260812_132951" in text
+
 
 class TestMainlineCnCompatibility:
     def test_run_funnel_job_populates_report_compat_metrics(self, monkeypatch):

@@ -136,6 +136,14 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     quality_summary = metrics.get("quality_summary") or {}
     quality_issue_counts = quality_summary.get("issue_counts") or {}
     source_counts = metrics.get("source_counts") or {}
+    integrity_samples = [
+        str(x)
+        for x in (metrics.get("integrity_rejection_samples") or metrics.get("integrity_examples") or [])
+        if str(x)
+    ][:5]
+    integrity_expected_dates = metrics.get("integrity_expected_dates")
+    integrity_expected_dates_source = str(metrics.get("integrity_expected_dates_source") or "").strip()
+    snapshot_dir = str(metrics.get("snapshot_dir") or "").strip()
 
     # 缓存命中计数（需 stock_hist_repository 注入，默认 N/A）
     cache_hits = metrics.get("cache_hits")
@@ -232,6 +240,11 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
     lines.append(
         f"完整性通过: **{integrity_pass}** ✅ ｜ 淘汰: **{integrity_fail}** ❌（淘汰率 {_pct(integrity_fail, fetch_ok)}）"
     )
+    if integrity_expected_dates is not None:
+        source_suffix = f" source={integrity_expected_dates_source}" if integrity_expected_dates_source else ""
+        lines.append(f"完整性基准交易日: {integrity_expected_dates}{source_suffix}")
+    if integrity_samples:
+        lines.append("完整性淘汰样例: " + "、".join(integrity_samples))
     if cache_hits is not None and new_fetches is not None:
         lines.append(f"缓存命中: **{cache_hits}** ｜ 新拉取: **{new_fetches}**")
     if fetch_elapsed is not None:
@@ -246,6 +259,8 @@ def build_report_text(metrics: dict, *, run_ts: datetime | None = None) -> str:
             "数据源分布: "
             + "、".join(f"{name}={count}" for name, count in top_sources)
         )
+    if snapshot_dir:
+        lines.append(f"快照目录: {snapshot_dir}")
     if quality_summary:
         lines.append(
             "K线质量: "
