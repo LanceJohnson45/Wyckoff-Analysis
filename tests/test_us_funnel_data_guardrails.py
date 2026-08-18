@@ -89,6 +89,59 @@ def test_small_breadth_sample_cannot_trigger_crash(monkeypatch: pytest.MonkeyPat
     assert context["panic_triggered"] is False
 
 
+def test_us_expected_dates_ignore_benchmark_only_latest_day():
+    from scripts import wyckoff_funnel as funnel
+
+    symbol_dates = pd.date_range("2026-08-10", periods=6, freq="B")
+    benchmark_dates = symbol_dates.append(pd.DatetimeIndex(["2026-08-18"]))
+    window = type(
+        "Window",
+        (),
+        {
+            "start_trade_date": date(2026, 8, 10),
+            "end_trade_date": date(2026, 8, 18),
+        },
+    )()
+    bench_df = pd.DataFrame(
+        {
+            "date": benchmark_dates,
+            "close": [100.0 + i for i in range(len(benchmark_dates))],
+        }
+    )
+    df_map = {
+        f"SYM{i}": pd.DataFrame(
+            {
+                "date": symbol_dates,
+                "close": [50.0 + j for j in range(len(symbol_dates))],
+            }
+        )
+        for i in range(10)
+    }
+
+    expected_dates, source = funnel._expected_trade_dates(
+        window,
+        "us",
+        bench_df=bench_df,
+        df_map=df_map,
+    )
+
+    assert expected_dates == list(symbol_dates.date)
+    assert source == "main_benchmark_symbol_consensus"
+
+
+def test_extract_trade_dates_ignores_invalid_close_rows():
+    from scripts import wyckoff_funnel as funnel
+
+    df = pd.DataFrame(
+        {
+            "date": ["2026-08-17", "2026-08-18", "2026-08-19"],
+            "close": [100.0, None, 0.0],
+        }
+    )
+
+    assert funnel._extract_trade_dates_from_df(df) == [date(2026, 8, 17)]
+
+
 def test_prewarm_repairs_full_window_when_cache_has_only_a_few_rows(monkeypatch: pytest.MonkeyPatch):
     import scripts.funnel_prewarm as prewarm
 

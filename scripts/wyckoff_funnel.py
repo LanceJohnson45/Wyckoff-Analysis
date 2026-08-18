@@ -342,7 +342,11 @@ def _job_end_calendar_day() -> date:
 def _extract_trade_dates_from_df(df: pd.DataFrame | None) -> list[date]:
     if df is None or df.empty or "date" not in df.columns:
         return []
-    s = pd.to_datetime(df["date"], errors="coerce").dropna()
+    frame = df
+    if "close" in frame.columns:
+        close = pd.to_numeric(frame["close"], errors="coerce")
+        frame = frame.loc[close.notna() & (close > 0)]
+    s = pd.to_datetime(frame["date"], errors="coerce").dropna()
     if s.empty:
         return []
     return sorted(set(x.date() for x in s.tolist()))
@@ -367,6 +371,31 @@ def _infer_expected_trade_dates_from_frames(
     return sorted(d for d, count in counter.items() if count >= threshold)
 
 
+def _align_expected_dates_to_symbol_consensus(
+    benchmark_dates: list[date],
+    inferred_dates: list[date],
+) -> list[date]:
+    if not benchmark_dates or not inferred_dates:
+        return benchmark_dates
+
+    inferred_set = set(inferred_dates)
+    aligned = [d for d in benchmark_dates if d in inferred_set]
+    if not aligned:
+        return benchmark_dates
+
+    min_keep = max(1, int(len(benchmark_dates) * 0.90))
+    if len(aligned) >= min_keep:
+        return aligned
+
+    latest_inferred = inferred_dates[-1]
+    if benchmark_dates[-1] > latest_inferred:
+        trimmed = [d for d in benchmark_dates if d <= latest_inferred]
+        if len(trimmed) >= min_keep:
+            return trimmed
+
+    return benchmark_dates
+
+
 def _expected_trade_dates(
     window,
     market: str,
@@ -387,6 +416,7 @@ def _expected_trade_dates(
             "cn_trade_calendar",
         )
 
+    inferred = _infer_expected_trade_dates_from_frames(df_map or {}, window)
     for label, frame in (
         ("main_benchmark", bench_df),
         ("smallcap_benchmark", smallcap_df),
@@ -397,9 +427,10 @@ def _expected_trade_dates(
             if window.start_trade_date <= d <= window.end_trade_date
         ]
         if dates:
-            return (dates, label)
+            aligned = _align_expected_dates_to_symbol_consensus(dates, inferred)
+            source = label if aligned == dates else f"{label}_symbol_consensus"
+            return (aligned, source)
 
-    inferred = _infer_expected_trade_dates_from_frames(df_map or {}, window)
     if inferred:
         return (inferred, "inferred_from_symbol_hist")
 
