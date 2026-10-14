@@ -1,9 +1,7 @@
 name: Recommendation Tracking Reprice
 
 on:
-  schedule:
-    # 北京时间 23:00（UTC+8）= UTC 同日 15:00；周日到周四执行
-    - cron: "0 15 * * 0-4"
+  # 仅保留手动执行；自动任务只拉取市场数据。
   workflow_dispatch:
 
 concurrency:

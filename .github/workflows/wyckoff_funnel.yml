@@ -1,4 +1,4 @@
-name: Wyckoff Funnel
+name: CN Daily Market Data
 
 on:
   schedule:
@@ -16,17 +16,10 @@ jobs:
     timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
-      FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-      MY_PORTFOLIO_STATE: ${{ secrets.MY_PORTFOLIO_STATE }}
-      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-      TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_USER_ID: ${{ secrets.SUPABASE_USER_ID }}
       PG_ENABLED: ${{ secrets.PG_ENABLED }}
       PG_HOST: ${{ secrets.PG_HOST }}
       PG_PORT: ${{ secrets.PG_PORT }}
@@ -35,17 +28,8 @@ jobs:
       PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
       PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
       PG_DSN: ${{ secrets.PG_DSN }}
-      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-      SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
-      # 实盘风控参数：锁死 -9% 止损 + 单票仓位上限
-      STEP4_BUY_HARD_STOP_ENABLED: "1"
-      STEP4_BUY_HARD_STOP_PCT: "9.0"
-      STEP4_BUY_STOP_MODE: "floor"
-      STEP4_PROBE_BUDGET_LIMIT: "0.10"
-      STEP4_ATTACK_BUDGET_LIMIT: "0.20"
       FUNNEL_PREWARM_DAYS: "320"
       FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
-      FUNNEL_CACHE_ONLY_AFTER_PREWARM: "1"
       TZ: Asia/Shanghai
 
     steps:
@@ -77,7 +61,7 @@ jobs:
           restore-keys: |
             funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
 
-      - name: Prewarm funnel cache
+      - name: Fetch daily market data
         timeout-minutes: 50
         run: |
           echo "::group::Prewarm cache (CN)"
@@ -94,14 +78,6 @@ jobs:
             echo "::error title=Prewarm failed::CN prewarm exited with code ${prewarm_status}."
           fi
           exit "${prewarm_status}"
-
-      - name: Run daily job
-        run: |
-          echo "::group::Run daily job script"
-          set -o pipefail
-          python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job.log \
-            2>&1 | tee -a ${{ github.workspace }}/logs/daily_job.console.log
-          echo "::endgroup::"
 
       - name: Save prewarm state
         if: always()

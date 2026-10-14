@@ -1,8 +1,7 @@
 name: Review List Replay
 
 on:
-  schedule:
-    - cron: '25 11 * * 1-5'   # UTC 11:25 Mon-Fri = 北京时间 19:25
+  # 仅保留手动执行；自动任务只拉取市场数据。
   workflow_dispatch:
 
 concurrency:

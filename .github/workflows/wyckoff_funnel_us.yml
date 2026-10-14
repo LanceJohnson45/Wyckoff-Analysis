@@ -1,4 +1,4 @@
-name: Wyckoff Funnel US
+name: US Daily Market Data
 
 on:
   schedule:
@@ -20,9 +20,6 @@ jobs:
     timeout-minutes: 120
     env:
       PYTHONUNBUFFERED: "1"
-      FEISHU_WEBHOOK_URL: "https://open.feishu.cn/open-apis/bot/v2/hook/f8aa11e7-de81-464a-9041-db38ec5f2c30"
-      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      GEMINI_MODEL: ${{ secrets.GEMINI_MODEL }}
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -36,8 +33,6 @@ jobs:
       PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
       PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
       PG_DSN: ${{ secrets.PG_DSN }}
-      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
-      SERPAPI_API_KEY: ${{ secrets.SERPAPI_API_KEY }}
       DATA_SOURCE_DEBUG: "1"
       FUNNEL_MARKET: "us"
       FUNNEL_POOL_MODE: "sp500"
@@ -46,11 +41,8 @@ jobs:
       FUNNEL_BATCH_SIZE: "60"
       FUNNEL_FETCH_RETRIES: "2"
       FUNNEL_BATCH_TIMEOUT: "300"
-      DAILY_JOB_SKIP_STEP4: "1"
-      DAILY_JOB_REQUIRE_STEP3_REPORT: "1"
       FUNNEL_PREWARM_DAYS: "320"
       FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
-      FUNNEL_CACHE_ONLY_AFTER_PREWARM: "1"
       US_SP500_SYNC_BOOTSTRAP_DAYS: "360"
       US_SP500_BATCH_SIZE: "40"
       US_SP500_SLEEP_SECONDS: "0.5"
@@ -103,7 +95,7 @@ jobs:
           restore-keys: |
             funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
 
-      - name: Prewarm funnel cache
+      - name: Fetch daily market data
         timeout-minutes: 50
         run: |
           echo "::group::Prewarm cache (US)"
@@ -120,13 +112,6 @@ jobs:
             echo "::error title=Prewarm failed::US prewarm exited with code ${prewarm_status}."
           fi
           exit "${prewarm_status}"
-
-      - name: Run US daily job
-        run: |
-          echo "::group::Run daily job script (US)"
-          python -u scripts/daily_job.py --logs ${{ github.workspace }}/logs/daily_job_us.log \
-            2>&1 | tee -a ${{ github.workspace }}/logs/daily_job_us.console.log
-          echo "::endgroup::"
 
       - name: Save prewarm state
         if: always()

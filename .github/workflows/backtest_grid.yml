@@ -1,9 +1,7 @@
 name: Backtest Grid
 
 on:
-  schedule:
-    # 每月 1 号和 15 号 UTC 20:00（北京时间次日 04:00）自动回测
-    - cron: "0 20 1,15 * *"
+  # 仅保留手动执行；自动任务只拉取市场数据。
   workflow_dispatch:
     inputs:
       start:

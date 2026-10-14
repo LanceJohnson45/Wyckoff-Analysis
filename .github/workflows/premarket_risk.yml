@@ -1,9 +1,7 @@
 name: Premarket Risk
 
 on:
-  schedule:
-    # 北京时间 08:20（UTC+8）= UTC 00:20 同日；盘前风控，给 09:30 开盘留足缓冲
-    - cron: "20 0 * * 1-5"
+  # 仅保留手动执行；自动任务只拉取市场数据。
   workflow_dispatch:
 
 concurrency:
