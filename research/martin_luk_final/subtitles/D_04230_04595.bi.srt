@@ -14,311 +14,301 @@ a long trade goes in your favor?
 to move your stock to break even at a set R
 
 4
-00:00:32,120 --> 00:00:34,620
-或者设置止损限制，给交易留出空间， risking
-or limit to give the
+00:00:32,120 --> 00:00:37,120
+还是给交易更多空间，接受浮盈回吐？
+or limit to give the trade room, risking open profits.
 
 5
-00:00:34,620 --> 00:00:37,120
-open profits. 把利润暴露在风险中。
-trade room, risking open profits.
-
-6
 00:00:41,360 --> 00:00:42,560
 这是一个很好的问题。
 That's a great question.
 
-7
+6
 00:00:42,560 --> 00:00:46,960
 我的答案是，
 And my answer is,
 
-8
+7
 00:00:49,080 --> 00:00:52,320
 实际上，这取决于，再次说，这取决于。
 is actually it depends, like again, it depends.
 
-9
+8
 00:00:53,360 --> 00:00:57,560
 我不得不这么说，
 I hate to say this answer,
 
-10
+9
 00:00:57,560 --> 00:01:04,640
-回复这个答案。但其实主要是看情况的，有一些因素会影响到。
+但对我来说，确实要看情况。我会考虑几个因素，
 reply this answer. But yeah, it to me really just depends. And there's some factors that
 
-11
+10
 00:01:04,640 --> 00:01:12,880
 我会考虑是否应该将止损移至保本，或者将止损移得更高。
 I will consider, whether I should move my stop to break even or like move my stop higher.
 
+11
+00:01:12,880 --> 00:01:23,940
+主要与——怎
+And I think the major reason really comes
+
 12
-00:01:12,880 --> 00:01:20,253
-我觉得主要原因是
-And I think the major reason
+00:01:23,940 --> 00:01:35,000
+么归类呢——
+with the, I think how to categorize this one,
 
 13
-00:01:20,253 --> 00:01:27,627
-，我觉得应该如
-really comes with the, I
-
-14
-00:01:27,627 --> 00:01:35,000
-何归类这一部分，
-think how to categorize this one,
-
-15
 00:01:35,000 --> 00:01:40,500
-市场是如何定位的，或者说整体情况，
+整体市场所处的位置、市
 how the market is positioned or like the general, you
 
-16
+14
 00:01:40,500 --> 00:01:46,000
-可以称为形势意识，或者说市场阶段。
+场环境和趋势阶段有关。
 can say like situation awareness or like the market stages.
 
-17
+15
 00:01:46,000 --> 00:01:53,360
-你可以看到，我多数空
+你可以看到，
 I think that you can see that most of my
 
-18
+16
 00:01:53,360 --> 00:02:00,720
-头仓位的止损并没有……
+我多数空头仓位的止损并没有……
 shots, the stops of my short positions are not getting
 
-19
+17
 00:02:00,720 --> 00:02:08,500
-移到保本。主要原因是
+移到保本。
 raised into break even. And the main reason why
 
-20
+18
 00:02:08,500 --> 00:02:16,280
-我认为这可能是……
+主要原因是我认为这可能是……
 is I believe that this is at the start
 
-21
+19
 00:02:16,280 --> 00:02:21,460
-一轮下跌趋势的初期，至少半导体
+一轮下跌趋势的初期，
 of a downtrend, like a possible downtrend, or
 
-22
+20
 00:02:21,460 --> 00:02:26,640
-板块可能如此。如果你能看出……
+至少半导体板块可能如此。如果你能看出……
 at least for the semis. If you can tell,
 
-23
+21
 00:02:26,640 --> 00:02:33,500
-但是，如果萨姆斯要回调，真正使得这里的
+如果半导体反弹后在这里形成较低高点，
 But if Samus is going to pull back, to
 
-24
+22
 00:02:33,500 --> 00:02:40,360
-较低高点成立，就要开始形成更低的高点。
+再开始形成
 really make the lower high here, start making lower
 
-25
+23
 00:02:40,360 --> 00:02:45,940
-这里高点之后，我预期会有
+更低的高点，
 high from here, I would
 
-26
+24
 00:02:45,940 --> 00:02:51,520
-更多的 downside。
+我就预期还有更多下跌空间。
 expect more downside from here.
 
-27
+25
 00:02:51,520 --> 00:02:56,990
-我认为获得即时恢复
+我认为立刻恢
 I think the odds of getting
 
-28
+26
 00:02:56,990 --> 00:03:02,460
-或突破的机会不大。
+复、向上突破
 an instant recovery or a breakout
 
-29
+27
 00:03:02,460 --> 00:03:05,700
-进入上行区间，继续上行趋势，或者至少阻止回落。
+继续上升趋势，或者至少把我
 into the upside and continues the uptrend or at least stopping
 
-30
+28
 00:03:05,700 --> 00:03:14,340
-被卖出的几率很低，相比后续跟随的跟进不足。
+止损出去的可能性，相比继续
 me out is quite low compared to having follow through to the
 
-31
+29
 00:03:14,340 --> 00:03:16,020
-下行风险。
+向下延续，要低一些。
 downside.
 
-32
+30
 00:03:16,020 --> 00:03:20,610
-在这种情况下，我会更
+所以在这种情况下，
 So in this case, I will
 
-33
+31
 00:03:20,610 --> 00:03:25,200
-愿意牺牲我的持仓。
+我更愿意让一部分
 be more willing to sacrifice my open
 
-34
+32
 00:03:25,200 --> 00:03:27,720
-抓住更多的 downside 来获得利润。
+浮盈回吐，以争取更大的下跌。
 profits to capture more downside.
 
-35
+33
 00:03:30,480 --> 00:03:36,920
 但是另一方面，这可能是个错误的例子。
 But on the other hand, this may be the wrong example.
 
-36
+34
 00:03:36,920 --> 00:03:37,920
-我不知道，帕拉丁。
+比如Palantir，但这个例子也许不太合适。
 I don't know, Palantir.
 
-37
+35
 00:03:40,720 --> 00:03:44,000
 在我看来，我感觉不到非常有信心。
 In my opinion, I just don't feel really confident
 
-38
+36
 00:03:44,000 --> 00:03:49,000
-在上面，也许还有SNDK。
+后续上涨，也许SNDK更适合说明。
 on the upside and maybe also SNDK.
 
-39
+37
 00:03:49,400 --> 00:03:51,280
 我觉得SNDK是个更好的例子。
 I think SNDK is a better example.
 
-40
+38
 00:03:51,280 --> 00:03:55,520
 这是我的多头位置。
 Like this is where, yeah, this is my long,
 
-41
+39
 00:03:55,520 --> 00:03:59,800
-这是我的entry点，我决定关闭它。
+这是我的入场位置，后来我决定平仓。
 well, this is my entry and I decided to close it.
 
-42
+40
 00:03:59,800 --> 00:04:02,960
-我没有等待价格跌破九年的May。
+我没有等日线收在EMA9下方，
 I didn't wait for the close below the nine year may.
 
-43
+41
 00:04:02,960 --> 00:04:05,560
-我刚把它关闭，因为它开始走弱。
+而是在价格开始跌破
 I just closed it after it's starting to break down
 
-44
+42
 00:04:05,560 --> 00:04:08,360
 跌破9 EMA，以及前一根K线低点。
 from the nine and also the previous candle low.
 
-45
+43
 00:04:09,300 --> 00:04:13,880
 我不再给它留空间。
 And I'm not giving it more room.
 
-46
+44
 00:04:13,880 --> 00:04:18,880
-像比如说21DMA，甚至可能等待其走高。
+例如不再等它跌到21均线，甚至一直等到
 like let's say 21DMA or even maybe waiting it to go,
 
-47
+45
 00:04:20,480 --> 00:04:23,120
 比如一直等它跌到保本价……
 like to break down into the break even
 
-48
+46
 00:04:23,120 --> 00:04:25,260
-进入成本。
+也就是我的入场成本。
 into my entry cost.
 
-49
+47
 00:04:33,280 --> 00:04:36,980
-因为我觉得市场真的不怎么样，
+因为我并不认为当前市场
 Because I just don't think the market is,
 
-50
+48
 00:04:37,840 --> 00:04:41,620
-好像市场已经到了一个阶段，不是，
+处于一个很可能
 like I think the market is at the stage that is not,
 
-51
+49
 00:04:43,880 --> 00:04:49,380
-很可能出现多周或多月的反弹，或形成上行趋势的阶段。
+展开多周、多月上涨或第二阶段上升趋势的阶段。
 highly likely to get a multi-week or multi-month rally or a stage to uptrend.
 
-52
+50
 00:04:54,900 --> 00:05:02,000
-所以，嗯，我认为市场阶段或说 awareness 的情况很重要。
+所以市场阶段、对市场环境的判断很重要。
 So where, yeah, so I think the stage of the market is or like the situation of awareness is pretty important.
 
-53
+51
 00:05:02,960 --> 00:05:04,960
 以及……
 And
 
-54
+52
 00:05:05,260 --> 00:05:07,260
-第二個因素 definitely 是 我
+第二个因素当然是
 the second factor is definitely my
 
-55
+53
 00:05:07,260 --> 00:05:12,260
 自己的资金曲线，是否做得好。
 my own equity curve, like whether I'm doing well or not
 
-56
+54
 00:05:16,420 --> 00:05:20,240
-在过去，近期的 sessions.
+最近几个交易时段的表现。
 in the past, in the recent sessions.
 
-57
+55
 00:05:20,240 --> 00:05:25,240
 一般来说，我会更不愿意止盈。
 So generally I will be less willing to take profits.
 
-58
+56
 00:05:27,940 --> 00:05:31,100
 我会持有更多，
 I will be holding more,
 
-59
+57
 00:05:33,160 --> 00:05:34,840
 持有更大的头寸
 holding a larger positions
 
-60
+58
 00:05:34,840 --> 00:05:39,680
-抓住更好的机会，当我在交易中表现良好时。
+在交易顺利的时候，争取更大的行情。
 to capture a larger move when I'm doing well,
 
-61
+59
 00:05:39,680 --> 00:05:42,000
 当我在交易做得好的时候。
 when I'm trading well.
 
-62
+60
 00:05:46,960 --> 00:05:52,840
-比起上次遭受 drawdown 时。
+相反，如果刚经历资金回撤，
 Compared to when I just suffer from a drawdown,
 
-63
+61
 00:05:52,840 --> 00:05:55,800
-然后我可能会更愿意去赌。
+我可能更愿意
 then probably I will be more willing to take
 
-64
+62
 00:05:55,800 --> 00:06:00,940
-更多的利润，保护我的位置，
+兑现利润、保护仓位，
 more profits and protect my positions,
 
-65
+63
 00:06:00,940 --> 00:06:04,440
-想把股票拉升到保本水平，等等。
+例如把止损移到保本。
 like to raise my stock to break even, etc.

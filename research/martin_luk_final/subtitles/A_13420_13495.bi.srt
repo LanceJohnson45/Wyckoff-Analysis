@@ -10,7 +10,7 @@ to sum up what a high quality short setup would look like, how would you describ
 
 3
 00:00:10,760 --> 00:00:15,200
-理想的完美 setups 你打算去做什么？
+你理想中最想参与的形态是什么样？
 the ideal picture perfect setup that you'd look to go for?
 
 4
@@ -35,18 +35,18 @@ And they start really cutting back and start crossing down the 50 EMA. So if you
 
 8
 00:00:46,840 --> 00:00:51,720
-一开盘，如果高开，然后通常会进
+一开盘，如果高开，
 opens, if it opens, if it gaps up and then
 
 9
 00:00:51,720 --> 00:00:56,600
-入21EMA，可能在17左右。
+然后通常会进入21EMA，可能在17左右。
 it rarely into the 21 EMA, maybe over the 17-ish area,
 
 10
 00:00:56,600 --> 00:01:01,200
-那将是我的理想位置，也是接近这个踝关节自由wap的位置。
-that will be the ideal spot for me and also maybe near the ankle free wrap here.
+那会是我理想的位置，也靠近这里的锚定VWAP。
+that will be the ideal spot for me and also maybe near the anchored VWAP here.
 
 11
 00:01:01,200 --> 00:01:05,960
@@ -60,5 +60,5 @@ give me the entry though. But the ideal one I would say will be the first pull
 
 13
 00:01:11,600 --> 00:01:15,000
-回落后跌破50，然后出现 overshoot。是的。这些是赢家。
+失守50均线后反弹回测，最好有些过冲。对，这些均线。
 back after it loses to 50 and an overshoot at best. Yes. Of these winners

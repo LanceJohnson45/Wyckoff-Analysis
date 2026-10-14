@@ -1,0 +1,104 @@
+[
+  {
+    "key": "C_1407.7",
+    "before": "But still, I think like catch is also a position and I think it's better for the current environment.",
+    "after": "But still, I think cash is also a position and I think it's better for the current environment.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "C_251.6",
+    "before": "So I usually start with the remarkets again.",
+    "after": "So I usually start with the premarket scan.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "B_422.48",
+    "before": "And I also entered a USO remarkets also a couple of minutes ago.",
+    "after": "And I also entered USO premarket also a couple of minutes ago.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "C_1748.18",
+    "before": "Yeah, for the first 15 minutes I tend to avoid making any trace.",
+    "after": "Yeah, for the first 15 minutes I tend to avoid making any trades.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "C_2221.44",
+    "before": "And also, it's not only the 5 minutes for the daily, like I said, the 921 are really",
+    "after": "And also, it's not only the 5 minutes; for the daily, like I said, the 9 and 21 are really",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "C_2242.86",
+    "before": "the anchor feedback from the swing highs, which is also the one hour two, one hour,",
+    "after": "the anchored VWAP from the swing highs, which is also the one hour two, one hour,",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_4028.26",
+    "before": "And yeah, so I keep tracking and I then anchor the anchor view app from this swing high and",
+    "after": "And yeah, so I keep tracking and I then anchor the anchored VWAP from this swing high and",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_4090.62",
+    "before": "like the rejections of this anchor view app.",
+    "after": "like the rejections of this anchored VWAP.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_4098.46",
+    "before": "I waited for the week close.",
+    "after": "I waited for the weak close.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_4104.3",
+    "before": "after the get down and then really a week close.",
+    "after": "after the gap down and then really a weak close.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "A_13268.28",
+    "before": "still... yeah. So it's not on the daily, it's on the Inca FreeWap 2. So this one I think",
+    "after": "still... yeah. So it's not on the daily, it's on the anchored VWAP 2. So this one I think",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "A_11036.02",
+    "before": "and I'm risking like 50.5% of my account, it would be 50 bucks.",
+    "after": "and I'm risking like 0.5% of my account, it would be 50 bucks.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "C_2976.84",
+    "before": "3 or 0.4 percent.",
+    "after": "0.3 or 0.4 percent.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_5611.88",
+    "before": "lean towards the short side is actually the SK Heineck's chart, the South Korean chart",
+    "after": "lean towards the short side is actually the SK hynix chart, the South Korean chart",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_5617.44",
+    "before": "of SK Heineck's.",
+    "after": "of SK hynix.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_5667.8",
+    "before": "the all-time high end-gap web.",
+    "after": "the all-time high anchored VWAP.",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  },
+  {
+    "key": "D_5764.64",
+    "before": "up back into near the all-time highs area, like SKE HINES is still well below all the",
+    "after": "up back into near the all-time highs area, like SK hynix is still well below all the",
+    "evidence": "既有重点转写/本次重转写/已核图表与直接上下文；原始英文保留raw_en"
+  }
+]

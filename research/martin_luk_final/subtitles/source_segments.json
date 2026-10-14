@@ -32,7 +32,7 @@
     "source": "A",
     "start": 13662.0,
     "end": 13667.0,
-    "en": "the general indices, I also look at the Qs and IWM,"
+    "en": "the general indices, I also look at the QQQ and IWM,"
   },
   {
     "key": "A_13667.52",
@@ -46,7 +46,7 @@
     "source": "A",
     "start": 13670.88,
     "end": 13675.88,
-    "en": "And for example, when Qs,"
+    "en": "And for example, when QQQ,"
   },
   {
     "key": "A_13675.88",
@@ -95,7 +95,7 @@
     "source": "A",
     "start": 13700.6,
     "end": 13706.08,
-    "en": "But what I want to say would be for looking at the queues,"
+    "en": "But what I want to say would be for looking at the QQQ,"
   },
   {
     "key": "A_13706.08",
@@ -109,7 +109,7 @@
     "source": "A",
     "start": 13709.28,
     "end": 13713.08,
-    "en": "So with the queues, it's really kind of extending."
+    "en": "So with the QQQ, it's really kind of extending."
   },
   {
     "key": "A_13713.08",
@@ -242,7 +242,7 @@
     "source": "A",
     "start": 13800.0,
     "end": 13807.44,
-    "en": "Especially last year, you can see like the Qs are like keep serving the nine and I and they find support on the"
+    "en": "Especially last year, you can see like the QQQ are like keep serving the nine and I and they find support on the"
   },
   {
     "key": "A_13807.84",
@@ -270,7 +270,7 @@
     "source": "A",
     "start": 13815.76,
     "end": 13823.36,
-    "en": "And then I think the best time to buy them to be aggressive would be during the pullbacks of the Qs"
+    "en": "And then I think the best time to buy them to be aggressive would be during the pullbacks of the QQQ"
   },
   {
     "key": "A_13824.0",
@@ -375,7 +375,7 @@
     "source": "A",
     "start": 13916.52,
     "end": 13924.76,
-    "en": "those condition. Yeah. Yeah, especially the Qs are still like hanging up above the EMAs and the"
+    "en": "those condition. Yeah. Yeah, especially the QQQ are still like hanging up above the EMAs and the"
   },
   {
     "key": "A_13924.76",
@@ -690,7 +690,8 @@
     "source": "C",
     "start": 1407.7,
     "end": 1418.18,
-    "en": "But still, I think like catch is also a position and I think it's better for the current environment."
+    "en": "But still, I think cash is also a position and I think it's better for the current environment.",
+    "raw_en": "But still, I think like catch is also a position and I think it's better for the current environment."
   },
   {
     "key": "C_1418.18",
@@ -1159,7 +1160,8 @@
     "source": "C",
     "start": 251.6,
     "end": 261.6,
-    "en": "So I usually start with the remarkets again."
+    "en": "So I usually start with the premarket scan.",
+    "raw_en": "So I usually start with the remarkets again."
   },
   {
     "key": "C_261.6",
@@ -1194,7 +1196,7 @@
     "source": "A",
     "start": 4086.0,
     "end": 4095.04,
-    "en": "So generally, I think Bright also introduced them to where to put the anchor set."
+    "en": "So generally, I think Brian Shannon also introduced them to where to put the anchor set."
   },
   {
     "key": "A_4095.04",
@@ -1215,7 +1217,7 @@
     "source": "A",
     "start": 4104.78,
     "end": 4113.4400000000005,
-    "en": "So for example, for this R&Q base, this is a pretty long base, I would say."
+    "en": "So for example, for this IONQ base, this is a pretty long base, I would say."
   },
   {
     "key": "A_4113.44",
@@ -1236,7 +1238,7 @@
     "source": "A",
     "start": 4131.6,
     "end": 4138.24,
-    "en": "see it reacts to the angle of view app pretty actively and you can ask the supports here,"
+    "en": "see it reacts to the anchored VWAP pretty actively and you can ask the supports here,"
   },
   {
     "key": "A_4138.24",
@@ -1278,7 +1280,7 @@
     "source": "A",
     "start": 4178.22,
     "end": 4181.82,
-    "en": "so it pulls back into the angle of view up also the 9 EMA and"
+    "en": "so it pulls back into the anchored VWAP also the 9 EMA and"
   },
   {
     "key": "A_4182.3",
@@ -1327,7 +1329,7 @@
     "source": "A",
     "start": 4215.0,
     "end": 4219.72,
-    "en": "So if a trader buys at the anchor free web,"
+    "en": "So if a trader buys at the anchored VWAP,"
   },
   {
     "key": "A_4219.72",
@@ -1411,7 +1413,7 @@
     "source": "A",
     "start": 4264.74,
     "end": 4270.12,
-    "en": "at the 150 EMA and the anchor free web on at August 2."
+    "en": "at the 150 EMA and the anchored VWAP on at August 2."
   },
   {
     "key": "A_4270.12",
@@ -1425,7 +1427,7 @@
     "source": "A",
     "start": 4275.0,
     "end": 4277.7,
-    "en": "anchor free web and also the 150."
+    "en": "anchored VWAP and also the 150."
   },
   {
     "key": "A_4277.7",
@@ -1495,7 +1497,7 @@
     "source": "A",
     "start": 4339.88,
     "end": 4346.12,
-    "en": "the price is also rejecting the angle of view up and then there's another like a pullback"
+    "en": "the price is also rejecting the anchored VWAP and then there's another like a pullback"
   },
   {
     "key": "A_4346.12",
@@ -1509,7 +1511,7 @@
     "source": "A",
     "start": 4351.48,
     "end": 4358.2,
-    "en": "angle of view up and they define supports so it was it just a very it just provides you a really"
+    "en": "anchored VWAP and they define supports so it was it just a very it just provides you a really"
   },
   {
     "key": "A_4358.2",
@@ -1544,7 +1546,7 @@
     "source": "A",
     "start": 4380.06,
     "end": 4384.32,
-    "en": "But anchor view up just stands for or view app stands for"
+    "en": "But anchored VWAP just stands for or view app stands for"
   },
   {
     "key": "A_4385.28",
@@ -1635,7 +1637,7 @@
     "source": "A",
     "start": 4427.44,
     "end": 4436.3,
-    "en": "And yeah, I think that's it for the explanation for the anchor free web."
+    "en": "And yeah, I think that's it for the explanation for the anchored VWAP."
   },
   {
     "key": "A_4436.3",
@@ -1726,7 +1728,7 @@
     "source": "A",
     "start": 4523.14,
     "end": 4526.98,
-    "en": "the Angular Free Web and they found resistance"
+    "en": "the anchored VWAP and they found resistance"
   },
   {
     "key": "A_4526.98",
@@ -1740,7 +1742,7 @@
     "source": "A",
     "start": 4528.58,
     "end": 4531.34,
-    "en": "So they just find the resistance right at the Angular Free Web"
+    "en": "So they just find the resistance right at the anchored VWAP"
   },
   {
     "key": "A_4531.34",
@@ -1894,7 +1896,7 @@
     "source": "A",
     "start": 4570.26,
     "end": 4574.9,
-    "en": "And that higher load was caught with the anchor view up as well."
+    "en": "And that higher load was caught with the anchored VWAP as well."
   },
   {
     "key": "A_4574.9",
@@ -1992,7 +1994,7 @@
     "source": "A",
     "start": 4613.52,
     "end": 4616.76,
-    "en": "Earlier days so angle free angle free web is also"
+    "en": "Earlier days so angle free anchored VWAP is also"
   },
   {
     "key": "A_4618.04",
@@ -2020,7 +2022,7 @@
     "source": "A",
     "start": 4632.04,
     "end": 4639.52,
-    "en": "in 2006. So if you're anchored, putting an anchor view app into this swing high before"
+    "en": "in 2006. So if you're anchored, putting an anchored VWAP into this swing high before"
   },
   {
     "key": "A_4639.52",
@@ -2034,7 +2036,7 @@
     "source": "A",
     "start": 4646.52,
     "end": 4652.84,
-    "en": "So I think this pattern is really commonly seen. So it breaks out from the anchor view"
+    "en": "So I think this pattern is really commonly seen. So it breaks out from the anchored VWAP"
   },
   {
     "key": "A_4652.84",
@@ -2055,7 +2057,7 @@
     "source": "A",
     "start": 4668.56,
     "end": 4676.92,
-    "en": "you can see the 21 or the 52 and also the ankle free work those levels. So in fine support"
+    "en": "you can see the 21 or the 52 and also the anchored VWAP those levels. So in fine support"
   },
   {
     "key": "A_4676.92",
@@ -2139,7 +2141,7 @@
     "source": "A",
     "start": 4753.16,
     "end": 4760.84,
-    "en": "here. And you can see I'm not like setting the angle of view at it. The"
+    "en": "here. And you can see I'm not like setting the anchored VWAP it. The"
   },
   {
     "key": "A_4760.84",
@@ -2426,7 +2428,7 @@
     "source": "A",
     "start": 4973.3,
     "end": 4976.54,
-    "en": "or second higher low as it flips above the anchor view up"
+    "en": "or second higher low as it flips above the anchored VWAP"
   },
   {
     "key": "A_4976.54",
@@ -2650,7 +2652,7 @@
     "source": "A",
     "start": 5178.44,
     "end": 5186.68,
-    "en": "such as the YMAs for this case or sometimes the angle feel well. Rather than like is opening"
+    "en": "such as the YMAs for this case or sometimes the anchored VWAP. Rather than like is opening"
   },
   {
     "key": "A_5186.68",
@@ -2713,7 +2715,7 @@
     "source": "A",
     "start": 7034.78,
     "end": 7040.3,
-    "en": "a slip page or I just enter it a little bit late, then I, yeah, but the trigger, the trigger"
+    "en": "a slippage or I just enter it a little bit late, then I, yeah, but the trigger, the trigger"
   },
   {
     "key": "A_7040.3",
@@ -2881,21 +2883,21 @@
     "source": "A",
     "start": 12115.12,
     "end": 12122.8,
-    "en": "ankle free web and the 150 EMA to just sell them in the strength. Yeah nice trade. So this one is"
+    "en": "anchored VWAP and the 150 EMA to just sell them in the strength. Yeah nice trade. So this one is"
   },
   {
     "key": "A_12122.8",
     "source": "A",
     "start": 12122.8,
     "end": 12132.16,
-    "en": "AMBX would be another pullback buy on the 21 and the 9 EMA. Also actually I believe it's on the"
+    "en": "AMPX would be another pullback buy on the 21 and the 9 EMA. Also actually I believe it's on the"
   },
   {
     "key": "A_12132.16",
     "source": "A",
     "start": 12132.16,
     "end": 12139.28,
-    "en": "ankle free web 2 so it also like a breaking retest and then it undercuts but I bought the 5"
+    "en": "anchored VWAP too so it also like a breaking retest and then it undercuts but I bought the 5"
   },
   {
     "key": "A_12139.84",
@@ -3007,7 +3009,8 @@
     "source": "B",
     "start": 422.48,
     "end": 437.08000000000004,
-    "en": "And I also entered a USO remarkets also a couple of minutes ago."
+    "en": "And I also entered USO premarket also a couple of minutes ago.",
+    "raw_en": "And I also entered a USO remarkets also a couple of minutes ago."
   },
   {
     "key": "B_437.08",
@@ -3189,14 +3192,14 @@
     "source": "A",
     "start": 9898.48,
     "end": 9903.84,
-    "en": "small little base and it's also I believe above the angle view app."
+    "en": "small little base and it's also I believe above the anchored VWAP."
   },
   {
     "key": "A_9903.84",
     "source": "A",
     "start": 9903.84,
     "end": 9909.64,
-    "en": "So although this one didn't touch the angle view app, but it's above the angle view app"
+    "en": "So although this one didn't touch the anchored VWAP, but it's above the anchored VWAP"
   },
   {
     "key": "A_9909.64",
@@ -3252,7 +3255,7 @@
     "source": "A",
     "start": 9936.36,
     "end": 9941.26,
-    "en": "Did you incorporate the anchor view up at all with this trade from from highs?"
+    "en": "Did you incorporate the anchored VWAP at all with this trade from from highs?"
   },
   {
     "key": "A_9941.36",
@@ -3301,7 +3304,7 @@
     "source": "A",
     "start": 9960.46,
     "end": 9972.86,
-    "en": "Yeah, but the angle of view app would be like a, also a tool like for you to identify whether"
+    "en": "Yeah, but the anchored VWAP would be like a, also a tool like for you to identify whether"
   },
   {
     "key": "A_9972.86",
@@ -3315,7 +3318,7 @@
     "source": "A",
     "start": 9982.22,
     "end": 9990.28,
-    "en": "So if HOOT is pulling back into this angle of view app, as it is also near the 50 EMA2,"
+    "en": "So if HOOT is pulling back into this anchored VWAP, as it is also near the 50 EMA2,"
   },
   {
     "key": "A_9990.28",
@@ -3336,7 +3339,7 @@
     "source": "A",
     "start": 9997.18,
     "end": 10002.46,
-    "en": "So I really like, I think I put the angle for it up also here when I'm treating this"
+    "en": "So I really like, I think I put the anchored VWAP also here when I'm treating this"
   },
   {
     "key": "A_10002.46",
@@ -3756,14 +3759,14 @@
     "source": "A",
     "start": 10310.58,
     "end": 10316.4,
-    "en": "about the angle view up? Let's put it in a bit. Yeah, angle view up is, here is below,"
+    "en": "about the anchored VWAP? Let's put it in a bit. Yeah, anchored VWAP is, here is below,"
   },
   {
     "key": "A_10316.4",
     "source": "A",
     "start": 10316.4,
     "end": 10325.64,
-    "en": "is below the angle view up. So yeah, I think this one is fine, is fine, but luckily works"
+    "en": "is below the anchored VWAP. So yeah, I think this one is fine, is fine, but luckily works"
   },
   {
     "key": "A_10325.64",
@@ -4036,7 +4039,7 @@
     "source": "A",
     "start": 11468.48,
     "end": 11478.32,
-    "en": "that. So this is R&Q and also RGTI is very similar. At the same day, the same sector,"
+    "en": "that. So this is IONQ and also RGTI is very similar. At the same day, the same sector,"
   },
   {
     "key": "A_11478.32",
@@ -4407,7 +4410,7 @@
     "source": "A",
     "start": 12445.02,
     "end": 12447.98,
-    "en": "to the 21 year may be or the nine."
+    "en": "to the 21 EMA be or the nine."
   },
   {
     "key": "A_12447.98",
@@ -4512,7 +4515,7 @@
     "source": "A",
     "start": 12503.5,
     "end": 12507.78,
-    "en": "So it's actually finding support on the angle view up too."
+    "en": "So it's actually finding support on the anchored VWAP too."
   },
   {
     "key": "A_12507.78",
@@ -4589,7 +4592,8 @@
     "source": "C",
     "start": 1748.1799999999998,
     "end": 1778.1399999999999,
-    "en": "Yeah, for the first 15 minutes I tend to avoid making any trace."
+    "en": "Yeah, for the first 15 minutes I tend to avoid making any trades.",
+    "raw_en": "Yeah, for the first 15 minutes I tend to avoid making any trace."
   },
   {
     "key": "C_1778.14",
@@ -4960,7 +4964,7 @@
     "source": "A",
     "start": 13476.6,
     "end": 13481.2,
-    "en": "that will be the ideal spot for me and also maybe near the ankle free wrap here."
+    "en": "that will be the ideal spot for me and also maybe near the anchored VWAP here."
   },
   {
     "key": "A_13481.2",
@@ -5044,7 +5048,7 @@
     "source": "A",
     "start": 7572.12,
     "end": 7578.04,
-    "en": "I take the short mainly because I believe I used the anchor free web from this borough"
+    "en": "I take the short mainly because I believe I used the anchored VWAP from this borough"
   },
   {
     "key": "A_7578.04",
@@ -5191,14 +5195,14 @@
     "source": "A",
     "start": 7664.58,
     "end": 7665.54,
-    "en": "Still above the 90 MA."
+    "en": "Still above the 9 EMA."
   },
   {
     "key": "A_7665.54",
     "source": "A",
     "start": 7665.54,
     "end": 7668.94,
-    "en": "Yeah, still above the 90 MA."
+    "en": "Yeah, still above the 9 EMA."
   },
   {
     "key": "A_7668.94",
@@ -5324,7 +5328,7 @@
     "source": "A",
     "start": 8247.3,
     "end": 8255.06,
-    "en": "trying to short the NVIDIA on this, like, pull back into the hourly 9-year-may,"
+    "en": "trying to short the NVIDIA on this, like, pull back into the hourly 9 EMA,"
   },
   {
     "key": "A_8255.06",
@@ -5506,7 +5510,8 @@
     "source": "C",
     "start": 2221.44,
     "end": 2232.06,
-    "en": "And also, it's not only the 5 minutes for the daily, like I said, the 921 are really"
+    "en": "And also, it's not only the 5 minutes; for the daily, like I said, the 9 and 21 are really",
+    "raw_en": "And also, it's not only the 5 minutes for the daily, like I said, the 921 are really"
   },
   {
     "key": "C_2232.06",
@@ -5527,7 +5532,8 @@
     "source": "C",
     "start": 2242.86,
     "end": 2254.9,
-    "en": "the anchor feedback from the swing highs, which is also the one hour two, one hour,"
+    "en": "the anchored VWAP from the swing highs, which is also the one hour two, one hour,",
+    "raw_en": "the anchor feedback from the swing highs, which is also the one hour two, one hour,"
   },
   {
     "key": "C_2254.9",
@@ -5744,7 +5750,8 @@
     "source": "D",
     "start": 4028.26,
     "end": 4039.42,
-    "en": "And yeah, so I keep tracking and I then anchor the anchor view app from this swing high and"
+    "en": "And yeah, so I keep tracking and I then anchor the anchored VWAP from this swing high and",
+    "raw_en": "And yeah, so I keep tracking and I then anchor the anchor view app from this swing high and"
   },
   {
     "key": "D_4039.42",
@@ -5828,7 +5835,8 @@
     "source": "D",
     "start": 4090.62,
     "end": 4094.3,
-    "en": "like the rejections of this anchor view app."
+    "en": "like the rejections of this anchored VWAP.",
+    "raw_en": "like the rejections of this anchor view app."
   },
   {
     "key": "D_4095.22",
@@ -5849,7 +5857,8 @@
     "source": "D",
     "start": 4098.46,
     "end": 4101.14,
-    "en": "I waited for the week close."
+    "en": "I waited for the weak close.",
+    "raw_en": "I waited for the week close."
   },
   {
     "key": "D_4101.14",
@@ -5863,7 +5872,8 @@
     "source": "D",
     "start": 4104.3,
     "end": 4108.36,
-    "en": "after the get down and then really a week close."
+    "en": "after the gap down and then really a weak close.",
+    "raw_en": "after the get down and then really a week close."
   },
   {
     "key": "D_4110.62",
@@ -6773,7 +6783,7 @@
     "source": "A",
     "start": 9543.22,
     "end": 9549.18,
-    "en": "for this triple Q3, I bought it at one minute, but I think it didn't work."
+    "en": "for this TQQQ, I bought it at one minute, but I think it didn't work."
   },
   {
     "key": "A_9549.18",
@@ -6955,7 +6965,7 @@
     "source": "A",
     "start": 9651.48,
     "end": 9658.32,
-    "en": "So it's really near the hourly one hour nine year may also the 21 year may too."
+    "en": "So it's really near the hourly one hour nine year may also the 21 EMA too."
   },
   {
     "key": "A_9659.04",
@@ -7396,7 +7406,7 @@
     "source": "A",
     "start": 13011.74,
     "end": 13020.74,
-    "en": "Like for some of my loans, I'm not taking profits maybe until like, were there any good examples for that?"
+    "en": "Like for some of my longs, I'm not taking profits maybe until like, were there any good examples for that?"
   },
   {
     "key": "A_13020.74",
@@ -7641,7 +7651,7 @@
     "source": "A",
     "start": 13206.2,
     "end": 13212.12,
-    "en": "I think because I think it rallies up into the angle view up but it fine resistance"
+    "en": "I think because I think it rallies up into the anchored VWAP but it fine resistance"
   },
   {
     "key": "A_13212.68",
@@ -7704,7 +7714,8 @@
     "source": "A",
     "start": 13268.28,
     "end": 13280.08,
-    "en": "still... yeah. So it's not on the daily, it's on the Inca FreeWap 2. So this one I think"
+    "en": "still... yeah. So it's not on the daily, it's on the anchored VWAP 2. So this one I think",
+    "raw_en": "still... yeah. So it's not on the daily, it's on the Inca FreeWap 2. So this one I think"
   },
   {
     "key": "A_13280.08",
@@ -8047,7 +8058,8 @@
     "source": "A",
     "start": 11036.02,
     "end": 11041.02,
-    "en": "and I'm risking like 50.5% of my account, it would be 50 bucks."
+    "en": "and I'm risking like 0.5% of my account, it would be 50 bucks.",
+    "raw_en": "and I'm risking like 50.5% of my account, it would be 50 bucks."
   },
   {
     "key": "A_11041.56",
@@ -8180,7 +8192,8 @@
     "source": "C",
     "start": 2976.84,
     "end": 2983.84,
-    "en": "3 or 0.4 percent."
+    "en": "0.3 or 0.4 percent.",
+    "raw_en": "3 or 0.4 percent."
   },
   {
     "key": "A_8844.14",
@@ -10980,14 +10993,16 @@
     "source": "D",
     "start": 5611.88,
     "end": 5617.44,
-    "en": "lean towards the short side is actually the SK Heineck's chart, the South Korean chart"
+    "en": "lean towards the short side is actually the SK hynix chart, the South Korean chart",
+    "raw_en": "lean towards the short side is actually the SK Heineck's chart, the South Korean chart"
   },
   {
     "key": "D_5617.44",
     "source": "D",
     "start": 5617.44,
     "end": 5620.24,
-    "en": "of SK Heineck's."
+    "en": "of SK hynix.",
+    "raw_en": "of SK Heineck's."
   },
   {
     "key": "D_5620.24",
@@ -11015,7 +11030,8 @@
     "source": "D",
     "start": 5667.8,
     "end": 5671.44,
-    "en": "the all-time high end-gap web."
+    "en": "the all-time high anchored VWAP.",
+    "raw_en": "the all-time high end-gap web."
   },
   {
     "key": "D_5671.44",
@@ -11078,7 +11094,8 @@
     "source": "D",
     "start": 5764.64,
     "end": 5774.68,
-    "en": "up back into near the all-time highs area, like SKE HINES is still well below all the"
+    "en": "up back into near the all-time highs area, like SK hynix is still well below all the",
+    "raw_en": "up back into near the all-time highs area, like SKE HINES is still well below all the"
   },
   {
     "key": "D_5774.68",

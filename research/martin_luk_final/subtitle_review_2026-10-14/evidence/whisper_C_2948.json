@@ -1,0 +1,66 @@
+{
+  "text": " I've been risking 0.5% on average, but for now I'm risking less than that. 0.3 or 0.4%",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 0,
+      "start": 0.0,
+      "end": 28.52,
+      "text": " I've been risking 0.5% on average, but for now I'm risking less than that.",
+      "tokens": [
+        50364,
+        286,
+        600,
+        668,
+        45235,
+        1958,
+        13,
+        20,
+        4,
+        322,
+        4274,
+        11,
+        457,
+        337,
+        586,
+        286,
+        478,
+        45235,
+        1570,
+        813,
+        300,
+        13,
+        51790
+      ],
+      "temperature": 0,
+      "avg_logprob": -0.3466046905517578,
+      "compression_ratio": 1.0277777777777777,
+      "no_speech_prob": 0.2549603581428528
+    },
+    {
+      "id": 1,
+      "seek": 2852,
+      "start": 28.52,
+      "end": 33.519999999999996,
+      "text": " 0.3 or 0.4%",
+      "tokens": [
+        50364,
+        1958,
+        13,
+        18,
+        420,
+        1958,
+        13,
+        19,
+        4,
+        50614
+      ],
+      "temperature": 0,
+      "avg_logprob": -0.6066656112670898,
+      "compression_ratio": 0.5789473684210527,
+      "no_speech_prob": 0.25409531593322754
+    }
+  ],
+  "language": "en",
+  "start_offset_seconds": 2948
+}

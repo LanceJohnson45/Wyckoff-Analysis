@@ -32,7 +32,7 @@ the previous bar high. Okay, so this candle I entered at around here but I think
 
 9
 00:00:39,780 --> 00:00:45,300
-a slip page or I just enter it a little bit late, then I, yeah, but the trigger, the trigger
+a slippage or I just enter it a little bit late, then I, yeah, but the trigger, the trigger
 
 10
 00:00:45,300 --> 00:00:52,060

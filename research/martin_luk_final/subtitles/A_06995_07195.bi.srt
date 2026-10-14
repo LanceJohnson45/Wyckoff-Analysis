@@ -41,7 +41,7 @@ the previous bar high. Okay, so this candle I entered at around here but I think
 9
 00:00:39,780 --> 00:00:45,300
 一个滑点页，或者我只是进得稍微晚了一点，然后触发点，触发点
-a slip page or I just enter it a little bit late, then I, yeah, but the trigger, the trigger
+a slippage or I just enter it a little bit late, then I, yeah, but the trigger, the trigger
 
 10
 00:00:45,300 --> 00:00:52,060
@@ -50,7 +50,7 @@ point is the breakout of the previous bar high. And this time I'm using one minu
 
 11
 00:00:52,060 --> 00:00:59,780
-一分钟图表，不是因为通常在市场开市前15分钟内，图表显示的内容变化不大。
+这里用1分钟图。他提到最初15分钟〔开盘前/后措辞听辨存疑〕，如果
 a one minute chart, not because normally for the first 15 minutes before market open, if
 
 12
@@ -60,7 +60,7 @@ I'm, if I'm buying it with a pullback and a reversal, then I'm using a one minut
 
 13
 00:01:07,140 --> 00:01:15,220
-突破。在市场开盘后大约15分钟到16分钟之间。然后我会
+K线突破。然后从15分钟到大约16分钟〔后一个边界听辨存疑〕，我会用
 breakouts. For 15 minutes to maybe the 16 minutes after the market open and I'm
 
 14
@@ -90,7 +90,7 @@ bar high and so this is the one minute one minute shot example and I'm going to 
 
 19
 00:01:44,620 --> 00:01:51,980
-止损要么是在当天的低点，我觉得可能是当天低点的60%到70%。但有时候
+我大约60%～70%的时候把止损放在当日低点，但有时
 stop either at the low of day I think maybe 60 or 70% at low of day but sometimes the
 
 20
@@ -100,7 +100,7 @@ stop may be too wide or I just really wanted to tighten my stop and I may set it
 
 21
 00:01:58,460 --> 00:02:05,780
-breakout bar的低点，或者前一个bar的低点，所以这不是，这不是真的
+突破K线低点或前一根K线低点。所以并没有
 low of the breakout bar or low of the previous bar so this is not like this is not really
 
 22
@@ -120,12 +120,12 @@ bar. It just really depends on how tight the candle is or I sometimes would adju
 
 25
 00:02:24,420 --> 00:02:28,980
-嗯，也许我有时候不知道如何设置
+嗯，也许我有时候不知道如何设置我的股票，
 Yeah, maybe I sometimes I don't know how I set
 
 26
 00:02:28,980 --> 00:02:33,540
-我的股票，通常我会在进入时……
+通常我会在进入时……
 my stock and normally it would be if I'm entered,
 
 27

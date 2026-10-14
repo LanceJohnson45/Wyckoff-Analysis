@@ -12,11 +12,11 @@ the leader and then I just bought the breakouts for this one, I bought the break
 
 4
 00:00:18,480 --> 00:00:23,840
-small little base and it's also I believe above the angle view app.
+small little base and it's also I believe above the anchored VWAP.
 
 5
 00:00:23,840 --> 00:00:29,640
-So although this one didn't touch the angle view app, but it's above the angle view app
+So although this one didn't touch the anchored VWAP, but it's above the anchored VWAP
 
 6
 00:00:29,640 --> 00:00:33,400
@@ -48,7 +48,7 @@ Who extend the breakouts, I believe.
 
 13
 00:00:56,360 --> 00:01:01,260
-Did you incorporate the anchor view up at all with this trade from from highs?
+Did you incorporate the anchored VWAP at all with this trade from from highs?
 
 14
 00:01:01,360 --> 00:01:01,960
@@ -76,11 +76,11 @@ So.
 
 20
 00:01:20,460 --> 00:01:26,660
-Yeah, but the angle of view app would be like
+Yeah, but the anchored VWAP would be like a,
 
 21
 00:01:26,660 --> 00:01:32,860
-a, also a tool like for you to identify whether
+also a tool like for you to identify whether
 
 22
 00:01:32,860 --> 00:01:37,540
@@ -92,7 +92,7 @@ above the potential support area.
 
 24
 00:01:42,220 --> 00:01:50,280
-So if HOOT is pulling back into this angle of view app, as it is also near the 50 EMA2,
+So if HOOT is pulling back into this anchored VWAP, as it is also near the 50 EMA2,
 
 25
 00:01:50,280 --> 00:01:54,940
@@ -104,7 +104,7 @@ there.
 
 27
 00:01:57,180 --> 00:02:02,460
-So I really like, I think I put the angle for it up also here when I'm treating this
+So I really like, I think I put the anchored VWAP also here when I'm treating this
 
 28
 00:02:02,460 --> 00:02:05,220
@@ -368,11 +368,11 @@ like when the 9 and the 50 are really close to each other and I'm not sure
 
 93
 00:07:10,580 --> 00:07:16,400
-about the angle view up? Let's put it in a bit. Yeah, angle view up is, here is below,
+about the anchored VWAP? Let's put it in a bit. Yeah, anchored VWAP is, here is below,
 
 94
 00:07:16,400 --> 00:07:21,020
-is below the angle view up. So yeah, I think
+is below the anchored VWAP. So yeah, I think
 
 95
 00:07:21,020 --> 00:07:25,640

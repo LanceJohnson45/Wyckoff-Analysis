@@ -6,7 +6,7 @@ I think I shorted this kind of thing so so I it's a little bit anticipated short
 2
 00:00:06,200 --> 00:00:12,120
 我觉得因为它反弹到那个向上角度的阻力位，但问题不大。
-I think because I think it rallies up into the angle view up but it fine resistance
+I think because I think it rallies up into the anchored VWAP but it fine resistance
 
 3
 00:00:12,680 --> 00:00:15,000
@@ -25,27 +25,27 @@ This one is like an anticipated entry so
 
 6
 00:00:26,440 --> 00:00:31,240
-所以，可能有时候我还是会打破规
+所以，可能有时候我还是会打破规则，
 So, may not be that sometimes I still break
 
 7
 00:00:31,240 --> 00:00:36,040
-则，但我一直坚持，一件事情就是
+但我一直坚持，一件事情就是
 my rules, but I just keep, one thing would
 
 8
 00:00:36,040 --> 00:00:40,600
-即使是这样，我还是有点调整规
+即使是这样，我还是有点调整规则的习惯，
 be, even though I like, left like, tweaking
 
 9
 00:00:40,600 --> 00:00:45,160
-则的习惯，有时候我会偏离一些。
+有时候我会偏离一些。
 my rules a bit, sometimes I'm not really following
 
 10
 00:00:45,160 --> 00:00:52,240
-我的规则，但有一点是我总是设置止损 before entering
+自己的规则，但有一点：我始终在入场前设好止损，
 my rules, but one thing is I am setting my stop, I'm always setting my stop before entering
 
 11
@@ -60,13 +60,13 @@ is still in controllable loss. And the most important part is on the daily, like
 
 13
 00:01:08,280 --> 00:01:14,180
-还是这样... 是的。它不在日线图上，而在
+不是在日线均线，
 still... yeah. So it's not on the daily, it's on
 
 14
 00:01:14,180 --> 00:01:20,080
-Inca FreeWap 2上。这个我觉得
-the Inca FreeWap 2. So this one I think
+而也参考锚定VWAP。这个例子我认为
+the anchored VWAP 2. So this one I think
 
 15
 00:01:20,080 --> 00:01:25,000

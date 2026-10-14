@@ -75,7 +75,7 @@ the largest gainers in the previous day.
 
 16
 00:00:47,960 --> 00:00:50,040
-从 screener 屏幕上看，
+从扫描器结果来看，
 So from the screeners,
 
 17
@@ -141,17 +141,16 @@ then it would really catch my attention.
 29
 00:01:37,900 --> 00:01:42,120
 把这条交易视频对白翻成简体中文，只输出译文：
-所以对
 So for the watch list, sometimes when I scroll
 
 30
 00:01:42,120 --> 00:01:46,340
-于观察名单，有时候当我浏览观察名单时，我希望能够升级
+所以对于观察名单，有时候当我浏览观察名单时，我希望能够升级
 through my watch list, I would like to upgrade
 
 31
 00:01:46,340 --> 00:01:48,540
-他们 downgrade 他们。
+把它们降级。
 them or like downgrade them.
 
 32
@@ -166,7 +165,7 @@ to the leading watch list, then I would like also like have a have an alerts in 
 
 34
 00:02:03,820 --> 00:02:10,780
-那哦，这有一根柱子昨天显示有strength，然后它可能会设置
+某个主题昨天表现出强势，也许会
 that oh so there's this beam could is showing some strength yesterday, then it could set
 
 35
@@ -176,7 +175,7 @@ up in the next few days or weeks.
 
 36
 00:02:13,820 --> 00:02:18,900
-我 really 需要 他们 的 注意。
+所以需要多关注这些股票。
 So I really need to get some attention to them.
 
 37

@@ -305,7 +305,7 @@ But really good entry, but if you're missing this pullback, then you can buy it 
 
 62
 01:09:38,220 --> 01:09:41,820
-它回调到锚定VWAP以及9 EMA。
+所以它回调到锚定VWAP，也回到9 EMA，以及……
 so it pulls back into the anchored VWAP also the 9 EMA and
 
 63
@@ -430,7 +430,7 @@ I don't know whether it's any coincidence or not, but at least it is reacting to
 
 87
 01:11:15,000 --> 01:11:17,700
-锚定VWAP，还有150。
+锚定VWAP以及150均线。
 anchored VWAP and also the 150.
 
 88
@@ -720,7 +720,7 @@ reacts to the 50 EMA and also to the
 
 145
 01:15:23,140 --> 01:15:26,980
-锚定VWAP遇到了阻力
+锚定VWAP，并遇到阻力，
 the anchored VWAP and they found resistance
 
 146
@@ -1310,12 +1310,12 @@ the stocks that you really wanted to get in,
 
 263
 01:22:19,540 --> 01:22:24,040
-特别是可能是热点股，可能是非常强势的，或者
+尤其是热点主题里的强股，
 especially maybe it's on a hot bean, maybe it's really
 
 264
 01:22:24,040 --> 01:22:28,540
-你对一只股票非常有 conviction。
+或者你对该股非常有信心。
 strong or you have really high conviction into one stocks.
 
 265
@@ -4091,12 +4091,12 @@ minute shot example and I'm going to set the
 
 819
 01:58:19,620 --> 01:58:23,300
-止损要么是在当天的低点，我觉得可能是
+我大约60%～70%的时候
 stop either at the low of day I think maybe
 
 820
 01:58:23,300 --> 01:58:26,980
-当天低点的60%到70%。但有时候
+把止损放在当日低点，但有时
 60 or 70% at low of day but sometimes the
 
 821
@@ -4106,12 +4106,12 @@ stop may be too wide or I just really wanted to tighten my stop and I may set it
 
 822
 01:58:33,460 --> 01:58:37,120
-breakout bar的低点，或者前一
+突破K线低点或前一根
 low of the breakout bar or low of the previous
 
 823
 01:58:37,120 --> 01:58:40,780
-个bar的低点，所以这不是，这不是真的
+K线低点。所以并没有
 bar so this is not like this is not really
 
 824
@@ -4631,7 +4631,7 @@ But yeah, but still is a loss, is a losing trade.
 
 927
 02:06:12,120 --> 02:06:18,040
-我做空主要是因为我相信使用了这个borough的锚定VWAP。
+我做空主要因为参考了这个位置锚定的VWAP，
 I take the short mainly because I believe I used the anchored VWAP from this borough
 
 928
@@ -4691,7 +4691,7 @@ switched to this one. So I set the stop at the height of day
 
 939
 02:07:07,520 --> 02:07:11,040
-然后就是反转入场，回调了。
+这就是反转入口，也就是反弹遇阻的做空入口。
 And then it's like a reversal entry, like a pullback shot.
 
 940
@@ -5501,12 +5501,12 @@ really eager and trying to be aggressive in my entries and then I'm just
 
 1101
 02:17:27,300 --> 02:17:31,180
-尝试做空NVIDIA，然后回调到
+尝试在NVDA反弹到
 trying to short the NVIDIA on this, like,
 
 1102
 02:17:31,180 --> 02:17:35,060
-hourly 9 EMA 处。
+小时EMA9附近做空，
 pull back into the hourly 9 EMA,
 
 1103
@@ -5521,12 +5521,12 @@ third times because it's like chopping around intraday too. So I keep getting, l
 
 1105
 02:17:45,620 --> 02:17:49,340
-日内交易已经完成。考虑到
+日内被来回震荡扫出，而且
 chopped in on the intraday. And given that the data
 
 1106
 02:17:49,340 --> 02:17:53,060
-数据其实并不肥厚。所以这些
+日线背景也并不理想。这些
 is, is actually not that fatty too. So these
 
 1107
@@ -5551,7 +5551,7 @@ to the 9 EMA and yeah so this is the
 
 1111
 02:18:09,980 --> 02:18:15,300
-Nvidia这个交易做得不好，日内气体流出虽然第二
+NVDA交易没有做好，日内被止损，虽然第二
 Nvidia trade that doesn't work well and the gas stopped out intraday although the second
 
 1112
@@ -5596,7 +5596,7 @@ I got stopped out and the next day it starts to move down.
 
 1120
 02:18:50,740 --> 02:18:53,820
-我这是在做空吗？
+我就会想：我是不是在……
 So I'm like, am I doing the,
 
 1121
@@ -5611,7 +5611,7 @@ but I'm just getting stopped out.
 
 1123
 02:18:58,340 --> 02:19:02,320
-应该继续尝试而不是 just like，
+是不是应该继续尝试，而不是就这样
 So I should keep trying instead of just like,
 
 1124
@@ -5626,7 +5626,7 @@ they reduce the trade frequency.
 
 1126
 02:19:07,860 --> 02:19:11,180
-然后因为市场 just keeps like，
+因为市场持续
 And then because the markets just keeps like,
 
 1127
@@ -6321,22 +6321,22 @@ it's up 3R or 5R. But sometimes if
 
 1265
 02:27:48,800 --> 02:27:53,600
-如果市场真的很强，有时我会
+如果市场很强，有时我
 if the market is really strong and I sometimes would
 
 1266
 02:27:53,600 --> 02:27:58,400
-选择不参与，如果我认为市场
+不分批兑现；如果市场
 not take part shows, if I think the market
 
 1267
 02:27:58,400 --> 02:28:01,840
-非常强劲，其他位置我也有很大
+很强、其他仓位又有
 is really strong and I have huge cushions
 
 1268
 02:28:01,840 --> 02:28:05,280
-的缓冲， yeah，我有时候会
+厚利润垫，有时我会
 on other positions, and yeah, I sometimes would
 
 1269
@@ -6386,2654 +6386,2654 @@ extended if you're just trying to see from here, especially given the fact that 
 
 1278
 02:28:38,720 --> 02:28:44,780
-一直向上走，我觉得是30%或者50
+一直向上，可能一天涨
 been going straight, I think you say 30% or 50%
 
 1279
 02:28:44,780 --> 02:28:50,840
-%，最好是50%的日内更新然后它就
+30%或50%，然后
 like 50% day update and then it has a
 
 1280
-02:28:50,840 --> 02:28:53,580
-一天的 consolidation，然后它又继续
-one day consolidation and it keeps going again and then
+02:28:50,840 --> 02:28:56,320
+整理一天，再继续上行。我觉得这时可以
+one day consolidation and it keeps going again and then I think this is it should be a time
 
 1281
-02:28:53,580 --> 02:28:56,320
-了，然后我觉得这就是我们要找的，应该是个时机。
-I think this is it should be a time
-
-1282
 02:28:56,320 --> 02:29:02,500
 卖出部分利润，然后我一般会拿出大约15%，我通常会这样做的。
 to take some profits and then I just take around like 15% and I really I normally would
 
-1283
+1282
 02:29:02,500 --> 02:29:07,620
-每次我认为这只股票有延伸
+每次卖出约15%的仓位。
 trade my position at around 15% each. So
 
-1284
+1283
 02:29:07,620 --> 02:29:12,740
-，我就在15%的位置平仓。
+每当觉得股票已经延伸，
 every time I think this stock is extended,
 
-1285
+1284
 02:29:12,740 --> 02:29:17,167
 卖出15%，然后在
 I sell 15%. And then I
 
-1286
+1285
 02:29:17,167 --> 02:29:21,593
 触及9 AMA的第一
 close this trade on the first close
 
-1287
+1286
 02:29:21,593 --> 02:29:26,020
 个收盘价下方平仓。
 below the 9 AMA. Yes, this
 
-1288
+1287
 02:29:26,020 --> 02:29:30,120
 是处理这笔交易的方式，但抱歉 Ma
 is how I handle the trade so but
 
-1289
+1288
 02:29:30,120 --> 02:29:34,220
 rtin，对于entry是怎么做的
 yeah for the entry what sorry sorry Martin for
 
-1290
+1289
 02:29:34,220 --> 02:29:39,380
 那个进入点我知道你可能说它不是那天的最佳进入点。
 that entry I know you said it maybe wasn't the best entry on the entry day
 
-1291
+1290
 02:29:39,380 --> 02:29:43,740
 是通过打开的价带高点买入的吧，你是这样买的吗？
 was it through opening range high yeah how are you kind of buying that gap up
 
-1292
+1291
 02:29:43,740 --> 02:29:49,940
 日内入口，我记得仍然是开盘区间高点突破，大概在
 during the day yes I believe it's still opening range high so I think it's
 
-1293
+1292
 02:29:49,940 --> 02:29:55,740
 最初一两分钟，因为当时上涨非常
 pretty like on the first first one or two minutes because it's really going so
 
-1294
+1293
 02:29:55,740 --> 02:29:59,740
 在第一分钟到两分钟内非常快。
 fast on the first one of one to two minutes I believe.
 
-1295
+1294
 02:30:00,000 --> 02:30:04,680
 所以我是买在第一根5分钟K线。
 So yeah, I'm buying it at the first five minute candle.
 
-1296
+1295
 02:30:04,680 --> 02:30:07,520
 相信是一分钟开盘范围的突破高位。
 So I believe it would be the one minute opening range high breakouts and
 
-1297
+1296
 02:30:08,280 --> 02:30:11,320
 特别是考虑到这是低价股。
 especially given that it is a lower price stocks.
 
-1298
+1297
 02:30:11,760 --> 02:30:16,440
 我觉得它有更高的睡眠页，正在移动。
 So I think it has a higher sleep page and it's moving
 
-1299
+1298
 02:30:17,240 --> 02:30:19,240
 更快的方式。
 way faster. So
 
-1300
+1299
 02:30:20,280 --> 02:30:24,440
 我想，但马丁，这里稍微退后一步。
 I want to but yeah, yeah taking just a step back here Martin
 
-1301
+1300
 02:30:24,960 --> 02:30:29,640
 显然我们专注于单个交易和你的执行，但
 obviously we're focusing on the individual trades and your execution, but
 
-1302
+1301
 02:30:30,000 --> 02:30:35,800
 我想还是回到主题吧，也就是你如何选择这些名称的。
 I do want to kind of bring it back to themes and kind of how you selected these names.
 
-1303
+1302
 02:30:35,800 --> 02:30:39,700
 显然从列表看，人们可以
 Obviously looking at the list, people can see
 
-1304
+1303
 02:30:39,700 --> 02:30:43,600
 看到高ADR名称在移动
 high ADR names that when they're moving
 
-1305
+1304
 02:30:43,600 --> 02:30:46,640
 他们可以做得很好，但可以谈谈你是如
 they can really go, but talk to me about how
 
-1306
+1305
 02:30:46,640 --> 02:30:49,680
 何发现这些的，以及你是如何做到的。
 you discover these a little bit and how you
 
-1307
+1306
 02:30:49,680 --> 02:30:54,180
 有点实时寻找主题，知道哪个市场的哪个区域要重点关注。
 kind of look for themes in real time and know what area of the market to focus on and look
 
-1308
+1307
 02:30:54,180 --> 02:30:56,800
 这些位置。
 for these entries.
 
-1309
+1308
 02:30:56,800 --> 02:31:01,800
 是的，我认为对于我喜欢的主题，
 Yes, I think for themes that I am going to like,
 
-1310
+1309
 02:31:02,520 --> 02:31:04,560
 我有几个观察名单。
 I have several watch lists.
 
-1311
+1310
 02:31:04,560 --> 02:31:06,700
 我把所有的监控列表都看了一遍，
 So I'm going through all the watch lists,
 
-1312
+1311
 02:31:08,120 --> 02:31:10,680
 所有股票代码一个一个。
 all the tickers like one by one.
 
-1313
+1312
 02:31:10,680 --> 02:31:11,520
 然后，
 And then,
 
-1314
+1313
 02:31:13,120 --> 02:31:16,240
 当我也会进行扫描时，
 when I also do scans,
 
-1315
+1314
 02:31:16,240 --> 02:31:19,200
 如果是我在做提前市扫描寻找向上跳空的情况，
 so if I'm doing like the pre-market scans for the gap ups,
 
-1316
+1315
 02:31:19,200 --> 02:31:22,480
 也包含强大的扫描。
 also the potent scans
 
-1317
+1316
 02:31:22,480 --> 02:31:26,520
 那些扫描在之前的访谈中也是可用的。
 that those scans are available on the previous interviews
 
-1318
+1317
 02:31:26,520 --> 02:31:28,080
 去年我和理查德做的那样。
 that I did with Richard last year.
 
-1319
+1318
 02:31:28,080 --> 02:31:32,320
 你可以回去检查一下扫描。
 So if you can go back to check the scans
 
-1320
+1319
 02:31:32,320 --> 02:31:35,960
 我也在那场采访中分享了。
 and I've shared them in that interview too.
 
-1321
+1320
 02:31:35,960 --> 02:31:40,120
 把扫描交易是像扫描前一天的。
 So for putting scan is like scanning the previous day,
 
-1322
+1321
 02:31:40,120 --> 02:31:42,960
 昨日最大的赢家。
 the largest gainers in the previous day.
 
-1323
+1322
 02:31:42,960 --> 02:31:45,040
-从 screener 屏幕上看，
+从扫描器结果来看，
 So from the screeners,
 
-1324
+1323
 02:31:45,040 --> 02:31:48,040
 如果我看到多支股票
 if I'm seeing multiple of the stocks
 
-1325
+1324
 02:31:48,040 --> 02:31:50,880
 那是同一行业的。
 that is within the same industry.
 
-1326
+1325
 02:31:50,880 --> 02:31:53,000
 比如，昨天可能。
 So for example, maybe yesterday,
 
-1327
+1326
 02:31:53,000 --> 02:31:56,960
 但昨天是下跌的一天，但仍
 But yesterday was a down day, but still
 
-1328
+1327
 02:31:56,960 --> 02:32:00,920
 然有一些矿业公司，比如
 there are like, for example, these mining companies
 
-1329
+1328
 02:32:00,920 --> 02:32:04,760
 像金属的名字真的很强势，有很多金属类的名字表现很好。
 like the metals names are really strong, like there are lots of metal metal names that going
 
-1330
+1329
 02:32:04,760 --> 02:32:05,760
 上涨。
 up.
 
-1331
+1330
 02:32:05,760 --> 02:32:11,640
 然后我会，我会形成一种感觉，好吧，金属可以是另一个，但
 Then I would, I would develop a sense that okay, so metals could be another like, but
 
-1332
+1331
 02:32:11,640 --> 02:32:14,120
 问题是现有的主导主题。
 matters is an existing leading theme.
 
-1333
+1332
 02:32:14,120 --> 02:32:16,140
 这不是潜在的。
 So it's not a potential one.
 
-1334
+1333
 02:32:16,140 --> 02:32:19,840
 但当有一个主题不是现有的领导
 But when there's one theme that is not
 
-1335
+1334
 02:32:19,840 --> 02:32:23,540
 者，但它却不断出现或反复出现时
 the existing leader but keep popping up or pops
 
-1336
+1335
 02:32:23,540 --> 02:32:29,140
 同一天内有很多名称会在同一天内出现。
 up within the same day, there are lots of the names that pops up within the same day,
 
-1337
+1336
 02:32:29,140 --> 02:32:32,900
 然后它就会真正引起我的注意。
 then it would really catch my attention.
 
-1338
+1337
 02:32:32,900 --> 02:32:37,120
 把这条交易视频对白翻成简体中文，只输出译文：
 所以对
 So for the watch list, sometimes when I scroll
 
-1339
+1338
 02:32:37,120 --> 02:32:41,340
 于观察名单，有时候当我浏览观察名单时，我希望能够升级
 through my watch list, I would like to upgrade
 
-1340
+1339
 02:32:41,340 --> 02:32:43,540
-他们 downgrade 他们。
+把它们降级。
 them or like downgrade them.
 
-1341
+1340
 02:32:43,540 --> 02:32:47,400
 如果我喜欢的几只股票像
 So if there are several stocks that I
 
-1342
+1341
 02:32:47,400 --> 02:32:51,260
 这样的普通名单提升一下
 like upgrade from like this mediocre watch list
 
-1343
+1342
 02:32:51,260 --> 02:32:55,040
 把这条交易视频对白翻成简体中
 to the leading watch list, then I would like also
 
-1344
+1343
 02:32:55,040 --> 02:32:58,820
 文，然后我的脑海里也会有警报。
 like have a have an alerts in my mind
 
-1345
+1344
 02:32:58,820 --> 02:33:02,300
-那哦，这有一根柱子昨天显示有st
+某个主题昨天表现
 that oh so there's this beam could is
 
-1346
+1345
 02:33:02,300 --> 02:33:05,780
-rength，然后它可能会设置
+出强势，也许会
 showing some strength yesterday, then it could set
 
-1347
+1346
 02:33:05,780 --> 02:33:08,820
 几天或几周后会上涨。
 up in the next few days or weeks.
 
-1348
+1347
 02:33:08,820 --> 02:33:13,900
-我 really 需要 他们 的 注意。
+所以需要多关注这些股票。
 So I really need to get some attention to them.
 
-1349
+1348
 02:33:13,900 --> 02:33:18,320
 那是大概我如何识别出它，主要
 So that's probably how I spot the beam, mostly
 
-1350
+1349
 02:33:18,320 --> 02:33:22,740
 是从扫描器，也从我喜欢的方式。
 from the scanner and also from how I like
 
-1351
+1350
 02:33:22,740 --> 02:33:25,900
 管理我的自选列表。
 managing my watch lists.
 
-1352
+1351
 02:33:25,900 --> 02:33:29,380
 但谈到个体轨迹，对于部
 But speaking to the individual trace, for some
 
-1353
+1352
 02:33:29,380 --> 02:33:32,860
 分BBAI，除了主题，
 of this BBAI, apart from the themes, I
 
-1354
+1353
 02:33:32,860 --> 02:33:39,020
 我认为AEI主题在2025年初仍然是一个热门主题。
 I believe AEI theme is still a hot theme in the earlier parts of 2025.
 
-1355
+1354
 02:33:39,020 --> 02:33:43,060
 但是其他的一样，我觉得BBA
 But other than that, like BBAI is, I
 
-1356
+1355
 02:33:43,060 --> 02:33:47,100
 I在这天确实引起了我的注意。
 think it catches my attention on this day here.
 
-1357
+1356
 02:33:47,100 --> 02:33:50,860
 它突破了这个极小的区间范围，因为
 Like it breaks out from this tiny little
 
-1358
+1357
 02:33:50,860 --> 02:33:54,620
 通常它都会在下面 surfing。
 range because normally like it's surfing below
 
-1359
+1358
 02:33:54,620 --> 02:33:57,120
 21和9。
 the like 21 and 9.
 
-1360
+1359
 02:33:57,120 --> 02:34:02,100
 它在这三天里表现得很弱。
 So it acts pretty weakly on these three days.
 
-1361
+1360
 02:34:02,100 --> 02:34:06,740
 周四它跳空高开，并且收盘强劲
 on Thursday it gaps up and closes pretty strong and
 
-1362
+1361
 02:34:06,740 --> 02:34:11,380
 ，收盘时未填缺口已经显现。
 closes the gap on the unfilled gap on the
 
-1363
+1362
 02:34:11,380 --> 02:34:14,740
 周五。所以今天表现强劲，收盘
 Friday here. So on this day, so it's
 
-1364
+1363
 02:34:14,740 --> 02:34:18,100
 也很强，已经建立了一定的势头。
 really showing strength, it's closing strong, it's built at
 
-1365
+1364
 02:34:18,100 --> 02:34:21,660
 更高的低点因为没有逐渐融入到50 EMA
 higher lows because it's not fading into the 50 EMA
 
-1366
+1365
 02:34:21,660 --> 02:34:25,220
 中，因为通常如果股票表现不佳，它不应如此。
 because normally if the stock is weak and it's
 
-1367
+1366
 02:34:25,220 --> 02:34:31,540
 坚持拒绝EMA可能要向下走，但不会。
 keep rejecting the EMAs is probably going to the downside, but it isn't.
 
-1368
+1367
 02:34:31,540 --> 02:34:37,600
 在这一天之后，我会跟踪
 So right after this date, this one would be one
 
-1369
+1368
 02:34:37,600 --> 02:34:43,660
 这个作为主要想法之一。
 of the main ideas that I'm going to track
 
-1370
+1369
 02:34:43,660 --> 02:34:46,620
 在未来几天或几周内。
 in the coming days or weeks.
 
-1371
+1370
 02:34:46,620 --> 02:34:50,580
 这个星期一，这个绿色的K线，
 So on this Monday here, this green bar,
 
-1372
+1371
 02:34:50,580 --> 02:34:54,540
 所以开盘挺好的，也像是在填补
 so it opens pretty weekly and also like filling
 
-1373
+1372
 02:34:54,540 --> 02:35:00,580
 第一天出现跳空高开，如果我是支撑，那么就会反弹。
 the gap on the first day gap up and if I'm support so it rallying back and
 
-1374
+1373
 02:35:00,580 --> 02:35:05,820
 收盘强劲地突破所有EMA之上，我认为这可能是另一个
 closes really strong above all the EMAs and then I think this could be another
 
-1375
+1374
 02:35:05,820 --> 02:35:12,220
 只有高位了，所以我考虑可能会在这里稍微收紧一些，一到两处。
 high alone so I'm thinking potentially it could tighten up a bit here one or two
 
-1376
+1375
 02:35:12,220 --> 02:35:17,860
 几天甚至几天后可能迎来更好的突破，但有时候它只是这样。
 days or a few days more for a better breakout but sometimes it just like go
 
-1377
+1376
 02:35:17,860 --> 02:35:23,980
 一股直线上涨，尤其是在过去两年或三年。
 straight away especially in the past two or three years the stocks doesn't want
 
-1378
+1377
 02:35:23,980 --> 02:35:27,940
 有序地整理成平台，突
 to base that orderly, get that
 
-1379
+1378
 02:35:27,940 --> 02:35:31,900
 破前的K线非常紧凑。
 really tight candles before a breakout.
 
-1380
+1379
 02:35:31,900 --> 02:35:35,320
 所以这条走势就在这个
 So this one just breaks out
 
-1381
+1380
 02:35:35,320 --> 02:35:38,740
 星期一反转后直接突破。
 right after this Monday reversal.
 
-1382
+1381
 02:35:38,740 --> 02:35:42,240
 我觉得这两者 really 捕捉了我
 So I think these two, they really catches my
 
-1383
+1382
 02:35:42,240 --> 02:35:45,740
 注意力，BBAI，这让我决定进入。
 attention of BBAI and what brings me to entering
 
-1384
+1383
 02:35:45,740 --> 02:35:46,740
 这里的交易。
 the trade here.
 
-1385
+1384
 02:35:46,740 --> 02:35:49,540
 是的，Martin，解释得很清楚。
 Yeah, Martin, that's really well explained.
 
-1386
+1385
 02:35:49,540 --> 02:35:51,980
 而且再强调一次，我认为这是一个非常重要的一点。
 And just to kind of say it one more time, because I think there's a really important
 
-1387
+1386
 02:35:51,980 --> 02:35:57,340
 要关注每天扫描的主题、每天复查观察名单，
 point to look at the themes you're scanning every day, reviewing your watches every day,
 
-1388
+1387
 02:35:57,340 --> 02:36:03,660
 一起寻找表现异常强劲或弱的股票，我肯定。
 looking for names together, acting abnormally strong or abnormally weak as well, I'm sure.
 
-1389
+1388
 02:36:03,660 --> 02:36:08,300
 然后针对个股情况，你追踪那些更高的低点，表明了力量的迹象。
 And then on an individual name basis, you're tracking those higher lows, the signs of strength,
 
-1390
+1389
 02:36:08,300 --> 02:36:10,780
 然后就是在交易 setups 完成的时
 and then just trying to pick your spots as they
 
-1391
+1390
 02:36:10,780 --> 02:36:13,260
 候挑选你的位置。我觉得你总结得很好了。
 complete your setups. I think you summed it up
 
-1392
+1391
 02:36:13,260 --> 02:36:19,660
 很好，就像全部都在那一帧里。如果你错过了，一定要回去再看。
 really nicely, like all in one in that one clip. So if you missed that, definitely go back and watch
 
-1393
+1392
 02:36:19,660 --> 02:36:22,320
 那是个值得认真记下的点。
 that would be a point to really take notes on.
 
-1394
+1393
 02:36:22,320 --> 02:36:26,660
 完美，让我们更深入地探讨你的三重队列交易。
 Perfect. Let's dive deeper into your triple queues trade
 
-1395
+1394
 02:36:26,660 --> 02:36:28,660
 除非你有更多内容要补充到VBAI。
 unless you have more to add on VBAI.
 
-1396
+1395
 02:36:30,660 --> 02:36:35,660
 是的，这是我在交易的三重队列。
 Yeah, so this is a triple queues that I traded it.
 
-1397
+1396
 02:36:35,660 --> 02:36:37,660
 哦，看看。
 Oops, let's see.
 
-1398
+1397
 02:36:37,660 --> 02:36:41,160
-这是我在四月慢速
+这是我在4月低点附近做的
 This is a purple long that
 
-1399
+1398
 02:36:41,160 --> 02:36:44,660
-形成后的紫色多头。
+一笔极端超跌反转多头。
 I traded at the April slow.
 
-1400
+1399
 02:36:44,660 --> 02:36:50,060
 我觉得这是最好的交易。
 So I think this is the best trade.
 
-1401
+1400
 02:36:50,060 --> 02:36:55,060
 我觉得这是我2025年讲过的最好的交易。
 I think this is really the best trade I talked in 2025.
 
-1402
+1401
 02:36:55,060 --> 02:36:59,460
-因为我觉得这是第一次帕累托式的长途交易。
+这是我第一次交易这种抛物线式急跌后的反转做多，
 Because I really think this is the first parabolic long-distance trade
 
-1403
+1402
 02:36:59,460 --> 02:37:02,760
 我觉得我交易得还不错。
 and I think I traded pretty well.
 
-1404
+1403
 02:37:02,760 --> 02:37:07,510
 因为这连续几天出现巨大跳空下
 Because from this huge gap-downs, from
 
-1405
+1404
 02:37:07,510 --> 02:37:12,260
 跌，一、二、三这样的缺口下跌，
 this one, two, and three gap-down days,
 
-1406
+1405
 02:37:12,260 --> 02:37:17,260
-然后我觉得市场真的 panic 了，
+我觉得市场当时非常恐慌，
 And then I really think the market is really panicking,
 
-1407
+1406
 02:37:17,860 --> 02:37:20,480
 真的进入恐慌性卖出模式。
 it's really into a panic sell mode.
 
-1408
+1407
 02:37:20,480 --> 02:37:24,280
 我认为底部近在咫尺。
 And I really think the bottom is near.
 
-1409
+1408
 02:37:24,280 --> 02:37:28,820
 我一直在等待第二波。
 And I keep waiting for the second.
 
-1410
+1409
 02:37:28,820 --> 02:37:32,980
 好像市场开市前
 Like I think before the market open
 
-1411
+1410
 02:37:32,980 --> 02:37:35,480
 在今天的第二天下跌日这里，
 on the second down day here,
 
-1412
+1411
 02:37:35,480 --> 02:37:38,940
 我觉得现在就想再有一个向下跳空。
 I'm feeling like I just want another gap down.
 
-1413
+1412
 02:37:38,940 --> 02:37:43,540
-我 juste gonna 获得 peripoint 多头
+所以准备寻找极端超跌后的反转多头，
 So I'm just going to get the peripoint longs
 
-1414
+1413
 02:37:43,540 --> 02:37:46,580
 如果是再有一个向下跳空，那就再给我一个向下跳空。
 if there's another gap down, just give me another gap down.
 
-1415
+1414
 02:37:46,580 --> 02:37:51,580
 然后市场又出现一个跳空下跌。
 And then luckily the market gives another gap down
 
-1416
+1415
 02:37:52,140 --> 02:37:56,220
 在接下来的周一这里。
 on the next Monday here.
 
-1417
+1416
 02:37:56,220 --> 02:37:58,260
 然后我支撑了它。
 And then I supported it.
 
-1418
+1417
 02:37:58,260 --> 02:38:01,140
 它继续向下延伸。
 So it's really extended to the downside
 
-1419
+1418
 02:38:01,140 --> 02:38:02,500
 开盘后。
 right after the market opens.
 
-1420
+1419
 02:38:02,500 --> 02:38:07,500
 所以它大约低于1小时EMA 20%。
 So it's like 20% below the one hour EMA.
 
-1421
+1420
 02:38:08,940 --> 02:38:13,120
 它是绝对的，这是非常异常的，
 It is absolutely, this is very abnormal and
 
-1422
+1421
 02:38:13,120 --> 02:38:17,300
 已经过度超卖，已经严重超卖。
 it is really stretched and oversold and I
 
-1423
+1422
 02:38:17,300 --> 02:38:21,040
 真的觉得时机已经到了，然后
 really think the timing has come and then I think
 
-1424
+1423
 02:38:21,040 --> 02:38:24,780
 我认为现在是出击的时候了。
 this is the time to take a shot and
 
-1425
+1424
 02:38:24,780 --> 02:38:31,180
 在反转位置买入，大概在一分钟
 buy at the reversal probably one minute
 
-1426
+1425
 02:38:31,180 --> 02:38:37,580
 的开仓规模，或者日内反弹。
 opening in size or the intraday breakouts.
 
-1427
+1426
 02:38:37,580 --> 02:38:41,740
-这真是我第一次大量谈论紫色。
+这是我第一次做这种极端反转多头。
 This is really the first time that I talk the purple a lot.
 
-1428
+1427
 02:38:41,740 --> 02:38:44,060
 所以我完全没想到。
 So I really didn't expect that.
 
-1429
+1428
 02:38:44,060 --> 02:38:48,340
-我觉得除了entry点，我整体上处理这单交易做得还不错。
+除了入口，我觉得这笔退出也处理得不错，
 I think apart from the entry, I closed this trade pretty well too.
 
-1430
+1429
 02:38:48,340 --> 02:38:52,160
-我刚刚在 hourly 9 EMA
+在小时EMA9略上方、也
 I just closed this right above the hourly
 
-1431
+1430
 02:38:52,160 --> 02:38:55,980
-之上关闭了这个，并且接近前一天的高点。
+接近昨日高点的位置平仓。
 9 EMA and also near the previous day high.
 
-1432
+1431
 02:38:55,980 --> 02:39:02,220
 我不喜欢，我觉得我可以放大看一下。
 And I didn't like, I think I can zoom in for a bit.
 
-1433
+1432
 02:39:02,220 --> 02:39:03,220
 看看。
 Let's see.
 
-1434
+1433
 02:39:03,220 --> 02:39:09,180
 这笔TQQQ，我用了1分钟入口，但我想没有成功。
 for this TQQQ, I bought it at one minute, but I think it didn't work.
 
-1435
+1434
 02:39:09,180 --> 02:39:12,220
 一分钟图表不可用。
 Yeah, the one minute chart isn't available.
 
-1436
+1435
 02:39:12,220 --> 02:39:17,020
 然后，然后出现了一分钟的突破，然后我在最低点设置止损。
 Then, yeah, there's a one minute breakout, and then I put the stop at the low of the
 
-1437
+1436
 02:39:17,020 --> 02:39:18,020
 突破的那根K线。
 breakout bar.
 
-1438
+1437
 02:39:18,020 --> 02:39:22,740
 是2%的止损。
 So it's around 2% stop.
 
-1439
+1438
 02:39:22,740 --> 02:39:27,240
 这个图像是合并
 And so this one really, I think, I merged
 
-1440
+1439
 02:39:27,240 --> 02:39:31,740
 到了日线图中。
 the, like a picture on the daily into the
 
-1441
+1440
 02:39:31,740 --> 02:39:35,380
 非常短的日内交易周期，做得很好。
 really short time frame on the intraday really well.
 
-1442
+1441
 02:39:35,380 --> 02:39:38,860
 在每周和每日
 So on the weekly and also the daily
 
-1443
+1442
 02:39:38,860 --> 02:39:41,300
 向下延伸非常明显。
 is really extended to the downside.
 
-1444
+1443
 02:39:41,300 --> 02:39:46,020
 这个图表显示的是非常延伸的走势。
 If you can see this chart, it's really, really extended
 
-1445
+1444
 02:39:46,020 --> 02:39:48,940
 从50%下方的九EMA处。
 from the 50% below the nine EMA.
 
-1446
+1445
 02:39:48,940 --> 02:39:51,420
 这种情况非常非常罕见。
 This is very, very rarely that it really happens
 
-1447
+1446
 02:39:51,420 --> 02:39:52,540
 从指数。
 from an index.
 
-1448
+1447
 02:39:52,540 --> 02:39:55,940
 甚至在QQQ指数上也在发生这种情况。
 It's even happening on an index on the Qs.
 
-1449
+1448
 02:39:55,940 --> 02:39:59,940
 这是TQQ，大约在15%左右。
 This is TQQ, so it's around, I think around 15%
 
-1450
+1449
 02:40:00,000 --> 02:40:05,800
 再看所说的Q's：低于日线9 EMA
 then on the Q's. So on the Q's is down
 
-1451
+1450
 02:40:05,800 --> 02:40:11,600
 约50%。[此处标的及数字转写有疑点]
 50% from the daily 9 EMA. And this is, I think
 
-1452
+1451
 02:40:11,600 --> 02:40:16,320
 这是非常延伸的，我们要沿着抛物线前进。所以我放大了视野。
 this is really extended and we want to take the parabolic alongs. And so I zoomed in on
 
-1453
+1452
 02:40:16,320 --> 02:40:22,760
 在日内图表上，我抓住了一分钟的突破，所以我一直持有。
 the day on the intraday charts and I bought the one minute breakouts. So I just hold through
 
-1454
+1453
 02:40:22,760 --> 02:40:25,640
 这单交易，继续持有到交易结束。
 the trade, keep holding through the trade.
 
-1455
+1454
 02:40:25,640 --> 02:40:30,480
 然后我记得我想要，像我的利润目标
 And then I remember that I wanted to, like my profit target
 
-1456
+1455
 02:40:30,480 --> 02:40:34,760
 我正在尝试的，我在进入之前设定的。
 that I'm trying to, that I, that set before I entered
 
-1457
+1456
 02:40:34,760 --> 02:40:37,240
 这个交易会是小时线非EMA的。
 the trade would be the hourly non EMA.
 
-1458
+1457
 02:40:37,240 --> 02:40:39,660
 我相信是关于问题的。
 I believe it's for the Qs.
 
-1459
+1458
 02:40:41,200 --> 02:40:45,680
-哦 yeah，它也在接近五分钟的，大约是120。
+对，也接近5分钟图上大约120的位置，
 Oh yeah, it's also near the five minute, around 120,
 
-1460
+1459
 02:40:45,680 --> 02:40:47,680
 这里150 EMA。
 150 EMA here.
 
-1461
+1460
 02:40:47,680 --> 02:40:51,480
 而且在小时图上也是如此。
 And also like on the hourly chart too.
 
-1462
+1461
 02:40:51,480 --> 02:40:54,900
 所以它非常接近小时EMA
 So it's really near the hourly one hour
 
-1463
+1462
 02:40:54,900 --> 02:40:58,320
 9，也接近EMA21。
 nine year may also the 21 EMA too.
 
-1464
+1463
 02:40:59,040 --> 02:41:05,520
 但是我认为因为这个五分钟K线图非常强。
 Um, but I believe that because it is really strong, uh, on, on the, on this five minute candle here.
 
-1465
+1464
 02:41:05,560 --> 02:41:10,600
-好像，我觉得一分钟它就像一直往上走三到四秒。
+我记得1分钟就可能上涨3或4
 So it's like, I think one, one minute it just like going up for like three or four
 
-1466
+1465
 02:41:10,600 --> 02:41:12,640
-百分之几就在两到三分钟内完成。
+个百分点，2～3分钟内就出现这样的波动。
 percent in just two or three minutes.
 
-1467
+1466
 02:41:13,360 --> 02:41:18,440
 所以我然后并没有在每小时九点卖出。
 So I then, I didn't sell it right at the hourly nine.
 
-1468
+1467
 02:41:18,440 --> 02:41:24,440
 然后我就一直等待这里出现第一处虚弱的迹象。
 And then I just keep waiting for the first kind of a weakness here.
 
-1469
+1468
 02:41:24,440 --> 02:41:28,940
-然后我最终在5分钟150
+最后我在很接近5分钟E
 But then I eventually sell it at the very close
 
-1470
+1469
 02:41:28,940 --> 02:41:33,440
-EMA的收盘价附近卖出。
+MA150的这里卖出。
 to the 5 minute 150 EMA, I think right here.
 
-1471
+1470
 02:41:33,440 --> 02:41:36,940
 所以我真的在
 So, yeah, I really
 
-1472
+1471
 02:41:36,940 --> 02:41:40,440
 阻力附近卖出。
 sell it near the resistance.
 
-1473
+1472
 02:41:40,440 --> 02:41:45,320
 然后我没有全部卖出，因为我觉
 and then I didn't sell all into the strength because
 
-1474
+1473
 02:41:45,320 --> 02:41:50,200
 得这是一个非常快速的走势。
 I think this is a really quick move and
 
-1475
+1474
 02:41:50,200 --> 02:41:54,520
-那段时间的波动性真的很大，特别是在四月份的时
+4月那段时间波动
 the volatility is really huge during those times, the
 
-1476
+1475
 02:41:54,520 --> 02:41:58,840
-候。所以我 really really 想要
+非常大，所以我很想
 period back in April. So I really want to
 
-1477
+1476
 02:41:58,840 --> 02:42:04,320
 锁定利润，然后我，这是一个非常快
 lock the profits in and then I, this is a really
 
-1478
+1477
 02:42:04,320 --> 02:42:09,800
 ，比如13个小时，只需要半小时。
 quick like a 13 hour in just half an hour. So
 
-1479
+1478
 02:42:10,440 --> 02:42:14,840
 这是个很好的机会，然后我之前就已经计划好了。
 It's a really good one and then I really plan this beforehand.
 
-1480
+1479
 02:42:14,840 --> 02:42:18,200
 我觉得在第一或甚至第二波巨大回
 I just think this would be a very good
 
-1481
+1480
 02:42:18,200 --> 02:42:21,560
 调之后这样做会是个很好的主意。
 idea after the first or even the second huge
 
-1482
+1481
 02:42:22,120 --> 02:42:26,080
 回马枪然后我觉得我计划这个交易挺早的，然后我
 Rackhandle and then I think I plan this trade really early and then I
 
-1483
+1482
 02:42:26,080 --> 02:42:30,040
 按照计划去做，然后我真正执行了这个交易，然后我
 follow my plan and then I really take the trade and then I
 
-1484
+1483
 02:42:31,080 --> 02:42:33,080
 退出交易
 Exit the trade
 
-1485
+1484
 02:42:34,120 --> 02:42:39,480
 根据计划，在一个不错的水平上。我没有获得很多利润。
 According to the plan and on a pretty good level. I'm not given back a lot of profits
 
-1486
+1485
 02:42:39,480 --> 02:42:44,440
 这个做得很好，同时也
 So this one is, I think I did it really
 
-1487
+1486
 02:42:44,440 --> 02:42:49,400
 将大画面与之融合。
 well and also merging the bigger picture with the
 
-1488
+1487
 02:42:49,400 --> 02:42:51,480
 红外线时间周期太长了。
 infrared time frame too.
 
-1489
+1488
 02:42:51,480 --> 02:42:57,240
 这是TQQQ，正向的加速度多头。
 So this one is the TQQQ, the parabolic longs.
 
-1490
+1489
 02:42:57,240 --> 02:43:02,040
 是的，我觉得这样的机会非常罕见。
 Yeah, these opportunities I think is very rare.
 
-1491
+1490
 02:43:02,040 --> 02:43:07,480
 可能是十年一遇，我不确定是否能再次见到那样的估值全。
 Maybe once in a decade maybe, I'm not sure whether we'll get those like valence full
 
-1492
+1491
 02:43:07,480 --> 02:43:12,760
 然后很快的抛售就在几天内完成。
 back and it's really very quick sell-off in just a few days.
 
-1493
+1492
 02:43:12,760 --> 02:43:18,520
 是啊，但当它有效时，它们表现得非常好。
 And yeah, but when it works, they are really working well.
 
-1494
+1493
 02:43:22,680 --> 02:43:26,480
 我回顾这段交易，觉得这是
 And I look back at this, and I think this is
 
-1495
+1494
 02:43:26,480 --> 02:43:30,280
 类似GME交易的逆向操作。
 a little bit like the way by GME trades in reverse.
 
-1496
+1495
 02:43:30,280 --> 02:43:34,613
 如果是这样分开，我思考一下，是的，我们
 So if you split, can I think, yeah, we're
 
-1497
+1496
 02:43:34,613 --> 02:43:38,947
 有点 upside down，我的GM
 a little upside down, and it's like my entry for
 
-1498
+1497
 02:43:38,947 --> 02:43:43,280
 E 四五年前的entry点应该在这里。
 GME four or five years ago would be here.
 
-1499
+1498
 02:43:43,280 --> 02:43:49,280
 但是像学习了然后持续进步，那么一个在
 But like after learning and like keep improving, then like a trader
 
-1500
+1499
 02:43:49,280 --> 02:43:55,280
 抛物线顶部买入的交易者也可以做空。
 that would buy at the parabolic top could also like short.
 
-1501
+1500
 02:43:55,280 --> 02:43:59,280
 你可以真的提升。
 You can really improve.
 
-1502
+1501
 02:43:59,280 --> 02:44:04,040
 不是像交易可以通过不断学
 It's not really like the trading can
 
-1503
+1502
 02:44:04,040 --> 02:44:08,800
 习和发现来真正提升的。
 actually improve by constantly learning and finding
 
-1504
+1503
 02:44:08,800 --> 02:44:12,840
 避免自己的错误和防止
 your own mistakes and trying to
 
-1505
+1504
 02:44:12,840 --> 02:44:16,880
 同样的错误再次发生。
 prevent them from doing over again.
 
-1506
+1505
 02:44:16,880 --> 02:44:21,340
 所以我觉得这个也增加了
 And so I think this one also adds a
 
-1507
+1506
 02:44:21,340 --> 02:44:25,800
 点价值，比如抛物线移动
 little bit like the value, like the parabolic move
 
-1508
+1507
 02:44:25,800 --> 02:44:29,060
 从买在抛物线顶部
 from buying at the parabolic top
 
-1509
+1508
 02:44:29,060 --> 02:44:32,320
 到买在抛物线底部。
 to buying at the parabolic bottom.
 
-1510
+1509
 02:44:32,320 --> 02:44:37,220
 是的，它真的为我
 So it's a, yeah, really brings
 
-1511
+1510
 02:44:37,220 --> 02:44:42,120
 带来额外的价值。
 an extra value to me.
 
-1512
+1511
 02:44:42,120 --> 02:44:46,520
 那么另一个是霍特，我在这个四月
 So another one would be Hoot, I write
 
-1513
+1512
 02:44:46,520 --> 02:44:50,920
 回调之后写了它，霍特是其中一个
 after this April correction, then Hoot is one of
 
-1514
+1513
 02:44:50,920 --> 02:44:54,700
 这个我继续做多，
 the leader and then I just bought the breakouts
 
-1515
+1514
 02:44:54,700 --> 02:44:58,480
 买了这个的反弹。
 for this one, I bought the breakouts on this
 
-1516
+1515
 02:44:58,480 --> 02:45:03,840
 小的底部，也是我认为在锚定VWAP之上。
 small little base and it's also I believe above the anchored VWAP.
 
-1517
+1516
 02:45:03,840 --> 02:45:09,640
 虽然这条趋势没有触及锚定VWAP，但它是高于锚定VWAP的。
 So although this one didn't touch the anchored VWAP, but it's above the anchored VWAP
 
-1518
+1517
 02:45:09,640 --> 02:45:13,400
 它在EMA之上，并且EMA开始走高。
 And it is above the EMAs and EMAs starts trending up.
 
-1519
+1518
 02:45:13,400 --> 02:45:18,200
 然后我真的很喜欢这两天的价格部分。
 And then I really love how the price section of these two days,
 
-1520
+1519
 02:45:18,200 --> 02:45:22,520
 他们在21EMA找到支撑位，收盘价在九之上。
 they found support on the 21 EMA and close is above the nine.
 
-1521
+1520
 02:45:22,520 --> 02:45:24,400
 所以收盘非常强劲。
 So it closes really strong.
 
-1522
+1521
 02:45:24,400 --> 02:45:27,280
 我觉得这两天可能是关键的一天。
 So I think these two days would be the day
 
-1523
+1522
 02:45:27,280 --> 02:45:33,480
 当我在突破处买入时，这条确实引起了我的注意。
 that really catch my attention when I bought it at this breakout.
 
-1524
+1523
 02:45:33,480 --> 02:45:36,360
 谁会延伸突破，我相信。
 Who extend the breakouts, I believe.
 
-1525
+1524
 02:45:36,360 --> 02:45:41,260
 你是否在此次交易中加入了锚定VWAP？
 Did you incorporate the anchored VWAP at all with this trade from from highs?
 
-1526
+1525
 02:45:41,360 --> 02:45:41,960
 我不做。
 I don't.
 
-1527
+1526
 02:45:44,360 --> 02:45:46,960
 我觉得我把这条放在这里了，但其实没有。
 I think I put it here, but I didn't.
 
-1528
+1527
 02:45:47,060 --> 02:45:49,460
 是的，我觉得这里我有。
 Yeah, I think I have this one here, but.
 
-1529
+1528
 02:45:51,560 --> 02:45:54,210
 但是我觉得这条交易并没有对我做出
 But I don't think this one really influenced
 
-1530
+1529
 02:45:54,210 --> 02:45:56,860
 决定产生很大影响，因为我并不交易。
 my decision a lot because I'm not trading.
 
-1531
+1530
 02:45:57,660 --> 02:45:58,860
 接近这个水平。
 And near this level.
 
-1532
+1531
 02:45:59,660 --> 02:46:00,460
 所以……
 So.
 
-1533
+1532
 02:46:00,460 --> 02:46:06,660
 是的，但是锚定VWAP也
 Yeah, but the anchored VWAP would be like a,
 
-1534
+1533
 02:46:06,660 --> 02:46:12,860
 是一个工具，帮你识别是否
 also a tool like for you to identify whether
 
-1535
+1534
 02:46:12,860 --> 02:46:17,540
 这只股票正在筑底，看起
 the stock is basing, like it's
 
-1536
+1535
 02:46:17,540 --> 02:46:22,220
 来在潜在支撑区域之上。
 above the potential support area.
 
-1537
+1536
 02:46:22,220 --> 02:46:26,250
 如果HOOT正在回调至锚定VWAP
 So if HOOT is pulling back into this anchored
 
-1538
+1537
 02:46:26,250 --> 02:46:30,280
 ，同时它也接近2倍的50 EMA。
 VWAP, as it is also near the 50 EMA2,
 
-1539
+1538
 02:46:30,280 --> 02:46:34,940
 如果霍特出现回调回到50MA，我也考虑买入回调。
 So if Hoot is pulling back into the 50MA, I would also consider buying the pullbacks
 
-1540
+1539
 02:46:34,940 --> 02:46:37,180
 好了。
 there.
 
-1541
+1540
 02:46:37,180 --> 02:46:42,460
 我喜欢，我觉得我在处理这个的时候也使用了锚定VWAP。
 So I really like, I think I put the anchored VWAP also here when I'm treating this
 
-1542
+1541
 02:46:42,460 --> 02:46:45,220
 突破，但这次没有回调那么多。
 breakout, but this time it doesn't pull back that much.
 
-1543
+1542
 02:46:45,220 --> 02:46:46,780
 我交易突破。
 So I traded the breakouts.
 
-1544
+1543
 02:46:46,780 --> 02:46:51,160
 是的，是的，所以这是
 So yeah, yes, so this is Hoot
 
-1545
+1544
 02:46:51,160 --> 02:46:55,540
 给卖家的提示，是的。
 for the seller, yeah for the sell.
 
-1546
+1545
 02:46:55,540 --> 02:47:01,420
 这是一条我觉得没做好，因为我都在字符串里卖了。
 This is one that I don't think I'm doing well because I sell all in the strings and then
 
-1547
+1546
 02:47:01,420 --> 02:47:06,860
 我把一些在这些字符串里卖掉然后在这样一个反转处关闭我的头寸。
 I sell some in the strings here and then I close my position at this like reversal and
 
-1548
+1547
 02:47:06,860 --> 02:47:10,600
 这是高量的，我认为可能是
 it's in a high volume I think it could be
 
-1549
+1548
 02:47:10,600 --> 02:47:14,340
 短期顶部，然后我就卖出。
 a short term top maybe then then I just sell
 
-1550
+1549
 02:47:14,340 --> 02:47:17,980
 它开始日内反转的时候。
 it when it start reversing intraday.
 
-1551
+1550
 02:47:17,980 --> 02:47:21,580
 但是，如果我只是遵循我的细胞规则，然
 But if I'm just following my cell rules and then
 
-1552
+1551
 02:47:21,580 --> 02:47:25,180
 后可能我会用9 EMA进行追踪，保持
 maybe I'm trail it with the 9 EMA, keep
 
-1553
+1552
 02:47:25,180 --> 02:47:30,220
 这是一个追加的50%的移
 trailing, I could actually get another 50% move.
 
-1554
+1553
 02:47:30,220 --> 02:47:35,260
 动。所以这是，我觉得我也
 So this is the, I think I also
 
-1555
+1554
 02:47:35,260 --> 02:47:41,060
 去年在SMC高位交易中分享过。所以这次我没有提高那个。
 shared this in the SMC high trade last year. So at this one I didn't improve that
 
-1556
+1555
 02:47:41,060 --> 02:47:46,220
 也不错。但在卖出这部
 well too. I think, but before this
 
-1557
+1556
 02:47:46,220 --> 02:47:51,380
 分之前，我不会那么
 selling part, I will not be that
 
-1558
+1557
 02:47:51,380 --> 02:47:54,680
 对自己很严格。
 that strict to myself.
 
-1559
+1558
 02:47:54,680 --> 02:47:59,880
-因为我喜欢控制我的 downside
+我更重视控制下行风险，而
 Because I prefer controlling my downside
 
-1560
+1559
 02:47:59,880 --> 02:48:05,080
-而不是最大化我的 upside。
+不是把上涨收益最大化。
 rather than maximizing my upside.
 
-1561
+1560
 02:48:05,080 --> 02:48:08,540
 因为我觉得我的弱点是在下
 Because I think my weakness is more on
 
-1562
+1561
 02:48:08,540 --> 02:48:12,000
 方，比如过度交易然后买入。
 the downside, like over trading and then buying
 
-1563
+1562
 02:48:12,000 --> 02:48:16,800
 有一些非常延伸的区域
 some really extended areas
 
-1564
+1563
 02:48:16,800 --> 02:48:21,600
 ，也有一些随机的水平。
 and some random levels.
 
-1565
+1564
 02:48:21,600 --> 02:48:25,120
-控制我的回撤更重要，但我觉得
+控制回撤更重要，
 So I think controlling my drawdown is more
 
-1566
+1565
 02:48:25,120 --> 02:48:28,640
-我 definitely 想要
+不过我也确实想
 important, but definitely I think I wanted
 
-1567
+1566
 02:48:28,640 --> 02:48:33,740
 提高卖出规则，比如我会更平滑
 to improve my selling rules to, like my selling,
 
-1568
+1567
 02:48:33,740 --> 02:48:38,840
 地追踪利润，持有我的赢家。
 I should really trail more and hold my winners
 
-1569
+1568
 02:48:38,840 --> 02:48:39,840
 更长。
 longer.
 
-1570
+1569
 02:48:39,840 --> 02:48:42,780
 这是，这是我达成的一个目标。
 Yeah, this is it was this would be one of my goals to
 
-1571
+1570
 02:48:43,560 --> 02:48:46,880
 是的，还是一次非常剧烈的回调。
 Yeah, it was also such a sharp correction and a
 
-1572
+1571
 02:48:47,840 --> 02:48:52,000
 这个趋势的潜在动能非常强。
 That the trend potential for this one was super strong. Oh
 
-1573
+1572
 02:48:53,720 --> 02:48:56,520
 嗯，嗯，那是真的。所以是在一次
 Yeah, yeah, that's true. So it's after a
 
-1574
+1573
 02:48:57,600 --> 02:48:59,600
 剧烈回调，形成更大的基础。
 Sharp correction and a bigger base
 
-1575
+1574
 02:49:00,480 --> 02:49:06,120
 这更加有利于进行精确交易，以便持有窗口时间更长。
 Which is very more favorable to like precision trading for holding your windows for a longer time
 
-1576
+1575
 02:49:06,120 --> 02:49:10,650
 是的，同意。是的，但是它在高位。所
 Yeah, I agree. Yeah, but it's on high. So yeah,
 
-1577
+1576
 02:49:10,650 --> 02:49:15,180
 以是的，是的，交易者的困境。是的。
 yes, it's it's yeah, yeah, trader quandary there. Yeah
 
-1578
+1577
 02:49:17,340 --> 02:49:19,340
 嗯，嗯
 Yeah, yeah
 
-1579
+1578
 02:49:19,940 --> 02:49:22,540
 这个做得不错。
 So the this one is oklo
 
-1580
+1579
 02:49:24,220 --> 02:49:27,060
-Oklo 买入了这只股票。
+OKLO，我在这里买入，
 Oklo bought this one on a
 
-1581
+1580
 02:49:27,820 --> 02:49:30,460
 突破下方如所示
 like on the breakouts below the
 
-1582
+1581
 02:49:31,060 --> 02:49:33,060
 50 ma和
 50 ma and
 
-1583
+1582
 02:49:33,060 --> 02:49:36,690
-这个交易， hindsight 下我看
+回头看，这笔
 this one I on hindsight I think the
 
-1584
+1583
 02:49:36,690 --> 02:49:40,320
-技术面上这个 setup 并不是很好。
+的技术形态并不
 these set up the technical wise is not
 
-1585
+1584
 02:49:40,320 --> 02:49:46,160
 这次突破很容易反弹进去。
 really good on this break up because it can it can really easily rally into the
 
-1586
+1585
 02:49:46,160 --> 02:49:52,520
 50，然后它就会反转回来，但这个不一样。
 50 and then it would just reverse it right back but this one just doesn't
 
-1587
+1586
 02:49:52,520 --> 02:49:57,920
 止损设在三天后，非常幸运地，实际上这个位置可以保本。
 stop me off very luckily three days day after it and actually this one could be
 
-1588
+1587
 02:49:57,920 --> 02:50:00,000
 更好的回调进入实际上
 a better entry for a pullback actually
 
-1589
+1588
 02:50:00,000 --> 02:50:03,080
 回调到150。
 So it pulls back into the 150.
 
-1590
+1589
 02:50:03,080 --> 02:50:05,280
 实际上，有一句非常棒的话，
 Actually, there's a very great line,
 
-1591
+1590
 02:50:05,280 --> 02:50:09,920
 伟大的GMA，即150和21EMA。
 the great GMA, which is the 150 and also the 21 EMA.
 
-1592
+1591
 02:50:09,920 --> 02:50:14,920
 九高于21，两者都在下滑。
 And the nine is above the 21, and they're both slipping up.
 
-1593
+1592
 02:50:14,920 --> 02:50:19,280
-hindsight下来看，这一条作为进入点会更好。
+事后看，这里会是更好的入口。
 So I think this one here would be a better entry in hindsight.
 
-1594
+1593
 02:50:19,280 --> 02:50:22,320
 实际上，我觉得我还是会
 And actually, I think I would still
 
-1595
+1594
 02:50:22,320 --> 02:50:27,760
 如果我不在交易突破，可以试试这个交易。
 like trade this one if I'm not trading the breakouts here.
 
-1596
+1595
 02:50:27,760 --> 02:50:30,240
 但是幸运的是，这个做得很好。
 But fortunately, this one just works.
 
-1597
+1596
 02:50:30,240 --> 02:50:35,040
-我买了Oclo，买了它，其中一个原因是。
+我买OKLO的一个原因，
 And I bought the, I bought Oclo one of the reason
 
-1598
+1597
 02:50:35,040 --> 02:50:37,880
-这是反转pin bar在这里吗。
+是这里的反转针形K线。
 is this reversal pin bar here.
 
-1599
+1598
 02:50:37,880 --> 02:50:42,640
-所以我觉得它确实会有一些 really
+我认为它可能会有一些
 So I really think it would have some really
 
-1600
+1599
 02:50:42,640 --> 02:50:43,840
 跟随空头走势。
 follow through to the downside.
 
-1601
+1600
 02:50:43,840 --> 02:50:49,840
 我以为会更弱。
 Just I thought it would be more, much weaker,
 
-1602
+1601
 02:50:49,920 --> 02:50:52,640
 然后被9和21拒绝了。
 and then gets rejected from the 9 and 21
 
-1603
+1602
 02:50:52,640 --> 02:50:56,720
 因为通常会是做空建仓。
 because normally it would be like a short entry
 
-1604
+1603
 02:50:56,720 --> 02:51:00,030
 实际上，所以如果你是在9或者
 actually, so if you're shorting at the 9 or
 
-1605
+1604
 02:51:00,030 --> 02:51:03,340
 在索赔9或者21处做空的话，
 at the claim 9 or 21 and also the
 
-1606
+1605
 02:51:03,340 --> 02:51:08,740
 EMA们正在下跌并且接近彼此，它们很接近。
 EMAs are stopping down and they're really close to each other and they are it
 
-1607
+1606
 02:51:08,740 --> 02:51:12,620
 可以做空，但是它没有下跌，只是回到了这里。
 could be a short but instead it doesn't go down and just we first is right back
 
-1608
+1607
 02:51:12,620 --> 02:51:17,660
 然后收于9之上，然后再次收于9之上，第二个则是跳空收高。
 and closes above the 9 and then another and the second they gaps up so I think
 
-1609
+1608
 02:51:17,660 --> 02:51:24,060
 可能是性格转变，这是一个强烈的信号，然后我就这样。
 it could be like a change of character it's strong sign and then I just like
 
-1610
+1609
 02:51:24,060 --> 02:51:30,180
-试试看，但我觉得 hindsight下，因为它是在50下方。
+试一笔。但事后看，价格在50均线下方，
 take a shot but definitely I think in hindsight because it's like below the 50
 
-1611
+1610
 02:51:30,180 --> 02:51:33,760
 YMA然后我认为这是一个
 YMA and then I think it could I think it's
 
-1612
+1611
 02:51:33,760 --> 02:51:37,340
 公平的交易，不是个坏的。
 a fair trade like not a not a bad
 
-1613
+1612
 02:51:37,340 --> 02:51:40,740
 回调这里，
 one but a really good one the better
 
-1614
+1613
 02:51:40,740 --> 02:51:44,140
 甚至这里。
 one would be the pullback here or even here
 
-1615
+1614
 02:51:44,140 --> 02:51:50,580
 当9和50非常接近，我不确定。
 like when the 9 and the 50 are really close to each other and I'm not sure
 
-1616
+1615
 02:51:50,580 --> 02:51:56,400
 锚定VWAP呢？我们简单解释一下。锚定VWAP就是，如下所示。
 about the anchored VWAP? Let's put it in a bit. Yeah, anchored VWAP is, here is below,
 
-1617
+1616
 02:51:56,400 --> 02:52:01,020
 这条K线低于锚定VWAP，所以嗯，我觉
 is below the anchored VWAP. So yeah, I think
 
-1618
+1617
 02:52:01,020 --> 02:52:05,640
 得这个还不错，还不错，但幸运的是有效。
 this one is fine, is fine, but luckily works
 
-1619
+1618
 02:52:05,640 --> 02:52:10,740
-pretty well。所以我认为主
+还不错。我觉得主要因
 pretty well. So I think major mostly because
 
-1620
+1619
 02:52:10,740 --> 02:52:15,840
-要的是因为市场趋势向上，现在正在反转。
+为市场正向上反转，
 the market is trending up is really reversing
 
-1621
+1620
 02:52:15,840 --> 02:52:19,140
 有愿景的恢复期在
 after have a vision recovery
 
-1622
+1621
 02:52:19,140 --> 02:52:22,440
 四月的抛售之后。
 after the April sell off.
 
-1623
+1622
 02:52:22,440 --> 02:52:27,120
 然后我就在这里卖出一些，然后在这里再次卖出更多，然后
 And then I sell some into strength here, and then I sell more into strength here, and then
 
-1624
+1623
 02:52:27,120 --> 02:52:31,500
 我将在第一个触及9 EMA
 I close my whole position at
 
-1625
+1624
 02:52:31,500 --> 02:52:35,880
 下方的收盘时平掉整个头寸。
 the first close below the 9 EMA.
 
-1626
+1625
 02:52:35,880 --> 02:52:41,160
-谁卖了下一只股票是Futo。
+接下来是FUTU。
 And who sold the next one is Futo.
 
-1627
+1626
 02:52:41,160 --> 02:52:44,560
 这是一个突破。
 This one is a breakout.
 
-1628
+1627
 02:52:44,560 --> 02:52:48,100
-这是免费休息
+这是一个整理后的内包日突
 This is a free-restented
 
-1629
+1628
 02:52:48,100 --> 02:52:51,640
-期内的日突破。
+破〔原形容词听辨不清〕。
 inside day breakouts.
 
-1630
+1629
 02:52:51,640 --> 02:52:56,060
 有点像VCP，所以形成了几个回
 Little bit like VCP, so it has several
 
-1631
+1630
 02:52:56,060 --> 02:53:00,480
 调，形成了一个非常紧凑的K线。
 pulls back and forms a pretty tight candle.
 
-1632
+1631
 02:53:00,480 --> 02:53:06,320
 不知道是K线还是实体，就像一个杯柄，这里区间挺紧的。
 I don't know, candle or handle, like a cup of handle, this is a pretty tight range here.
 
-1633
+1632
 02:53:06,320 --> 02:53:09,600
-那么9 EMA正在很好地服务
+价格沿EMA9运行得很
 So it's serving the 9 EMA pretty good
 
-1634
+1633
 02:53:09,600 --> 02:53:12,880
-它，并且买进了内包线的突破。
+好，我买了内包日突破。
 and then bought an inside day breakouts.
 
-1635
+1634
 02:53:12,880 --> 02:53:14,200
 这是个很标准的。
 So this pretty standard one.
 
-1636
+1635
 02:53:15,840 --> 02:53:18,220
-这里把Something卖了给Shrain。
+我在这里逢强卖出了一些。
 And sell something to Shrain here.
 
-1637
+1636
 02:53:18,220 --> 02:53:21,080
 然后我就平掉了这笔交易。
 And then I just closed this trade.
 
-1638
+1637
 02:53:21,080 --> 02:53:22,680
 我没有等到收盘才行动。
 I didn't wait for the close
 
-1639
+1638
 02:53:22,680 --> 02:53:25,720
 因为逐渐，
 because like gradually,
 
-1640
+1639
 02:53:25,720 --> 02:53:29,080
 我觉得我很少看收盘价。
 I think I'm not watching a close that often
 
-1641
+1640
 02:53:29,960 --> 02:53:32,680
 4月的回调之后
 after the April sell off
 
-1642
+1641
 02:53:32,680 --> 02:53:34,560
 因为四月的波动率 really 非常 高。
 because in April the volatility is really high.
 
-1643
+1642
 02:53:34,560 --> 02:53:39,560
 我真的想等到市场收盘。
 And I really wanted to stay till the market close.
 
-1644
+1643
 02:53:39,560 --> 02:53:44,560
 但逐渐我认为这是一种
 But gradually I think this
 
-1645
+1644
 02:53:44,560 --> 02:53:49,560
 非常健康的生活方式。
 is a really healthy lifestyle.
 
-1646
+1645
 02:53:49,560 --> 02:53:53,920
 如果是我继续等到市场收盘，那是
 If I'm staying till the market close, it would
 
-1647
+1646
 02:53:53,920 --> 02:53:58,280
 在香港时间凌晨4点到5点左右。
 be like 4 or 5am in Hong Kong time.
 
-1648
+1647
 02:53:58,280 --> 02:54:01,570
 现在我的交易策略会是在9
 So now my approach would be like setting
 
-1649
+1648
 02:54:01,570 --> 02:54:04,860
 点之前设置止损稍微低一些。
 the stop a little bit lower than the 9am.
 
-1650
+1649
 02:54:04,860 --> 02:54:10,200
 如果我交易这个FUTU合约，并且
 So if I am trading this one FUTU and I
 
-1651
+1650
 02:54:10,200 --> 02:54:15,540
 我会将止损设在这个K线的低点。
 would be setting my stop at this candle low.
 
-1652
+1651
 02:54:15,540 --> 02:54:19,200
-它在9 EMA之下，然后给它
+止损放在EMA9下方，给价格
 So it's under the 9 EMA and I give a
 
-1653
+1652
 02:54:19,200 --> 02:54:22,860
-一点下破的空间，然后如果它
+短暂下穿留一点空间。如果它
 little bit of room for it undercuts and then if it
 
-1654
+1653
 02:54:22,860 --> 02:54:27,080
-找到支撑位并处理干净，然后我会
+能找到支撑、结构清楚，我会把
 finds support and be clean, then I am going to
 
-1655
+1654
 02:54:27,080 --> 02:54:31,300
-将其设置在9 EMA稍微下方。
+止损设在EMA9略下方，因为
 set it a little bit below the 9 EMA because
 
-1656
+1655
 02:54:31,300 --> 02:54:33,220
 我不能仔细看了。
 I can't watch it close.
 
-1657
+1656
 02:54:33,220 --> 02:54:37,300
-但是这次，我觉得我采取了非常 aggressive 的做法。
+但这一笔，我相当积极地提前退出了。
 But for this one, I think I just took it very aggressively.
 
-1658
+1657
 02:54:37,300 --> 02:54:40,620
 我觉得，我觉得它可能从之
 I don't think, I think it just like break
 
-1659
+1658
 02:54:40,620 --> 02:54:43,940
 前的两个低点的水平跌破了。
 down from the previous two days low and then
 
-1660
+1659
 02:54:43,940 --> 02:54:46,980
 我觉得市场可能延伸过度了。
 I think maybe the market is extended too.
 
-1661
+1660
 02:54:46,980 --> 02:54:50,700
-市场连续三个月 rally。
+当时市场已经连续上涨约3个月，
 Like the market is rallying in like three months in a row.
 
-1662
+1661
 02:54:50,700 --> 02:54:54,640
 像，意思是三个月都是绿色的，它一
 Like, I mean, three green months and it keeps
 
-1663
+1662
 02:54:54,640 --> 02:54:58,580
 直用我们的EMA给我们提供深度。
 serving the EMAs with our huge, with our deep
 
-1664
+1663
 02:54:58,580 --> 02:54:59,980
 回调。
 pullback.
 
-1665
+1664
 02:54:59,980 --> 02:55:03,420
 然后在7月，我认为可能会有一些
 And then at July and then I think maybe it's
 
-1666
+1665
 02:55:03,420 --> 02:55:06,860
 延伸，然后我应该卖出我的赢家。
 a bit extended and then I should sell my winners
 
-1667
+1666
 02:55:06,860 --> 02:55:08,160
 更积极地。
 more aggressively.
 
-1668
+1667
 02:55:08,160 --> 02:55:12,100
 我觉得这就是我早些时候采取这个行动的原因。
 So I think that's why I take this one earlier.
 
-1669
+1668
 02:55:12,100 --> 02:55:18,080
 这次我早卖好了，这让我
 And this time it works well that I was selling
 
-1670
+1669
 02:55:18,080 --> 02:55:24,060
 占了便宜，但我认为如果
 early, it puts me in favor but I think if
 
-1671
+1670
 02:55:24,060 --> 02:55:27,340
 如果再次交易，我会把止损
 If I'm trading it again and I'm just going to
 
-1672
+1671
 02:55:27,340 --> 02:55:30,620
 设在这根K线低点，然后……
 send my stock at this candle low and then
 
-1673
+1672
 02:55:30,620 --> 02:55:34,540
 我会在同一个K线但价
 I'm going to get stopped out at the
 
-1674
+1673
 02:55:34,540 --> 02:55:38,460
 格更低的位置被止损。
 same bar but at a lower price here.
 
-1675
+1674
 02:55:38,460 --> 02:55:43,220
 也许我会有一些自己的观点
 Maybe I will have some like my own view or
 
-1676
+1675
 02:55:43,220 --> 02:55:47,980
 或看法关于市场，可能会只是
 own opinions on the market and I may just
 
-1677
+1676
 02:55:47,980 --> 02:55:51,340
 像有时候我会提前落袋
 like sometimes I would still like take the
 
-1678
+1677
 02:55:51,340 --> 02:55:54,700
 为安，如果我感觉有点儿
 profits early if I'm feeling like a little
 
-1679
+1678
 02:55:54,700 --> 02:55:59,300
 对市场有些怀疑。是的。所以在
 bit skeptical about on the market. Yeah. So
 
-1680
+1679
 02:55:59,300 --> 02:56:03,900
 卖方这边，我会更随意一些。
 on the sell side, I'm more like more arbitrary.
 
-1681
+1680
 02:56:03,900 --> 02:56:07,940
 是叫随意吗？是的，灵活的。是
 Is it called arbitrary? Yeah, flexible. Yeah,
 
-1682
+1681
 02:56:07,940 --> 02:56:11,980
 的，有创意的。是的。有道理。
 creative. Yeah, makes sense. Yeah. And you
 
-1683
+1682
 02:56:11,980 --> 02:56:16,780
 刚才提过，你第一次逢强减仓，通常会卖出15%～20%的
 already mentioned this, but your first sell into strength, is it usually 15 to 20% of
 
-1684
+1683
 02:56:16,780 --> 02:56:18,580
 持仓，这算比较典型吗？
 your position is that kind of typical?
 
-1685
+1684
 02:56:20,220 --> 02:56:24,200
 嗯。嗯。对。有时候为
 Yep. Yep. Correct. Sometimes to for
 
-1686
+1685
 02:56:24,200 --> 02:56:28,180
 了第一次，可能是这样。
 the first maybe that the when
 
-1687
+1686
 02:56:28,180 --> 02:56:33,420
 从现金开始，然后开始有一些新的
 I'm starting from cash and then starting to have some new
 
-1688
+1687
 02:56:33,420 --> 02:56:37,660
 具有逐步敞口的头寸
 positions that have a progressive exposure to the first few
 
-1689
+1688
 02:56:37,660 --> 02:56:41,220
 持有的空头仓位，我会卖出更多的，因为我不
 positions that I may sell more in the strings, because I'm not
 
-1690
+1689
 02:56:41,220 --> 02:56:44,700
 好的，市场是运作得好还是不好，我会。所以我会。
 sure whether the market is working well or not. So I will be
 
-1691
+1690
 02:56:44,700 --> 02:56:50,540
 更倾向于保守操作。但我觉得市场确实处于上升趋势。
 more like conservative at the beginning. But if I really think the market is really on the uptrend
 
-1692
+1691
 02:56:50,540 --> 02:56:54,060
 股票开始上涨，表现良好，然后我
 and the thing is really hitting up working well,
 
-1693
+1692
 02:56:54,060 --> 02:56:57,580
 会开始卖出，可能是少一些，或者
 then I will start selling maybe less or maybe
 
-1694
+1693
 02:56:58,220 --> 02:57:02,380
 即使不卖出，也要跟随
 even like not selling the strength like just trail the
 
-1695
+1694
 02:57:02,380 --> 02:57:06,540
 整个头寸的EMA或。
 whole position with the EMAs or and with the
 
-1696
+1695
 02:57:06,540 --> 02:57:12,140
 踩爆了。所以这就是我的做法。
 stomped. So yeah that's my approach.
 
-1697
+1696
 02:57:14,780 --> 02:57:18,980
 这是SMR交易。我在一次突破时采
 So this is the SMR trade. I took it
 
-1698
+1697
 02:57:18,980 --> 02:57:23,180
 取了行动，我认为这是一个突破。
 at this breakout, I think a breakout of the
 
-1699
+1698
 02:57:23,180 --> 02:57:26,820
 昨天的上涨。但我
 previous day hike. But
 
-1700
+1699
 02:57:26,820 --> 02:57:30,460
 觉得回顾过去。
 I think looking backwards,
 
-1701
+1700
 02:57:30,460 --> 02:57:33,660
 可能是回调到21的最佳选择。
 probably the best one would be the pullbacks into the 21
 
-1702
+1701
 02:57:33,660 --> 02:57:38,300
 之前的那个区域的小时
 and also the maybe the previous bar high around this
 
-1703
+1702
 02:57:38,300 --> 02:57:42,940
 图看起来更好一些。
 area also I think the hourly chart looks better
 
-1704
+1703
 02:57:44,300 --> 02:57:47,620
 嗯，小时图它就回调到21
 yeah the hourly chart it just pulls back into
 
-1705
+1704
 02:57:47,620 --> 02:57:50,940
 50，当它开始穿越21。
 the 2150 when it starts crossing when the 21
 
-1706
+1705
 02:57:50,940 --> 02:57:55,220
 开始穿越50日均线，我认为这是我的入
 starts crossing up the 50 and I believe this is
 
-1707
+1706
 02:57:55,220 --> 02:57:59,500
 场点，我认为我可以得到更好的入场点。
 this entry I think I could get a better entry
 
-1708
+1707
 02:57:59,500 --> 02:58:01,953
 对于做空回调，但 maybe I missed i
 for buying the pullback but maybe I
 
-1709
+1708
 02:58:01,953 --> 02:58:04,407
 t maybe I just uh I thin
 missed it maybe I just uh
 
-1710
+1709
 02:58:04,407 --> 02:58:06,860
 k I probably missed it or
 I think I probably missed it or
 
-1711
+1710
 02:58:06,860 --> 02:58:10,260
 就不知道的，然后我就买到了回调到
 just not uh aware of it and then
 
-1712
+1711
 02:58:10,260 --> 02:58:13,660
 反弹的 breakout 上去。
 I just bought the breakouts up to the pullback
 
-1713
+1712
 02:58:14,460 --> 02:58:18,220
 这次也有效，而我没有
 and this one still works well and I just
 
-1714
+1713
 02:58:18,220 --> 02:58:21,980
 把止损设在当日低点，
 set the stop not at the low of day
 
-1715
+1714
 02:58:21,980 --> 02:58:24,620
 看起来我可能在突破烛图的位置。
 I'm probably at the breakout candle.
 
-1716
+1715
 02:58:24,620 --> 02:58:26,860
 嗯，让我想想，可以吗？
 Um, let me see, can I?
 
-1717
+1716
 02:58:28,300 --> 02:58:29,100
 嗯……
 Um,
 
-1718
+1717
 02:58:30,700 --> 02:58:32,380
 我觉得它又没效果了。
 Is, I think it's not working again.
 
-1719
+1718
 02:58:33,580 --> 02:58:34,620
 哦，好吧。
 Oh, no, okay.
 
-1720
+1719
 02:58:37,660 --> 02:58:38,460
 嗯……
 Um,
 
-1721
+1720
 02:58:39,020 --> 02:58:43,180
 我认为我现在是在这个烛图上买入，我认为开盘区间是这样。
 I believe I'm buying it at this, at this candle, I think that opening range.
 
-1722
+1721
 02:58:43,180 --> 02:58:44,460
 高突破。
 High breakout.
 
-1723
+1722
 02:58:45,420 --> 02:58:48,060
 然后我在这里设置止损。
 And then I set the stop right here.
 
-1724
+1723
 02:58:48,060 --> 02:58:50,860
 我不确定是不是这根1分钟K线，
 I'm not sure whether it is this one minute candle,
 
-1725
+1724
 02:58:50,860 --> 02:58:54,540
 一分钟突破K线，或者一分钟内的 sw
 like one minute break out candles, one minute swing low or
 
-1726
+1725
 02:58:54,540 --> 02:58:58,220
 ing low，我认为可以设置止损了。
 I believe could be the I'm setting to stop at the
 
-1727
+1726
 02:58:59,100 --> 02:59:05,500
 在开盘价。所以有时候我直接把止损设在开盘价，因为有时候
 at the opening price. So sometimes I'm just setting to stop at the opening price because when
 
-1728
+1727
 02:59:06,780 --> 02:59:10,540
 我觉得价格在开盘
 I think the price like gets or is guess we
 
-1729
+1728
 02:59:10,540 --> 02:59:14,300
 后出现卖压并下跌。
 it gets sell off after the opening and then
 
-1730
+1729
 02:59:14,300 --> 02:59:18,900
 收盘后市场开始反弹，有
 after market open and then it rallies back and sometimes
 
-1731
+1730
 02:59:18,900 --> 02:59:23,500
 时我会将止损重新设置在
 I would just put the stop back at the
 
-1732
+1731
 02:59:23,500 --> 02:59:28,180
 开盘即开，所以如果股票真的开始上
 opening at the open so if the stock is really
 
-1733
+1732
 02:59:28,180 --> 02:59:32,860
 涨，我觉得这真的是一个很好的机会。
 like going but I think this this is a really like
 
-1734
+1733
 02:59:34,460 --> 02:59:40,860
 积极的尤其是在市场开盘后2025的前30分钟。
 aggressive one especially given the 2025 the first 30 minutes after the market open is really
 
-1735
+1734
 02:59:40,860 --> 02:59:44,140
 震荡。我认为更好的是这个5分
 choppy. I think the better one would be the low
 
-1736
+1735
 02:59:44,140 --> 02:59:47,420
 钟K线的低点。但这个有效。
 of this 5 mini candle. But this one works.
 
-1737
+1736
 02:59:47,420 --> 02:59:52,600
 还是认为这个5分
 So I still think the better one would be the
 
-1738
+1737
 02:59:52,600 --> 02:59:57,780
 钟K线的低点更好。
 low of this 5 mini candle. And yeah. So still
 
-1739
+1738
 02:59:57,780 --> 02:59:59,940
 我认为我们甚至可以从中找到一些教训。
 I think we can find some lessons even
 
-1740
+1739
 03:00:00,000 --> 03:00:01,720
 赢的交易也是这样。
 on the winning trade too.
 
-1741
+1740
 03:00:01,720 --> 03:00:06,720
 是这样，我觉得我可以做得更好。
 So this one would be, yeah, I think I could do it better.
 
-1742
+1741
 03:00:06,760 --> 03:00:08,960
 看看止损在哪里？
 Let's see, where's the stop?
 
-1743
+1742
 03:00:08,960 --> 03:00:10,520
 哦，是2%。
 Oh, so it's 2%.
 
-1744
+1743
 03:00:10,520 --> 03:00:13,480
 所以可能是因为我觉得止损太，
 So it's probably because I think the stop is too,
 
-1745
+1744
 03:00:13,480 --> 03:00:17,640
 入场已经离这根K线的低点太远，
 like it's too extended from the low of this candle here
 
-1746
+1745
 03:00:17,640 --> 03:00:20,600
 因为我是在开盘价的高位买入。
 because I'm buying it at the open range highs.
 
-1747
+1746
 03:00:20,600 --> 03:00:25,600
 但是我觉得，嗯，然后我觉得，
 So, but I think, yeah, so then I think,
 
-1748
+1747
 03:00:25,760 --> 03:00:27,320
 所以让我们收紧止损。
 oh, so let's tighten the stop
 
-1749
+1748
 03:00:27,320 --> 03:00:32,320
 然后到开盘，然后它应该是只有，
 And then to the open, then it was, I think it's only,
 
-1750
+1749
 03:00:32,520 --> 03:00:34,680
 是的，还是还有2%。
 yeah, it's still 2%.
 
-1751
+1750
 03:00:34,680 --> 03:00:38,440
 是啊，还好这个做得不错。
 So yeah, and fortunately this one works,
 
-1752
+1751
 03:00:38,440 --> 03:00:39,760
 但我觉得更好的 entry 点位是
 but I think the better entry,
 
-1753
+1752
 03:00:39,760 --> 03:00:41,880
 这次糟糕的更好进入将会是回调这里。
 the really bad, better entry will be the pullback here,
 
-1754
+1753
 03:00:41,880 --> 03:00:45,560
 将会是一分钟反转，应该是。
 will be the one minute reversal, probably, yep.
 
-1755
+1754
 03:00:52,960 --> 03:00:54,760
 这是Planet Lab的一个。
 So this one is the Planet Lab,
 
-1756
+1755
 03:00:54,760 --> 03:00:58,260
 然后我买了EP，但EP
 And then I bought the EP, but it's
 
-1757
+1756
 03:00:58,260 --> 03:01:01,760
 并不是出现回调的情况。
 not like a pullback on an EP.
 
-1758
+1757
 03:01:01,760 --> 03:01:05,540
 所以在20、25，有很多
 So in 20, 25, there are a
 
-1759
+1758
 03:01:05,540 --> 03:01:09,320
 这样的回撤会在那里打开。
 lot of these fades that they open.
 
-1760
+1759
 03:01:09,320 --> 03:01:13,680
 然后这是个假突破，出
 And then it's really a fake
 
-1761
+1760
 03:01:13,680 --> 03:01:18,040
 现在开盘的范围里。
 out in the opening range size.
 
-1762
+1761
 03:01:18,040 --> 03:01:21,040
 它突破出来，但又回落了。
 So it breaks out, but it fades back.
 
-1763
+1762
 03:01:21,040 --> 03:01:23,520
 然后我买入五分钟K线的突破。
 And then I bought the five minute candle breakouts,
 
-1764
+1763
 03:01:23,520 --> 03:01:26,080
 设置止损在5分钟K线的低点，以及
 set the stop at the 5 minute candle low, the
 
-1765
+1764
 03:01:26,080 --> 03:01:28,640
 突破的K线低点，这个设置效果很好。
 breakout candle low and this one works pretty well.
 
-1766
+1765
 03:01:29,440 --> 03:01:33,600
-所以这比2.5%的止损低约2.3
+止损约2.3%，低于2.
 So it's around 2.3% less than 2.5% stop and yeah
 
-1767
+1766
 03:01:33,600 --> 03:01:37,760
-%，我对自己这个入场感到非常满意。
+5%。我对这次入口很满意，
 this I am really satisfied with this entry and
 
-1768
+1767
 03:01:37,760 --> 03:01:41,640
 这个是止损设置，这个很好
 this the stop setting so this one works really well
 
-1769
+1768
 03:01:41,640 --> 03:01:45,520
 用，但是对卖单也适用。
 but for the also but for the sell for this
 
-1770
+1769
 03:01:46,240 --> 03:01:49,600
 卖出部分的交易部分，比如出
 for selling the sell parts like the exit part and
 
-1771
+1770
 03:01:49,600 --> 03:01:52,960
 场部分，我已经全部关闭了。
 this I just closed all of them into string
 
-1772
+1771
 03:01:53,520 --> 03:01:58,220
 然后它又上涨了约30%。
 And and it went up in three top another 30%
 
-1773
+1772
 03:02:01,320 --> 03:02:04,580
 如果是按照九年的九月制定的
 So if I'm following the nine the nine year made let it for
 
-1774
+1773
 03:02:04,580 --> 03:02:07,840
 策略，那么我会被止损出局。
 trailer with a nine year may I'm probably gonna get stopped out on
 
-1775
+1774
 03:02:08,640 --> 03:02:11,560
 我觉得今天可能是因为我觉得
 I think on this day because because I'm probably
 
-1776
+1775
 03:02:12,280 --> 03:02:15,520
 在这一根K线的底部设置我的股票订单。
 Setting my stock order on this candle low
 
-1777
+1776
 03:02:16,160 --> 03:02:22,160
 嗯，所以今天可能会在某个时候被止损出场，或者可能
 Yeah, so I'm gonna probably get stopped out on on this day here or maybe
 
-1778
+1777
 03:02:22,160 --> 03:02:26,900
 也许我们在这次回调低点见到了
 Maybe we will be here on this swing
 
-1779
+1778
 03:02:26,900 --> 03:02:31,640
 ，嗯，也许会在回调低点见。
 low if, yeah, maybe on this swing low, maybe.
 
-1780
+1779
 03:02:31,640 --> 03:02:36,380
 所以如果我像这样，壳，我不会在这里全
 So it's another 10% gain if I'm like,
 
-1781
+1780
 03:02:36,380 --> 03:02:41,120
 部卖出，那就是又增加了10%的收益。
 shell, I'm not selling all of them here.
 
-1782
+1781
 03:02:41,120 --> 03:02:44,800
-但再次，我认为卖出一些并在至少抓住
+但我认为逢强卖一部
 But again, I think it's good to sell some in
 
-1783
+1782
 03:02:44,800 --> 03:02:48,480
-可能 decent 的一些是好的。
+分、至少抓住不错的
 the stream and at least catch maybe a decent
 
-1784
+1783
 03:02:48,480 --> 03:02:50,200
 这段上升趋势的一部分。
 part of this uptrend.
 
-1785
+1784
 03:02:50,200 --> 03:02:52,960
 我还是挺满意的。
 So I'm still pretty satisfied with that.
 
-1786
+1785
 03:02:52,960 --> 03:02:55,200
 对于这个，马丁，你介意回到进场位置吗？
 For this one, Martin, do you mind going back to the entry
 
-1787
+1786
 03:02:55,200 --> 03:02:59,000
 图表中，以这条交易作为例子。
 chart and using this entry as an example
 
-1788
+1787
 03:02:59,000 --> 03:03:01,000
 你的持仓规模怎么安排？
 for how you would position size?
 
-1789
+1788
 03:03:01,000 --> 03:03:04,520
 当然了，你知道通过五分钟的
 So of course, you know your entry through the five minute
 
-1790
+1789
 03:03:04,520 --> 03:03:05,320
 K线。
 candle.
 
-1791
+1790
 03:03:05,320 --> 03:03:07,560
 你如何在当下决定每笔交易的规模如何
 How do you decide in the moment how much size
 
-1792
+1791
 03:03:07,560 --> 03:03:11,560
 我要用什么作为进入点？
 I'm going to use for the entry?
 
-1793
+1792
 03:03:11,560 --> 03:03:14,920
 嗯，实际上，在这个K线形成之后，
 Yeah, actually, right after this candle has formed,
 
-1794
+1793
 03:03:14,920 --> 03:03:17,920
-我会 really，我会 try like 测量
+我会尝试测量
 And I would really, I would try to like measure
 
-1795
+1794
 03:03:19,260 --> 03:03:20,940
 这个K线的范围是什么。
 what's the range of this candle.
 
-1796
+1795
 03:03:20,940 --> 03:03:22,520
 如果是买入突破，
 So if I'm buying this breakout,
 
-1797
+1796
 03:03:22,520 --> 03:03:25,880
 这个突破和当天最低点之间的范围是多少？
 so what's the range between this breakout and the low of day?
 
-1798
+1797
 03:03:25,880 --> 03:03:28,960
 这么说，是3%，有点宽。
 So I say, oh, it's 3%, it's a little bit wide.
 
-1799
+1798
 03:03:28,960 --> 03:03:31,040
 然后我会测量一下。
 And then I'm going to like measure it
 
-1800
+1799
 03:03:31,040 --> 03:03:33,160
 那个K线的低点。
 with the low of that candle.
 
-1801
+1800
 03:03:33,160 --> 03:03:38,160
 我会计算潜在的。
 So I will like calculate the potential,
 
-1802
+1801
 03:03:38,680 --> 03:03:41,160
 可能的止损机会，
 potentials to stop,
 
-1803
+1802
 03:03:41,160 --> 03:03:44,680
 那止损会有多宽。
 that how there's, how wide it would be my stop.
 
-1804
+1803
 03:03:44,680 --> 03:03:48,120
 像例如，这就像，好了，
 And like for example, this would be like, okay,
 
-1805
+1804
 03:03:48,120 --> 03:03:50,720
 是大约2.5%。
 it's around 2.5%.
 
-1806
+1805
 03:03:50,720 --> 03:03:55,720
 如果我风险$10,000的账户
 So if I'm risking, like if I have a $10,000 account
 
+1806
+03:03:56,020 --> 03:03:58,520
+按账户0.5%的风险预算，就是5
+and I'm risking like 0.5% of
+
 1807
-03:03:56,020 --> 03:04:01,020
-我账户里风险50.5%，也就是50美元。
-and I'm risking like 50.5% of my account, it would be 50 bucks.
+03:03:58,520 --> 03:04:01,020
+0美元〔原ASR将数字串在一起〕。
+my account, it would be 50 bucks.
 
 1808
 03:04:01,560 --> 03:04:06,360
@@ -9067,7 +9067,7 @@ Yeah, 20%
 
 1814
 03:04:27,080 --> 03:04:29,000
-是的，会 around 20% 。
+对，大约20%。
 Yup, it will be around 20%.
 
 1815
@@ -9602,22 +9602,22 @@ MA，也是内包线，真的很
 
 1921
 03:11:33,020 --> 03:11:36,460
-天啊，这里做得漂亮。同样的行业，
+这里走得很好。同板块
 f**king nicely here. So the same sector, the
 
 1922
 03:11:36,460 --> 03:11:39,900
-同样的日期，同样的 setups。
+、同一天、同样的形态。
 same date and then the same setup.
 
 1923
 03:11:39,900 --> 03:11:44,220
-这次突破，然后我认为我们也应该
+这次突破，我也相
 So for the breakout again and then I think
 
 1924
 03:11:44,220 --> 03:11:48,540
-aggressively回补仓位。
+当积极地减了仓，
 we really like trim the position also pretty aggressively
 
 1925
@@ -9632,12 +9632,12 @@ shape. But this one, RGTI, I also bought this
 
 1927
 03:11:57,500 --> 03:12:01,460
-突破刚形成一个小 consolidation，非常小
+在EMA9上方形成一个
 breakout right after it formed a small flak,
 
 1928
 03:12:01,460 --> 03:12:05,420
-的 consolidation 在 9 EMA 之上。
+很小的旗形整理后突破。
 a very tiny flak consolidation above the 9 EMA.
 
 1929
@@ -9671,4277 +9671,4267 @@ this opening range high doesn't work then I'm
 probably going to buy it maybe on the pullback
 
 1935
-03:12:28,460 --> 03:12:30,820
-可能不是回调就结束了，可以再等待一天
-maybe not on the pullback but maybe
+03:12:28,460 --> 03:12:33,180
+也许不做这次回调，而是再等一天整理，
+maybe not on the pullback but maybe just wait for another day for consolidation.
 
 1936
-03:12:30,820 --> 03:12:33,180
-进行 consolidation。
-just wait for another day for consolidation.
-
-1937
 03:12:33,180 --> 03:12:37,100
-所以有点像Olivequale预
+有点像Oliver Kell所说的预判WI
 So a little bit like an anticipated WIC play
 
-1938
+1937
 03:12:37,100 --> 03:12:41,020
-期的WIC操作。所以以WIC开盘。
+C形态〔缩写听辨存疑〕，它在这里向上开盘，
 from Olivequale. So it opens up at the WIC
 
-1939
+1938
 03:12:41,020 --> 03:12:45,980
 上一根K线但不是在上一根K线的突破位置买入，而是直接买入。
 of the previous bar but instead of buying it at the breakout of previous work I'm just buying it
 
-1940
+1939
 03:12:45,980 --> 03:12:49,540
 开盘区间挑出，然后这个很
 the opening range pickouts then this one is
 
-1941
+1940
 03:12:49,540 --> 03:12:53,100
 好，很幸运，然后也卖掉了。
 just works very fortunately and then also sell them
 
-1942
+1941
 03:12:53,100 --> 03:12:57,900
 进入强势，我觉得很标准，我觉得
 into strengths just I think it's really standard and I
 
-1943
+1942
 03:12:57,900 --> 03:13:02,700
 Q是赢的，是吧，我觉得可能吧。
 think I win Q is yeah I think maybe yeah I
 
-1944
+1943
 03:13:02,700 --> 03:13:06,220
 那就继续卖出，趁着势头强劲的时候。
 just think yeah it's really extended and then just sell them into strength
 
-1945
+1944
 03:13:11,020 --> 03:13:14,770
 QPTS 很相似，但 Q
 QPTS is really similar but QPTS is one
 
-1946
+1945
 03:13:14,770 --> 03:13:18,520
 PTS 我认为这个是一天。
 I think of this one is actually one day
 
-1947
+1946
 03:13:18,520 --> 03:13:22,800
 在真正的突破日到来之
 before the real breakout day so I
 
-1948
+1947
 03:13:22,800 --> 03:13:27,080
 前，我相信QPTS是的
 believe the QPTS is the like the
 
-1949
+1948
 03:13:27,080 --> 03:13:30,960
 更早的时候，最早的时候
 earlier like the earliest earlier tell sign
 
-1950
+1949
 03:13:30,960 --> 03:13:34,840
 ，提前的迹象，让我看看
 earlier earlier sign that let me see
 
-1951
+1950
 03:13:34,840 --> 03:13:40,660
 是否……哦，这个是……嗯
 whether... oops this one is... yeah this one
 
-1952
+1951
 03:13:40,660 --> 03:13:46,480
 ，这个我应该是交易的5分钟
 I traded the I think the five minute
 
-1953
+1952
 03:13:46,480 --> 03:13:50,520
 这里从低点反转，我认
 reversal from the low here and
 
-1954
+1953
 03:13:50,520 --> 03:13:54,560
 为我已经买进了这个。
 I think I bought this one
 
-1955
+1954
 03:13:54,560 --> 03:13:57,440
 虽然看上去在日线图上真的很糟糕，但我
 although it looks really bad on on the
 
-1956
+1955
 03:13:57,440 --> 03:14:00,320
 有时候 just doing some
 daily but sometimes I just doing some
 
-1957
+1956
 03:14:00,320 --> 03:14:03,160
 这种就像随机的随机走势，如果这一种
 this kind of like random random trace if this one
 
-1958
+1957
 03:14:03,160 --> 03:14:06,000
 失败了，它就会变成一种随机的走势。
 fails it would be one of the random trace
 
-1959
+1958
 03:14:06,000 --> 03:14:12,400
 在连续的亏损走势中，在另一个列表里但我相信这一只。
 in the in the losing trace in the losing in another in the in another list but i believe about this one
 
-1960
+1959
 03:14:14,560 --> 03:14:20,480
 主要是从每周图表来看，嗯
 um mainly from the weekly because um yeah and it
 
-1961
+1960
 03:14:20,480 --> 03:14:26,400
 ，就是太紧了，让我看看。
 it it just so tight um let me see uh
 
-1962
+1961
 03:14:26,400 --> 03:14:31,427
 我想我可能在这里
 I actually, I think I
 
-1963
+1962
 03:14:31,427 --> 03:14:36,453
 这根K线上做空了Q
 probably like shorted QPTS on this
 
-1964
+1963
 03:14:36,453 --> 03:14:41,480
 BTS，但它没有
 candle here, but it doesn't
 
-1965
+1964
 03:14:41,480 --> 03:14:42,840
 工作。
 work.
 
-1966
+1965
 03:14:42,840 --> 03:14:47,100
 然后我想，好吧，然后
 And then I think, okay, so, and then I go
 
-1967
+1966
 03:14:47,100 --> 03:14:51,360
 我去看每周的，然后每周
 through the like, go to the weekly, so weekly
 
-1968
+1967
 03:14:51,360 --> 03:14:54,240
 这是关于21岁那年的。
 This is about the 21-year-old.
 
-1969
+1968
 03:14:54,240 --> 03:14:59,520
 然后这里是一个非常紧的内包线烛形。
 And then it's like a very tight candle inside bar here.
 
-1970
+1969
 03:14:59,520 --> 03:15:02,960
 那如果我在这里尝试买入呢？
 And then what if I just like trying to buy here?
 
-1971
+1970
 03:15:02,960 --> 03:15:08,920
 但是实际上，我记不得为什么在这里买入了。
 But actually, I don't remember why I'm buying here.
 
-1972
+1971
 03:15:08,920 --> 03:15:12,440
 但是是的，所以我有时候还是会继续做出
 But yeah, so sometimes I'm just going to still make
 
-1973
+1972
 03:15:12,440 --> 03:15:14,400
 一些随机的交易。
 some random trades.
 
-1974
+1973
 03:15:14,400 --> 03:15:16,840
 但这一个很可能会有效。
 But this one's very likely works.
 
-1975
+1974
 03:15:16,840 --> 03:15:19,840
 但大多数其实都不管用。
 But most of them actually doesn't work.
 
-1976
+1975
 03:15:19,840 --> 03:15:21,680
 你可以看到我的亏损。
 you can see from my losers.
 
-1977
+1976
 03:15:21,680 --> 03:15:24,360
 这个交易虽然运作得很好，
 So this trade, although it works really well,
 
-1978
+1977
 03:15:24,360 --> 03:15:28,120
 但我不会再做这个交易了，我相信。
 but I'm not going to take this one again, I believe.
 
-1979
+1978
 03:15:28,120 --> 03:15:31,640
 我不再交易这个了。
 I'm not going to take this one if I'm trading it again.
 
-1980
+1979
 03:15:31,640 --> 03:15:34,600
 还是，我认为我会在这次突破上进行交易。
 Still, I think I'm going to trade it on this breakout,
 
-1981
+1980
 03:15:34,600 --> 03:15:37,900
 如果没在那里入场，也许可以看这里或这里的回调。
 if not maybe on this pullback or this pullback here.
 
-1982
+1981
 03:15:37,900 --> 03:15:41,880
 嗯，我觉得我的entry点不太好。
 So yeah, this one I don't think my entry was good.
 
-1983
+1982
 03:15:41,880 --> 03:15:43,720
 是啊。
 So yeah.
 
-1984
+1983
 03:15:43,720 --> 03:15:45,600
 是 definitely 。
 But it definitely, yeah.
 
-1985
+1984
 03:15:45,600 --> 03:15:48,680
 继续，如果你需要修正想法请继续。
 Go ahead if you want to fix your thought, please.
 
-1986
+1985
 03:15:48,680 --> 03:15:54,680
 不，我只是想说，我只是提前给
 No, I just wanted to say that I just give
 
-1987
+1986
 03:15:54,680 --> 03:16:00,680
 我一个进入量子行业的信号。
 me an earlier sign for me to enter the quantum sector.
 
-1988
+1987
 03:16:00,680 --> 03:16:04,680
 我记得之前在这次突破中在
 I remember I got some profits
 
-1989
+1988
 03:16:04,680 --> 03:16:08,680
 QBTS上赚了一些利润。
 on QBTS on this breakout here,
 
-1990
+1989
 03:16:08,680 --> 03:16:12,680
 给我更多的信心去进入IONQ和LGTI。
 and I just give me some more conviction on entering IONQ and LGTI.
 
-1991
+1990
 03:16:12,680 --> 03:16:16,100
 嗯，嗯，我的问题是这里有很多股票按照
 Yeah, yeah, my question was gonna be if there are a bunch
 
-1992
+1991
 03:16:16,100 --> 03:16:19,520
 某种主题进行设置，比如量子名字的。
 of stocks setting up in a theme like here with the quantum names
 
-1993
+1992
 03:16:19,880 --> 03:16:23,880
 你打算如何优先处理？也就是说，你基本上把它们都考虑到了。
 How would you prioritize? I mean here you kind of took all of them
 
-1994
+1993
 03:16:24,520 --> 03:16:28,840
 但是如果你只有空间去选择一个怎么办？
 But how would you kind of prioritize if you only had room for one or something like that?
 
-1995
+1994
 03:16:29,000 --> 03:16:32,400
 你会看什么，说就这样？这就是我要做的。
 What would you kind of be looking at to say alright? This is the one I'm gonna go with
 
-1996
+1995
 03:16:33,760 --> 03:16:35,760
 这种决策是什么类型的？
 What kind of comes into that decision?
 
-1997
+1996
 03:16:35,760 --> 03:16:39,760
 是的，我认为最重要的应该
 Yeah, I think the first one, the most
 
-1998
+1997
 03:16:39,760 --> 03:16:43,760
 是所有相对强度之间的比较。
 important one would be the relative strength among all.
 
-1999
+1998
 03:16:43,760 --> 03:16:48,760
-所以最好一个是IONQ，还是RGTI，我觉得。
+最好的是IONQ，还是RGTI？周线可
 So the best one would be IONQ, right? Or RGTI, I think.
 
-2000
+1999
 03:16:48,760 --> 03:16:53,760
-每周是RGTI，每天是IONQ， maybe。
+能RGTI更好，日线可能IONQ更好。
 On the weekly would be RGTI, on the daily would be IONQ, maybe.
 
-2001
+2000
 03:16:53,760 --> 03:16:58,635
 可能是吧，但我觉得QBTS肯
 Maybe, but yeah, I think QBTS was definitely the
 
-2002
+2001
 03:16:58,635 --> 03:17:03,510
 定是我不会首先考虑的，但其实
 one that I'm not going to consider at first,
 
-2003
+2002
 03:17:03,510 --> 03:17:08,385
 QBTS，我觉得我会在第二波上
 but actually QBTS, I think I'll perform at the later,
 
-2004
+2003
 03:17:08,385 --> 03:17:13,260
 涨的时候表现得更好，我相信。
 at the second leg up, I believe, or not.
 
-2005
+2004
 03:17:13,260 --> 03:17:16,460
 我觉得RGTI是领头羊，QB只需要跟上。
 Yeah, I think RGTI was the leader and QB just needs a second.
 
-2006
+2005
 03:17:16,460 --> 03:17:18,260
 IWNQ在第二波上涨时表现不佳。
 IWNQ was lacking on the second way up.
 
-2007
+2006
 03:17:19,260 --> 03:17:24,260
 但在进入时，我认为我
 But on the entry, right at the entry, then
 
-2008
+2007
 03:17:24,260 --> 03:17:29,260
 应该看看相对强度。
 I think I will look at the relative strength.
 
-2009
+2008
 03:17:29,260 --> 03:17:34,760
 那么我更倾向于选择IWMQ或RGTI作为
 So I would prefer IWNQ or RGTI for the entry,
 
-2010
+2009
 03:17:34,760 --> 03:17:40,260
 进入点，挑选正确的板块中的白色那一只。
 for picking the white one in the right sector.
 
-2011
+2010
 03:17:40,260 --> 03:17:44,400
 然后我也希望除了像
 then I also would like to apart from
 
-2012
+2011
 03:17:44,400 --> 03:17:48,540
 周线的，我还希望有
 the like the weekly I would also like to
 
-2013
+2012
 03:17:48,540 --> 03:17:51,920
 看看最近的相对强度
 look at the relative strength at
 
-2014
+2013
 03:17:51,920 --> 03:17:55,300
 ，真的很近，大概三
 the really like really recently maybe three
 
-2015
+2014
 03:17:55,300 --> 03:17:59,160
 一到三天之前，比如一到
 one to three days before like one
 
-2016
+2015
 03:17:59,160 --> 03:18:03,020
 三天之前，真正的突破。
 to three days before the really breakout
 
-2017
+2016
 03:18:03,020 --> 03:18:08,540
 今天，如果我要考虑买入量子的股票。如果我比较
 day so if I'm thinking that I'm going to take the quantum's name so if I compare
 
-2018
+2017
 03:18:08,540 --> 03:18:14,480
-这个基础，这些K线放在这里，我觉得AlgaeTime可能会看起来
+比较这个平台里的这些K线，我觉得RGTI可能
 this base, these candles to put these candles here, I think AlgaeTime may look
 
-2019
+2018
 03:18:14,480 --> 03:18:19,520
-更好的，特别是昨天，这是一个内包线。Yeah，而且这是个内包线。
+更好，尤其前一天是内包线，
 better, like especially the previous day this is an inside bar. Yeah and the
 
-2020
+2019
 03:18:19,520 --> 03:18:23,280
-波动性变小了， K线 变紧了，
+振幅更小、K线更紧，
 volatility is much smaller, that is a
 
-2021
+2020
 03:18:23,280 --> 03:18:27,040
-然后我认为 AlgaeTime
+所以我觉得RGTI
 tighter candle and then I think AlgaeTime
 
-2022
+2021
 03:18:27,040 --> 03:18:32,640
 我觉得这是最好的选择，但看起来在技术面上也相当不错。
 would be the best choice I think but I think it also looks pretty good on the
 
-2023
+2022
 03:18:32,640 --> 03:18:36,930
 每天，每周，还有。嗯
 daily or and also the weekly too. Yeah
 
-2024
+2023
 03:18:36,930 --> 03:18:41,220
 ，再加一点就是美元。
 and one more point would be the dollar
 
-2025
+2024
 03:18:41,220 --> 03:18:46,740
 优先交易成交量最高的，这样会更有效。
 volume. I would prioritize trading the one with the highest dollar volume so it
 
-2026
+2025
 03:18:46,740 --> 03:18:52,020
 会更流动性更强，所以可能会有更少的滑点，一般来说我认为
 would be more liquid so it would be maybe less slippage and generally I think
 
-2027
+2026
 03:18:52,020 --> 03:18:57,900
 有更高成交量的那一个会有更好的表现。
 the one with the higher like higher dollar volume would have a better move
 
-2028
+2027
 03:18:57,900 --> 03:19:01,900
 我不确定这一点，但我非
 I'm not sure this on this one but
 
-2029
+2028
 03:19:01,900 --> 03:19:05,900
 常想买入流动性最好的。
 I would love to buy the most liquid ones.
 
-2030
+2029
 03:19:05,900 --> 03:19:08,900
 是的，回答完了。谢谢。
 Yep, that answers it. Thank you.
 
-2031
+2030
 03:19:08,900 --> 03:19:13,900
 这是特斯拉，然后我在日线
 So this one is Tesla, then I bought
 
-2032
+2031
 03:19:13,900 --> 03:19:18,900
 9 YM的回调时买入。
 it at the pullback on the daily 9 YM.
 
-2033
+2032
 03:19:18,900 --> 03:19:22,900
 这个周五的跳空缺口还没有被填补。
 Also the gap, the unfilled gap between this Friday here.
 
-2034
+2033
 03:19:22,900 --> 03:19:26,940
 这里。我认为这是一个公平的进入
 here. I think this one will be a fair
 
-2035
+2034
 03:19:26,940 --> 03:19:30,980
 点，肯定不是最好的，因为我认为
 entry, definitely not the best one because I think
 
-2036
+2035
 03:19:30,980 --> 03:19:36,660
 是轻微回调，通常回调到9，也就是日线9。
 it's like a slight pullback and generally with pullback to the 9, daily 9 it has the
 
-2037
+2036
 03:19:37,540 --> 03:19:41,820
 最低胜率。从我的研究来看，
 lowest win rate amongst all. Like a slower EMA
 
-2038
+2037
 03:19:41,820 --> 03:19:46,100
 一个较慢的EMA胜率最高。
 will have the highest win rate from my study.
 
-2039
+2038
 03:19:46,100 --> 03:19:51,700
 但有时候，你不得不冒风险，喜欢做空一些股票。
 But sometimes stocks just you have to like, like take risks.
 
-2040
+2039
 03:19:51,700 --> 03:19:56,500
 所以有时候如果股票会回调到21，然后你就会有……
 So you sometimes if the stock would pull back to the 21 and then you have a much,
 
-2041
+2040
 03:19:56,500 --> 03:19:59,900
 你有更好的进入点，更高的进入率。
 you have a better entry, more high wind rate entry.
 
-2042
+2041
 03:20:00,000 --> 03:20:02,800
 如果你有更多的资金或者更富有，回报会更好。
 If you have more confection or you're rich reward would be much better
 
-2043
+2042
 03:20:02,800 --> 03:20:07,120
 但有时候像特斯拉这样的股票如果强劲，它不会回调到21。
 But sometimes the stock if they strong like Tesla here, it doesn't pull back to the 21
 
-2044
+2043
 03:20:07,120 --> 03:20:08,340
 所以……
 so
 
-2045
+2044
 03:20:08,340 --> 03:20:11,910
 这次我只是尝试承担风险，
 This time I'm just just trying to like take the risk and trying to
 
-2046
+2045
 03:20:11,910 --> 03:20:15,480
 看看是否有效，这次有效了。
 test it whether it works or not and this time it works and
 
-2047
+2046
 03:20:16,920 --> 03:20:23,320
 也想指出一下大格局，比如每周的，还有这个巨大的基础。
 Also wanted to put point out on the big picture like the weekly and also the really the huge base here
 
-2048
+2047
 03:20:23,480 --> 03:20:25,480
 建立更高的低点
 So it's that building the higher lows
 
-2049
+2048
 03:20:25,480 --> 03:20:31,760
 特别是这里，然后范围开始变窄但保持了
 especially over here and then the range starts tightening up but it keeps
 
-2050
+2049
 03:20:31,760 --> 03:20:36,760
 构建更高的低点，如果你试图拉高锚定VWAP。
 building the higher lows and if you are trying to pull up the anchored VWAP
 
-2051
+2050
 03:20:36,760 --> 03:20:40,160
 这里是的，它 really near the
 here so it's but really near the anchored
 
-2052
+2051
 03:20:40,160 --> 03:20:43,560
 anchored VWAP 在这个区域，我觉得
 VWAP on this area and I think
 
-2053
+2052
 03:20:43,560 --> 03:20:49,240
 可以尝试一下破位回踩试试看
 this is okay then maybe we can like a break and retest and take a try so and
 
-2054
+2053
 03:20:49,240 --> 03:20:54,800
 它实际上并没有拉回锚定VWAP，但我认为我刚刚
 it actually doesn't like pull back into the anchored VWAP but I think I just
 
-2055
+2054
 03:20:54,800 --> 03:20:58,300
 spot 5分钟的突破。如果这个
 spot a 5 minute breakouts. So if this
 
-2056
+2055
 03:20:58,300 --> 03:21:01,800
 不奏效，它进一步回调的话，那么
 one doesn't work and it pulls further back, then
 
-2057
+2056
 03:21:01,800 --> 03:21:05,300
 我会买15分钟的突破
 I am going to buy the 15 minute breakout
 
-2058
+2057
 03:21:05,300 --> 03:21:08,800
 。所以就是，肯定会。
 maybe. So yeah, it definitely would like, is the
 
-2059
+2058
 03:21:08,800 --> 03:21:14,360
 spot我感兴趣的是。在每周图表
 spot that I am interested in. On the weekly,
 
-2060
+2059
 03:21:14,360 --> 03:21:19,920
 上，我认为这里是对的。所以之后
 this is, I think it's right here. So after
 
-2061
+2060
 03:21:19,920 --> 03:21:23,880
 强烈的反转，非常弱，强烈的K线
 strong reversal weak, the strong bar and also
 
-2062
+2061
 03:21:23,880 --> 03:21:27,840
 ，也跌破并重新收回了9EMA。
 this undercut and reclaims off the 9 EMA.
 
-2063
+2062
 03:21:28,560 --> 03:21:32,000
 这两周的K线看起来很漂亮，9
 So these two weekly bars looking really nice and
 
-2064
+2063
 03:21:32,000 --> 03:21:35,440
 EMA 开始向上趋势。所以在这
 the 9 EMA starts trending up. So on this
 
-2065
+2064
 03:21:35,440 --> 03:21:40,200
 这周它回调到9和21周线
 week here it pulls back into the 9 and 21
 
-2066
+2065
 03:21:40,200 --> 03:21:44,960
 ，所以我就特别关注这个。
 weekly and so that's why I'm like really focusing on
 
-2067
+2066
 03:21:44,960 --> 03:21:50,040
 在这个小小的范围内，
 on this tiny little range here and then it
 
-2068
+2067
 03:21:50,040 --> 03:21:55,120
 然后它就立刻再次波动。
 just ticks off right after it like clear the
 
-2069
+2068
 03:21:55,120 --> 03:21:58,960
 锚定VWAP以及EMA150附近
 anchored VWAP and the 150 EMA to just sell them
 
-2070
+2069
 03:21:58,960 --> 03:22:02,800
 ，逢强卖出。不错的一笔。下一个是
 in the strength. Yeah nice trade. So this one is
 
-2071
+2070
 03:22:02,800 --> 03:22:07,480
 AMPX，是回调到EMA21和
 AMPX would be another pullback buy on the 21 and
 
-2072
+2071
 03:22:07,480 --> 03:22:12,160
 EMA9的另一例。我记得也靠近
 the 9 EMA. Also actually I believe it's on the
 
-2073
+2072
 03:22:12,160 --> 03:22:15,720
 锚定VWAP。这也是突破后回
 anchored VWAP too so it also like a breaking retest
 
-2074
+2073
 03:22:15,720 --> 03:22:19,280
 测，再短暂下穿。我买的是5
 and then it undercuts but I bought the 5
 
-2075
+2074
 03:22:19,840 --> 03:22:23,600
 分钟突破——放大看看。哦，我
 minute breakups um let's zoom in oh so it would
 
-2076
+2075
 03:22:23,600 --> 03:22:27,360
 记得应该是1分钟突破，是1
 be a one minute breakout I believe so it's a one
 
-2077
+2076
 03:22:27,360 --> 03:22:32,160
 分钟突破，然后回调到
 minute breakout and then um as it really as it
 
-2078
+2077
 03:22:32,160 --> 03:22:36,960
 21EMA区域区域。
 pulls back into the into the um 21 EMA area
 
-2079
+2078
 03:22:36,960 --> 03:22:41,040
 和EMA的位置，你也能
 And also, like I know that before the market opened,
 
-2080
+2079
 03:22:41,040 --> 03:22:45,120
 看到市场开盘前的情况。
 you could see where the EMA would be and where the
 
-2081
+2080
 03:22:45,120 --> 03:22:49,600
 像是锚定的。所以你有一个锚定的。
 like anchor would be. So you have it like a
 
-2082
+2081
 03:22:54,560 --> 03:22:58,080
 大约像支撑位一样，你知
 like a approximate like a support level,
 
-2083
+2082
 03:22:58,080 --> 03:23:01,600
 道，大约在745左右。
 you know, around like 745 each or
 
-2084
+2083
 03:23:01,600 --> 03:23:05,360
 750左右可能成为支撑，所以
 750 ish could be a support so when the market like
 
-2085
+2084
 03:23:05,360 --> 03:23:09,120
 当市场向上跳空然后回调时。
 when it starts um gap up and then it pulls back
 
+2085
+03:23:09,760 --> 03:23:15,200
+开盘之后，如果它回调到
+right after market opened then I would be very like interested when it the pulls back to the
+
 2086
-03:23:09,760 --> 03:23:12,480
-右after市场opened之后，我会非
-right after market opened then I would be very
-
-2087
-03:23:12,480 --> 03:23:15,200
-常感兴趣，当它pull back到的时候。
-like interested when it the pulls back to the
-
-2088
 03:23:15,200 --> 03:23:18,720
 750 或 745 左右的水平，他们
 750 or 745 ish uh level and they'll just bought
 
-2089
+2087
 03:23:18,720 --> 03:23:22,240
 就会买进一分钟的突破。然后这个也会。
 the one minute breakouts and then this one also
 
-2090
+2088
 03:23:22,240 --> 03:23:26,360
 做得挺好的，但我只是觉得
 worked pretty well but I'm just like I also like
 
-2091
+2089
 03:23:26,360 --> 03:23:30,480
 有点早卖了，它可能卖早了。
 sell it a little bit maybe too early it has another
 
-2092
+2090
 03:23:30,480 --> 03:23:35,980
-涨了40%左右，但……是的，但这个……因为它 p
+它后来涨了约40%，
 way up for 40% but um I am yeah
 
-2093
+2091
 03:23:35,980 --> 03:23:41,480
-retty 的部分， pretty 是什么意思？
+但我——这笔因为……
 but but this one because like the it's pretty
 
-2094
+2092
 03:23:41,480 --> 03:23:46,640
 延伸至9 EMA，然后我可能会稍微减少一点仓位。
 extended to the 9 EMA and then I probably going to like step my heart
 
-2095
+2093
 03:23:46,640 --> 03:23:51,840
-正好在这一根K线上，因为我不想设置
+把止损设在这根K线低点、甚至这里，因为我不想设得
 stopped right at this candle even even even here because I don't want to set
 
-2096
+2094
 03:23:51,840 --> 03:23:56,160
 离9 EMA太近了，所以我真的想留出一些空间。
 it too close to the 9 EMA so I really really want to leave some room for the
 
-2097
+2095
 03:23:56,160 --> 03:24:01,460
 跌破了，但我认为也可能是九月，我认为市场
 undercuts but I think also that like again is September I think the market
 
-2098
+2096
 03:24:01,460 --> 03:24:05,780
 可能继续延伸，有点怀疑，然后我提前平仓了。
 just maybe extended being skeptical and then I close the trade early and then
 
-2099
+2097
 03:24:05,780 --> 03:24:10,900
 这是另一个，对于HHR这
 yeah this is another one and for HHR
 
-2100
+2098
 03:24:10,900 --> 03:24:16,020
 是一个突破买入，非常紧。
 this is a breakout buy really tight not
 
-2101
+2099
 03:24:16,020 --> 03:24:21,460
 非常接近，但真的喜欢21和90MA的回调。
 really tight but I really love the undercuts of the 21 and a 90ma but it
 
-2102
+2100
 03:24:21,460 --> 03:24:26,140
 收盘非常强劲，然后我在前一根K线的高点附近买进突破。
 closes very strong then I buy the breakout on the previous bar high and
 
-2103
+2101
 03:24:27,500 --> 03:24:30,480
 然后我卖出一些来加强，然后我又卖出一些。
 Then I sell something to strengthen and then I sell some
 
-2104
+2102
 03:24:30,940 --> 03:24:34,960
 我觉得我并没有卖得很好，
 This one I think I didn't sell it really really nicely. I
 
-2105
+2103
 03:24:34,960 --> 03:24:38,980
 我认为最终的卖出并不好。
 don't I don't think the the final sell is is is good and
 
-2106
+2104
 03:24:39,940 --> 03:24:41,940
 是的， probably 我
 yeah, probably I
 
-2107
+2105
 03:24:42,820 --> 03:24:48,240
 不知道可能是恐慌性卖出，因为它仍然在9 EMA附近。
 Don't know maybe it's kind of a panic sell because it's still about the 9 EMA and then
 
-2108
+2106
 03:24:48,240 --> 03:24:51,840
 只是可能只有小时图看起来丑陋，不
 and just maybe it looks ugly only hourly shot but
 
-2109
+2107
 03:24:51,840 --> 03:24:55,440
 过我觉得这是一个非常糟糕的卖出。
 yeah but I think this is a really bad sell
 
-2110
+2108
 03:24:55,440 --> 03:24:57,760
 在我看来
 in my opinion
 
-2111
+2109
 03:24:57,760 --> 03:25:03,680
 AMD这次是个幸运的突破，我
 and this AMD is a lucky one I
 
-2112
+2110
 03:25:03,680 --> 03:25:09,600
 买的就是之前K线高点的突破。
 bought this breakout of the previous candle high also
 
-2113
+2111
 03:25:09,600 --> 03:25:13,240
 非常接近的区域，当EMI非常
 of a very tight area when the EMIs are
 
-2114
+2112
 03:25:13,240 --> 03:25:16,880
 接近彼此时，它们变得非常紧密。
 really close to each other they are really tightened
 
-2115
+2113
 03:25:16,880 --> 03:25:21,760
 昨天高点的突破买入。
 up and bought the breakouts of the previous day high.
 
-2116
+2114
 03:25:21,760 --> 03:25:26,080
 三天后出现向上跳空缺口。
 And there is a gap up three days after.
 
-2117
+2115
 03:25:26,080 --> 03:25:28,080
 我觉得新闻里有这个。
 And I think it's in news.
 
-2118
+2116
 03:25:28,080 --> 03:25:30,080
 这是新闻数据集。
 It's a data set in news.
 
-2119
+2117
 03:25:30,080 --> 03:25:31,080
 是AI开放的吗？
 Was it open AI?
 
-2120
+2118
 03:25:31,080 --> 03:25:32,080
 我不知道。
 I don't know.
 
-2121
+2119
 03:25:32,080 --> 03:25:33,580
 是有一些消息。
 Yeah, it was some news.
 
-2122
+2120
 03:25:33,580 --> 03:25:34,580
 嗯，不知道。
 Yeah, I don't know.
 
-2123
+2121
 03:25:34,580 --> 03:25:35,580
 可能是开启AI。
 Maybe open AI.
 
-2124
+2122
 03:25:35,580 --> 03:25:37,720
-是的，打开open AI。
+对，OpenAI。
 Yeah, open open AI.
 
-2125
+2123
 03:25:37,720 --> 03:25:43,600
 然后我做了一笔逢强卖出的操作，然后我把所有的都平仓了。
 And then I did a sell into strength for this trade and then I closed all of them into this
 
-2126
+2124
 03:25:43,600 --> 03:25:47,700
 这里这根反转K线。是的，有一点
 reversal bar here. Yeah, this is a little
 
-2127
+2125
 03:25:47,700 --> 03:25:51,800
 被震出的情况，但接着我认为……
 bit got shaking out, but then I think in
 
-2128
+2126
 03:25:51,800 --> 03:25:55,100
 李亚非目前还没有接近下方。嗯
 Liamg is not close below. Yeah. But I
 
-2129
+2127
 03:25:55,100 --> 03:25:58,400
 ，但我认为价格的延伸有些过度。
 think it is a little bit too extended something
 
-2130
+2128
 03:25:58,400 --> 03:26:03,880
 九月五号。然后我就这样读下去，这是一个反转模式。
 nine year may. So and then I read on like this, like it's a reversal pattern that standard
 
-2131
+2129
 03:26:03,880 --> 03:26:07,040
 像如何发生空头逆转？我不清楚。
 like how does it go to bearish reversal? So I don't know.
 
-2132
+2130
 03:26:07,400 --> 03:26:10,760
 我不确定这个暂停回调到底是什么情况。
 I'm not sure what the pause breakdown basically. Yeah.
 
-2133
+2131
 03:26:10,760 --> 03:26:15,760
 我不太舒服，是的。
 So I don't, yeah, I'm not feeling comfortable with that.
 
-2134
+2132
 03:26:17,160 --> 03:26:18,600
 然后我就被止损了。
 And then I just getting stopped.
 
-2135
+2133
 03:26:18,600 --> 03:26:22,520
 我现在就进场。
 I'm just to take, take, take, take the position now.
 
-2136
+2134
 03:26:22,520 --> 03:26:25,920
 还是一个很好的交易，持有42个小时了。
 So still it is a really nice trade for 42 hours in, in, in,
 
-2137
+2135
 03:26:25,920 --> 03:26:28,960
 出现了一个向上跳空缺口，有点出乎意料。
 in a kind of, I didn't expect this gap up.
 
-2138
+2136
 03:26:28,960 --> 03:26:31,200
 然后，嗯。
 And then, yeah.
 
-2139
+2137
 03:26:31,200 --> 03:26:33,120
-有时候你会有跳空的下跌。
+有时你也会遇到不利的向下跳空。
 So sometimes you have some gap downs with you.
 
-2140
+2138
 03:26:33,120 --> 03:26:35,560
 有时候也会出现向上跳空的情况。
 Sometimes you also get some gaps up.
 
-2141
+2139
 03:26:35,560 --> 03:26:39,200
 交易中的意外异常。
 The unexpected outliers in, in, in trading.
 
-2142
+2140
 03:26:40,760 --> 03:26:45,760
 这个ASTS和回调，这是
 This ASTS and pullback, that's a
 
-2143
+2141
 03:26:45,760 --> 03:26:50,760
 一个很好的回调，但是回调。
 really nice one, but yeah the pullback.
 
-2144
+2142
 03:26:50,760 --> 03:26:53,900
 但是我还想强调一下，那就是每周的。
 But one thing also I wanted to highlight is also the weekly one.
 
-2145
+2143
 03:26:53,900 --> 03:27:00,160
 你可以看到周线是一个较大的形态，是一个比较长的底部。
 So you can see the weekly is a large, it's kind of a long base, a large one.
 
-2146
+2144
 03:27:00,160 --> 03:27:06,480
-我真的很喜欢在长底形成后的第一次 breakout 交易。
+我很喜欢长时间整理平台后的第一次突破。
 I really love trading the first breakouts after the long base.
 
-2147
+2145
 03:27:06,480 --> 03:27:09,900
 好像这样正常，我们在哪里。
 So it really like this normally where we're at,
 
-2148
+2146
 03:27:09,900 --> 03:27:13,020
 另一个很好的涨势开始了。
 the another great uptrend starts.
 
-2149
+2147
 03:27:13,020 --> 03:27:17,940
 这样就给你提供最佳的风险回报比。
 So it just provides you the best risk reward.
 
-2150
+2148
 03:27:17,940 --> 03:27:20,820
-对，相比较较较短的基期
+对，相比整理时间较短的平台，
 Right, compared to like a shorter base
 
-2151
+2149
 03:27:20,820 --> 03:27:25,020
 就像是一个回调，就像这是一个中间的回调。
 or like a half, like it's just an intermediate pullback
 
-2152
+2150
 03:27:25,020 --> 03:27:27,980
-到21 EMA的位置或者9EMA的位置。
+回调到EMA21或EMA9附近。
 to the 21 EMA be or the nine.
 
-2153
+2151
 03:27:27,980 --> 03:27:31,260
 但是这个，我觉得只有你能看到。
 But this one, I think only you can see it also
 
-2154
+2152
 03:27:31,260 --> 03:27:33,060
 尊重锚点，非常重要。
 respect the anchor for really well.
 
-2155
+2153
 03:27:33,060 --> 03:27:34,580
 回调到锚点上方。
 It pulls back to the anchor for you up.
 
-2156
+2154
 03:27:34,580 --> 03:27:36,300
 虽然这几日，
 Although these few days,
 
-2157
+2155
 03:27:36,300 --> 03:27:41,300
 它没有强劲反弹，收盘也不强劲。
 It doesn't rebound strongly and have a strong close.
 
-2158
+2156
 03:27:46,100 --> 03:27:49,620
 我觉得我错过了这里的小反弹。
 So I think I didn't catch the rebound here,
 
-2159
+2157
 03:27:49,620 --> 03:27:53,660
 但是这里出现了一个跳空高开。
 but instead there's a gap up above the gap here,
 
-2160
+2158
 03:27:53,660 --> 03:27:57,500
 在这一缺口上方。
 above the previous gap on this wing high.
 
-2161
+2159
 03:27:57,500 --> 03:28:01,620
 然后我们回撤，我进行交易。
 And then we push back and I traded
 
-2162
+2160
 03:28:02,580 --> 03:28:03,980
 也包括5分钟级别的突破。
 also the five minute breakouts.
 
-2163
+2161
 03:28:03,980 --> 03:28:08,180
 它实际上也充当了小基数。
 It actually also act the small base.
 
-2164
+2162
 03:28:08,180 --> 03:28:11,740
 我觉得这有点被夸大了，因为穿得挺厚的。
 I think this is a little bit distorted because of the strong clothes.
 
-2165
+2163
 03:28:11,740 --> 03:28:18,100
 但当它日内回调时，看涨的终点正好在这个水平。
 But when it pulls back intraday, the end of view up is right at this level.
 
-2166
+2164
 03:28:18,100 --> 03:28:23,500
-它是昨天以上的stylis，就像前一天一样，所以它就在这里。
+略高于昨天、前一日的位置，大约这里。
 It's stiley above yesterday's, like the previous day, so it's around here.
 
-2167
+2165
 03:28:23,500 --> 03:28:27,780
 它实际上也在锚定VWAP找到支撑。
 So it's actually finding support on the anchored VWAP too.
 
-2168
+2166
 03:28:27,780 --> 03:28:31,380
 我刚刚买入了5
 So I just bought
 
-2169
+2167
 03:28:31,380 --> 03:28:34,980
 分钟K线突破。
 the 5 minute candle breakouts.
 
-2170
+2168
 03:28:34,980 --> 03:28:39,020
 对，这是另一个标准版本。
 Yup, this is another standard one.
 
-2171
+2169
 03:28:39,020 --> 03:28:44,020
 但我也没有把止损放在这里的K线低点，这次没有被止损出局。
 But I didn't also put it at the bar low here and this one didn't stop me up.
 
-2172
+2170
 03:28:44,020 --> 03:28:46,500
 这是5分钟K线突破。
 And this is the 5 minute candle breakouts.
 
-2173
+2171
 03:28:46,500 --> 03:28:52,260
 所以有很多像开盘范围的高点或低点的命运，
 So there are lots of loves like the opening range highs or opening range lows, fates,
 
-2174
+2172
 03:28:52,260 --> 03:28:53,260
 就在那里。
 right there.
 
-2175
+2173
 03:28:53,260 --> 03:28:58,120
 5分钟K线突破，我交
 5 minute candle break out and I just
 
-2176
+2174
 03:28:58,120 --> 03:29:02,980
 易的是更小的时间周期。
 traded like a smaller lower time frame
 
-2177
+2175
 03:29:02,980 --> 03:29:07,480
 突破变慢了，时间变小了。
 breakouts slower time yeah smaller time frame
 
-2178
+2176
 03:29:09,940 --> 03:29:13,780
-然后我一次性卖掉了所有的
+后来我全部逢强卖
 yeah and then I sell them all in
 
-2179
+2177
 03:29:13,780 --> 03:29:17,620
-股票哎 hey我并没有等待
+出；这次也没等
 two strings yeah again hey I didn't wait for
 
-2180
+2178
 03:29:17,620 --> 03:29:23,380
 低于9就关闭，或者等待回调到EMA。
 close below the 9 or they wait for the pullback to the EMAs.
 
-2181
+2179
 03:29:26,580 --> 03:29:31,460
 天啊，已经超出了大约3个半小时。
 Oh my god, I think it's a little bit overrun is already like 3 and a half hour.
 
-2182
+2180
 03:29:35,540 --> 03:29:39,460
 这是另一个突破交易。
 No, okay, this is another breakout trade.
 
-2183
+2181
 03:29:39,460 --> 03:29:43,380
 所以内包线，我觉得，
 So inside bar, kind of, I think,
 
-2184
+2182
 03:29:43,380 --> 03:29:47,480
 不是，而且距离之前
 No, and not an inside bar just
 
-2185
+2183
 03:29:47,480 --> 03:29:51,580
 的低点只有两美分。
 two cents away from the prior low.
 
-2186
+2184
 03:29:51,580 --> 03:29:55,380
 但是我认为这仍然是一个内包线。
 But I still consider it as an inside bar.
 
-2187
+2185
 03:29:55,380 --> 03:29:59,260
 内包线突破然后紧止损。
 So inside bar breakouts and then tight stop.
 
-2188
+2186
 03:29:59,260 --> 03:29:59,940
 所以 just.
 So just.
 
-2189
+2187
 03:30:00,000 --> 03:30:04,000
 他们只是想卖，全部卖到强势中。
 And they just want to sell it, sell all of them into strength.
 
-2190
+2188
 03:30:04,000 --> 03:30:09,000
 我觉得我真的很喜欢尝试持有更长时间。
 And I think I really like to, like, trying to hold them a little bit more longer.
 
-2191
+2189
 03:30:09,000 --> 03:30:15,000
 即使是我也开始有点怀疑了。我觉得总是延伸。
 So even I am feeling a little bit skeptical already. I think it's always extended.
 
-2192
+2190
 03:30:15,000 --> 03:30:19,333
 但是也许我可以卖出，继续分批卖出
 But maybe I can like sell, still sell partials,
 
-2193
+2191
 03:30:19,333 --> 03:30:23,667
 ，不喜欢一次性卖出整个头寸，也不
 don't like, not like selling all like the whole position
 
-2194
+2192
 03:30:23,667 --> 03:30:28,000
 喜欢当价格延伸时就关闭我的头寸。
 at once or close my position when it's extended.
 
-2195
+2193
 03:30:28,000 --> 03:30:31,740
 是的，但还是很棒。我真的很喜欢e
 Yeah, but still really nice. I really love the
 
-2196
+2194
 03:30:31,740 --> 03:30:35,480
 ntry点，但在退出方面我觉得
 entry but on the exit wise I think it
 
-2197
+2195
 03:30:35,480 --> 03:30:39,840
 可以再持有会更久一些。至
 could be, I could hold it for a bit longer.
 
-2198
+2196
 03:30:39,840 --> 03:30:44,200
 少要等到这个反转出现。
 At least I need to hold it for this reversal
 
-2199
+2197
 03:30:44,200 --> 03:30:49,660
 今天，也许。还有10点再次突破。所以这是一个
 day, maybe. And for 10 also another breakout.
 
-2200
+2198
 03:30:49,660 --> 03:30:55,120
 非常强劲的反弹。我认为这是一个强劲的反弹。
 So it's a really strong reclaim. I think this
 
-2201
+2199
 03:30:55,120 --> 03:30:59,240
 这个K线真的吸引我注
 bar really captures my attention here. So the
 
-2202
+2200
 03:30:59,240 --> 03:31:03,360
 意。9和21正在收敛。
 9 and the 21 are converging. And this
 
-2203
+2201
 03:31:03,360 --> 03:31:08,180
 这是一个强烈的反转，出现向下跳空，
 is a strong reversal. It's a gap down,
 
-2204
+2202
 03:31:08,180 --> 03:31:13,000
 价格走低，然后重新回到并收于上方。
 goes lower, and then reclaims and close above
 
-2205
+2203
 03:31:13,000 --> 03:31:18,160
 21 EMA。这是一个强信号。然
 the 21 EMA. So a strong sign to me. And
 
-2206
+2204
 03:31:18,160 --> 03:31:23,320
 后我有点觉得它好像卡住了，它好像。
 then I kind of think like it's stuck in, it's
 
-2207
+2205
 03:31:23,320 --> 03:31:29,300
 很难这么说，但其实也是一个内包线突破。
 It's hard to say this, but really like it's also kind of an inside day breakout.
 
-2208
+2206
 03:31:29,300 --> 03:31:35,780
 如果先不看影线、忽略这些影线的话，
 Like a two if you forget about the wakes, you don't look at the wakes.
 
-2209
+2207
 03:31:35,780 --> 03:31:39,400
 所以这里仍然是一个非常狭窄的区间
 So it's still like a tight little range here, but
 
-2210
+2208
 03:31:39,400 --> 03:31:43,020
 ，但我不确定日线图上它看起来如何。
 I'm not sure on the daily how it looks.
 
-2211
+2209
 03:31:43,020 --> 03:31:46,660
 而且，日线图上EMA
 And yeah, also on the daily that the EMAs
 
-2212
+2210
 03:31:46,660 --> 03:31:50,300
 九也在尝试向上穿越。
 are trying to, the nine is crossing up and
 
-2213
+2211
 03:31:50,300 --> 03:31:53,220
 21也类似止盈。
 the 21 is like also like stopping up.
 
-2214
+2212
 03:31:53,220 --> 03:31:55,860
 我只是，但我相信情况下，
 So I'm just, but I believe in the case,
 
-2215
+2213
 03:31:55,860 --> 03:32:00,860
 可能是一个突破，我认为是一个好的 breakout。
 there may be, I think the breakout or could be a good,
 
-2216
+2214
 03:32:02,260 --> 03:32:05,140
 这里 breakout 之前一天的 hard 的好 entry。
 good entry here for breakout of previous day hard.
 
-2217
+2215
 03:32:05,140 --> 03:32:08,640
 这不是一个非常，像区间。
 And this is not a very, like a tight range.
 
-2218
+2216
 03:32:09,580 --> 03:32:13,380
 是的，因为只有两天时间，也不是特别紧密，
 Yeah, because it's only two days and not really tight,
 
-2219
+2217
 03:32:13,380 --> 03:32:17,060
 我会说，但我真的很喜欢它找到支持位了。
 I would say, but I really love how it found like support,
 
-2220
+2218
 03:32:17,060 --> 03:32:19,860
 因为通常我们会面临，
 like because generally we'll face,
 
-2221
+2219
 03:32:19,860 --> 03:32:23,220
 会遇到阻力，从21或
 it would it would um faith the resistance from the
 
-2222
+2220
 03:32:23,220 --> 03:32:26,580
 者9这里。不会很强。
 21 or the 9 it won't close that strong
 
-2223
+2221
 03:32:27,300 --> 03:32:31,300
 有时候会是一个延续的走势
 and sometimes with um it would be a
 
-2224
+2222
 03:32:31,300 --> 03:32:35,300
 ，如果出现失败的跌破。
 like a continuation move if there's a failed breakdowns
 
-2225
+2223
 03:32:35,300 --> 03:32:38,940
 尤其是当9还在21之上，我就这样 t
 and especially when the 9 is still above the 21
 
-2226
+2224
 03:32:38,940 --> 03:32:42,580
 reat it as like a
 so I just yeah I just treat it as like a
 
-2227
+2225
 03:32:43,940 --> 03:32:49,140
 区间突破或类似持续突破，以及这个K线的高点突破。
 kind of range breakouts or like continuation breakouts and breakouts of this bar high and then
 
-2228
+2226
 03:32:49,140 --> 03:32:54,140
 然后就卖了所有的股票。
 and just take it and then it sells all into strength.
 
-2229
+2227
 03:32:55,340 --> 03:33:00,340
 这次顶部正好卖出了，非常漂亮。
 And this time it just kind of sell it pretty, pretty at the top
 
-2230
+2228
 03:33:01,700 --> 03:33:06,020
 就在这个回撤高点之上。
 and just right above this swing high,
 
-2231
+2229
 03:33:06,020 --> 03:33:10,260
 真的红色K线，这里有一个巨大的反转K线。
 the really red candle, the huge reversal candle high here.
 
-2232
+2230
 03:33:10,260 --> 03:33:11,860
 有时候有效。
 So sometimes it works,
 
-2233
+2231
 03:33:11,860 --> 03:33:14,780
 有时候不是在强势中卖出。
 sometimes it doesn't for like selling in the strength.
 
-2234
+2232
 03:33:14,780 --> 03:33:16,540
 嗯……
 um
 
-2235
+2233
 03:33:16,540 --> 03:33:17,300
 哎呀
 whoops
 
-2236
+2234
 03:33:17,300 --> 03:33:18,340
 对，猫。
 right cat
 
-2237
+2235
 03:33:18,340 --> 03:33:19,980
 全部
 all
 
-2238
+2236
 03:33:19,980 --> 03:33:21,620
 我想这一只是
 i thought this one is
 
-2239
+2237
 03:33:21,620 --> 03:33:22,460
 一个
 the one
 
-2240
+2238
 03:33:22,460 --> 03:33:22,980
 好。
 okay
 
-2241
+2239
 03:33:22,980 --> 03:33:24,540
 跳过这一段。
 let's skip this one
 
-2242
+2240
 03:33:24,540 --> 03:33:26,500
 所以……
 so
 
-2243
+2241
 03:33:26,500 --> 03:33:27,620
 那是这样的。
 that's this the
 
-2244
+2242
 03:33:27,620 --> 03:33:28,220
 嗯……
 um
 
-2245
+2243
 03:33:28,220 --> 03:33:29,300
 黄金矿商
 gold miner
 
-2246
+2244
 03:33:29,300 --> 03:33:30,260
 黄金矿ETF
 gold miner ETF
 
-2247
+2245
 03:33:30,260 --> 03:33:31,020
 是
 is
 
-2248
+2246
 03:33:31,020 --> 03:33:32,580
 反向 ETF
 inverse ETF
 
-2249
+2247
 03:33:32,580 --> 03:33:33,300
 所以……
 so
 
-2250
+2248
 03:33:33,300 --> 03:33:35,260
 也许我们用这个来看看。
 maybe let's use this
 
-2251
+2249
 03:33:35,260 --> 03:33:36,660
 对黄金矿商的，所以 okay
 to gold miner, so okay
 
-2252
+2250
 03:33:36,660 --> 03:33:38,580
 这是那一段交易视频对白，只输出简体中文译文：
 so this one is the
 
-2253
+2251
 03:33:38,580 --> 03:33:39,580
 嗯……
 um
 
-2254
+2252
 03:33:39,580 --> 03:33:41,140
 黄金矿ETF
 gold miner's ETF
 
-2255
+2253
 03:33:41,140 --> 03:33:43,140
 然后实际上是，我
 and then it's actually I'm
 
-2256
+2254
 03:33:43,140 --> 03:33:48,640
 我正在尝试做空黄金。
 I'm trying to short the gold.
 
-2257
+2255
 03:33:48,640 --> 03:33:52,450
 我实际上正在尝试做空黄金
 I'm actually trying to short the parabolic shot
 
-2258
+2256
 03:33:52,450 --> 03:33:56,260
 顶部附近的抛物线走势。
 of the gold near this top here.
 
-2259
+2257
 03:33:56,260 --> 03:34:00,200
 但是我觉得黄金矿商正在交
 But I think the gold miners
 
-2260
+2258
 03:34:00,200 --> 03:34:04,140
 易，我的步伐比黄金快。
 are trading, I'm moving faster than gold.
 
-2261
+2259
 03:34:04,140 --> 03:34:08,160
 后来我决定做空黄金矿业，
 And then I just decided to take the
 
-2262
+2260
 03:34:08,160 --> 03:34:12,180
 而不是直接交易黄金的空头。
 gold miners short instead of training the gold short.
 
-2263
+2261
 03:34:12,180 --> 03:34:16,430
 而且，我在这方面的交易不
 And also, I'm not very good at trading
 
-2264
+2262
 03:34:16,430 --> 03:34:20,680
 太好，比如24小时交易。
 the commodities as this, like 24 hours, trading
 
-2265
+2263
 03:34:20,680 --> 03:34:22,420
 24小时。
 24 hours.
 
-2266
+2264
 03:34:22,420 --> 03:34:25,800
 有时候，盘后或早盘交
 So sometimes that the after hours or the
 
-2267
+2265
 03:34:25,800 --> 03:34:29,180
 易时段会有些许困惑。
 pre-market trading times would be a little bit confusing.
 
-2268
+2266
 03:34:29,180 --> 03:34:33,900
 那我应该把那些水平视为重要水平。
 That should I consider those levels as important levels.
 
-2269
+2267
 03:34:33,900 --> 03:34:39,700
 我决定交易黄金ETF。
 So I'm just decided to trade the gold minus ETF.
 
-2270
+2268
 03:34:39,700 --> 03:34:44,700
 然后这一段，我觉得
 And then this one, I think
 
-2271
+2269
 03:34:44,700 --> 03:34:49,700
 有点幸运，因为它没
 I got kind of lucky because it
 
-2272
+2270
 03:34:49,700 --> 03:34:54,700
 有那样的强劲收盘。
 didn't have that strong close for
 
-2273
+2271
 03:34:54,700 --> 03:34:55,900
 晚间的交易时段。
 a late day.
 
-2274
+2272
 03:34:55,900 --> 03:34:57,820
 可能会出现另一个跳空下跌。
 So it could be another gap down.
 
-2275
+2273
 03:34:57,820 --> 03:35:02,940
 但是虽然我愿意承担很小的风险，但这不是很大的头寸。
 But although I'm like risking really small, but it's not a really huge position.
 
-2276
+2274
 03:35:02,940 --> 03:35:09,260
 我认为这个交易目前仍处于30%的仓位。
 I believe it's still at around 30% position for this trade.
 
-2277
+2275
 03:35:09,260 --> 03:35:13,860
 如果下跌超过5%，仍
 And if it's getting down, even
 
-2278
+2276
 03:35:13,860 --> 03:35:18,460
 然可以接受的亏损。
 5% is still acceptable loss.
 
-2279
+2277
 03:35:18,460 --> 03:35:24,020
 但我认为这次还算幸运一些。
 But I do think this is like, I get a little bit luckier.
 
-2280
+2278
 03:35:24,020 --> 03:35:26,940
 我会出现一个跳空下跌然后反转。
 I'm going to get a gap down and then reverse,
 
-2281
+2279
 03:35:26,940 --> 03:35:32,300
 可能是一个跳空下跌然后反转。
 because it could very possibly be a gap down and then reverse
 
-2282
+2280
 03:35:32,300 --> 03:35:37,300
 日内是反弹。所以这个有一
 intraday refers back up. So this one is, it
 
-2283
+2281
 03:35:37,300 --> 03:35:42,300
 个下跳空在下一个交易日。
 has a gap down on the next trading day.
 
-2284
+2282
 03:35:42,300 --> 03:35:47,660
 所以对于黄金，这个ETF，原始的
 So on the gold, this ETF, the original
 
-2285
+2283
 03:35:47,660 --> 03:35:53,020
 ETF就在这一天。然后另一个，
 ETF would be this day here. And then another,
 
-2286
+2284
 03:35:53,020 --> 03:35:58,860
 第二天出现巨大下跳空且伴随巨大成交量，我觉得这是一个非常
 the second day has a huge gap down with a huge volume. So I think this is a really,
 
-2287
+2285
 03:35:58,860 --> 03:36:02,760
 也是很好的一种，我卖出了
 also the really good one and I sell
 
-2288
+2286
 03:36:02,760 --> 03:36:06,660
 一些，从字符串中卖出一些。
 some I sell something to string from the
 
-2289
+2287
 03:36:06,660 --> 03:36:10,460
 是一个很好的交易，
 second gap down so it's a really good
 
-2290
+2288
 03:36:10,460 --> 03:36:14,260
 36%的利润机会。
 trade so it's a 36 all trade and yeah
 
-2291
+2289
 03:36:14,260 --> 03:36:19,740
 它上涨了30%，然后我也关闭了交易。
 it's up 30% so and then I close my trade also like kind of on the one the
 
-2292
+2290
 03:36:19,740 --> 03:36:24,240
 这里正好，它回调
 So right here and as it pulls back
 
-2293
+2291
 03:36:24,240 --> 03:36:28,740
 到50EMA附近。
 to the 50 to the 50 EMA.
 
-2294
+2292
 03:36:28,740 --> 03:36:32,740
 所以我觉得可能在这里找到支撑，然后可能
 So I think okay maybe you could find supports here and maybe it
 
-2295
+2293
 03:36:32,740 --> 03:36:36,740
 会来回震荡，于是我决定在这里了结利润。
 would chop around and then I just decided to take the profits here.
 
-2296
+2294
 03:36:36,740 --> 03:36:41,740
 你处理空头的获利了结速度比处理多头的快吗？
 And are you quicker to take profits on shorts than your longs?
 
-2297
+2295
 03:36:41,740 --> 03:36:44,740
 是的，是的， definitely 了。
 Yes, yes, yes definitely.
 
-2298
+2296
 03:36:44,740 --> 03:36:48,240
 然后，我基本上会在接下
 So, mostly I would like to take profit
 
-2299
+2297
 03:36:48,240 --> 03:36:51,740
 来的两天左右获利了结。
 between, for the first maybe two or three days.
 
-2300
+2298
 03:36:51,740 --> 03:36:56,240
 例如我的一些多头，我不会急
 Like for some of my longs, I'm not taking profits
 
-2301
+2299
 03:36:56,240 --> 03:37:00,740
 于止盈。有没有合适的例子？
 maybe until like, were there any good examples for that?
 
-2302
+2300
 03:37:00,740 --> 03:37:05,740
 可能我想要提前几周，甚至几周的
 Some of it, maybe I would like to travel with
 
-2303
+2301
 03:37:05,740 --> 03:37:10,740
 时间来旅行，再进行第一次修剪。
 several weeks, two or three weeks before the first trim,
 
-2304
+2302
 03:37:10,740 --> 03:37:12,820
 做空时，我更喜欢先在强势中卖出，但做
 I prefer to first sell into strength, but for
 
-2305
+2303
 03:37:12,820 --> 03:37:14,900
 空头寸方面，我真的想在强势中卖出一些。
 the short, I really want to sell some into
 
-2306
+2304
 03:37:14,900 --> 03:37:20,100
 第一二天会有较强的走势，然后会有后续跟随。
 strength in the first maybe two or three days when it has some follow-through.
 
-2307
+2305
 03:37:20,100 --> 03:37:23,980
 然后我想让它更
 And then I would like to
 
-2308
+2306
 03:37:23,980 --> 03:37:27,860
 加强劲地收口。
 close it into strength more.
 
-2309
+2307
 03:37:27,860 --> 03:37:31,500
 但对做空来说，价格正在接近更弱的一方。
 But for short, it's closing into the weakness more.
 
-2310
+2308
 03:37:31,500 --> 03:37:36,100
 我不做，因为从数学角度
 So I'm not, because I think for the
 
-2311
+2309
 03:37:36,100 --> 03:37:40,700
 来看，如果你持有空头。
 mathematical perspective, like if you're holding a short
 
-2312
+2310
 03:37:40,700 --> 03:37:46,033
 对于更长时间，你正在逐渐失去优势，因
 for longer like you are slowly losing your edge because stock goes
 
-2313
+2311
 03:37:46,033 --> 03:37:51,367
 为股票下跌50%后，如果再下跌50%
 down 50% after if it goes further down 50% after it went
 
-2314
+2312
 03:37:51,367 --> 03:37:56,700
 ，它将变成75%的盈利。如果你做空。
 down 50% it will be 75% gain only if you are shorting
 
-2315
+2313
 03:37:56,700 --> 03:37:59,700
 但相比多头，您收益125%。
 But compared to long, you gain 125%.
 
-2316
+2314
 03:37:59,700 --> 03:38:05,200
 我觉得我会更不愿意持有空头
 So I think I will be less willing to hold
 
-2317
+2315
 03:38:05,200 --> 03:38:10,700
 更长时间，而不是持有多头。
 my shorts for a longer period of time than the long.
 
-2318
+2316
 03:38:12,700 --> 03:38:18,200
 然后在十一月，我开始做空，
 And then on November, I cut some, I get some
 
-2319
+2317
 03:38:18,200 --> 03:38:23,700
 也抓住了延伸或反转的机会。
 good shorts on the extension or the reversal too.
 
-2320
+2318
 03:38:23,700 --> 03:38:27,730
 但像SMDK這樣，我認為幸運的是
 But like this SMDK, I think luckily it
 
-2321
+2319
 03:38:27,730 --> 03:38:31,760
 它工作得很好，因為我已經做空它了。
 works because I've just shorted it above all the
 
-2322
+2320
 03:38:31,760 --> 03:38:33,000
 EMA
 EMAs.
 
-2323
+2321
 03:38:33,000 --> 03:38:37,840
 但是所以当市场，所以这是，它显示当市场工作时。
 But so when the market, so this is the, it shows when the market works.
 
-2324
+2322
 03:38:37,840 --> 03:38:43,200
 所以有些，有些真的，有些是如何解释的。
 So some, some really, some on how to explain.
 
-2325
+2323
 03:38:43,200 --> 03:38:49,160
 当市场真的对你有利，比如有相当大的卖压时，
 So when the market is really in your favor, like is really have some selling pressure,
 
-2326
+2324
 03:38:49,160 --> 03:38:54,160
 一个理想的进入点也不会有良好的后续跟进。
 A not an ideal entry will also have decent follow-through.
 
-2327
+2325
 03:38:55,480 --> 03:38:57,860
 但是对某个市场的，
 But for some market in the,
 
-2328
+2326
 03:38:57,860 --> 03:38:59,520
 对于一些不利的市场条件，
 for some unfavorable market conditions,
 
-2329
+2327
 03:38:59,520 --> 03:39:02,820
 像IONQ这样的波动市场。
 like a choppy market, like the IONQ,
 
-2330
+2328
 03:39:02,820 --> 03:39:07,040
 IONQ 表示我在 losers 中被显示。
 IONQ trace that I'm shown in the losers,
 
-2331
+2329
 03:39:07,040 --> 03:39:12,040
 那有些很好的入场点也可能变成亏损。
 that some really good entry points could be a loser too.
 
-2332
+2330
 03:39:12,320 --> 03:39:16,220
 所以作为市场条件确实有很大贡献，
 So as a market condition really contributes a lot,
 
-2333
+2331
 03:39:16,220 --> 03:39:18,580
 但是，就这样了。
 But yeah, that's that.
 
-2334
+2332
 03:39:18,580 --> 03:39:22,500
 这是我在Echo 3 web上的一个交易视频。
 And this one, I took it for the Echo 3 web,
 
-2335
+2333
 03:39:22,500 --> 03:39:26,900
 回调，也相信小时级别反转。
 pulls back and also believe the hourly reversal
 
-2336
+2334
 03:39:26,900 --> 03:39:30,900
 因为小时级别图表向上跳空突破了50周期均线。
 because the hourly is gaping up above the 50
 
-2337
+2335
 03:39:30,900 --> 03:39:32,700
 因为小时级别开始走跌。
 because it starts training down on the hourly
 
-2338
+2336
 03:39:32,700 --> 03:39:35,980
 然后就在这天，它就。
 and then it just, it's on this day here.
 
-2339
+2337
 03:39:35,980 --> 03:39:39,820
 它是向上跳空，来到21 EMA这里。
 So yeah, it's gaping up onto the 21 EMA here.
 
-2340
+2338
 03:39:39,820 --> 03:39:44,820
 然后我就反转了，它反转了。
 And then I just get it reversed, it reverses
 
-2341
+2339
 03:39:44,820 --> 03:39:48,340
 回调到21EMA然后
 after it rallying into the 21 EMA then
 
-2342
+2340
 03:39:48,340 --> 03:39:51,860
 我在5分钟K线处做空。
 I just short it at the 5 minute candle
 
-2343
+2341
 03:39:52,740 --> 03:39:56,240
 做空了，我认为我在这些K线里
 trick down so I believe I've shorted at
 
-2344
+2342
 03:39:56,240 --> 03:39:59,740
 做空了，或许我甚至已经做空了。
 these candle or maybe I even short
 
-2345
+2343
 03:40:00,000 --> 03:40:06,200
 我以为我做空了这种东西，所以有点预期的做空。
 I think I shorted this kind of thing so so I it's a little bit anticipated short
 
-2346
+2344
 03:40:06,200 --> 03:40:12,120
 我认为因为它会反弹到锚定VWAP的位置，但面临阻力。
 I think because I think it rallies up into the anchored VWAP but it fine resistance
 
-2347
+2345
 03:40:12,680 --> 03:40:15,000
 所以我没有等到。
 so I didn't wait for the
 
-2348
+2346
 03:40:15,640 --> 03:40:21,140
 跌破，因为可能止损有点宽，我可能想要尝试一些。
 breakdown because like maybe stop a little bit too wide for me and I really want maybe try some
 
-2349
+2347
 03:40:23,720 --> 03:40:26,440
 这是一个预期中的买入信号
 This one is like an anticipated entry so
 
-2350
+2348
 03:40:26,440 --> 03:40:31,240
 所以，可能有时候我还是会打破规
 So, may not be that sometimes I still break
 
-2351
+2349
 03:40:31,240 --> 03:40:36,040
 则，但我一直坚持，一件事情就是
 my rules, but I just keep, one thing would
 
-2352
+2350
 03:40:36,040 --> 03:40:40,600
 即使是这样，我还是有点调整规
 be, even though I like, left like, tweaking
 
-2353
+2351
 03:40:40,600 --> 03:40:45,160
 则的习惯，有时候我会偏离一些。
 my rules a bit, sometimes I'm not really following
 
-2354
+2352
 03:40:45,160 --> 03:40:48,700
-我的规则，但有一点是我总是设置止
+自己的规则，但有一点：我
 my rules, but one thing is I am setting
 
-2355
+2353
 03:40:48,700 --> 03:40:52,240
-损 before entering
+始终在入场前设好止损，
 my stop, I'm always setting my stop before entering
 
-2356
+2354
 03:40:52,240 --> 03:40:56,580
 这个交易，我明确说明我的止损
 the trade and I clearly clarify my stop. And
 
-2357
+2355
 03:40:56,580 --> 03:41:00,920
 。然后即使这一单不成功，然后
 then even if this one like not working, then
 
-2358
+2356
 03:41:00,920 --> 03:41:04,600
 还是在可控的亏损范围内，而最重要
 is still in controllable loss. And the most
 
-2359
+2357
 03:41:04,600 --> 03:41:08,280
 的部分是在每日图表上，就像它那样。
 important part is on the daily, like it's
 
-2360
+2358
 03:41:08,280 --> 03:41:14,180
-还是这样... 是的。它不在日线图上，而在
+不是在日线均线，而也参考锚
 still... yeah. So it's not on the daily, it's on
 
-2361
+2359
 03:41:14,180 --> 03:41:20,080
-Inca FreeWap 2上。这个我觉得
-the Inca FreeWap 2. So this one I think
+定VWAP。这个例子我认为
+the anchored VWAP 2. So this one I think
 
-2362
+2360
 03:41:20,080 --> 03:41:25,000
 这是一个公平的进入点，但我觉得是公平的。
 is a fair one, but I think it's like a fair entry,
 
-2363
+2361
 03:41:25,000 --> 03:41:28,720
 但在有利的市场条件下。
 but on the right or the favorable market condition.
 
-2364
+2362
 03:41:28,720 --> 03:41:30,060
 好的，好的。
 Right, right.
 
-2365
+2363
 03:41:31,280 --> 03:41:33,560
 实际上你可以看到一天后类似的情况。
 And actually you can see the like one day later,
 
-2366
+2364
 03:41:33,560 --> 03:41:36,320
 这是回调的另一个阶段，对吧？
 this is also another like pullbacks in phase, right?
 
-2367
+2365
 03:41:36,320 --> 03:41:41,320
 在锚定VWAP附近，也靠近小时50或21均线。
 At the anchored VWAP on also the hourly 50 or the 21 too.
 
-2368
+2366
 03:41:42,360 --> 03:41:43,400
 是啊。
 So yeah.
 
-2369
+2367
 03:41:43,400 --> 03:41:47,933
 那么最后一个就是这只U
 So the last one will be
 
-2370
+2368
 03:41:47,933 --> 03:41:52,467
 UUU，所以又回调到9
 this UUUU, so another pullback into the
 
-2371
+2369
 03:41:52,467 --> 03:41:57,000
 EMA附近，然后我就
 decal 9 EMA, and then I
 
-2372
+2370
 03:41:57,000 --> 03:42:00,300
 做空了5分钟回调的刷
 just shorted the refresh of the 5 minute
 
-2373
+2371
 03:42:00,300 --> 03:42:03,600
 新，我认为它也接近了。
 breakdown, and I believe it's also near the
 
-2374
+2372
 03:42:03,600 --> 03:42:08,040
 然后免费观看这个视频，还是如何。
 then go free web for this or no. So I
 
-2375
+2373
 03:42:08,040 --> 03:42:12,480
 我觉得这只是一个回调到九点，但
 think this is just also a pullback to the nine but
 
-2376
+2374
 03:42:14,320 --> 03:42:18,320
 好像是接近50 EMA和
 it's like also like a little bit close to the
 
-2377
+2375
 03:42:18,320 --> 03:42:22,320
 之前的高点一些。然后我就
 50 EMA and the previous high. So and then I just
 
-2378
+2376
 03:42:22,320 --> 03:42:26,520
 决定至少这不是延伸的。所以我认为这是一
 decided at least it's not extended. So I think this
 
-2379
+2377
 03:42:26,520 --> 03:42:30,720
 个公平的交易，我认为另一个也是公平的。
 is a fair trade and so I think another fair
 
-2380
+2378
 03:42:30,720 --> 03:42:34,800
 在有利的市场条件下进行交易。对于这
 trade in a favorable market condition. And for this trade,
 
-2381
+2379
 03:42:34,800 --> 03:42:38,880
 次交易，你可以看到尽管获得了巨大的
 you can see even though you get a huge
 
-2382
+2380
 03:42:38,880 --> 03:42:42,200
 做空头寸今天出现了一个红色实体 candle，并且有一些后续跟随
 red candle and some follow-through to the downside, it's still
 
-2383
+2381
 03:42:42,200 --> 03:42:45,520
 到下方，这仍然只是一笔 5R 或 8R 的交易。所以对于做空头寸
 only a 5R or an 8R trade. So for a short
 
-2384
+2382
 03:42:45,520 --> 03:42:48,960
 做空的话，风险回报
 side, I think for a short thing, the risk
 
-2385
+2383
 03:42:48,960 --> 03:42:52,400
 比并不是特别有利。
 reward is not that they're really favorable compared to
 
-2386
+2384
 03:42:52,400 --> 03:42:56,760
 多头那边。所以这也告诉我，也许
 the long side. So that also tells me like maybe
 
-2387
+2385
 03:42:56,760 --> 03:43:01,120
 我需要做少一点，我们做一点点。
 I will need to do less, let's do a little bit
 
-2388
+2386
 03:43:01,120 --> 03:43:05,560
 接下来一年的交易会更少，因为第一
 less shots in the next year because first shots
 
-2389
+2387
 03:43:05,560 --> 03:43:10,000
 波可能会更波动，尤其是前三个月。
 could be like more choppy and especially on the
 
-2390
+2388
 03:43:10,000 --> 03:43:13,520
 趋势市场。我觉得我在趋势上涨
 uptrend market. I think I really shorted it
 
-2391
+2389
 03:43:13,520 --> 03:43:17,040
 的时候做空有点过于激进了。
 a little bit too aggressively on the uptrend
 
-2392
+2390
 03:43:17,040 --> 03:43:22,720
 上涨市场，而且从数学上来说，空头。
 uptrending market and yeah and also mathematically the short the short
 
-2393
+2391
 03:43:22,720 --> 03:43:29,120
 做空交易并不能给你提供太多的风险收益机会。
 the short trades doesn't provide you that much of the risk reward play and yeah
 
-2394
+2392
 03:43:29,120 --> 03:43:35,200
 所以我希望尤其是做空方面，能少交易一些。
 so I wanted to really trade less especially for the short side maybe
 
-2395
+2393
 03:43:35,200 --> 03:43:39,520
 只追求高质量的，高质量的或者是非常高质量的。
 only aim for the really high quality ones high quality ones or the really the
 
-2396
+2394
 03:43:39,520 --> 03:43:44,560
 市场真的很糟糕，真的低于所有的移动平均线，如果你必须
 market is really bad it's really below all the moving averages if you had to
 
-2397
+2395
 03:43:44,560 --> 03:43:50,760
 总结一下高质量的空头设置会是什么样子，你会怎么描述它，
 to sum up what a high quality short setup would look like, how would you describe it,
 
-2398
+2396
 03:43:50,760 --> 03:43:55,200
-理想的完美 setups 你打算去做什么？
+你理想中最想参与的形态是什么样？
 the ideal picture perfect setup that you'd look to go for?
 
-2399
+2397
 03:43:55,200 --> 03:43:58,520
 是的，我觉得理想的完美情况就
 Yeah, I think that ideal picture perfect would
 
-2400
+2398
 03:43:58,520 --> 03:44:01,840
 是50 EMA的第一次跌破。
 be the first breakdown of the 50 EMA
 
-2401
+2399
 03:44:01,840 --> 03:44:05,620
 然后进入50 EMA的第一回调
 and then the first pullback into the 50
 
-2402
+2400
 03:44:05,620 --> 03:44:09,400
 ，或者一般来说，第一次回调总是
 EMA or generally when the first pullback, first
 
-2403
+2401
 03:44:09,400 --> 03:44:13,800
 跌破然后回调到50EMA，21EMA
 break down and then pull back into the 50 EMA, the 21
 
-2404
+2402
 03:44:13,800 --> 03:44:18,200
 或9EMA也会非常接近50EMA。
 or the 9 would be really also near the 50 EMA too.
 
-2405
+2403
 03:44:18,200 --> 03:44:21,800
 他们开始大幅削减，开始跌破5
 And they start really cutting back and start crossing
 
-2406
+2404
 03:44:21,800 --> 03:44:25,400
 0 EMA。所以如果你有另一个
 down the 50 EMA. So if you have another
 
-2407
+2405
 03:44:26,840 --> 03:44:31,720
 一开盘，如果高开，然后通常会进
 opens, if it opens, if it gaps up and then
 
-2408
+2406
 03:44:31,720 --> 03:44:36,600
 入21EMA，可能在17左右。
 it rarely into the 21 EMA, maybe over the 17-ish area,
 
-2409
+2407
 03:44:36,600 --> 03:44:41,200
 那会是我理想的位置，也靠近这里的锚定VWAP。
 that will be the ideal spot for me and also maybe near the anchored VWAP here.
 
-2410
+2408
 03:44:41,200 --> 03:44:45,960
 相信会比这个好得多。但这个不行。
 So it would be much more better than this one I believe. But this one didn't
 
-2411
+2409
 03:44:45,960 --> 03:44:51,600
 给我提供进入点吧。但理想的进入点我会说是第一次回调。
 give me the entry though. But the ideal one I would say will be the first pull
 
-2412
+2410
 03:44:51,600 --> 03:44:56,060
-回落后跌破50，然后出现 ove
+失守50均线后反弹回测，最
 back after it loses to 50 and an
 
-2413
+2411
 03:44:56,060 --> 03:45:00,520
-rshoot。是的。这些是赢家。
+好有些过冲。对，这些均线。
 overshoot at best. Yes. Of these winners
 
-2414
+2412
 03:45:00,520 --> 03:45:05,360
 你展示的那一条，贡献最大的是哪一条？
 that you showed, which one had the biggest contribution to your equity
 
-2415
+2413
 03:45:05,360 --> 03:45:09,360
 如果你还记得哪一条对你的表现影响最大？
 if you remember which one had the biggest impact on your performance?
 
-2416
+2414
 03:45:10,480 --> 03:45:13,840
 我不认为它们像我的大多数赢家。
 I don't I think they are like most of my winners are
 
-2417
+2415
 03:45:16,240 --> 03:45:21,280
 可能是R值最高的那个，我觉得量子的名字真的很
 probably the one with the highest R so I think the quantum names are really
 
-2418
+2416
 03:45:21,280 --> 03:45:23,840
 D3真的有很大的贡献。
 the D3 really contribute a lot
 
-2419
+2417
 03:45:28,160 --> 03:45:32,080
 这是那一集，也许 dust 也是一个很好的
 this is the one maybe also that dust is also a really good
 
-2420
+2418
 03:45:32,080 --> 03:45:38,560
 做空，但风险回报比非常高。虽然它不像那样放大了风险。
 short but really high risk reward play. Although it's not sizing up like if you're really
 
-2421
+2419
 03:45:38,560 --> 03:45:42,320
 评估头寸使用0.8%的风险，我可以放大到大约
 size up using a 0.8% risk I can size up to
 
-2422
+2420
 03:45:42,320 --> 03:45:46,080
 50%的头寸大小之类的东西，但我没用那么高。
 maybe 50% sizing or something but I didn't use that high
 
-2423
+2421
 03:45:46,080 --> 03:45:50,480
 因为处理了向下跳空的风险。所以
 because I cut away of the gap down risk too.
 
-2424
+2422
 03:45:50,480 --> 03:45:54,880
 这仍然是一笔46R的不错交易。
 So but still a 46R trade is really good and
 
-2425
+2423
 03:45:54,880 --> 03:45:59,880
 我相信……
 and I believe...
 
-2426
+2424
 03:46:02,960 --> 03:46:07,000
 我觉得量子名字是其中一个最好的。
 Yeah, I think the quantum names are one of the best ones.
 
-2427
+2425
 03:46:07,000 --> 03:46:12,000
 可能是ASTS2已经接近50R3。
 And maybe that this ASTS2 is nearly 50R3.
 
-2428
+2426
 03:46:13,680 --> 03:46:15,080
 但没有找到像...
 But didn't find one like...
 
-2429
+2427
 03:46:18,360 --> 03:46:21,240
 是的，就...
 Yeah, it just...
 
-2430
+2428
 03:46:21,240 --> 03:46:24,920
 一些小的胜利者也喜欢向上。
 Some small winners also like as up.
 
-2431
+2429
 03:46:24,920 --> 03:46:28,360
 站起来，就不真正，就像我们不真正，
 So it doesn't really, like we stand up,
 
-2432
+2430
 03:46:28,360 --> 03:46:32,040
 有100小时，100倍回报的交易。
 there's a 100 hour, 100 with reward trade.
 
-2433
+2431
 03:46:32,040 --> 03:46:36,480
 这不是，这是不可能的。
 This is no, it's impossible.
 
-2434
+2432
 03:46:36,480 --> 03:46:38,480
 哦，哦，哦，我懂的。
 Yeah, yeah, yeah, I got you.
 
-2435
+2433
 03:46:39,540 --> 03:46:41,340
 你想要问的一个问题是：
 One question I did want to have for you
 
-2436
+2434
 03:46:41,340 --> 03:46:43,880
 也就是你如何判断当前市场环境。
 is situational awareness wise.
 
-2437
+2435
 03:46:45,600 --> 03:46:48,640
 嗯，什么样的，
 And yeah, what kind of,
 
-2438
+2436
 03:46:48,640 --> 03:46:49,880
 你在考虑什么，才会这么说？
 what are you taking into account to say,
 
-2439
+2437
 03:46:49,880 --> 03:46:53,940
 好，现在我想更积极地参与多头，
 Okay, I'm really gonna try to press to the long side now.
 
-2440
+2438
 03:46:53,940 --> 03:46:56,780
 或者现在想更积极地参与空头。
 Oh, now I'm gonna try to press to the short side.
 
-2441
+2439
 03:46:56,780 --> 03:47:00,800
 什么样的因素，什么样的信号
 What kind of factors, what kind of signals
 
-2442
+2440
 03:47:00,800 --> 03:47:03,260
 你判断市场环境时，会看哪些因素？
 are you looking for for a situational awareness?
 
-2443
+2441
 03:47:03,260 --> 03:47:05,800
 是不是很大程度取决于你自己的交易反馈？
 Is it a lot to do with your own feedback?
 
-2444
+2442
 03:47:05,800 --> 03:47:08,820
 比如多头是否有效、空头是否有效。
 Whether, you know, longs are working, shorts are working.
 
-2445
+2443
 03:47:08,820 --> 03:47:11,540
 你怎么来决定，你知道，
 How do you kind of come up with, you know,
 
-2446
+2444
 03:47:11,540 --> 03:47:14,700
 你认为市场趋势处于什么位置。
 where you think you are in regards to the market trend
 
-2447
+2445
 03:47:14,700 --> 03:47:17,640
 和是否应该大举行动呢？
 and whether it's time to go big one way or the other?
 
-2448
+2446
 03:47:17,640 --> 03:47:22,480
 是的。我认为你的自己的交
 Oh, yes. And I believe the like the
 
-2449
+2447
 03:47:22,480 --> 03:47:27,320
 易反馈是最重要的一点。
 your own trade feedbacks is the most important one.
 
-2450
+2448
 03:47:27,320 --> 03:47:30,900
 关键就是新仓是否有效
 So it's really bad. It's really whether your
 
-2451
+2449
 03:47:30,900 --> 03:47:34,480
 、能否按预期推进。
 new positions are working or not. And this
 
-2452
+2450
 03:47:34,480 --> 03:47:38,240
 就是这个，是的，这是主要的
 is this one of yeah, this is the major
 
-2453
+2451
 03:47:38,240 --> 03:47:42,000
 部分，另一个是肯定的市场，
 parts and another one is definitely the market like
 
-2454
+2452
 03:47:42,000 --> 03:47:47,000
-一般指数，我也看QQQ和IWM，
+整体指数，我也关注QQQ和IWM，
 the general indices, I also look at the QQQ and IWM,
 
-2455
+2453
 03:47:47,520 --> 03:47:50,880
 我每天都进行监控。
 I think every day, so I keep monitoring them.
 
-2456
+2454
 03:47:50,880 --> 03:47:55,880
 例如，当QQQ
 And for example, when QQQ,
 
-2457
+2455
 03:47:55,880 --> 03:48:00,880
 像开始上涨好几周一样
 like starting to trending up for like several weeks
 
-2458
+2456
 03:48:01,660 --> 03:48:05,640
 或者几个月，所以你可以看到七月末，
 or even months, so you can see on the late July,
 
-2459
+2457
 03:48:05,640 --> 03:48:08,480
 那也是我逢强卖出持仓的位置，
 that's also where I sell my positions in the stream
 
-2460
+2458
 03:48:08,480 --> 03:48:10,960
 因为我觉得有点过于怀疑，
 because I feel a little bit too skeptical,
 
-2461
+2459
 03:48:10,960 --> 03:48:17,440
 但是是的，当然，肯定会回调，”
 But yeah, sure, it definitely comes with a pullback,
 
-2462
+2460
 03:48:17,440 --> 03:48:20,600
 但是实际上是一个明显的回调。
 but it's actually a sharp one.
 
-2463
+2461
 03:48:20,600 --> 03:48:26,080
 我想说的是，观察QQQ
 But what I want to say would be for looking at the QQQ,
 
-2464
+2462
 03:48:26,080 --> 03:48:29,280
 你可以得到整体市场的画面。
 that you can get the general market picture.
 
-2465
+2463
 03:48:29,280 --> 03:48:33,080
 当QQQ已经明显延伸，
 So with the QQQ, it's really kind of extending.
 
-2466
+2464
 03:48:33,080 --> 03:48:38,240
 它并没有明显的回调或深度回调。
 Like it doesn't have a strong, have a deep pullback.
 
-2467
+2465
 03:48:38,240 --> 03:48:43,640
 这不是真正的地方去加速并真正
 And that's not the right place to really like stepping the gas and like really,
 
-2468
+2466
 03:48:44,120 --> 03:48:48,320
 非常激进，会抓住很多新的突破或新的入场点，
 really aggressive and take a lot of the new breakouts or the new entries
 
-2469
+2467
 03:48:49,160 --> 03:48:54,400
 相比之下，经过这种小平台整理之后，
 compared to maybe after, maybe after this kind of a small base,
 
-2470
+2468
 03:48:54,400 --> 03:48:59,800
 与这里相比，9 EMA或21 EMA的回调。
 the pullback to the nine EMA or the pullback to the 21 EMA compared to here.
 
-2471
+2469
 03:49:00,080 --> 03:49:05,480
 这就是我如何评估市场条件的。
 So this is how I also would like evaluate the, the market condition.
 
-2472
+2470
 03:49:05,480 --> 03:49:10,480
 但有时我会变得过于悲观或过于怀疑，因为市场已经延伸了。
 But sometimes I would get like too bearish or like too skeptical because the market is extended.
 
-2473
+2471
 03:49:10,480 --> 03:49:15,147
 这也是我有点过度敏感
 So this is also like the, I'm like too sensitive a
 
-2474
+2472
 03:49:15,147 --> 03:49:19,813
 ，有点过度敏感会导致
 little bit and a little bit would like would lead
 
-2475
+2473
 03:49:19,813 --> 03:49:24,480
 我过早卖出我的头寸。
 to like the early early sale of my of my positions.
 
-2476
+2474
 03:49:24,480 --> 03:49:30,480
 甚至会尝试做空，因为看到一些弱股下破，
 And then I'm in I mean even like trying shorts and then I know there's some breakdowns in some weaker names.
 
-2477
+2475
 03:49:30,480 --> 03:49:31,320
 我们可以叫它。
 We can name it.
 
-2478
+2476
 03:49:31,320 --> 03:49:34,120
 同时指数又已经延伸，就会想：
 Should I like, and the index is extended.
 
-2479
+2477
 03:49:34,120 --> 03:49:37,720
 是否有类似巨大的潜在的，
 Are there any like potential like the huge, huge,
 
-2480
+2478
 03:49:40,560 --> 03:49:43,760
 回调或者修正。
 pullbacks or the, or correction.
 
-2481
+2479
 03:49:43,760 --> 03:49:47,040
 所以有时候我有点， again，
 So sometimes I'm a little, again,
 
-2482
+2480
 03:49:47,040 --> 03:49:49,280
 有点过于敏感了。
 a little bit too sensitive of that.
 
-2483
+2481
 03:49:49,280 --> 03:49:54,280
 但是是的，我正在逐渐改善。
 But yeah, I'm trying to like improve this like gradually.
 
-2484
+2482
 03:49:54,840 --> 03:49:57,920
 如果你想看到所有情况，如果你想要变得
 And you wanna see all, if you are trying to like
 
-2485
+2483
 03:49:57,920 --> 03:49:59,920
 激进的话，更好的地方是
 Be aggressive, the better place is
 
-2486
+2484
 03:50:00,000 --> 03:50:03,720
 尤其去年，QQQ常
 Especially last year, you can see like the QQQ are like keep
 
-2487
+2485
 03:50:03,720 --> 03:50:07,440
 沿EMA9上行，在
 serving the nine and I and they find support on the
 
-2488
+2486
 03:50:07,840 --> 03:50:09,680
 上升的EMA之上
 rising EMA and
 
-2489
+2487
 03:50:09,680 --> 03:50:13,760
 不只是找到支撑，而是一到支撑就马上向上。
 Not only find support but find support and it just goes right away
 
-2490
+2488
 03:50:13,760 --> 03:50:15,760
 它没有在那里停留很久。
 It didn't like spend much time here
 
-2491
+2489
 03:50:15,760 --> 03:50:19,560
 我觉得比较适合积极买
 And then I think the best time to buy them
 
-2492
+2490
 03:50:19,560 --> 03:50:23,360
 入的时机，是QQQ
 to be aggressive would be during the pullbacks of the QQQ
 
-2493
+2491
 03:50:24,000 --> 03:50:29,040
 或者整体指数回调时，因为大多数个股会跟随指数。
 Or the of the general indices as the individual stocks like most individual stocks follow the indices
 
-2494
+2492
 03:50:29,040 --> 03:50:34,040
 那才是我建立情
 And that's what I would look
 
-2495
+2493
 03:50:34,040 --> 03:50:39,040
 境意识的方式。
 at for building my situational awareness.
 
-2496
+2494
 03:50:39,040 --> 03:50:43,040
 并且第三项是管理我的自选股列表。
 And the third one would be managing my own watch list.
 
-2497
+2495
 03:50:43,040 --> 03:50:48,040
 我会看Lagging落后名单是否越来越多，
 So I'm trying to like if there are more and more names in the lagging watch list
 
-2498
+2496
 03:50:48,040 --> 03:50:50,040
 或者Leading领涨名单是否越来越多，
 or more and more names in the leading watch list,
 
-2499
+2497
 03:50:50,040 --> 03:50:53,040
 以此判断市场在改善还是恶化。
 then it means the market is improving or declining.
 
-2500
+2498
 03:50:53,040 --> 03:50:58,360
 但有一点：我之前提过，我
 But so one thing that I think I really I off the
 
-2501
+2499
 03:50:58,360 --> 03:51:03,680
 观察的小盘、微盘名单里
 top earlier is the the small and micro cap watch list that I
 
-2502
+2500
 03:51:03,680 --> 03:51:10,000
 有很多走势快的小市值股票
 tracked that I have a lot of this this fast but like
 
-2503
+2501
 03:51:10,000 --> 03:51:16,320
 ，其中不少在12月已经
 the smaller cap names but many of them like they are they would
 
-2504
+2502
 03:51:16,320 --> 03:51:20,440
 开始走弱，看
 they would like, um, crap down before
 
-2505
+2503
 03:51:20,440 --> 03:51:24,560
 起来不太好，
 like in December, they're really not looking,
 
-2506
+2504
 03:51:24,560 --> 03:51:28,880
 看起来不太好，比如像ALGM这样的，它们正在走弱。
 they're not really looking well, such as like this one ALGM, like they're trending
 
-2507
+2505
 03:51:28,880 --> 03:51:31,280
 在所有EMA之上，然后它们正在回
 above all EMAs, then they're pulling back into
 
-2508
+2506
 03:51:31,280 --> 03:51:33,680
 调到下降的EMA之中，我认为，哦，
 the declining EMAs, and I think, oh,
 
-2509
+2507
 03:51:33,680 --> 03:51:37,440
 这是做空的好时机，但结果不是
 this would be the good time for like doing shorts,
 
-2510
+2508
 03:51:37,440 --> 03:51:41,200
 这样。所以这就是困难的部分，
 but it turns out it isn't. So that's the hard part,
 
-2511
+2509
 03:51:41,200 --> 03:51:45,300
 我认为我不得不承认，我在
 I think I I have to admit that I've not
 
-2512
+2510
 03:51:45,300 --> 03:51:49,400
 那些市场中并不是那么擅长。
 that really good at like those market in those market
 
-2513
+2511
 03:51:49,400 --> 03:51:52,960
 条件也是如此。所以我只是尝试尽可能限
 condition too. So I'm just trying to like really
 
-2514
+2512
 03:51:52,960 --> 03:51:56,520
 制我的交易，减少在那些条件下的交易，
 try maybe limit my trades like trade less in
 
-2515
+2513
 03:51:56,520 --> 03:52:00,640
 尤其QQQ仍
 those condition. Yeah. Yeah, especially the QQQ are
 
-2516
+2514
 03:52:00,640 --> 03:52:04,760
 在均线上方，
 still like hanging up above the EMAs and the
 
-2517
+2515
 03:52:04,760 --> 03:52:09,760
 IWM表现非常强劲。
 The IWM is really strong and outperforming.
 
-2518
+2516
 03:52:09,760 --> 03:52:14,600
 然后有一些人对交易之外的东西很好奇。
 And then there are a few people who are curious about outside of trading.
 
-2519
+2517
 03:52:14,600 --> 03:52:17,200
 你有什么准备措施吗？
 Is there anything you do to prepare for the session?
 
-2520
+2518
 03:52:17,200 --> 03:52:23,280
 你的早晨例行程序看起来是怎么样的，你知道，是在美国市场之前。
 So what does your kind of morning routine look like, you know, before the U.S. market
 
-2521
+2519
 03:52:23,280 --> 03:52:24,280
 开了吗？
 opened?
 
-2522
+2520
 03:52:24,280 --> 03:52:27,240
 显然你的香港时间，所以情况有些不同。
 Obviously your Hong Kong time, so things are a little bit different.
 
-2523
+2521
 03:52:27,240 --> 03:52:29,960
-你做的一些关键事情是什么，以便保持正确的状态 mindset。
+开盘前，你会做哪些事让自己准备好、进入合适的状态？
 What are some kind of the key things that you do to kind of be in the right headspace
 
-2524
+2522
 03:52:29,960 --> 03:52:34,960
 这段交易操作，做好准备，准备好迎接今天的交易时段。
 piece of trade and just feel prepared and ready for the session.
 
-2525
+2523
 03:52:34,960 --> 03:52:40,460
 一般来说，我会提前45分钟到
 Generally, I would start my pre-market routine to
 
-2526
+2524
 03:52:40,460 --> 03:52:45,960
 一小时开始我的盘前例行程序。
 be 45 minutes to one hour before the market
 
-2527
+2525
 03:52:45,960 --> 03:52:49,680
 打开，我会进行扫描，我会浏
 opened and I would do the scans and I would
 
-2528
+2526
 03:52:49,680 --> 03:52:53,400
 览我监控名单上的所有股票。
 go over all the stocks in my watch list and
 
-2529
+2527
 03:52:53,400 --> 03:52:56,200
 现有的头寸。
 the existing positions.
 
-2530
+2528
 03:52:56,200 --> 03:52:59,520
 那就是。
 And I mean, that's it.
 
-2531
+2529
 03:52:59,520 --> 03:53:00,800
 我只是过一遍。
 I'm just going through all of them.
 
-2532
+2530
 03:53:00,800 --> 03:53:05,680
 我看是否有好的入场机会，好的入场点。
 I see whether there are any good setup, good entry points,
 
-2533
+2531
 03:53:05,680 --> 03:53:09,480
 或者出现大的跳空走势，比如向上跳空，还是向下跳空？
 or are there any huge like a gap down, so a gap ups,
 
-2534
+2532
 03:53:09,480 --> 03:53:11,200
 或者任何值得我注意的。
 or anything that really worth my attention.
 
-2535
+2533
 03:53:11,200 --> 03:53:13,760
 就像Joe，这次反转真的很丑陋。
 Like, Joe, this reversal is really ugly.
 
-2536
+2534
 03:53:13,760 --> 03:53:17,800
 然后我只是开始注意到，OK。
 Then I'm just, I would start noticing, OK.
 
-2537
+2535
 03:53:17,800 --> 03:53:20,720
-有很多那些referrer。
+其中不少已经延伸很远了。
 So lots of those referes.
 
-2538
+2536
 03:53:20,720 --> 03:53:25,720
 股市好像已经气喘吁吁了。
 Maybe the market is like, the breath is declining,
 
-2539
+2537
 03:53:25,920 --> 03:53:28,760
-他们可能会开始失去一些动力 maybe
+可能开始失去一些动量，
 they may be start losing some steam maybe
 
-2540
+2538
 03:53:28,760 --> 03:53:30,960
 因为去年12月的经历，
 because of the last December experience,
 
-2541
+2539
 03:53:30,960 --> 03:53:35,960
 我不希望在前期显得过于看空。
 I don't wanna be like too bearish in the earlier stage.
 
-2542
+2540
 03:53:37,000 --> 03:53:40,040
 但是现在，比如Q-SYS正在下跌。
 But for now, like Q-SYS is getting down
 
-2543
+2541
 03:53:40,040 --> 03:53:43,000
 将所有EMA都调低，我觉得合理。
 to lower all the EMAs, I think it's reasonable
 
-2544
+2542
 03:53:43,000 --> 03:53:47,360
 开始寻找，或开始做好准备。
 to start looking or start be prepared
 
-2545
+2543
 03:53:47,360 --> 03:53:50,600
 或者对于进一步的下行风险。
 or like for any more like further downside
 
-2546
+2544
 03:53:50,600 --> 03:53:53,400
 或者出现更深的回调，因为有些也类似。
 or deeper correction as there are some also like
 
-2547
+2545
 03:53:54,360 --> 03:53:57,940
-对个别股票的拒绝，出现 weakness 。
+出现个股遇阻、转弱的迹象。
 to some rejection of the individual stocks, the weakness.
 
-2548
+2546
 03:53:57,940 --> 03:54:01,160
 是的，你可以看到这个新来者。
 So yeah, and you can see that upstart
 
-2549
+2547
 03:54:01,160 --> 03:54:03,220
 EMA被拒绝了。
 is getting rejected by the EMAs.
 
-2550
+2548
 03:54:04,320 --> 03:54:06,800
 这种科学可以总结为
 That this kind of the science would like sums up
 
-2551
+2549
 03:54:06,800 --> 03:54:09,260
 像是会告诉你，
 like it would tell you,
 
-2552
+2550
 03:54:10,220 --> 03:54:13,480
 市场表现得如何，是好是坏。
 where did the market is like doing good or not.
 
-2553
+2551
 03:54:13,480 --> 03:54:19,500
 是的，我觉得应该是这样。
 Yeah, I think yeah, that's probably it. Yeah
 
-2554
+2552
 03:54:20,000 --> 03:54:22,000
 嗯，说得对。
 yeah, makes sense and
 
-2555
+2553
 03:54:23,640 --> 03:54:25,680
 你花多少时间在上面？
 How long did you spend on?
 
-2556
+2554
 03:54:27,280 --> 03:54:29,280
 市场相关的或交易相关的
 Market related or trading related
 
-2557
+2555
 03:54:30,360 --> 03:54:31,560
 每天 practice，这样在 tra
 Practice each day so
 
-2558
+2556
 03:54:31,560 --> 03:54:32,760
 ding 之外也要 practice。
 outside of trading
 
-2559
+2557
 03:54:33,400 --> 03:54:35,720
 你打算买入多少，采取什么策略？
 How much and what do you kind of do to?
 
-2560
+2558
 03:54:36,520 --> 03:54:41,740
 改善，练习，无论是回顾当天的交易，还是近期的动作。
 Be improving be practicing whether it's going looking back on your trades from the day from recent action
 
-2561
+2559
 03:54:41,740 --> 03:54:43,980
 有任何关键的练习吗？
 and are there any kind of key exercises
 
-2562
+2560
 03:54:43,980 --> 03:54:45,580
 那找到非常有用的
 that you find really helpful
 
-2563
+2561
 03:54:45,580 --> 03:54:48,060
 这可能会对交易员有所帮助？
 and might be helpful for the traders as well?
 
-2564
+2562
 03:54:50,340 --> 03:54:55,340
 像 Honestly，目前，
 Like honestly for now, like for currently,
 
-2565
+2563
 03:54:56,100 --> 03:54:58,300
 像过去一年或两年那样，
 like for the past one or two years,
 
-2566
+2564
 03:54:58,300 --> 03:55:02,860
 我大部分时间都在交易时间进行研究。
 I mostly did my study like within the trading hours,
 
-2567
+2565
 03:55:02,860 --> 03:55:07,860
 可能是在市场开盘后一到两个小时。
 like maybe when maybe one to two hours after the market open
 
-2568
+2566
 03:55:07,860 --> 03:55:11,860
 市场开盘时，我认为市场正在移动，
 market open when I think the market is moving,
 
-2569
+2567
 03:55:11,860 --> 03:55:14,940
 机会不多。
 like the opportunities aren't that much.
 
-2570
+2568
 03:55:14,940 --> 03:55:18,660
 然后我就看看随机指标的图表。
 And then I'm just, the random is scoring charts.
 
-2571
+2569
 03:55:20,180 --> 03:55:25,180
 那我就是在找，有没有什么潜在的买入点呢？
 And I'm just finding like, so are there any potential entries?
 
-2572
+2570
 03:55:25,500 --> 03:55:28,020
 我只是在加强目前的。
 I'm just finding like reinforcing my current,
 
-2573
+2571
 03:55:28,020 --> 03:55:30,780
 回调比如。
 like for example, the pullbacks.
 
-2574
+2572
 03:55:30,780 --> 03:55:34,260
 如果我看到这个UPSD基础，我就想，
 So if I've saw this UPSD base, so I'm thinking like,
 
-2575
+2573
 03:55:34,260 --> 03:55:37,100
 可能会有回调的买点吗？
 oh, would there be a potential pullback entries?
 
-2576
+2574
 03:55:37,100 --> 03:55:43,100
 那里锚定VWAP可能提供支撑。就是这样，你可以看到
 there the anchored VWAP could be finding support in so I always and that's it so you can see you
 
-2577
+2575
 03:55:43,100 --> 03:55:47,100
 我可以随机浏览图表，然后
 can I'm just randomly scrolling through the charts and
 
-2578
+2576
 03:55:47,100 --> 03:55:51,100
 你就只是测试你的想法。
 then you I just like just testing your ideas
 
-2579
+2577
 03:55:51,100 --> 03:55:54,940
 在心中想着，然后加强一下
 in your mind and then just kind of
 
-2580
+2578
 03:55:54,940 --> 03:55:58,780
 你的辅助知识，但肯定要。
 reinforcing your your your assisting knowledge but definitely
 
-2581
+2579
 03:55:58,780 --> 03:56:05,180
 因为过去一年来，新的知识越来越少。
 because as I like for the past one to two years there are less and less like a new knowledge
 
-2582
+2580
 03:56:05,180 --> 03:56:09,460
 我 really 想深入
 I really wanted to dig really deep and
 
-2583
+2581
 03:56:09,460 --> 03:56:13,740
 研究，喜欢 花时间 学习
 like to like to have spend time to study
 
-2584
+2582
 03:56:17,500 --> 03:56:20,740
 在市场交易时间之外。所以我认为过去一年
 outside of market hours. So I think for the past
 
-2585
+2583
 03:56:20,740 --> 03:56:23,980
 或两年里，我主要是在市场交易时段进行。
 one or two years I mainly do them within the market
 
-2586
+2584
 03:56:23,980 --> 03:56:28,060
 hours，我避免在市场非交易时
 hours and I avoid looking at the charts outside
 
-2587
+2585
 03:56:28,060 --> 03:56:32,140
 间查看图表，因为我觉得那样做。
 the market hours because so I think that doesn't
 
-2588
+2586
 03:56:32,140 --> 03:56:36,580
 真的对我有很大帮助，然后我觉
 really help a lot to me, then I think this
 
-2589
+2587
 03:56:36,580 --> 03:56:41,020
 得我会被图表搞得太紧张了。
 will be like, I would get too overwhelmed by the charts
 
-2590
+2588
 03:56:41,020 --> 03:56:44,660
 如果是我每天甚至每天几个
 if I'm looking at looking at like every every day
 
-2591
+2589
 03:56:44,660 --> 03:56:48,300
 小时都在看。是的。有时候我
 and several hours per day. Yes. And sometimes I'm
 
-2592
+2590
 03:56:48,300 --> 03:56:52,860
 过度交易会随之而来。所以我确
 going to lead to over trading too. So I did
 
-2593
+2591
 03:56:52,860 --> 03:56:57,420
 实花了很多时间在市场之外。
 study at this spend more time outside of market hours
 
-2594
+2592
 03:56:57,420 --> 03:57:03,420
 为了第一到两年的学习在交易中。
 for studying in the first one to two years in my trading.
 
-2595
+2593
 03:57:03,420 --> 03:57:08,660
 但坦白说，最近我很少在市场之外的时间花太多时间去看市场。
 But frankly, recently I didn't spend much time outside of market hours looking at the
 
-2596
+2594
 03:57:08,660 --> 03:57:09,660
 图表。
 charts.
 
-2597
+2595
 03:57:09,660 --> 03:57:13,460
 不，说得对。
 No, that makes sense.
 
-2598
+2596
 03:57:13,460 --> 03:57:17,100
 进入2026年以后，你提
 And going into 2026 and beyond, you just
 
-2599
+2597
 03:57:17,100 --> 03:57:20,740
 到你没有什么想研究的。
 mentioned that there's nothing you really want to study
 
-2600
+2598
 03:57:20,740 --> 03:57:23,220
 太多，深入讲解。
 too much, go really in depth.
 
-2601
+2599
 03:57:23,220 --> 03:57:28,780
 你现在正在积极做些什么来提高自己的交易能力？
 What are you actively working on right now to improve as a trader?
 
-2602
+2600
 03:57:28,780 --> 03:57:33,500
 今年你有没有什么特别想改善的事情，
 Are there any things that you're really trying to focus on improving this year and, like
 
-2603
+2601
 03:57:33,500 --> 03:57:35,220
 我说，展望未来？
 I said, going into the future?
 
-2604
+2602
 03:57:35,220 --> 03:57:36,500
 是的。
 Yeah.
 
-2605
+2603
 03:57:36,500 --> 03:57:40,920
 一只ETF是IWM还是QQQ，或
 One thing that I wanted to dig a little bit
 
-2606
+2604
 03:57:40,920 --> 03:57:45,340
 者两者，是否已经反映了这种变化。
 deeper is whether the IWM or the QQQ, or whether
 
-2607
+2605
 03:57:45,340 --> 03:57:49,190
 它们在某个50 YMA之上，
 they are above certain maybe 50 YMA,
 
-2608
+2606
 03:57:49,190 --> 03:57:53,040
 是否会对重新调整产生显著影响
 whether it would significantly affects the remade
 
-2609
+2607
 03:57:53,040 --> 03:57:59,200
 对空头或者像对多头，但我认为我应该专注于空头，因为我真的很
 of the shots or like for the longs but I think I want to focus on the shots because I really
 
-2610
+2608
 03:57:59,200 --> 03:58:02,800
 做空它，我在十二月的交易表现真的
 shorting it my my shots in December are really bad
 
-2611
+2609
 03:58:02,800 --> 03:58:06,400
 很糟糕，我刚发现Q的走势主要是
 and I just find out that the QQQ are mainly
 
-2612
+2610
 03:58:06,400 --> 03:58:10,520
 在50 EMA之上，然后我想是不
 above the 50 EMA and and then I'm thinking so
 
-2613
+2611
 03:58:10,520 --> 03:58:14,640
 是应该避免做空，如果Qs这样子的话
 should I like avoid shorting if the QQQ are like
 
-2614
+2612
 03:58:14,640 --> 03:58:19,080
 是否在EMA50之上。另一个是
 above the 50 EMA or not. And another one would
 
-2615
+2613
 03:58:19,080 --> 03:58:23,520
 调整前QQQ相对IWM的表现。
 be the QQQ versus IWM before the market correction.
 
-2616
+2614
 03:58:23,520 --> 03:58:28,040
 然后实际上我在十二月回调后做了
 And then actually I did a brief study
 
-2617
+2615
 03:58:28,040 --> 03:58:32,560
 一个简短的研究。然后我就做了。
 on that after the December pullback. So I
 
-2618
+2616
 03:58:32,560 --> 03:58:36,080
 十二月带动他们，然后我注
 December draw them. And then I noticed
 
-2619
+2617
 03:58:36,080 --> 03:58:39,600
 意到IWM是更强的那一个，
 the IWM is that the stronger one,
 
-2620
+2618
 03:58:39,600 --> 03:58:42,920
 整个12月它都跑赢QQQ。
 This is outperforming the QQQ throughout the whole December.
 
-2621
+2619
 03:58:42,920 --> 03:58:47,240
 然后我想，IWM 是否会被续租或回调
 And then I'm just thinking, will the IWM lease or the QQQ
 
-2622
+2620
 03:58:47,240 --> 03:58:50,880
 在大回调之前卖出吗？
 lease before a huge correction?
 
-2623
+2621
 03:58:50,880 --> 03:58:56,360
 然后我再回去研究那上面的修正。
 So and then I go back to study the correction of that above,
 
-2624
+2622
 03:58:56,360 --> 03:59:00,800
 那是自 last 20 years 以来超过 15% 的情况。
 that's more than 15% since the last 20 years,
 
-2625
+2623
 03:59:00,800 --> 03:59:04,720
 因为IWM只从2000年代开始。
 because IWM only starts from the 2000s.
 
-2626
+2624
 03:59:04,720 --> 03:59:09,400
 所以然后我回头看看每次出现15%的回调。
 So and I go back to look at every 15% drawdown
 
-2627
+2625
 03:59:09,400 --> 03:59:14,480
 从Q开始，我刚了解到，在2008年之前
 from QQQ and I just found out that before 2008,
 
-2628
+2626
 03:59:14,480 --> 03:59:19,560
 ，我信誓旦旦地，我认为10次中有8次。
 like I believe like 8 out of 10 times, I'm
 
-2629
+2627
 03:59:19,560 --> 03:59:23,040
 不确定是不是正确因素，但8
 not sure is it the correct factor but it's like
 
-2630
+2628
 03:59:23,040 --> 03:59:26,520
 0% 的时候，Qs 是腿。
 80% of the time, the QQQ are the leg,
 
-2631
+2629
 03:59:26,520 --> 03:59:31,240
 是的，是的，然后之前有一个15%的
 is the legot, is the leg and one before
 
-2632
+2630
 03:59:31,240 --> 03:59:35,960
 回调。但2008年之后，IWM是。
 a 15% correction. But after 2008, IWM is the
 
-2633
+2631
 03:59:35,960 --> 03:59:40,960
 每100%的时间里都会出现亏损。所以
 lag at 100% of the time. So there's a zero,
 
-2634
+2632
 03:59:40,960 --> 03:59:45,960
 Qs不会在任何时候有15%的回撤。
 zero occasion that QQQ will have a 15% drawdown
 
-2635
+2633
 03:59:46,840 --> 03:59:50,880
 如果是IWM是领涨的。所以这
 if the IWM is the leading one. So
 
-2636
+2634
 03:59:50,880 --> 03:59:54,920
 是一个有趣的发现。当然，就像
 this is an interesting find out. Definitely, like the
 
-2637
+2635
 03:59:54,920 --> 03:59:59,920
 过去的数据不保证未来。
 the past data doesn't guarantee the future.
 
-2638
+2636
 04:00:00,000 --> 04:00:03,980
 但是这是非常有趣的数据，我发现的。所
 But this is a really good interesting data that I found out. So
 
-2639
+2637
 04:00:03,980 --> 04:00:07,960
 以如果这个项目非常强劲，那么市场就有。
 if the item is really strong then then the market is has a
 
-2640
+2638
 04:00:08,040 --> 04:00:11,410
 更小的回调深度的可能性意味着我不应该那么
 smaller probability of a deeper pullback that means I shouldn't
 
-2641
+2639
 04:00:11,410 --> 04:00:14,780
 专注于空头部位，也不应该让这影响我太多。
 be that focused on the short side or let that
 
-2642
+2640
 04:00:15,840 --> 04:00:17,840
 至少不要开太多的枪
 at least not take too many shots
 
-2643
+2641
 04:00:18,320 --> 04:00:19,400
 所以……
 so
 
-2644
+2642
 04:00:19,400 --> 04:00:21,400
 这是一个有趣的发现。
 This is an interesting find out then
 
-2645
+2643
 04:00:21,840 --> 04:00:23,880
 我把这条交易视频对白翻成简体中文，只输出译文：
 我把这条交易视频对白翻成简体中文，只输出译文：
 I
 
-2646
+2644
 04:00:23,880 --> 04:00:27,760
 我确实是在早一月的时候开始学习的。
 I did, I studied in the early January.
 
-2647
+2645
 04:00:27,760 --> 04:00:29,960
 我只出现了15%的亏损。
 So I only did a 15% draw,
 
-2648
+2646
 04:00:29,960 --> 04:00:31,760
 我没有做10%，8%。
 and I didn't do the 10%, 8%.
 
-2649
+2647
 04:00:31,760 --> 04:00:34,480
 我不确定，但如果有兴趣，
 I'm not sure, but yeah, if you are interested,
 
-2650
+2648
 04:00:34,480 --> 04:00:39,480
 可以进一步研究回调。
 you can study further for the correction.
 
-2651
+2649
 04:00:39,960 --> 04:00:44,000
 但是，这就是想法。
 But yeah, that's how, this is the ideas
 
-2652
+2650
 04:00:44,000 --> 04:00:46,920
 我想重点谈谈明年可能的情况。
 that I would like to focus on maybe the coming year.
 
-2653
+2651
 04:00:48,160 --> 04:00:49,100
 好的。
 Excellent.
 
-2654
+2652
 04:00:49,100 --> 04:00:51,720
 马丁，这真是太棒了。
 Well, Martin, this has been fantastic.
 
-2655
+2653
 04:00:51,720 --> 04:00:56,040
 非常感谢你对这些交易进行深入的分析。
 Thank you so much for going through all this in-depth trade reviews.
 
-2656
+2654
 04:00:57,120 --> 04:01:02,920
 你还有什么想特别关注的内容或者想要与观众分享的关键信息吗？
 Was there anything else that you really wanted to focus on or any kind of key messages that you want to share with any viewers watching?
 
-2657
+2655
 04:01:04,440 --> 04:01:05,880
 是的，我认为最后一部分。
 Yes, I think the last part.
 
-2658
+2656
 04:01:06,200 --> 04:01:09,160
 2026 的波动到极限，减少交易。
 So the 2026 goes to the limit drawdowns and trade less.
 
-2659
+2657
 04:01:09,200 --> 04:01:12,520
 我反复强调这一点。
 I just emphasize it many times.
 
-2660
+2658
 04:01:13,320 --> 04:01:16,680
 我知道这对新交易员来说很糟糕。
 So I know that's the worst for the new traders part.
 
-2661
+2659
 04:01:16,680 --> 04:01:20,080
 我已经为切片做好准备了。
 So I already prepared for the slice.
 
-2662
+2660
 04:01:20,080 --> 04:01:24,660
 然后，你看这些是20
 And then, so you can see these are
 
-2663
+2661
 04:01:24,660 --> 04:01:29,240
 25年我遗漏的名字。
 the names that I missed in 2025.
 
-2664
+2662
 04:01:29,240 --> 04:01:33,520
 我觉得克莱门特在采访中也提到过这一点。
 I think Clement also mentioned this in his interview.
 
-2665
+2663
 04:01:33,520 --> 04:01:36,360
 他说他也错过了很多的领导者。
 He said he has also missed a lot of the leaders.
 
-2666
+2664
 04:01:36,360 --> 04:01:42,480
 他2025年也错失了很多机会，但还是抓住了很好的
 He has also missed a lot of the opportunities in 2025, but still managed to get a great
 
-2667
+2665
 04:01:42,480 --> 04:01:44,600
 2025年回吐。
 return in 2025.
 
-2668
+2666
 04:01:44,600 --> 04:01:46,360
 我非常同意。
 And I really agree with that.
 
-2669
+2667
 04:01:46,360 --> 04:01:51,640
 这些名字涨了超过100%，已经持续了相当长的时间。
 So these are the really, I think these names are going up for like more than 100% in less
 
-2670
+2668
 04:01:51,640 --> 04:01:52,640
 超过三个月。
 than three months.
 
-2671
+2669
 04:01:52,640 --> 04:01:57,800
 他们都是一些很强的名字，我全都错过了。
 They're all really strong names and I missed all of that.
 
-2672
+2670
 04:01:57,800 --> 04:02:00,320
 错过机会也是可以的。
 So it's okay to miss the opportunities.
 
-2673
+2671
 04:02:00,320 --> 04:02:04,480
 可以被止损出局，交易
 It's okay to get dropped out and the
 
-2674
+2672
 04:02:04,480 --> 04:02:08,640
 也按照原来的方向继续。
 trade goes into the original direction without you.
 
-2675
+2673
 04:02:08,640 --> 04:02:12,700
 你完全正常，不要感觉 discoura
 So you is completely normal and don't feel
 
-2676
+2674
 04:02:12,700 --> 04:02:16,760
 ged 或 sad，因为你只是错过了。
 like discouraged or sad because you just missed
 
-2677
+2675
 04:02:16,760 --> 04:02:20,260
 进场或者被止损出局，
 an entry or get stopped out
 
-2678
+2676
 04:02:20,260 --> 04:02:23,760
 你就不是这条船上的了。
 and then you're not on the boat.
 
-2679
+2677
 04:02:23,760 --> 04:02:29,440
 是的，这是最重要的一个 takeaway 。
 And yeah, this is the first really huge takeaway.
 
-2680
+2678
 04:02:29,440 --> 04:02:32,900
 因为有时候如果你错过了领头的，比如我在e
 Because sometimes if you miss the leader, like
 
-2681
+2679
 04:02:32,900 --> 04:02:36,360
 arly December我就错过了。
 I did in the early December, I missed
 
-2682
+2680
 04:02:36,360 --> 04:02:39,880
 那次快速恢复，随后我
 the shop recovery, and then I start
 
-2683
+2681
 04:02:39,880 --> 04:02:43,400
 开始更激进地寻找入口，
 to like getting aggressive on the entries,
 
-2684
+2682
 04:02:43,400 --> 04:02:49,880
 是的，开始建立一些仓位，但都失败了，然后最终
 right, start to get some positions, but it all failed, and then it eventually
 
-2685
+2683
 04:02:49,880 --> 04:02:53,200
 导致更高的回撤和一些
 leads to higher drawdown and some
 
-2686
+2684
 04:02:53,200 --> 04:02:56,520
 行为性滑损，伤害你的
 behavioral slippage, which hurts your
 
-2687
+2685
 04:02:56,520 --> 04:02:59,920
 也会消耗你的心理和身体状
 mental and physical capital too. And
 
-2688
+2686
 04:02:59,920 --> 04:03:03,320
 态。而12月的回撤还使我
 also like the December drawdown like prevents
 
-2689
+2687
 04:03:03,320 --> 04:03:06,720
 错过了SNDK的突破
 me that kind of leads me to like
 
-2690
+2688
 04:03:06,720 --> 04:03:10,120
 。那是一次很好的突破，
 skipping the SNDK breakout. It is a wonderful breakout
 
-2691
+2689
 04:03:10,120 --> 04:03:16,320
 如果是没有经历亏损连环或者巨大回撤的情况下，我会采取的交易策略。
 that I probably would take if I'm not suffering from a losing streak or a huge drawdown. But
 
-2692
+2690
 04:03:16,320 --> 04:03:21,180
 就像蝴蝶效应一样，它会放
 as I, it's not like a butterfly effect,
 
-2693
+2691
 04:03:21,180 --> 04:03:26,040
 大所有因素，影响你的决策。
 it all amplifies and it will affect your decision
 
-2694
+2692
 04:03:26,040 --> 04:03:30,360
 不仅影响当时那笔，还影
 making, not only from that trade, but the only trade
 
-2695
+2693
 04:03:30,360 --> 04:03:34,680
 响未来的交易。所以错过
 later in the future. So it's okay to miss
 
-2696
+2694
 04:03:34,680 --> 04:03:38,320
 机会是可以接受的，等下一次机会
 the opportunities and wait for another one to
 
-2697
+2695
 04:03:38,320 --> 04:03:41,960
 形成。你仍然可能有很好的一年，
 evolve. And you can still have a great year
 
-2698
+2696
 04:03:43,320 --> 04:03:47,080
 即使错过了很多领涨股和机会。
 but even though you missed most of the leaders and the opportunities.
 
-2699
+2697
 04:03:48,360 --> 04:03:51,840
 对。第二点，去年
 Yeah, fantastic. And the second one is last
 
-2700
+2698
 04:03:51,840 --> 04:03:55,320
 也提过：要把你的
 year I mentioned it, you have to treat your
 
-2701
+2699
 04:03:55,320 --> 04:03:58,940
 作为真正的生意来做交易。然后我觉
 trading as real business. And then I think
 
-2702
+2700
 04:03:58,940 --> 04:04:02,560
 得更好的可视化方式可能是尝试像这样
 a better visualization would be like trying
 
-2703
+2701
 04:04:02,560 --> 04:04:07,000
 想象伟大的交易者是如何交易的。我觉得你
 to imagine how the great traders will trade.
 
-2704
+2702
 04:04:07,000 --> 04:04:11,440
 definitely 会学习到交易。
 So I think you definitely will learn trading
 
-2705
+2703
 04:04:11,440 --> 04:04:14,880
 向其他交易者学习，比如你向往
 from other traders. You're aspiring ones or your
 
-2706
+2704
 04:04:14,880 --> 04:04:18,320
 的交易者、导师或偶像，选一个。
 mentor or your idols. Just pick one.
 
-2707
+2705
 04:04:18,320 --> 04:04:20,460
 然后如果你不知道，有时候你真的不知
 And then if you don't know, sometimes you
 
-2708
+2706
 04:04:20,460 --> 04:04:22,600
 道，我应该采取这个 setup 吗
 just don't know, should I take this setup
 
-2709
+2707
 04:04:22,600 --> 04:04:26,080
 或者不，我是否应该卖出这些头
 or not, should I sell these positions or
 
-2710
+2708
 04:04:26,080 --> 04:04:29,560
 寸，你可以问自己一个问题，比如
 not, you can just ask yourself a question like
 
-2711
+2709
 04:04:29,560 --> 04:04:32,960
 那他们怎么做？比如伟大的交易员会
 what would they do? Like what would the
 
-2712
+2710
 04:04:32,960 --> 04:04:36,360
 怎么做？我觉得这就排除了一些可能。
 great traders do? And I think that eliminates maybe
 
-2713
+2711
 04:04:36,360 --> 04:04:40,680
 我认为这可能排除90%以上
 more than 90% of the maybe the random trades,
 
-2714
+2712
 04:04:40,680 --> 04:04:45,000
 的随意交易、报复性交易等。
 the revenge trades, etc. I believe. But yeah, so
 
-2715
+2713
 04:04:45,000 --> 04:04:49,260
 但是，像伟大的交易员一
 So, but like you can also like compare
 
-2716
+2714
 04:04:49,260 --> 04:04:53,520
 样，你也可以进行交易。
 to the great traders, you can also trade like
 
-2717
+2715
 04:04:53,520 --> 04:04:56,980
 也可以像那些华尔街反面人物，或者那个
 the Wall Street bad guys or the Raccoon
 
-2718
+2716
 04:04:56,980 --> 04:05:00,440
 12月回撤26%的“浣熊”一样交易。
 guy who has a 26% drawdown in December.
 
-2719
+2717
 04:05:00,440 --> 04:05:04,800
 所以，然后我想，所以这是你的
 So and I think like, so this is your decision,
 
-2720
+2718
 04:05:04,800 --> 04:05:09,160
 决定，真的，你想要成为伟大的
 just really like, do you want to be the great
 
-2721
+2719
 04:05:09,160 --> 04:05:12,660
 投资者或者成为不一致
 traders or be the
 
-2722
+2720
 04:05:12,660 --> 04:05:16,160
 且纪律性的差的投资者。
 inconsistent and less disciplined traders.
 
-2723
+2721
 04:05:16,160 --> 04:05:20,080
 所以这真的非常重要。
 So it's really very important.
 
-2724
+2722
 04:05:20,080 --> 04:05:25,000
 希望这真的能改善你的决策。
 And I hope this really improves your decision-making
 
-2725
+2723
 04:05:25,000 --> 04:05:28,760
 保持纪律对你有帮助。
 or helps you to keep discipline.
 
-2726
+2724
 04:05:28,760 --> 04:05:34,880
 那就是我想分享的第二堂课。
 And that's the second lesson I wanted to share.
 
-2727
+2725
 04:05:34,880 --> 04:05:40,120
 接下来是第三点建议。
 And the tips are the third ones.
 
-2728
+2726
 04:05:40,120 --> 04:05:42,400
 这些是世界各地的美丽风景，
 These are the really great sceneries
 
-2729
+2727
 04:05:42,400 --> 04:05:44,960
 来自世界各地。
 from all over the world.
 
-2730
+2728
 04:05:44,960 --> 04:05:48,240
 你可以看到他们在图片中。
 So you can see them on the pictures.
 
-2731
+2729
 04:05:48,240 --> 04:05:50,560
 如果你只看到他们在图片中。
 So if you only see them on the pictures,
 
-2732
+2730
 04:05:50,560 --> 04:05:52,920
 它们看起来非常棒。
 oh, they look fantastic.
 
-2733
+2731
 04:05:52,920 --> 04:05:53,600
 看起来很 brilliant。
 Looks brilliant.
 
-2734
+2732
 04:05:53,600 --> 04:05:55,560
 看起来很漂亮。
 Looks gorgeous.
 
-2735
+2733
 04:05:55,560 --> 04:05:59,340
 但我相信，
 And by belief, if
 
-2736
+2734
 04:05:59,340 --> 04:06:03,120
 如果你真的
 you're really visiting the really,
 
-2737
+2735
 04:06:03,120 --> 04:06:06,620
 像预订机票一样，然后亲自
 like booking a flight ticket and then really
 
-2738
+2736
 04:06:06,620 --> 04:06:10,120
 去实地参观，亲自看看。
 visiting them there in person and seeing the
 
-2739
+2737
 04:06:10,120 --> 04:06:12,840
 亲眼去看那些风景，
 scenes through your eyes.
 
-2740
+2738
 04:06:12,840 --> 04:06:16,200
 你真的感觉完全不同，
 And you really have a completely different
 
-2741
+2739
 04:06:16,200 --> 04:06:19,560
 比起看到那些美景。
 feeling compared to seeing those great sceneries
 
-2742
+2740
 04:06:19,560 --> 04:06:21,400
 在图片中。
 in the pictures.
 
-2743
+2741
 04:06:21,400 --> 04:06:25,320
 所以我认为在交易中，你会看到
 So I think in trading, you will see
 
-2744
+2742
 04:06:25,320 --> 04:06:29,240
 很多交易者分享他们的智慧。
 a lot of traders like sharing the great wisdoms,
 
-2745
+2743
 04:06:29,240 --> 04:06:32,920
 伟大的课程，伟大的策略设
 the great course, the great set up of
 
-2746
+2744
 04:06:32,920 --> 04:06:36,600
 置和他们学到的伟大教训，
 strategies and the great lessons that they've learned,
 
-2747
+2745
 04:06:37,560 --> 04:06:40,960
 像我给出的建议和伟大的
 like the advice that I'm giving and the
 
-2748
+2746
 04:06:40,960 --> 04:06:44,360
 交易者分享的故事一样。
 story that the great traders are sharing.
 
-2749
+2747
 04:06:47,480 --> 04:06:51,880
 那些 takeaway 或教训非常重要，也是非常有价值的。
 Those takeaways or the lessons is very important and they are really valuable too.
 
-2750
+2748
 04:06:51,880 --> 04:06:56,140
 但真正改变你、对你
 But really, like life changing ones or the
 
-2751
+2749
 04:06:56,140 --> 04:07:00,400
 意义重大的，是那些
 really meaningful one is the lessons or the
 
-2752
+2750
 04:07:00,400 --> 04:07:04,300
 你所面临的挑战，以及
 challenges that you really faced and
 
-2753
+2751
 04:07:04,300 --> 04:07:08,200
 通过自己的努力克服的。
 get through by your own efforts.
 
-2754
+2752
 04:07:08,200 --> 04:07:13,680
 你必须真正经历起起落落或挫折。
 Like you have to really experience the ups and downs or the setbacks that throughout
 
-2755
+2753
 04:07:13,680 --> 04:07:15,040
 整个旅程。
 the whole journey.
 
-2756
+2754
 04:07:15,040 --> 04:07:18,560
 我认为这真的很重要。
 So I believe this is really important.
 
-2757
+2755
 04:07:18,560 --> 04:07:24,200
 我认为大多数包括我，以及大多数新交易员和伟大的交易员都这样认为。
 I think so most of them including me and most of the new and the great traders
 
-2758
+2756
 04:07:24,200 --> 04:07:28,340
 会经历很多挫折，
 would experience a lot of the setbacks and
 
-2759
+2757
 04:07:28,340 --> 04:07:32,480
 面临很多障碍。
 the face a lot of the obstacles
 
-2760
+2758
 04:07:32,480 --> 04:07:38,120
 贯穿整个交易旅程，但你需要对待每一次旅程都如同
 throughout the whole trading journey but you just need to treat every journey as
 
-2761
+2759
 04:07:38,120 --> 04:07:42,020
 学习的机会、
 the lesson learns as the room
 
-2762
+2760
 04:07:42,020 --> 04:07:45,920
 改进的空间，
 for improvements to like to
 
-2763
+2761
 04:07:45,920 --> 04:07:49,760
 找出自己的弱点，
 final your weakness and then improve them.
 
-2764
+2762
 04:07:49,760 --> 04:07:53,600
 再逐步改善。你需要
 So it will gradually, you need to
 
-2765
+2763
 04:07:53,600 --> 04:07:57,620
 走过自己的障碍和回撤
 get through your own obstacles or your
 
-2766
+2764
 04:07:57,620 --> 04:08:01,640
 。所以不要太沮丧，
 own drawdowns. So please don't be upset
 
-2767
+2765
 04:08:01,640 --> 04:08:06,760
 不要灰心，不要，你可以灰心，你可以。
 that don't be frustrated and don't be, and you can be frustrated, you can be
 
-2768
+2766
 04:08:06,760 --> 04:08:10,980
 难过；更重要的是
 upset, but more importantly, it's how you
 
-2769
+2767
 04:08:10,980 --> 04:08:15,200
 你怎样应对、怎样从
 react and how you improve from your
 
-2770
+2768
 04:08:15,200 --> 04:08:18,120
 从回撤和障碍中，
 from the drawdowns and from your obstacles,
 
-2771
+2769
 04:08:18,120 --> 04:08:20,920
 从挫折中恢复是最重要的部分。
 from the setbacks is the most important part
 
-2772
+2770
 04:08:20,920 --> 04:08:22,640
 这才是交易旅程中最重要的部分。
 in your training journey.
 
-2773
+2771
 04:08:22,640 --> 04:08:26,960
 今天分享到这就好。
 So I think that's it for my sharing today.
 
-2774
+2772
 04:08:27,920 --> 04:08:28,760
 是的。
 Yep.
 
-2775
+2773
 04:08:28,760 --> 04:08:29,600
 好的。
 Excellent.
 
-2776
+2774
 04:08:29,600 --> 04:08:31,800
 谢谢 Martin，再次感谢你
 Well, Martin, thanks again so much
 
-2777
+2775
 04:08:31,800 --> 04:08:33,360
 走完这一切。
 for walking through all that.
 
-2778
+2776
 04:08:33,360 --> 04:08:36,400
 我觉得这些结尾的话真的很棒。
 I think those closing words are really excellent.
 
-2779
+2777
 04:08:38,120 --> 04:08:39,880
 谢谢。
 So yeah, I just wanna say thank you.
 
-2780
+2778
 04:08:39,880 --> 04:08:41,960
 我想代表在场的各位观众。
 I think on behalf of everybody watching,
 
-2781
+2779
 04:08:41,960 --> 04:08:43,420
 我觉得这太棒了。
 I think this is tremendous.
 
-2782
+2780
 04:08:43,420 --> 04:08:45,140
 谢谢马丁你的时间
 So thank you Martin for your time
 
-2783
+2781
 04:08:45,140 --> 04:08:48,740
 分享你的经验和交易。
 and sharing all your experience and your trades.
 
-2784
+2782
 04:08:48,740 --> 04:08:50,780
 希望你们 guys 观看愉快。
 To everybody watching, I hope you guys enjoyed
 
-2785
+2783
 04:08:50,780 --> 04:08:51,620
 学到很多。
 Turn This Amount.
 
-2786
+2784
 04:08:52,660 --> 04:08:54,460
 下方點個好喜歡。
 Leave a like down below if you haven't already.
 
-2787
+2785
 04:08:54,460 --> 04:08:56,340
 订阅我们的频道，谢谢。
 Subscribe for new to the channel.
 
-2788
+2786
 04:08:56,340 --> 04:08:59,540
 好的，接下来我们再回来。
 And yeah, we'll be right back with the next one.
 
-2789
+2787
 04:08:59,540 --> 04:09:01,020
 谢谢大家，再见。
 Cheers everybody, bye.

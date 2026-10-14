@@ -1,16 +1,16 @@
 1
 00:00:00,000 --> 00:00:04,800
-当股票正在形成区间。所以我认为我更倾向于对待回调。
+股票形成区间整理时，就是这样。所以今年我更多交易回调，
 when the stock is building a range. So that's why I think I'm treating more pullbacks
 
 2
 00:00:04,800 --> 00:00:12,160
-今年，我每笔交易的风险大约
+今年，我每笔交易的风险大约是0.5%，
 this year and so my portfolio risk per trade
 
 3
 00:00:12,160 --> 00:00:19,520
-是0.5%，这是平均风险。
+这是平均风险。
 is around 0.5% and this is an average risk
 
 4
@@ -20,22 +20,22 @@ and sometimes I will risk less especially when my trades aren't going well and s
 
 5
 00:00:26,120 --> 00:00:33,160
-我会在非常有 conviction 于某一交易时增加风险。
+对某笔交易特别有信心，或者已有
 I would risk more when I was really like have conviction on a particular trade or I have
 
 6
 00:00:33,160 --> 00:00:38,030
-有相当大的盈利保护，所以我可
+较厚的利润垫时，
 a lot of profit cushion so
 
 7
 00:00:38,030 --> 00:00:42,900
-以为这次交易承担更多的风险。
+我有时会多承担一些风险。
 I can risk more for the trade.
 
 8
 00:00:42,900 --> 00:00:51,860
-去年我虽然不把投资组合规模限制在35%以下，但我还是限制大多数头寸。
+去年我已不再严格把单股仓位限制在35%，但多数仓位仍控制在
 Last year I don't limit my portfolio sizing to 35%, but I still limit most of my positions
 
 9
@@ -65,17 +65,17 @@ Because small caps or micro caps tend
 
 14
 00:01:11,900 --> 00:01:16,340
-降低下跳缺口的风险，可能需要一些做空报告，
+更大的向下跳空风险，比如做空报告，
 to have a higher gap down risk, maybe some short reports,
 
 15
 00:01:16,340 --> 00:01:23,980
-或者像有些那样，负面消息导致的向下跳空
+或者其他坏消息，可能造成
 or like some the gap down the bad news that really
 
 16
 00:01:23,980 --> 00:01:29,740
-有巨大的下跳空，可能是10%或20%，甚至更多到30%，所以我将减少的。
+10%、20%，甚至30%或更大的向下缺口，所以我会减少
 have a huge gap down maybe 10 or 20% or even further 30% so I will reduce the
 
 17
@@ -95,12 +95,12 @@ commodities if I'm trading like gold or silver or maybe I'm like trading the
 
 20
 00:01:46,660 --> 00:01:53,660
-指数可能是SQQQ，也可能不是，杠杆ETFs但好吧，也许我是
+指数或相关ETF，可能是SQQQ，或者并非杠杆ETF。总之，如果
 the index maybe the sqqq or maybe not the leverage ETFs but yeah maybe I'm
 
 21
 00:01:53,660 --> 00:02:00,860
-我把一些非常慢的名字或者慢ADR的股票进行交易，然后我可能会
+交易的是移动很慢、ADR较低的股票，可能会
 I'm really trading some very very slow names or the slow ADR stocks then I'm going to maybe
 
 22
@@ -115,40 +115,40 @@ to limit the risk per trade to 0.5%.
 
 24
 00:02:10,920 --> 00:02:16,300
-我把股票限制在平均值的50%
+我把价格止损距离控制在该股ADR
 So I limit my stocks at less than 50% of
 
 25
 00:02:16,300 --> 00:02:21,680
-以下，这些股票的ADR范围在。
+的50%以内，所述最大距离
 these stocks average they range in the ADR so maximum
 
 26
 00:02:21,680 --> 00:02:26,680
-将会是5%，但我真的没有
+是5%。
 will be 5% but I really don't really have
 
 27
 00:02:26,680 --> 00:02:31,680
-，我没有真正设置我的止损。
+但现在我很少把止损设得那么
 that that I don't really set my stops that
 
 28
 00:02:31,680 --> 00:02:40,400
-因为目前我通常都会把止损设置在3%左右，甚至不超过2.5%。
+宽。我很少用超过3%、甚至2.5%的止损，
 why current and now I think I rarely would set my stop wider than 3% or even 2.5% I really
 
 29
 00:02:40,400 --> 00:02:44,980
-想把止损限制在3%和2.5%以下
+想把止损限制在3%和2.5%以下，
 want to limit my stop below 3 and 2.5% so
 
 30
 00:02:44,980 --> 00:02:49,560
-，所以我要关注那些快速上涨的股票。
+所以我要关注那些快速上涨的股票。
 I want to focus on the fast-moving stocks in
 
 31
 00:02:49,560 --> 00:02:50,000
-猪 setter。所以当有三个或者四个名字一起动，或者像
+热点板块。所以当三四只股票同时走强，或者
 the hog setter. So when there are maybe three or four names that is moving together or like

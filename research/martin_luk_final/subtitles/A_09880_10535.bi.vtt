@@ -18,12 +18,12 @@ the leader and then I just bought the breakouts for this one, I bought the break
 4
 00:00:18.480 --> 00:00:23.840
 小的底点，也是我认为在角度视图之上。
-small little base and it's also I believe above the angle view app.
+small little base and it's also I believe above the anchored VWAP.
 
 5
 00:00:23.840 --> 00:00:29.640
 虽然这条走势没有触及角度视图应用，但它的价格在角度视图应用之上。
-So although this one didn't touch the angle view app, but it's above the angle view app
+So although this one didn't touch the anchored VWAP, but it's above the anchored VWAP
 
 6
 00:00:29.640 --> 00:00:33.400
@@ -63,7 +63,7 @@ Who extend the breakouts, I believe.
 13
 00:00:56.360 --> 00:01:01.260
 你是否在这笔交易中从高点处加入了锚定看涨的观点？
-Did you incorporate the anchor view up at all with this trade from from highs?
+Did you incorporate the anchored VWAP at all with this trade from from highs?
 
 14
 00:01:01.360 --> 00:01:01.960
@@ -98,27 +98,27 @@ So.
 20
 00:01:20.460 --> 00:01:26.660
 但是视角应用的角度来看，
-Yeah, but the angle of view app would be like
+Yeah, but the anchored VWAP would be like a,
 
 21
 00:01:26.660 --> 00:01:32.860
 也是一个帮你识别是否的工具
-a, also a tool like for you to identify whether
+also a tool like for you to identify whether
 
 22
 00:01:32.860 --> 00:01:37.540
-这只股票正在筑底，看起
+这只股票正在筑底，
 the stock is basing, like it's
 
 23
 00:01:37.540 --> 00:01:42.220
-来在潜在支撑区域之上。
+看起来在潜在支撑区域之上。
 above the potential support area.
 
 24
 00:01:42.220 --> 00:01:50.280
 如果HOOT正在回调并进入这个角度的视图表，它也接近50EMA2。
-So if HOOT is pulling back into this angle of view app, as it is also near the 50 EMA2,
+So if HOOT is pulling back into this anchored VWAP, as it is also near the 50 EMA2,
 
 25
 00:01:50.280 --> 00:01:54.940
@@ -133,7 +133,7 @@ there.
 27
 00:01:57.180 --> 00:02:02.460
 我喜欢，我觉得我把它调整好了。
-So I really like, I think I put the angle for it up also here when I'm treating this
+So I really like, I think I put the anchored VWAP also here when I'm treating this
 
 28
 00:02:02.460 --> 00:02:05.220
@@ -177,12 +177,12 @@ But if I'm just following my cell rules and then maybe I'm trail it with the 9 E
 
 36
 00:02:45.180 --> 00:02:50.220
-这是一个追加的50%的移
+这是一个追加的50%的移动。
 trailing, I could actually get another 50% move.
 
 37
 00:02:50.220 --> 00:02:55.260
-动。所以这是，我觉得我也
+所以这是，我觉得我也
 So this is the, I think I also
 
 38
@@ -192,12 +192,12 @@ shared this in the SMC high trade last year. So at this one I didn't improve tha
 
 39
 00:03:01.060 --> 00:03:06.220
-是的，但我认为，在卖出部
+也不错。但在卖出这部分之前，
 well too. I think, but before this
 
 40
 00:03:06.220 --> 00:03:11.380
-分之前，我会这样做的。
+我不会那么
 selling part, I will not be that
 
 41
@@ -207,12 +207,12 @@ that strict to myself.
 
 42
 00:03:14.680 --> 00:03:19.880
-因为我喜欢控制我的 downside
+我更重视控制下行风险，
 Because I prefer controlling my downside
 
 43
 00:03:19.880 --> 00:03:25.080
-而不是最大化我的 upside。
+而不是把上涨收益最大化。
 rather than maximizing my upside.
 
 44
@@ -222,27 +222,27 @@ Because I think my weakness is more on the downside, like over trading and then 
 
 45
 00:03:32.000 --> 00:03:36.800
-有一些非常延伸的区域
+有一些非常延伸的区域，
 some really extended areas
 
 46
 00:03:36.800 --> 00:03:41.600
-，也有一些随机的水平。
+也有一些随机的水平。
 and some random levels.
 
 47
 00:03:41.600 --> 00:03:48.640
-控制我的回撤更重要，但我觉得我 definitely 想要
+控制回撤更重要，不过我也确实想
 So I think controlling my drawdown is more important, but definitely I think I wanted
 
 48
 00:03:48.640 --> 00:03:53.740
-提高卖出规则，比如我会更平滑
+提高卖出规则，比如我会更平滑地追踪利润，
 to improve my selling rules to, like my selling,
 
 49
 00:03:53.740 --> 00:03:58.840
-地追踪利润，持有我的赢家。
+持有我的赢家。
 I should really trail more and hold my winners
 
 50
@@ -282,12 +282,12 @@ Which is very more favorable to like precision trading for holding your windows 
 
 57
 00:04:26.120 --> 00:04:30.650
-是的，同意。是的，但是它在高位。所
+是的，同意。是的，但是它在高位。
 Yeah, I agree. Yeah, but it's on high. So yeah,
 
 58
 00:04:30.650 --> 00:04:35.180
-以是的，是的，交易者的困境。是的。
+所以是的，是的，交易者的困境。是的。
 yes, it's it's yeah, yeah, trader quandary there. Yeah
 
 59
@@ -302,7 +302,7 @@ So the this one is oklo
 
 61
 00:04:44.220 --> 00:04:47.060
-Oklo 买入了这只股票。
+OKLO，我在这里买入，
 Oklo bought this one on a
 
 62
@@ -317,7 +317,7 @@ like on the breakouts below the
 
 64
 00:04:53.060 --> 00:05:00.320
-这个交易， hindsight 下我看技术面上这个 setup 并不是很好。
+回头看，这笔的技术形态并不
 this one I on hindsight I think the these set up the technical wise is not
 
 65
@@ -362,7 +362,7 @@ And the nine is above the 21, and they're both slipping up.
 
 73
 00:05:34.920 --> 00:05:39.280
-hindsight下来看，这一条作为进入点会更好。
+事后看，这里会是更好的入口。
 So I think this one here would be a better entry in hindsight.
 
 74
@@ -382,17 +382,17 @@ But fortunately, this one just works.
 
 77
 00:05:50.240 --> 00:05:55.040
-我买了Oclo，买了它，其中一个原因是。
+我买OKLO的一个原因，
 And I bought the, I bought Oclo one of the reason
 
 78
 00:05:55.040 --> 00:05:57.880
-这是反转pin bar在这里吗。
+是这里的反转针形K线。
 is this reversal pin bar here.
 
 79
 00:05:57.880 --> 00:06:02.640
-所以我觉得它确实会有一些 really
+我认为它可能会有一些
 So I really think it would have some really
 
 80
@@ -442,7 +442,7 @@ it could be like a change of character it's strong sign and then I just like
 
 89
 00:06:44.060 --> 00:06:50.180
-试试看，但我觉得 hindsight下，因为它是在50下方。
+试一笔。但事后看，价格在50均线下方，
 take a shot but definitely I think in hindsight because it's like below the 50
 
 90
@@ -463,12 +463,12 @@ like when the 9 and the 50 are really close to each other and I'm not sure
 93
 00:07:10.580 --> 00:07:16.400
 角度上看是向上，我们再来看一下。角度上看是向上，这里是在下方。
-about the angle view up? Let's put it in a bit. Yeah, angle view up is, here is below,
+about the anchored VWAP? Let's put it in a bit. Yeah, anchored VWAP is, here is below,
 
 94
 00:07:16.400 --> 00:07:21.020
 这条图表低于向上角度的图表。所以是的，
-is below the angle view up. So yeah, I think
+is below the anchored VWAP. So yeah, I think
 
 95
 00:07:21.020 --> 00:07:25.640
@@ -477,12 +477,12 @@ this one is fine, is fine, but luckily works
 
 96
 00:07:25.640 --> 00:07:30.740
-pretty well。所以我认为主
+还不错。
 pretty well. So I think major mostly because
 
 97
 00:07:30.740 --> 00:07:35.840
-要的是因为市场趋势向上，现在正在反转。
+我觉得主要因为市场正向上反转，
 the market is trending up is really reversing
 
 98
@@ -502,7 +502,7 @@ I close my whole position at the first close below the 9 EMA.
 
 101
 00:07:55.880 --> 00:08:01.160
-谁卖了下一只股票是Futo。
+接下来是FUTU。
 And who sold the next one is Futo.
 
 102
@@ -512,7 +512,7 @@ This one is a breakout.
 
 103
 00:08:04.560 --> 00:08:11.640
-这是免费休息期内的日突破。
+这是一个整理后的内包日突破〔原形容词听辨不清〕。
 This is a free-restented inside day breakouts.
 
 104
@@ -527,7 +527,7 @@ I don't know, candle or handle, like a cup of handle, this is a pretty tight ran
 
 106
 00:08:26.320 --> 00:08:32.880
-那么9 EMA正在很好地服务它，并且买进了内包线的突破。
+价格沿EMA9运行得很好，我买了内包日突破。
 So it's serving the 9 EMA pretty good and then bought an inside day breakouts.
 
 107
@@ -537,7 +537,7 @@ So this pretty standard one.
 
 108
 00:08:35.840 --> 00:08:38.220
-这里把Something卖了给Shrain。
+我在这里逢强卖出了一些。
 And sell something to Shrain here.
 
 109
@@ -597,22 +597,22 @@ So now my approach would be like setting the stop a little bit lower than the 9a
 
 120
 00:09:24.860 --> 00:09:30.200
-如果我交易这个FUTU合约，并且
+如果我交易这个FUTU合约，
 So if I am trading this one FUTU and I
 
 121
 00:09:30.200 --> 00:09:35.540
-我会将止损设在这个K线的低点。
+并且我会将止损设在这个K线的低点。
 would be setting my stop at this candle low.
 
 122
 00:09:35.540 --> 00:09:42.860
-它在9 EMA之下，然后给它一点下破的空间，然后如果它
+止损放在EMA9下方，给价格短暂下穿留一点空间。如果它
 So it's under the 9 EMA and I give a little bit of room for it undercuts and then if it
 
 123
 00:09:42.860 --> 00:09:51.300
-找到支撑位并处理干净，然后我会将其设置在9 EMA稍微下方。
+能找到支撑、结构清楚，我会把止损设在EMA9略下方，因为
 finds support and be clean, then I am going to set it a little bit below the 9 EMA because
 
 124
@@ -622,7 +622,7 @@ I can't watch it close.
 
 125
 00:09:53.220 --> 00:09:57.300
-但是这次，我觉得我采取了非常 aggressive 的做法。
+但这一笔，我相当积极地提前退出了。
 But for this one, I think I just took it very aggressively.
 
 126
@@ -637,7 +637,7 @@ I think maybe the market is extended too.
 
 128
 00:10:06.980 --> 00:10:10.700
-市场连续三个月 rally。
+当时市场已经连续上涨约3个月，
 Like the market is rallying in like three months in a row.
 
 129
@@ -667,12 +667,12 @@ So I think that's why I take this one earlier.
 
 134
 00:10:32.100 --> 00:10:38.080
-这次我早卖好了，这让我
+这次我早卖好了，
 And this time it works well that I was selling
 
 135
 00:10:38.080 --> 00:10:44.060
-占了便宜，但我认为如果
+这让我占了便宜，但我认为如果
 early, it puts me in favor but I think if
 
 136

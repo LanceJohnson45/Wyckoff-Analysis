@@ -9748,7 +9748,7 @@
     "start": 11036.02,
     "end": 11041.02,
     "raw_en": "and I'm risking like 50.5% of my account, it would be 50 bucks.",
-    "en": "and I'm risking like 50.5% of my account, it would be 50 bucks."
+    "en": "and I'm risking like 0.5% of my account, it would be 50 bucks."
   },
   {
     "key": "A_11041.56",
@@ -12632,7 +12632,7 @@
     "start": 13268.28,
     "end": 13280.08,
     "raw_en": "still... yeah. So it's not on the daily, it's on the Inca FreeWap 2. So this one I think",
-    "en": "still... yeah. So it's not on the daily, it's on the Inca FreeWap 2. So this one I think"
+    "en": "still... yeah. So it's not on the daily, it's on the anchored VWAP 2. So this one I think"
   },
   {
     "key": "A_13280.08",

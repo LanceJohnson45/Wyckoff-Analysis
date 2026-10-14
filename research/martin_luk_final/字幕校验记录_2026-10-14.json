@@ -1,0 +1,423 @@
+{
+  "date": "2026-10-14",
+  "clips": 56,
+  "source_segments_checked": 1703,
+  "source_counts": {
+    "A": 1103,
+    "C": 71,
+    "B": 121,
+    "D": 294,
+    "E": 114
+  },
+  "changed_unique_translation_segments": 557,
+  "curated_records_total": 651,
+  "caption_cues": 1991,
+  "subtitle_files_checked": 336,
+  "critical_semantic_checks": 14,
+  "all_srt_vtt_text_and_timeline": "passed",
+  "model_review_coverage": 1703,
+  "automatic_model_proposals_applied": 0,
+  "explanation": "模型全量对照用于定位问题；其提议有方向/数字及串句错误，未自动覆盖原字幕。采用对照原文/已有重点听辨和图表后的修订。",
+  "uncertain_unique_segments": 12,
+  "limits": [
+    "未逐秒人工听校全部约175分钟片段",
+    "字幕时间沿用机器段落并比例拆分；保护数字/EMA/存疑标记，非逐词强制对齐",
+    "E第三方原话中的收益/规则分歧保留，正文另作核对",
+    "仍可能存在细碎残句、专名或听辨错误"
+  ],
+  "coverage": [
+    {
+      "clip": "A_13635_14035",
+      "source": "A",
+      "segments_checked": 83,
+      "changed_segments": 24,
+      "cues": 89
+    },
+    {
+      "clip": "C_00645_00695",
+      "source": "C",
+      "segments_checked": 7,
+      "changed_segments": 4,
+      "cues": 9
+    },
+    {
+      "clip": "C_01350_01420",
+      "source": "C",
+      "segments_checked": 10,
+      "changed_segments": 7,
+      "cues": 13
+    },
+    {
+      "clip": "A_09055_09205",
+      "source": "A",
+      "segments_checked": 37,
+      "changed_segments": 4,
+      "cues": 38
+    },
+    {
+      "clip": "A_11790_11940",
+      "source": "A",
+      "segments_checked": 22,
+      "changed_segments": 4,
+      "cues": 27
+    },
+    {
+      "clip": "C_00210_00285",
+      "source": "C",
+      "segments_checked": 10,
+      "changed_segments": 5,
+      "cues": 12
+    },
+    {
+      "clip": "A_04085_05205",
+      "source": "A",
+      "segments_checked": 212,
+      "changed_segments": 81,
+      "cues": 231
+    },
+    {
+      "clip": "A_06995_07195",
+      "source": "A",
+      "segments_checked": 30,
+      "changed_segments": 4,
+      "cues": 34
+    },
+    {
+      "clip": "A_12120_12245",
+      "source": "A",
+      "segments_checked": 18,
+      "changed_segments": 7,
+      "cues": 21
+    },
+    {
+      "clip": "B_00420_00515",
+      "source": "B",
+      "segments_checked": 13,
+      "changed_segments": 9,
+      "cues": 16
+    },
+    {
+      "clip": "B_02980_03020",
+      "source": "B",
+      "segments_checked": 2,
+      "changed_segments": 2,
+      "cues": 4
+    },
+    {
+      "clip": "D_05455_05515",
+      "source": "D",
+      "segments_checked": 8,
+      "changed_segments": 5,
+      "cues": 9
+    },
+    {
+      "clip": "A_09880_10535",
+      "source": "A",
+      "segments_checked": 124,
+      "changed_segments": 19,
+      "cues": 137
+    },
+    {
+      "clip": "A_11470_11575",
+      "source": "A",
+      "segments_checked": 15,
+      "changed_segments": 5,
+      "cues": 16
+    },
+    {
+      "clip": "A_12295_12560",
+      "source": "A",
+      "segments_checked": 64,
+      "changed_segments": 7,
+      "cues": 67
+    },
+    {
+      "clip": "C_01745_01820",
+      "source": "C",
+      "segments_checked": 5,
+      "changed_segments": 5,
+      "cues": 10
+    },
+    {
+      "clip": "D_04815_04900",
+      "source": "D",
+      "segments_checked": 17,
+      "changed_segments": 9,
+      "cues": 18
+    },
+    {
+      "clip": "B_04020_04230",
+      "source": "B",
+      "segments_checked": 23,
+      "changed_segments": 8,
+      "cues": 29
+    },
+    {
+      "clip": "A_13420_13495",
+      "source": "A",
+      "segments_checked": 12,
+      "changed_segments": 3,
+      "cues": 13
+    },
+    {
+      "clip": "A_07520_07700",
+      "source": "A",
+      "segments_checked": 40,
+      "changed_segments": 2,
+      "cues": 41
+    },
+    {
+      "clip": "A_08200_08380",
+      "source": "A",
+      "segments_checked": 33,
+      "changed_segments": 6,
+      "cues": 37
+    },
+    {
+      "clip": "C_02200_02275",
+      "source": "C",
+      "segments_checked": 7,
+      "changed_segments": 4,
+      "cues": 12
+    },
+    {
+      "clip": "C_03400_03420",
+      "source": "C",
+      "segments_checked": 2,
+      "changed_segments": 1,
+      "cues": 2
+    },
+    {
+      "clip": "C_03830_03880",
+      "source": "C",
+      "segments_checked": 8,
+      "changed_segments": 0,
+      "cues": 8
+    },
+    {
+      "clip": "C_04200_04265",
+      "source": "C",
+      "segments_checked": 7,
+      "changed_segments": 0,
+      "cues": 10
+    },
+    {
+      "clip": "D_03885_04200",
+      "source": "D",
+      "segments_checked": 51,
+      "changed_segments": 27,
+      "cues": 60
+    },
+    {
+      "clip": "B_02640_02745",
+      "source": "B",
+      "segments_checked": 10,
+      "changed_segments": 7,
+      "cues": 15
+    },
+    {
+      "clip": "D_02925_03520",
+      "source": "D",
+      "segments_checked": 63,
+      "changed_segments": 32,
+      "cues": 77
+    },
+    {
+      "clip": "A_09385_09780",
+      "source": "A",
+      "segments_checked": 80,
+      "changed_segments": 14,
+      "cues": 89
+    },
+    {
+      "clip": "A_12805_13080",
+      "source": "A",
+      "segments_checked": 53,
+      "changed_segments": 2,
+      "cues": 62
+    },
+    {
+      "clip": "A_10850_10970",
+      "source": "A",
+      "segments_checked": 19,
+      "changed_segments": 2,
+      "cues": 21
+    },
+    {
+      "clip": "A_11550_11625",
+      "source": "A",
+      "segments_checked": 10,
+      "changed_segments": 2,
+      "cues": 13
+    },
+    {
+      "clip": "A_13200_13285",
+      "source": "A",
+      "segments_checked": 12,
+      "changed_segments": 2,
+      "cues": 15
+    },
+    {
+      "clip": "A_00960_01130",
+      "source": "A",
+      "segments_checked": 25,
+      "changed_segments": 13,
+      "cues": 31
+    },
+    {
+      "clip": "A_01835_01858",
+      "source": "A",
+      "segments_checked": 7,
+      "changed_segments": 3,
+      "cues": 7
+    },
+    {
+      "clip": "A_10990_11125",
+      "source": "A",
+      "segments_checked": 33,
+      "changed_segments": 3,
+      "cues": 36
+    },
+    {
+      "clip": "C_02950_02985",
+      "source": "C",
+      "segments_checked": 2,
+      "changed_segments": 2,
+      "cues": 4
+    },
+    {
+      "clip": "A_08845_08970",
+      "source": "A",
+      "segments_checked": 16,
+      "changed_segments": 5,
+      "cues": 21
+    },
+    {
+      "clip": "A_10395_10535",
+      "source": "A",
+      "segments_checked": 27,
+      "changed_segments": 5,
+      "cues": 30
+    },
+    {
+      "clip": "D_04230_04595",
+      "source": "D",
+      "segments_checked": 53,
+      "changed_segments": 30,
+      "cues": 63
+    },
+    {
+      "clip": "C_06000_06075",
+      "source": "C",
+      "segments_checked": 13,
+      "changed_segments": 7,
+      "cues": 13
+    },
+    {
+      "clip": "B_00210_00820",
+      "source": "B",
+      "segments_checked": 58,
+      "changed_segments": 40,
+      "cues": 80
+    },
+    {
+      "clip": "B_02230_02390",
+      "source": "B",
+      "segments_checked": 28,
+      "changed_segments": 16,
+      "cues": 32
+    },
+    {
+      "clip": "D_02775_02925",
+      "source": "D",
+      "segments_checked": 21,
+      "changed_segments": 8,
+      "cues": 24
+    },
+    {
+      "clip": "D_04655_04750",
+      "source": "D",
+      "segments_checked": 15,
+      "changed_segments": 8,
+      "cues": 19
+    },
+    {
+      "clip": "D_06215_06255",
+      "source": "D",
+      "segments_checked": 9,
+      "changed_segments": 4,
+      "cues": 9
+    },
+    {
+      "clip": "A_02300_02395",
+      "source": "A",
+      "segments_checked": 20,
+      "changed_segments": 12,
+      "cues": 21
+    },
+    {
+      "clip": "A_02775_03470",
+      "source": "A",
+      "segments_checked": 143,
+      "changed_segments": 43,
+      "cues": 156
+    },
+    {
+      "clip": "D_05150_05235",
+      "source": "D",
+      "segments_checked": 13,
+      "changed_segments": 4,
+      "cues": 16
+    },
+    {
+      "clip": "D_01645_01795",
+      "source": "D",
+      "segments_checked": 23,
+      "changed_segments": 8,
+      "cues": 24
+    },
+    {
+      "clip": "D_05595_05830",
+      "source": "D",
+      "segments_checked": 22,
+      "changed_segments": 14,
+      "cues": 33
+    },
+    {
+      "clip": "E_00170_00302",
+      "source": "E",
+      "segments_checked": 28,
+      "changed_segments": 9,
+      "cues": 28
+    },
+    {
+      "clip": "E_00416_00545",
+      "source": "E",
+      "segments_checked": 27,
+      "changed_segments": 8,
+      "cues": 27
+    },
+    {
+      "clip": "E_00545_00610",
+      "source": "E",
+      "segments_checked": 12,
+      "changed_segments": 4,
+      "cues": 12
+    },
+    {
+      "clip": "E_00610_00730",
+      "source": "E",
+      "segments_checked": 22,
+      "changed_segments": 5,
+      "cues": 23
+    },
+    {
+      "clip": "E_00809_00930",
+      "source": "E",
+      "segments_checked": 27,
+      "changed_segments": 9,
+      "cues": 27
+    }
+  ],
+  "translation_sha256": "6d9f527ab369c100c5542c87bb55b29f7efa7aa6a27e240c9a8d423bac2b6bd7"
+}

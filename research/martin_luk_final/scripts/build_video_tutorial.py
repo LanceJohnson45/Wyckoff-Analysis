@@ -83,7 +83,7 @@ def build() -> None:
 <a href="subtitles/{cid}.zh.srt" download>中文字幕SRT</a>
 <a href="subtitles/{cid}.bi.srt" download>双语SRT</a>
 <a href="clips/{cid}.mp4" download>视频文件</a></div>
-<p class="clip-status" role="status">展开后点击播放。字幕为本地机器翻译，交易术语和数字请结合原文；字幕时间来自机器转写，未逐句人工校时。</p>
+<p class="clip-status" role="status">展开后点击播放。字幕已做全量对照检查及重点修订（2026-10-14）；仍含机器转写/翻译，尚未逐句人工听校。听辨存疑已标注，时间为机器段落拆分。</p>
 </details>'''
         # E的新课文先解释二手证据，再在该小节末尾提供核对片段。
         target = anchor.find_next(["h2", "h3"]) if clip["source"] == "E" else anchor
@@ -92,7 +92,7 @@ def build() -> None:
         target.insert_before(BeautifulSoup(markup, "html.parser"))
     note = soup.new_tag("p", attrs={"class": "video-edition-note"})
     duration = sum(clip["end"] - clip["start"] for clip in manifest)
-    note.string = f"实操教程 V4.1：新增三类扫描、名单迁移、仓位漂移及GME/COIN收益核算；A～D为本人访谈/直播，E为第三方解说，分歧见正文。附{len(manifest)}段独立教学视频，共{int(duration // 60)}分{int(duration % 60)}秒。展开‘视频讲解’播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git上传；移动教程请保留clips和subtitles相对目录。图片和网页字幕已内嵌。"
+    note.string = f"实操教程 V4.1：新增三类扫描、名单迁移、仓位漂移及GME/COIN收益核算；A～D为本人访谈/直播，E为第三方解说，分歧见正文。附{len(manifest)}段独立教学视频，共{int(duration // 60)}分{int(duration % 60)}秒。展开‘视频讲解’播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git上传；移动教程请保留clips和subtitles相对目录。图片和网页字幕已内嵌；中文字幕校验更新于2026-10-14。"
     soup.find("h1").insert_after(note)
     style = soup.new_tag("style")
     style.string = """

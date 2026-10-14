@@ -368,7 +368,7 @@
   {
     "start": 4178.22,
     "end": 4181.82,
-    "zh": "它回调到锚定VWAP以及9 EMA。",
+    "zh": "所以它回调到锚定VWAP，也回到9 EMA，以及……",
     "en": "so it pulls back into the anchored VWAP also the 9 EMA and"
   },
   {
@@ -518,7 +518,7 @@
   {
     "start": 4275.0,
     "end": 4277.7,
-    "zh": "锚定VWAP，还有150。",
+    "zh": "锚定VWAP以及150均线。",
     "en": "anchored VWAP and also the 150."
   },
   {
@@ -866,7 +866,7 @@
   {
     "start": 4523.14,
     "end": 4526.98,
-    "zh": "锚定VWAP遇到了阻力",
+    "zh": "锚定VWAP，并遇到阻力，",
     "en": "the anchored VWAP and they found resistance"
   },
   {
@@ -1574,13 +1574,13 @@
   {
     "start": 4939.54,
     "end": 4944.04,
-    "zh": "特别是可能是热点股，可能是非常强势的，或者",
+    "zh": "尤其是热点主题里的强股，",
     "en": "especially maybe it's on a hot bean, maybe it's really"
   },
   {
     "start": 4944.04,
     "end": 4948.54,
-    "zh": "你对一只股票非常有 conviction。",
+    "zh": "或者你对该股非常有信心。",
     "en": "strong or you have really high conviction into one stocks."
   },
   {
@@ -4910,13 +4910,13 @@
   {
     "start": 7099.62,
     "end": 7103.3,
-    "zh": "止损要么是在当天的低点，我觉得可能是",
+    "zh": "我大约60%～70%的时候",
     "en": "stop either at the low of day I think maybe"
   },
   {
     "start": 7103.3,
     "end": 7106.98,
-    "zh": "当天低点的60%到70%。但有时候",
+    "zh": "把止损放在当日低点，但有时",
     "en": "60 or 70% at low of day but sometimes the"
   },
   {
@@ -4928,13 +4928,13 @@
   {
     "start": 7113.46,
     "end": 7117.12,
-    "zh": "breakout bar的低点，或者前一",
+    "zh": "突破K线低点或前一根",
     "en": "low of the breakout bar or low of the previous"
   },
   {
     "start": 7117.12,
     "end": 7120.78,
-    "zh": "个bar的低点，所以这不是，这不是真的",
+    "zh": "K线低点。所以并没有",
     "en": "bar so this is not like this is not really"
   },
   {
@@ -5558,7 +5558,7 @@
   {
     "start": 7572.12,
     "end": 7578.04,
-    "zh": "我做空主要是因为我相信使用了这个borough的锚定VWAP。",
+    "zh": "我做空主要因为参考了这个位置锚定的VWAP，",
     "en": "I take the short mainly because I believe I used the anchored VWAP from this borough"
   },
   {
@@ -5630,7 +5630,7 @@
   {
     "start": 7627.52,
     "end": 7631.04,
-    "zh": "然后就是反转入场，回调了。",
+    "zh": "这就是反转入口，也就是反弹遇阻的做空入口。",
     "en": "And then it's like a reversal entry, like a pullback shot."
   },
   {
@@ -6602,13 +6602,13 @@
   {
     "start": 8247.3,
     "end": 8251.18,
-    "zh": "尝试做空NVIDIA，然后回调到",
+    "zh": "尝试在NVDA反弹到",
     "en": "trying to short the NVIDIA on this, like,"
   },
   {
     "start": 8251.18,
     "end": 8255.06,
-    "zh": "hourly 9 EMA 处。",
+    "zh": "小时EMA9附近做空，",
     "en": "pull back into the hourly 9 EMA,"
   },
   {
@@ -6626,13 +6626,13 @@
   {
     "start": 8265.62,
     "end": 8269.34,
-    "zh": "日内交易已经完成。考虑到",
+    "zh": "日内被来回震荡扫出，而且",
     "en": "chopped in on the intraday. And given that the data"
   },
   {
     "start": 8269.34,
     "end": 8273.06,
-    "zh": "数据其实并不肥厚。所以这些",
+    "zh": "日线背景也并不理想。这些",
     "en": "is, is actually not that fatty too. So these"
   },
   {
@@ -6662,7 +6662,7 @@
   {
     "start": 8289.98,
     "end": 8295.3,
-    "zh": "Nvidia这个交易做得不好，日内气体流出虽然第二",
+    "zh": "NVDA交易没有做好，日内被止损，虽然第二",
     "en": "Nvidia trade that doesn't work well and the gas stopped out intraday although the second"
   },
   {
@@ -6716,7 +6716,7 @@
   {
     "start": 8330.74,
     "end": 8333.82,
-    "zh": "我这是在做空吗？",
+    "zh": "我就会想：我是不是在……",
     "en": "So I'm like, am I doing the,"
   },
   {
@@ -6734,7 +6734,7 @@
   {
     "start": 8338.34,
     "end": 8342.32,
-    "zh": "应该继续尝试而不是 just like，",
+    "zh": "是不是应该继续尝试，而不是就这样",
     "en": "So I should keep trying instead of just like,"
   },
   {
@@ -6752,7 +6752,7 @@
   {
     "start": 8347.86,
     "end": 8351.18,
-    "zh": "然后因为市场 just keeps like，",
+    "zh": "因为市场持续",
     "en": "And then because the markets just keeps like,"
   },
   {
@@ -7586,25 +7586,25 @@
   {
     "start": 8868.8,
     "end": 8873.6,
-    "zh": "如果市场真的很强，有时我会",
+    "zh": "如果市场很强，有时我",
     "en": "if the market is really strong and I sometimes would"
   },
   {
     "start": 8873.6,
     "end": 8878.4,
-    "zh": "选择不参与，如果我认为市场",
+    "zh": "不分批兑现；如果市场",
     "en": "not take part shows, if I think the market"
   },
   {
     "start": 8878.4,
     "end": 8881.84,
-    "zh": "非常强劲，其他位置我也有很大",
+    "zh": "很强、其他仓位又有",
     "en": "is really strong and I have huge cushions"
   },
   {
     "start": 8881.84,
     "end": 8885.28,
-    "zh": "的缓冲， yeah，我有时候会",
+    "zh": "厚利润垫，有时我会",
     "en": "on other positions, and yeah, I sometimes would"
   },
   {
@@ -7664,26 +7664,20 @@
   {
     "start": 8918.72,
     "end": 8924.78,
-    "zh": "一直向上走，我觉得是30%或者50",
+    "zh": "一直向上，可能一天涨",
     "en": "been going straight, I think you say 30% or 50%"
   },
   {
     "start": 8924.78,
     "end": 8930.84,
-    "zh": "%，最好是50%的日内更新然后它就",
+    "zh": "30%或50%，然后",
     "en": "like 50% day update and then it has a"
   },
   {
     "start": 8930.84,
-    "end": 8933.58,
-    "zh": "一天的 consolidation，然后它又继续",
-    "en": "one day consolidation and it keeps going again and then"
-  },
-  {
-    "start": 8933.58,
     "end": 8936.32,
-    "zh": "了，然后我觉得这就是我们要找的，应该是个时机。",
-    "en": "I think this is it should be a time"
+    "zh": "整理一天，再继续上行。我觉得这时可以",
+    "en": "one day consolidation and it keeps going again and then I think this is it should be a time"
   },
   {
     "start": 8936.32,
@@ -7694,13 +7688,13 @@
   {
     "start": 8942.5,
     "end": 8947.62,
-    "zh": "每次我认为这只股票有延伸",
+    "zh": "每次卖出约15%的仓位。",
     "en": "trade my position at around 15% each. So"
   },
   {
     "start": 8947.62,
     "end": 8952.74,
-    "zh": "，我就在15%的位置平仓。",
+    "zh": "每当觉得股票已经延伸，",
     "en": "every time I think this stock is extended,"
   },
   {
@@ -7934,7 +7928,7 @@
   {
     "start": 9102.96,
     "end": 9105.04,
-    "zh": "从 screener 屏幕上看，",
+    "zh": "从扫描器结果来看，",
     "en": "So from the screeners,"
   },
   {
@@ -8036,7 +8030,7 @@
   {
     "start": 9161.34,
     "end": 9163.54,
-    "zh": "他们 downgrade 他们。",
+    "zh": "把它们降级。",
     "en": "them or like downgrade them."
   },
   {
@@ -8066,13 +8060,13 @@
   {
     "start": 9178.82,
     "end": 9182.3,
-    "zh": "那哦，这有一根柱子昨天显示有st",
+    "zh": "某个主题昨天表现",
     "en": "that oh so there's this beam could is"
   },
   {
     "start": 9182.3,
     "end": 9185.78,
-    "zh": "rength，然后它可能会设置",
+    "zh": "出强势，也许会",
     "en": "showing some strength yesterday, then it could set"
   },
   {
@@ -8084,7 +8078,7 @@
   {
     "start": 9188.82,
     "end": 9193.9,
-    "zh": "我 really 需要 他们 的 注意。",
+    "zh": "所以需要多关注这些股票。",
     "en": "So I really need to get some attention to them."
   },
   {
@@ -8384,13 +8378,13 @@
   {
     "start": 9397.66,
     "end": 9401.16,
-    "zh": "这是我在四月慢速",
+    "zh": "这是我在4月低点附近做的",
     "en": "This is a purple long that"
   },
   {
     "start": 9401.16,
     "end": 9404.66,
-    "zh": "形成后的紫色多头。",
+    "zh": "一笔极端超跌反转多头。",
     "en": "I traded at the April slow."
   },
   {
@@ -8408,7 +8402,7 @@
   {
     "start": 9415.06,
     "end": 9419.46,
-    "zh": "因为我觉得这是第一次帕累托式的长途交易。",
+    "zh": "这是我第一次交易这种抛物线式急跌后的反转做多，",
     "en": "Because I really think this is the first parabolic long-distance trade"
   },
   {
@@ -8432,7 +8426,7 @@
   {
     "start": 9432.26,
     "end": 9437.26,
-    "zh": "然后我觉得市场真的 panic 了，",
+    "zh": "我觉得市场当时非常恐慌，",
     "en": "And then I really think the market is really panicking,"
   },
   {
@@ -8474,7 +8468,7 @@
   {
     "start": 9458.94,
     "end": 9463.54,
-    "zh": "我 juste gonna 获得 peripoint 多头",
+    "zh": "所以准备寻找极端超跌后的反转多头，",
     "en": "So I'm just going to get the peripoint longs"
   },
   {
@@ -8558,7 +8552,7 @@
   {
     "start": 9517.58,
     "end": 9521.74,
-    "zh": "这真是我第一次大量谈论紫色。",
+    "zh": "这是我第一次做这种极端反转多头。",
     "en": "This is really the first time that I talk the purple a lot."
   },
   {
@@ -8570,19 +8564,19 @@
   {
     "start": 9524.06,
     "end": 9528.34,
-    "zh": "我觉得除了entry点，我整体上处理这单交易做得还不错。",
+    "zh": "除了入口，我觉得这笔退出也处理得不错，",
     "en": "I think apart from the entry, I closed this trade pretty well too."
   },
   {
     "start": 9528.34,
     "end": 9532.16,
-    "zh": "我刚刚在 hourly 9 EMA",
+    "zh": "在小时EMA9略上方、也",
     "en": "I just closed this right above the hourly"
   },
   {
     "start": 9532.16,
     "end": 9535.98,
-    "zh": "之上关闭了这个，并且接近前一天的高点。",
+    "zh": "接近昨日高点的位置平仓。",
     "en": "9 EMA and also near the previous day high."
   },
   {
@@ -8750,7 +8744,7 @@
   {
     "start": 9641.2,
     "end": 9645.68,
-    "zh": "哦 yeah，它也在接近五分钟的，大约是120。",
+    "zh": "对，也接近5分钟图上大约120的位置，",
     "en": "Oh yeah, it's also near the five minute, around 120,"
   },
   {
@@ -8786,13 +8780,13 @@
   {
     "start": 9665.56,
     "end": 9670.6,
-    "zh": "好像，我觉得一分钟它就像一直往上走三到四秒。",
+    "zh": "我记得1分钟就可能上涨3或4",
     "en": "So it's like, I think one, one minute it just like going up for like three or four"
   },
   {
     "start": 9670.6,
     "end": 9672.64,
-    "zh": "百分之几就在两到三分钟内完成。",
+    "zh": "个百分点，2～3分钟内就出现这样的波动。",
     "en": "percent in just two or three minutes."
   },
   {
@@ -8810,13 +8804,13 @@
   {
     "start": 9684.44,
     "end": 9688.94,
-    "zh": "然后我最终在5分钟150",
+    "zh": "最后我在很接近5分钟E",
     "en": "But then I eventually sell it at the very close"
   },
   {
     "start": 9688.94,
     "end": 9693.44,
-    "zh": "EMA的收盘价附近卖出。",
+    "zh": "MA150的这里卖出。",
     "en": "to the 5 minute 150 EMA, I think right here."
   },
   {
@@ -8846,13 +8840,13 @@
   {
     "start": 9710.2,
     "end": 9714.52,
-    "zh": "那段时间的波动性真的很大，特别是在四月份的时",
+    "zh": "4月那段时间波动",
     "en": "the volatility is really huge during those times, the"
   },
   {
     "start": 9714.52,
     "end": 9718.84,
-    "zh": "候。所以我 really really 想要",
+    "zh": "非常大，所以我很想",
     "en": "period back in April. So I really want to"
   },
   {
@@ -9350,13 +9344,13 @@
   {
     "start": 10074.68,
     "end": 10079.88,
-    "zh": "因为我喜欢控制我的 downside",
+    "zh": "我更重视控制下行风险，而",
     "en": "Because I prefer controlling my downside"
   },
   {
     "start": 10079.88,
     "end": 10085.08,
-    "zh": "而不是最大化我的 upside。",
+    "zh": "不是把上涨收益最大化。",
     "en": "rather than maximizing my upside."
   },
   {
@@ -9386,13 +9380,13 @@
   {
     "start": 10101.6,
     "end": 10105.12,
-    "zh": "控制我的回撤更重要，但我觉得",
+    "zh": "控制回撤更重要，",
     "en": "So I think controlling my drawdown is more"
   },
   {
     "start": 10105.12,
     "end": 10108.64,
-    "zh": "我 definitely 想要",
+    "zh": "不过我也确实想",
     "en": "important, but definitely I think I wanted"
   },
   {
@@ -9476,7 +9470,7 @@
   {
     "start": 10164.22,
     "end": 10167.06,
-    "zh": "Oklo 买入了这只股票。",
+    "zh": "OKLO，我在这里买入，",
     "en": "Oklo bought this one on a"
   },
   {
@@ -9494,13 +9488,13 @@
   {
     "start": 10173.06,
     "end": 10176.69,
-    "zh": "这个交易， hindsight 下我看",
+    "zh": "回头看，这笔",
     "en": "this one I on hindsight I think the"
   },
   {
     "start": 10176.69,
     "end": 10180.32,
-    "zh": "技术面上这个 setup 并不是很好。",
+    "zh": "的技术形态并不",
     "en": "these set up the technical wise is not"
   },
   {
@@ -9554,7 +9548,7 @@
   {
     "start": 10214.92,
     "end": 10219.28,
-    "zh": "hindsight下来看，这一条作为进入点会更好。",
+    "zh": "事后看，这里会是更好的入口。",
     "en": "So I think this one here would be a better entry in hindsight."
   },
   {
@@ -9578,19 +9572,19 @@
   {
     "start": 10230.24,
     "end": 10235.04,
-    "zh": "我买了Oclo，买了它，其中一个原因是。",
+    "zh": "我买OKLO的一个原因，",
     "en": "And I bought the, I bought Oclo one of the reason"
   },
   {
     "start": 10235.04,
     "end": 10237.88,
-    "zh": "这是反转pin bar在这里吗。",
+    "zh": "是这里的反转针形K线。",
     "en": "is this reversal pin bar here."
   },
   {
     "start": 10237.88,
     "end": 10242.64,
-    "zh": "所以我觉得它确实会有一些 really",
+    "zh": "我认为它可能会有一些",
     "en": "So I really think it would have some really"
   },
   {
@@ -9656,7 +9650,7 @@
   {
     "start": 10284.06,
     "end": 10290.18,
-    "zh": "试试看，但我觉得 hindsight下，因为它是在50下方。",
+    "zh": "试一笔。但事后看，价格在50均线下方，",
     "en": "take a shot but definitely I think in hindsight because it's like below the 50"
   },
   {
@@ -9710,13 +9704,13 @@
   {
     "start": 10325.64,
     "end": 10330.74,
-    "zh": "pretty well。所以我认为主",
+    "zh": "还不错。我觉得主要因",
     "en": "pretty well. So I think major mostly because"
   },
   {
     "start": 10330.74,
     "end": 10335.84,
-    "zh": "要的是因为市场趋势向上，现在正在反转。",
+    "zh": "为市场正向上反转，",
     "en": "the market is trending up is really reversing"
   },
   {
@@ -9752,7 +9746,7 @@
   {
     "start": 10355.88,
     "end": 10361.16,
-    "zh": "谁卖了下一只股票是Futo。",
+    "zh": "接下来是FUTU。",
     "en": "And who sold the next one is Futo."
   },
   {
@@ -9764,13 +9758,13 @@
   {
     "start": 10364.56,
     "end": 10368.1,
-    "zh": "这是免费休息",
+    "zh": "这是一个整理后的内包日突",
     "en": "This is a free-restented"
   },
   {
     "start": 10368.1,
     "end": 10371.64,
-    "zh": "期内的日突破。",
+    "zh": "破〔原形容词听辨不清〕。",
     "en": "inside day breakouts."
   },
   {
@@ -9794,13 +9788,13 @@
   {
     "start": 10386.32,
     "end": 10389.6,
-    "zh": "那么9 EMA正在很好地服务",
+    "zh": "价格沿EMA9运行得很",
     "en": "So it's serving the 9 EMA pretty good"
   },
   {
     "start": 10389.6,
     "end": 10392.88,
-    "zh": "它，并且买进了内包线的突破。",
+    "zh": "好，我买了内包日突破。",
     "en": "and then bought an inside day breakouts."
   },
   {
@@ -9812,7 +9806,7 @@
   {
     "start": 10395.84,
     "end": 10398.22,
-    "zh": "这里把Something卖了给Shrain。",
+    "zh": "我在这里逢强卖出了一些。",
     "en": "And sell something to Shrain here."
   },
   {
@@ -9908,25 +9902,25 @@
   {
     "start": 10455.54,
     "end": 10459.2,
-    "zh": "它在9 EMA之下，然后给它",
+    "zh": "止损放在EMA9下方，给价格",
     "en": "So it's under the 9 EMA and I give a"
   },
   {
     "start": 10459.2,
     "end": 10462.86,
-    "zh": "一点下破的空间，然后如果它",
+    "zh": "短暂下穿留一点空间。如果它",
     "en": "little bit of room for it undercuts and then if it"
   },
   {
     "start": 10462.86,
     "end": 10467.08,
-    "zh": "找到支撑位并处理干净，然后我会",
+    "zh": "能找到支撑、结构清楚，我会把",
     "en": "finds support and be clean, then I am going to"
   },
   {
     "start": 10467.08,
     "end": 10471.3,
-    "zh": "将其设置在9 EMA稍微下方。",
+    "zh": "止损设在EMA9略下方，因为",
     "en": "set it a little bit below the 9 EMA because"
   },
   {
@@ -9938,7 +9932,7 @@
   {
     "start": 10473.22,
     "end": 10477.3,
-    "zh": "但是这次，我觉得我采取了非常 aggressive 的做法。",
+    "zh": "但这一笔，我相当积极地提前退出了。",
     "en": "But for this one, I think I just took it very aggressively."
   },
   {
@@ -9962,7 +9956,7 @@
   {
     "start": 10486.98,
     "end": 10490.7,
-    "zh": "市场连续三个月 rally。",
+    "zh": "当时市场已经连续上涨约3个月，",
     "en": "Like the market is rallying in like three months in a row."
   },
   {
@@ -10592,13 +10586,13 @@
   {
     "start": 10889.44,
     "end": 10893.6,
-    "zh": "所以这比2.5%的止损低约2.3",
+    "zh": "止损约2.3%，低于2.",
     "en": "So it's around 2.3% less than 2.5% stop and yeah"
   },
   {
     "start": 10893.6,
     "end": 10897.76,
-    "zh": "%，我对自己这个入场感到非常满意。",
+    "zh": "5%。我对这次入口很满意，",
     "en": "this I am really satisfied with this entry and"
   },
   {
@@ -10688,13 +10682,13 @@
   {
     "start": 10961.12,
     "end": 10964.8,
-    "zh": "但再次，我认为卖出一些并在至少抓住",
+    "zh": "但我认为逢强卖一部",
     "en": "But again, I think it's good to sell some in"
   },
   {
     "start": 10964.8,
     "end": 10968.48,
-    "zh": "可能 decent 的一些是好的。",
+    "zh": "分、至少抓住不错的",
     "en": "the stream and at least catch maybe a decent"
   },
   {
@@ -10760,7 +10754,7 @@
   {
     "start": 10994.92,
     "end": 10997.92,
-    "zh": "我会 really，我会 try like 测量",
+    "zh": "我会尝试测量",
     "en": "And I would really, I would try to like measure"
   },
   {
@@ -10837,9 +10831,15 @@
   },
   {
     "start": 11036.02,
+    "end": 11038.52,
+    "zh": "按账户0.5%的风险预算，就是5",
+    "en": "and I'm risking like 0.5% of"
+  },
+  {
+    "start": 11038.52,
     "end": 11041.02,
-    "zh": "我账户里风险50.5%，也就是50美元。",
-    "en": "and I'm risking like 50.5% of my account, it would be 50 bucks."
+    "zh": "0美元〔原ASR将数字串在一起〕。",
+    "en": "my account, it would be 50 bucks."
   },
   {
     "start": 11041.56,
@@ -10880,7 +10880,7 @@
   {
     "start": 11067.08,
     "end": 11069.0,
-    "zh": "是的，会 around 20% 。",
+    "zh": "对，大约20%。",
     "en": "Yup, it will be around 20%."
   },
   {
@@ -11522,25 +11522,25 @@
   {
     "start": 11493.02,
     "end": 11496.46,
-    "zh": "天啊，这里做得漂亮。同样的行业，",
+    "zh": "这里走得很好。同板块",
     "en": "f**king nicely here. So the same sector, the"
   },
   {
     "start": 11496.46,
     "end": 11499.9,
-    "zh": "同样的日期，同样的 setups。",
+    "zh": "、同一天、同样的形态。",
     "en": "same date and then the same setup."
   },
   {
     "start": 11499.9,
     "end": 11504.22,
-    "zh": "这次突破，然后我认为我们也应该",
+    "zh": "这次突破，我也相",
     "en": "So for the breakout again and then I think"
   },
   {
     "start": 11504.22,
     "end": 11508.54,
-    "zh": "aggressively回补仓位。",
+    "zh": "当积极地减了仓，",
     "en": "we really like trim the position also pretty aggressively"
   },
   {
@@ -11558,13 +11558,13 @@
   {
     "start": 11517.5,
     "end": 11521.46,
-    "zh": "突破刚形成一个小 consolidation，非常小",
+    "zh": "在EMA9上方形成一个",
     "en": "breakout right after it formed a small flak,"
   },
   {
     "start": 11521.46,
     "end": 11525.42,
-    "zh": "的 consolidation 在 9 EMA 之上。",
+    "zh": "很小的旗形整理后突破。",
     "en": "a very tiny flak consolidation above the 9 EMA."
   },
   {
@@ -11605,26 +11605,20 @@
   },
   {
     "start": 11548.46,
-    "end": 11550.82,
-    "zh": "可能不是回调就结束了，可以再等待一天",
-    "en": "maybe not on the pullback but maybe"
-  },
-  {
-    "start": 11550.82,
     "end": 11553.18,
-    "zh": "进行 consolidation。",
-    "en": "just wait for another day for consolidation."
+    "zh": "也许不做这次回调，而是再等一天整理，",
+    "en": "maybe not on the pullback but maybe just wait for another day for consolidation."
   },
   {
     "start": 11553.18,
     "end": 11557.1,
-    "zh": "所以有点像Olivequale预",
+    "zh": "有点像Oliver Kell所说的预判WI",
     "en": "So a little bit like an anticipated WIC play"
   },
   {
     "start": 11557.1,
     "end": 11561.02,
-    "zh": "期的WIC操作。所以以WIC开盘。",
+    "zh": "C形态〔缩写听辨存疑〕，它在这里向上开盘，",
     "en": "from Olivequale. So it opens up at the WIC"
   },
   {
@@ -11990,13 +11984,13 @@
   {
     "start": 11803.76,
     "end": 11808.76,
-    "zh": "所以最好一个是IONQ，还是RGTI，我觉得。",
+    "zh": "最好的是IONQ，还是RGTI？周线可",
     "en": "So the best one would be IONQ, right? Or RGTI, I think."
   },
   {
     "start": 11808.76,
     "end": 11813.76,
-    "zh": "每周是RGTI，每天是IONQ， maybe。",
+    "zh": "能RGTI更好，日线可能IONQ更好。",
     "en": "On the weekly would be RGTI, on the daily would be IONQ, maybe."
   },
   {
@@ -12104,25 +12098,25 @@
   {
     "start": 11888.54,
     "end": 11894.48,
-    "zh": "这个基础，这些K线放在这里，我觉得AlgaeTime可能会看起来",
+    "zh": "比较这个平台里的这些K线，我觉得RGTI可能",
     "en": "this base, these candles to put these candles here, I think AlgaeTime may look"
   },
   {
     "start": 11894.48,
     "end": 11899.52,
-    "zh": "更好的，特别是昨天，这是一个内包线。Yeah，而且这是个内包线。",
+    "zh": "更好，尤其前一天是内包线，",
     "en": "better, like especially the previous day this is an inside bar. Yeah and the"
   },
   {
     "start": 11899.52,
     "end": 11903.28,
-    "zh": "波动性变小了， K线 变紧了，",
+    "zh": "振幅更小、K线更紧，",
     "en": "volatility is much smaller, that is a"
   },
   {
     "start": 11903.28,
     "end": 11907.04,
-    "zh": "然后我认为 AlgaeTime",
+    "zh": "所以我觉得RGTI",
     "en": "tighter candle and then I think AlgaeTime"
   },
   {
@@ -12511,15 +12505,9 @@
   },
   {
     "start": 12189.76,
-    "end": 12192.48,
-    "zh": "右after市场opened之后，我会非",
-    "en": "right after market opened then I would be very"
-  },
-  {
-    "start": 12192.48,
     "end": 12195.2,
-    "zh": "常感兴趣，当它pull back到的时候。",
-    "en": "like interested when it the pulls back to the"
+    "zh": "开盘之后，如果它回调到",
+    "en": "right after market opened then I would be very like interested when it the pulls back to the"
   },
   {
     "start": 12195.2,
@@ -12548,13 +12536,13 @@
   {
     "start": 12210.48,
     "end": 12215.98,
-    "zh": "涨了40%左右，但……是的，但这个……因为它 p",
+    "zh": "它后来涨了约40%，",
     "en": "way up for 40% but um I am yeah"
   },
   {
     "start": 12215.98,
     "end": 12221.48,
-    "zh": "retty 的部分， pretty 是什么意思？",
+    "zh": "但我——这笔因为……",
     "en": "but but this one because like the it's pretty"
   },
   {
@@ -12566,7 +12554,7 @@
   {
     "start": 12226.64,
     "end": 12231.84,
-    "zh": "正好在这一根K线上，因为我不想设置",
+    "zh": "把止损设在这根K线低点、甚至这里，因为我不想设得",
     "en": "stopped right at this candle even even even here because I don't want to set"
   },
   {
@@ -12740,7 +12728,7 @@
   {
     "start": 12335.58,
     "end": 12337.72,
-    "zh": "是的，打开open AI。",
+    "zh": "对，OpenAI。",
     "en": "Yeah, open open AI."
   },
   {
@@ -12830,7 +12818,7 @@
   {
     "start": 12391.2,
     "end": 12393.12,
-    "zh": "有时候你会有跳空的下跌。",
+    "zh": "有时你也会遇到不利的向下跳空。",
     "en": "So sometimes you have some gap downs with you."
   },
   {
@@ -12872,7 +12860,7 @@
   {
     "start": 12420.16,
     "end": 12426.48,
-    "zh": "我真的很喜欢在长底形成后的第一次 breakout 交易。",
+    "zh": "我很喜欢长时间整理平台后的第一次突破。",
     "en": "I really love trading the first breakouts after the long base."
   },
   {
@@ -12896,7 +12884,7 @@
   {
     "start": 12437.94,
     "end": 12440.82,
-    "zh": "对，相比较较较短的基期",
+    "zh": "对，相比整理时间较短的平台，",
     "en": "Right, compared to like a shorter base"
   },
   {
@@ -12908,7 +12896,7 @@
   {
     "start": 12445.02,
     "end": 12447.98,
-    "zh": "到21 EMA的位置或者9EMA的位置。",
+    "zh": "回调到EMA21或EMA9附近。",
     "en": "to the 21 EMA be or the nine."
   },
   {
@@ -12992,7 +12980,7 @@
   {
     "start": 12498.1,
     "end": 12503.5,
-    "zh": "它是昨天以上的stylis，就像前一天一样，所以它就在这里。",
+    "zh": "略高于昨天、前一日的位置，大约这里。",
     "en": "It's stiley above yesterday's, like the previous day, so it's around here."
   },
   {
@@ -13064,13 +13052,13 @@
   {
     "start": 12549.94,
     "end": 12553.78,
-    "zh": "然后我一次性卖掉了所有的",
+    "zh": "后来我全部逢强卖",
     "en": "yeah and then I sell them all in"
   },
   {
     "start": 12553.78,
     "end": 12557.62,
-    "zh": "股票哎 hey我并没有等待",
+    "zh": "出；这次也没等",
     "en": "two strings yeah again hey I didn't wait for"
   },
   {
@@ -14120,13 +14108,13 @@
   {
     "start": 13245.16,
     "end": 13248.7,
-    "zh": "我的规则，但有一点是我总是设置止",
+    "zh": "自己的规则，但有一点：我",
     "en": "my rules, but one thing is I am setting"
   },
   {
     "start": 13248.7,
     "end": 13252.24,
-    "zh": "损 before entering",
+    "zh": "始终在入场前设好止损，",
     "en": "my stop, I'm always setting my stop before entering"
   },
   {
@@ -14156,14 +14144,14 @@
   {
     "start": 13268.28,
     "end": 13274.18,
-    "zh": "还是这样... 是的。它不在日线图上，而在",
+    "zh": "不是在日线均线，而也参考锚",
     "en": "still... yeah. So it's not on the daily, it's on"
   },
   {
     "start": 13274.18,
     "end": 13280.08,
-    "zh": "Inca FreeWap 2上。这个我觉得",
-    "en": "the Inca FreeWap 2. So this one I think"
+    "zh": "定VWAP。这个例子我认为",
+    "en": "the anchored VWAP 2. So this one I think"
   },
   {
     "start": 13280.08,
@@ -14384,7 +14372,7 @@
   {
     "start": 13430.76,
     "end": 13435.2,
-    "zh": "理想的完美 setups 你打算去做什么？",
+    "zh": "你理想中最想参与的形态是什么样？",
     "en": "the ideal picture perfect setup that you'd look to go for?"
   },
   {
@@ -14468,13 +14456,13 @@
   {
     "start": 13491.6,
     "end": 13496.06,
-    "zh": "回落后跌破50，然后出现 ove",
+    "zh": "失守50均线后反弹回测，最",
     "en": "back after it loses to 50 and an"
   },
   {
     "start": 13496.06,
     "end": 13500.52,
-    "zh": "rshoot。是的。这些是赢家。",
+    "zh": "好有些过冲。对，这些均线。",
     "en": "overshoot at best. Yes. Of these winners"
   },
   {
@@ -14720,7 +14708,7 @@
   {
     "start": 13662.0,
     "end": 13667.0,
-    "zh": "一般指数，我也看QQQ和IWM，",
+    "zh": "整体指数，我也关注QQQ和IWM，",
     "en": "the general indices, I also look at the QQQ and IWM,"
   },
   {
@@ -15134,7 +15122,7 @@
   {
     "start": 13947.24,
     "end": 13949.96,
-    "zh": "你做的一些关键事情是什么，以便保持正确的状态 mindset。",
+    "zh": "开盘前，你会做哪些事让自己准备好、进入合适的状态？",
     "en": "What are some kind of the key things that you do to kind of be in the right headspace"
   },
   {
@@ -15218,7 +15206,7 @@
   {
     "start": 13997.8,
     "end": 14000.72,
-    "zh": "有很多那些referrer。",
+    "zh": "其中不少已经延伸很远了。",
     "en": "So lots of those referes."
   },
   {
@@ -15230,7 +15218,7 @@
   {
     "start": 14005.92,
     "end": 14008.76,
-    "zh": "他们可能会开始失去一些动力 maybe",
+    "zh": "可能开始失去一些动量，",
     "en": "they may be start losing some steam maybe"
   },
   {
@@ -15278,7 +15266,7 @@
   {
     "start": 14034.36,
     "end": 14037.94,
-    "zh": "对个别股票的拒绝，出现 weakness 。",
+    "zh": "出现个股遇阻、转弱的迹象。",
     "en": "to some rejection of the individual stocks, the weakness."
   },
   {

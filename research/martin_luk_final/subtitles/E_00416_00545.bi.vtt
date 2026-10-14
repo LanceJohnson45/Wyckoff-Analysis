@@ -12,7 +12,7 @@ Let's understand position sizing and risk management from Martin Luke's perspect
 
 3
 00:00:07.400 --> 00:00:13.380
-他每笔交易风险承受0.5%的资产比例，但这个基准会根据市场调整。
+单笔账户风险以0.5%为基准，但会随市场
 He risks 0.5% of his portfolio per trade, but this baseline adjusts based on market
 
 4
@@ -47,7 +47,7 @@ His stop-loss methodology prioritises the low of the breakout day, based on exte
 
 10
 00:00:43.380 --> 00:00:49.240
-图表研究显示，真正的突破很少会重新访问它们的突破低点。
+图表研究认为，真正的突破很少重新回到突破低点。
 chart study showing that genuine breakouts rarely revisit their breakout lows.
 
 11
@@ -67,12 +67,12 @@ Let's now understand Martin's exit strategy framework.
 
 14
 00:01:02.360 --> 00:01:07.480
-马丁采用基于力量和基于弱点的退出策略，选择取决于市场。
+他既会逢强兑现，也会在转弱时退出，取决于市场
 Martin employs both strength-based and weakness-based exits, with selection depending on market
 
 15
 00:01:07.480 --> 00:01:13.920
-阶段，仓位盈利性和整体投资组合的上下文。
+阶段、该仓位的盈利以及整个组合的情况。
 stage, position profitability and overall portfolio context.
 
 16
@@ -92,7 +92,7 @@ feels euphoric about the position.
 
 19
 00:01:35.720 --> 00:01:41.720
-利用弱势卖出时主要使用追踪止损，通常是9 EMA。
+转弱退出通常采用跟踪止损，多数仓位主要参考EMA9。
 Selling into weakness utilizes trailing stops primarily the 9 EMA for most positions.
 
 20
@@ -112,7 +112,7 @@ The key insight.
 
 23
 00:01:51.880 --> 00:01:56.640
-退出策略适应市场阶段和资金曲线位置。
+退出方式随市场阶段和自身资金曲线状态调整。
 Exit strategy adapts to market stage and equity curve position.
 
 24
@@ -122,12 +122,12 @@ During drawdowns, he leans towards selling in strength to preserve capital.
 
 25
 00:02:01.300 --> 00:02:05.960
-在盈利缓冲和强劲市场下，他延长持仓以捕捉价格延伸。
+有利润垫、市场强时，他会跟踪更久，争取更大的
 With profit cushions and strong markets, he trails positions longer to capture extended
 
 26
 00:02:05.960 --> 00:02:08.400
-移动了。
+行情。
 moves.
 
 27

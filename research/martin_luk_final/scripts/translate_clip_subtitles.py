@@ -93,6 +93,25 @@ def write_track(path: Path, cues: list[dict], language: str, srt: bool) -> None:
     path.write_text("\n".join(blocks), encoding="utf-8")
 
 
+def split_chinese_caption(text: str, requested: int) -> list[str]:
+    """优先在标点处分句，避免拆开EMA、百分比和听辨存疑标记。"""
+    tokens = list(re.finditer(r"〔[^〕]*〕|\d+(?:\.\d+)?(?:%|R|分钟|小时|美元|美分|股|倍)|[A-Za-z0-9][A-Za-z0-9.%_-]*", text))
+    boundaries = [0]
+    punctuation = [m.end() for m in re.finditer(r"[，。；！？：]", text)]
+    for part in range(1, requested):
+        ideal = round(len(text) * part / requested)
+        nearby = [pos for pos in punctuation if abs(pos - ideal) <= 7 and boundaries[-1] < pos < len(text)]
+        cut = min(nearby, key=lambda pos: abs(pos - ideal)) if nearby else ideal
+        for token in tokens:
+            if token.start() < cut < token.end():
+                cut = token.end()
+                break
+        if boundaries[-1] < cut < len(text):
+            boundaries.append(cut)
+    boundaries.append(len(text))
+    return [text[start:end].strip() for start, end in zip(boundaries, boundaries[1:]) if text[start:end].strip()]
+
+
 def export_clips(rows: list[dict], translations: dict[str, str]) -> None:
     """Clip source cues, avoid overlap, split long lines, and emit all tracks."""
     manifest = json.loads((ROOT / "clips_manifest.json").read_text(encoding="utf-8"))
@@ -116,8 +135,9 @@ def export_clips(rows: list[dict], translations: dict[str, str]) -> None:
             words = row["en"].split()
             parts = max(1, (len(zh) + 39) // 40, int((end - start) / 9) + 1)
             parts = min(parts, max(1, len(zh) // 6), max(1, int((end - start) / .7)), len(words))
-            for part in range(parts):
-                cn = zh[round(len(zh) * part / parts):round(len(zh) * (part + 1) / parts)].strip()
+            pieces = split_chinese_caption(zh, parts)
+            parts = len(pieces)
+            for part, cn in enumerate(pieces):
                 en = " ".join(words[round(len(words) * part / parts):round(len(words) * (part + 1) / parts)])
                 cues.append({"start": round(start + (end - start) * part / parts, 3), "end": round(start + (end - start) * (part + 1) / parts, 3), "zh": cn, "en": en})
         if not cues:

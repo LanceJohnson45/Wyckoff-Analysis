@@ -1,6 +1,6 @@
 1
 00:00:00,000 --> 00:00:03,280
-在大多数仓位上创建了一个丑陋的红色K线。
+多数持仓都出现了难看的阴线。
 created an ugly red candle across most positions.
 
 2
@@ -45,7 +45,7 @@ Leading stocks are names in clear uptrends, where the 9 EMA is above the 21 EMA 
 
 10
 00:00:38,560 --> 00:00:42,520
-普通股票没有明确的方向性倾向。
+Mediocre指没有明确方向的股票。
 Mediocre stocks without clear directional bias.
 
 11
@@ -55,7 +55,7 @@ lagging names in downtrends, and pillar, mega-cup stocks affecting indices.
 
 12
 00:00:51,100 --> 00:00:56,440
-每个类别中的股票数量作为市场健康指标。当领先的
+各组股票的数量也反映市场健康。当Leading
 The number of stocks in each category serves as a market health indicator. When the leading
 
 13
@@ -65,12 +65,12 @@ list contracts and lagging expands, it signals unfavorable conditions for breako
 
 14
 00:01:03,520 --> 00:01:08,360
-在市场交易时段，他会寻找与精确进入标准相匹配的突破进入点。
+盘中，他寻找满足明确入场条件、同时能够
 In market hours, he looks for breakout entries aligning with the precise entry criterion
 
 15
 00:01:08,360 --> 00:01:11,240
-提供非常紧的止损。
+设置紧止损的突破入口。
 that offer very tight stops.
 
 16
@@ -85,22 +85,22 @@ Martin's approach evolves with market conditions.
 
 18
 00:01:20,760 --> 00:01:25,920
-在2024年回调期间，他发展了针对反弹后股票做空的策略。
+2024年后期调整时，他发展了反弹至
 During the late 2024 correction, he developed short-selling setups targeting stocks bouncing
 
 19
 00:01:25,920 --> 00:01:29,480
-进入下降并拢的EMA。
+下降、收敛均线附近的做空形态。
 into declining, converging EMAs.
 
 20
 00:01:29,480 --> 00:01:34,960
-这些逆突破同样运用风险管理系统，但利用下行趋势。
+这些反向突破采用同样的风险管理原则，捕捉向下
 These inverse breakouts apply the same risk management principles but capitalise on downward
 
 21
 00:01:34,960 --> 00:01:37,280
-趋势。
+动量。
 momentum.
 
 22

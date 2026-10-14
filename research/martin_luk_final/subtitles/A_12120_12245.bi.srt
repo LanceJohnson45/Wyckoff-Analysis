@@ -1,114 +1,104 @@
 1
-00:00:00,000 --> 00:00:01,400
-这个是膝盖自由的网页，150 EMA 在这里
-ankle free web and the 150 EMA to just sell
+00:00:00,000 --> 00:00:02,800
+锚定VWAP以及EMA150附近，逢强卖出。不错的一笔。下一个是
+anchored VWAP and the 150 EMA to just sell them in the strength. Yeah nice trade. So this one is
 
 2
-00:00:01,400 --> 00:00:02,800
-卖。不错的一单交易。所以这个是在这里卖出。
-them in the strength. Yeah nice trade. So this one is
+00:00:02,800 --> 00:00:07,480
+AMPX，是回调到EMA21和
+AMPX would be another pullback buy on the 21 and
 
 3
-00:00:02,800 --> 00:00:07,480
-AMBX 在 21 和 9 EMA 上将
-AMBX would be another pullback buy on the 21 and
-
-4
 00:00:07,480 --> 00:00:12,160
-会是另一波回调买入机会。实际上我认为它是在
+EMA9的另一例。我记得也靠近
 the 9 EMA. Also actually I believe it's on the
 
-5
+4
 00:00:12,160 --> 00:00:19,280
-也参考锚定VWAP。所以这也像是突破后的回测，接着下穿；但我买的是5……
-ankle free web 2 so it also like a breaking retest and then it undercuts but I bought the 5
+锚定VWAP。这也是突破后回测，再短暂下穿。我买的是5
+anchored VWAP too so it also like a breaking retest and then it undercuts but I bought the 5
 
-6
+5
 00:00:19,840 --> 00:00:27,360
-一分钟突破，我想应该是1分钟的突破。
+分钟突破——放大看看。哦，我记得应该是1分钟突破，是1
 minute breakups um let's zoom in oh so it would be a one minute breakout I believe so it's a one
 
-7
+6
 00:00:27,360 --> 00:00:32,160
-分钟突破，然后回调到
+分钟突破，
 minute breakout and then um as it really as it
 
-8
+7
 00:00:32,160 --> 00:00:36,960
-21EMA区域区域。
+然后回调到21EMA区域区域。
 pulls back into the into the um 21 EMA area
 
-9
+8
 00:00:36,960 --> 00:00:45,120
 和EMA的位置，你也能看到市场开盘前的情况。
 And also, like I know that before the market opened, you could see where the EMA would be and where the
 
-10
+9
 00:00:45,120 --> 00:00:49,600
 像是锚定的。所以你有一个锚定的。
 like anchor would be. So you have it like a
 
-11
+10
 00:00:54,560 --> 00:01:01,600
 大约像支撑位一样，你知道，大约在745左右。
 like a approximate like a support level, you know, around like 745 each or
 
-12
+11
 00:01:01,600 --> 00:01:09,120
 750左右可能成为支撑，所以当市场向上跳空然后回调时。
 750 ish could be a support so when the market like when it starts um gap up and then it pulls back
 
+12
+00:01:09,760 --> 00:01:15,200
+开盘之后，如果它回调到
+right after market opened then I would be very like interested when it the pulls back to the
+
 13
-00:01:09,760 --> 00:01:12,480
-右after市场opened之后，我会非
-right after market opened then I would be very
-
-14
-00:01:12,480 --> 00:01:15,200
-常感兴趣，当它pull back到的时候。
-like interested when it the pulls back to the
-
-15
 00:01:15,200 --> 00:01:22,240
 750 或 745 左右的水平，他们就会买进一分钟的突破。然后这个也会。
 750 or 745 ish uh level and they'll just bought the one minute breakouts and then this one also
 
-16
+14
 00:01:22,240 --> 00:01:30,480
 做得挺好的，但我只是觉得有点早卖了，它可能卖早了。
 worked pretty well but I'm just like I also like sell it a little bit maybe too early it has another
 
-17
+15
 00:01:30,480 --> 00:01:35,980
-涨了40%左右，但……是的，但这个……因为它 p
+它后来涨了约40%，
 way up for 40% but um I am yeah
 
-18
+16
 00:01:35,980 --> 00:01:41,480
-retty 的部分， pretty 是什么意思？
+但我——这笔因为……
 but but this one because like the it's pretty
 
-19
+17
 00:01:41,480 --> 00:01:46,640
 延伸至9 EMA，然后我可能会稍微减少一点仓位。
 extended to the 9 EMA and then I probably going to like step my heart
 
-20
+18
 00:01:46,640 --> 00:01:51,840
-正好在这一根K线上，因为我不想设置
+把止损设在这根K线低点、甚至这里，因为我不想设得
 stopped right at this candle even even even here because I don't want to set
 
-21
+19
 00:01:51,840 --> 00:01:56,160
 离9 EMA太近了，所以我真的想留出一些空间。
 it too close to the 9 EMA so I really really want to leave some room for the
 
-22
+20
 00:01:56,160 --> 00:02:01,460
 跌破了，但我认为也可能是九月，我认为市场
 undercuts but I think also that like again is September I think the market
 
-23
+21
 00:02:01,460 --> 00:02:05,000
 可能继续延伸，有点怀疑，然后我提前平仓了。
 just maybe extended being skeptical and then I close the trade early and then

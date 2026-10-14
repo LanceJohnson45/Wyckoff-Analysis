@@ -4,932 +4,920 @@ So I can get a really more sophisticated presentation or the picture for the int
 
 2
 00:00:01,000 --> 00:00:05,520
-So generally, I think Bright also introduced them
+So generally, I think Brian Shannon also introduced
 
 3
 00:00:05,520 --> 00:00:10,040
-to where to put the anchor set.
+them to where to put the anchor set.
 
 4
-00:00:10,040 --> 00:00:14,120
-And for me personally, I preferred to put it
+00:00:10,040 --> 00:00:18,200
+And for me personally, I preferred to put it in the swing high or the swing lows of
 
 5
-00:00:14,120 --> 00:00:18,200
-in the swing high or the swing lows of
-
-6
 00:00:18,200 --> 00:00:19,780
 a base.
 
-7
+6
 00:00:19,780 --> 00:00:28,440
-So for example, for this R&Q base, this is a pretty long base, I would say.
+So for example, for this IONQ base, this is a pretty long base, I would say.
 
-8
+7
 00:00:28,440 --> 00:00:36,280
 I'm going to put it at the swing high. So this is the very high, the highest point for this base.
 
-9
+8
 00:00:36,920 --> 00:00:41,760
 So it started from the base right after it formed
 
-10
+9
 00:00:41,760 --> 00:00:46,600
 this swing high and then the price. So you can
 
-11
+10
 00:00:46,600 --> 00:00:53,240
-see it reacts to the angle of view app pretty actively and you can ask the supports here,
+see it reacts to the anchored VWAP pretty actively and you can ask the supports here,
 
-12
+11
 00:00:53,240 --> 00:00:59,880
 maybe a support here and you can also see the resistance here and then you can see I will say
 
-13
+12
 00:00:59,880 --> 00:01:06,840
 maybe not this day and then it will be like this day will also be a good pullback buy so you um
 
-14
+13
 00:01:06,840 --> 00:01:11,560
 even if you missed this day so this day I think
 
-15
+14
 00:01:11,560 --> 00:01:16,280
 it's this more a 21 EMA or a 9 EMA pullback
 
-16
+15
 00:01:16,280 --> 00:01:21,530
 But it's a really like like a deep deep pullback. So if
 
-17
+16
 00:01:21,530 --> 00:01:26,780
 you are you've I don't think this is a really good entry
 
-18
+17
 00:01:26,780 --> 00:01:33,220
 But really good entry, but if you're missing this pullback, then you can buy it another one the next day
 
-19
+18
 00:01:33,220 --> 00:01:36,820
-so it pulls back into the angle of view up also the 9 EMA and
+so it pulls back into the anchored VWAP also the 9 EMA and
 
-20
+19
 00:01:37,300 --> 00:01:45,880
 Actually, it also near the previous swing high to like those highs in the early child levels lining up together
 
-21
+20
 00:01:46,280 --> 00:01:54,040
 spot basically yeah yes so yes around these levels so
 
-22
+21
 00:01:55,000 --> 00:01:57,480
 And when the support level are lining up,
 
-23
+22
 00:01:57,480 --> 00:02:04,480
 those are the really key levels that I wanted to engage in.
 
-24
+23
 00:02:04,480 --> 00:02:07,240
 And you can have an edge.
 
-25
+24
 00:02:07,240 --> 00:02:10,000
 You will have the highest edge if you are buying those areas.
 
-26
+25
 00:02:10,000 --> 00:02:14,720
-So if a trader buys at the anchor free web,
+So if a trader buys at the anchored VWAP,
 
-27
+26
 00:02:14,720 --> 00:02:16,880
 and also there are another trader buys at the 9 EMA,
 
-28
+27
 00:02:16,880 --> 00:02:19,680
 and another one buys at the previous highs,
 
-29
+28
 00:02:19,680 --> 00:02:23,200
 or any support level, then you can
 
-30
+29
 00:02:23,200 --> 00:02:27,400
 Like there would be the highest probability point
 
-31
+30
 00:02:27,400 --> 00:02:30,840
 that the stock would find support at.
 
-32
+31
 00:02:30,840 --> 00:02:35,840
 So for Angular, I really find it very useful,
 
-33
+32
 00:02:36,600 --> 00:02:41,600
 especially on a brick and retest within a base.
 
-34
+33
 00:02:42,000 --> 00:02:44,440
 So this is a huge base.
 
-35
+34
 00:02:44,440 --> 00:02:47,920
 So I would say this the Friday,
 
-36
+35
 00:02:47,920 --> 00:02:52,920
 nine of May, this pullback is really good on a daily chart.
 
-37
+36
 00:02:53,200 --> 00:02:59,740
 Yeah, this is one of the examples and actually you can see the stocks find another support
 
-38
+37
 00:02:59,740 --> 00:03:05,120
-at the 150 EMA and the anchor free web on at August 2.
+at the 150 EMA and the anchored VWAP on at August 2.
 
-39
+38
 00:03:05,120 --> 00:03:10,000
 I don't know whether it's any coincidence or not, but at least it is reacting to the
 
-40
+39
 00:03:10,000 --> 00:03:12,700
-anchor free web and also the 150.
+anchored VWAP and also the 150.
 
-41
+40
 00:03:12,700 --> 00:03:17,230
 So they when like those support level really
 
-42
+41
 00:03:17,230 --> 00:03:21,760
 coincides or really come close to each other,
 
-43
+42
 00:03:21,760 --> 00:03:27,520
 those areas is where you should put your focus in.
 
-44
+43
 00:03:27,520 --> 00:03:33,280
 Focus on, yeah, and then this is one of the
 
-45
+44
 00:03:33,280 --> 00:03:38,000
 examples and sometimes I will use, I will put it on the
 
-46
+45
 00:03:38,000 --> 00:03:42,720
 maybe a gap up or a gap down day on a huge
 
-47
+46
 00:03:42,720 --> 00:03:49,840
 volume. So for example like this day here, but it is really similar to the swing high here so I don't,
 
-48
+47
 00:03:49,840 --> 00:03:53,040
 I think this is very similar, not much difference.
 
-49
+48
 00:03:53,600 --> 00:03:59,840
 But sometimes I would also if also if you're like if you're anchoring to this
 
-50
+49
 00:03:59,840 --> 00:04:03,040
 swing height so you can see this is this maybe the
 
-51
+50
 00:04:04,960 --> 00:04:10,160
 the first or the second high or low for this space if you are ignoring this part.
 
-52
+51
 00:04:10,160 --> 00:04:14,880
 So if what if I've set it to here or here so if I'm setting to here so you can see
 
-53
+52
 00:04:14,880 --> 00:04:21,120
-the price is also rejecting the angle of view up and then there's another like a pullback
+the price is also rejecting the anchored VWAP and then there's another like a pullback
 
-54
+53
 00:04:21,120 --> 00:04:26,480
 opportunities when the stock is getting down into the rising maybe 50 and the 21 and also the
 
-55
+54
 00:04:26,480 --> 00:04:33,200
-angle of view up and they define supports so it was it just a very it just provides you a really
+anchored VWAP and they define supports so it was it just a very it just provides you a really
 
-56
+55
 00:04:33,200 --> 00:04:42,080
 good like support or resistance level that the stock is going to react quite actively and and
 
-57
+56
 00:04:42,080 --> 00:04:48,080
 And yeah, just so catch up in just real quick Martin for folks who aren't familiar with the indicator one
 
-58
+57
 00:04:48,080 --> 00:04:53,060
 I have recommend watching the videos and we'll kind of link them down below from from Brian because you know
 
-59
+58
 00:04:53,060 --> 00:04:55,060
 He's fantastic at explaining it
 
-60
+59
 00:04:55,060 --> 00:04:59,320
-But anchor view up just stands for or view app stands for
+But anchored VWAP just stands for or view app stands for
 
-61
+60
 00:05:00,280 --> 00:05:06,380
 Anchored volume-weighted average price. So what's doing is aggregating the prices versus the volume
 
+61
+00:05:06,840 --> 00:05:12,040
+Since a certain day in time and that's what you're anchoring it to so basically what it shows is
+
 62
-00:05:06,840 --> 00:05:09,440
-Since a certain day in time and that's what you're
-
-63
-00:05:09,440 --> 00:05:12,040
-anchoring it to so basically what it shows is
-
-64
 00:05:12,080 --> 00:05:15,560
 is our buyers or sellers net, net, you know,
 
-65
+63
 00:05:15,560 --> 00:05:19,280
 in control since a period and that flip often coincides
 
-66
+64
 00:05:19,280 --> 00:05:21,800
 with a great entry opportunities up the right hand side
 
-67
+65
 00:05:21,800 --> 00:05:23,680
 of the base, which is what kind of Martin was,
 
-68
+66
 00:05:23,680 --> 00:05:27,040
 was highlighting, you know, multiple times, you know,
 
-69
+67
 00:05:27,040 --> 00:05:30,120
 up the right hand side of IONQ here from the space.
 
-70
+68
 00:05:30,120 --> 00:05:33,520
 Martin, anything you'd add from your side about, you know,
 
-71
+69
 00:05:33,520 --> 00:05:35,520
 you know, why you find it meaningful or anything you want
 
-72
+70
 00:05:35,520 --> 00:05:37,440
 to add on the indicator?
 
-73
+71
 00:05:37,440 --> 00:05:42,440
 Yeah, thanks for the explanation Richard.
 
-74
+72
 00:05:42,440 --> 00:05:51,300
-And yeah, I think that's it for the explanation for the anchor free web.
+And yeah, I think that's it for the explanation for the anchored VWAP.
 
-75
+73
 00:05:51,300 --> 00:06:00,220
 But the very important message that I wanted to show is the pride is really reacting.
 
-76
+74
 00:06:00,220 --> 00:06:02,300
 Actually, like if if is
 
-77
+75
 00:06:03,340 --> 00:06:09,140
 If the indicator is I don't care if the indicator is really like fancy or really like that
 
-78
+76
 00:06:09,340 --> 00:06:15,340
 The formula behind it like it's gotta work. It's important to like no. Yeah, it's important to know
 
-79
+77
 00:06:16,500 --> 00:06:23,940
 The basic part of it, but the most important part is whether the price is is reacting and where it really works
 
-80
+78
 00:06:24,340 --> 00:06:28,180
 So I think when could we anchor we what works really well
 
-81
+79
 00:06:28,180 --> 00:06:36,180
 in the recent days. So this is one of the examples and if you're going back further,
 
-82
+80
 00:06:36,180 --> 00:06:43,120
 actually for maybe for this short side too, apart from
 
-83
+81
 00:06:43,120 --> 00:06:50,060
 the swing high, you can also anchor it to
 
-84
+82
 00:06:50,060 --> 00:06:58,700
 the swing loads. So if I'm anchoring it to this swing load here for this small
 
-85
-00:06:58,700 --> 00:07:01,960
-little base or it's smaller to not
+83
+00:06:58,700 --> 00:07:05,220
+little base or it's smaller to not not not small but this consolidation this
 
-86
-00:07:01,960 --> 00:07:05,220
-not not small but this consolidation this
-
-87
+84
 00:07:05,220 --> 00:07:11,580
 base area then then you can see this is a really good entry for this pullback
 
-88
+85
 00:07:11,580 --> 00:07:18,140
 the short but you can see the price reacts to the 50 EMA and also to the
 
-89
+86
 00:07:18,140 --> 00:07:21,980
-the Angular Free Web and they found resistance
+the anchored VWAP and they found resistance
 
-90
+87
 00:07:21,980 --> 00:07:23,580
 and the EMAs are training now.
 
-91
+88
 00:07:23,580 --> 00:07:26,340
-So they just find the resistance right at the Angular Free Web
+So they just find the resistance right at the anchored VWAP
 
-92
+89
 00:07:26,340 --> 00:07:28,540
 and then they start training them.
 
-93
+90
 00:07:28,540 --> 00:07:31,020
 So it's not only working on the long side,
 
-94
+91
 00:07:31,020 --> 00:07:33,300
 it's also working on the short side too.
 
-95
+92
 00:07:33,300 --> 00:07:35,860
 And we're sort of jumping, and it might just be me
 
-96
+93
 00:07:35,860 --> 00:07:37,020
 because I might be colorblind,
 
-97
+94
 00:07:37,020 --> 00:07:38,900
 but would you be able to double click your Angular
 
-98
+95
 00:07:38,900 --> 00:07:41,980
 VWAP and just make it maybe bright orange or something?
 
-99
+96
 00:07:41,980 --> 00:07:44,060
 Yeah, just so it's really clear for people
 
-100
+97
 00:07:44,060 --> 00:07:46,260
 who are looking at it.
 
-101
+98
 00:07:46,260 --> 00:07:51,420
 Yeah, or white, maybe increase the thickness even just for purposes.
 
-102
+99
 00:07:51,420 --> 00:07:52,060
 Yeah, there we go.
 
-103
+100
 00:07:52,060 --> 00:07:52,860
 Now we can really see it.
 
-104
+101
 00:07:52,860 --> 00:07:53,780
 Perfect.
 
-105
+102
 00:07:53,780 --> 00:07:56,020
 Yeah, thank you.
 
-106
+103
 00:07:56,020 --> 00:07:57,260
 Yeah, all that's good.
 
-107
+104
 00:07:57,260 --> 00:07:57,700
 That's all good.
 
-108
+105
 00:07:57,700 --> 00:07:58,260
 OK.
 
-109
+106
 00:07:58,260 --> 00:08:00,220
 Thank you.
 
-110
+107
 00:08:00,220 --> 00:08:02,100
 OK.
 
-111
+108
 00:08:02,100 --> 00:08:03,020
 Yeah.
 
-112
+109
 00:08:03,020 --> 00:08:05,260
 And then it works really well.
 
-113
+110
 00:08:05,260 --> 00:08:09,900
-And that higher load was caught with the anchor view up as well.
+And that higher load was caught with the anchored VWAP as well.
 
-114
+111
 00:08:09,900 --> 00:08:11,500
 Right after, yeah, yeah.
 
-115
+112
 00:08:11,500 --> 00:08:12,540
 Yeah.
 
-116
+113
 00:08:12,540 --> 00:08:13,580
 Right after this one.
 
-117
+114
 00:08:13,580 --> 00:08:14,140
 Yeah, yeah, yeah.
 
-118
+115
 00:08:14,140 --> 00:08:14,900
 This one, I think.
 
-119
+116
 00:08:14,900 --> 00:08:15,500
 Yeah, yeah, that one.
 
-120
+117
 00:08:15,500 --> 00:08:18,980
 Okay, yeah, that's true, that's true.
 
-121
+118
 00:08:18,980 --> 00:08:22,760
 And yeah, so it's not, I will also like put it
 
-122
+119
 00:08:22,760 --> 00:08:27,760
 on the swing low if I'm trying to short,
 
-123
+120
 00:08:28,000 --> 00:08:30,820
 like find some short ideas.
 
-124
+121
 00:08:30,820 --> 00:08:35,820
 And so it's really the opposite from the long side.
 
-125
+122
 00:08:36,320 --> 00:08:41,320
 And okay, send then, yeah, that's I win Q.
 
-126
+123
 00:08:41,320 --> 00:08:47,080
 I want you but also for if you are going back like earlier
 
-127
+124
 00:08:48,520 --> 00:08:51,760
-Earlier days so angle free angle free web is also
+Earlier days so angle free anchored VWAP is also
 
-128
+125
 00:08:53,040 --> 00:08:55,040
 Working it also worked
 
-129
+126
 00:08:56,800 --> 00:09:03,920
 Maybe backed into the proof how 2006 for NVIDIA so and we do have say how they had a
 
-130
+127
 00:09:05,040 --> 00:09:07,040
 50% drawdown nearly
 
-131
+128
 00:09:07,040 --> 00:09:14,520
-in 2006. So if you're anchored, putting an anchor view app into this swing high before
+in 2006. So if you're anchored, putting an anchored VWAP into this swing high before
 
-132
+129
 00:09:14,520 --> 00:09:21,520
 this huge downtrend, then you can see the price just found support after it breaks out.
 
-133
+130
 00:09:21,520 --> 00:09:27,840
-So I think this pattern is really commonly seen. So it breaks out from the anchor view
+So I think this pattern is really commonly seen. So it breaks out from the anchored VWAP
 
-134
+131
 00:09:27,840 --> 00:09:36,560
 app and then it pulls back. Normally the best timing for you to buy and pull back will be
 
-135
+132
 00:09:36,560 --> 00:09:43,560
 the first pullback into the support level. So it's pulling back into the 150 EMA and
 
-136
+133
 00:09:43,560 --> 00:09:51,920
-you can see the 21 or the 52 and also the ankle free work those levels. So in fine support
+you can see the 21 or the 52 and also the anchored VWAP those levels. So in fine support
 
-137
+134
 00:09:51,920 --> 00:09:57,320
 and that rarely backs into the 9 EMA and then it starts another uptrend before after
 
-138
+135
 00:09:57,320 --> 00:10:03,560
 it. And definitely there's also a really good breakouts entry here too. I think this is
 
-139
+136
 00:10:03,560 --> 00:10:08,760
 a really tight entry to a really inside bar and
 
-140
+137
 00:10:08,760 --> 00:10:13,960
 then a breakout and so I think like pullbacks
 
-141
+138
 00:10:13,960 --> 00:10:20,520
 and breakouts are not on the completely opposite side of the of trading back they can they
 
-142
+139
 00:10:20,520 --> 00:10:29,480
 really like they can work together come along with each other yeah yeah so I think I am not
 
-143
+140
 00:10:29,480 --> 00:10:34,040
 going to like only trading breakouts or only trading pullbacks but it just
 
-144
+141
 00:10:34,040 --> 00:10:39,600
 that you really depends on the market condition and if learning pullbacks just
 
-145
+142
 00:10:39,600 --> 00:10:45,440
 gives me like another more more entry potential entry points and which can like
 
-146
+143
 00:10:45,440 --> 00:10:53,160
 limit my risk very tightly so yeah this is the I really like this break and
 
-147
+144
 00:10:53,160 --> 00:10:59,680
 retest. Yeah, it's really really common so you will see more samples I believe.
 
-148
+145
 00:10:59,680 --> 00:11:08,160
 And yeah so it works back in 2006 and also another one I think on this one
 
-149
+146
 00:11:08,160 --> 00:11:15,840
-here. And you can see I'm not like setting the angle of view at it. The
+here. And you can see I'm not like setting the anchored VWAP it. The
 
-150
+147
 00:11:15,840 --> 00:11:24,520
 very like the swing height the highest part of this this this this pop here so
 
-151
+148
 00:11:24,520 --> 00:11:30,440
 it's the highest the highest price bar would be this candle but why I'm going
 
-152
+149
 00:11:30,440 --> 00:11:35,240
 into like we do like to set it to this this bar here is the price just reacts
 
-153
+150
 00:11:35,240 --> 00:11:39,860
 to this angle free but more
 
-154
+151
 00:11:39,860 --> 00:11:44,480
 during the downtrend more effectively yeah so
 
-155
+152
 00:11:44,480 --> 00:11:48,680
 So with that, there's the first rejection, the second one, and also the third one.
 
-156
+153
 00:11:48,680 --> 00:11:54,480
 And so that's why I'm just, sometimes I'm going to adjust it a little bit.
 
-157
+154
 00:11:55,000 --> 00:12:02,000
 to find the best candle which the price would respect the most.
 
-158
+155
 00:12:02,000 --> 00:12:07,520
 And it's not like you have to put it
 
-159
+156
 00:12:07,520 --> 00:12:13,040
 into the really the lowest candle, or the highest
 
-160
+157
 00:12:13,040 --> 00:12:17,520
 candle of a base.
 
-161
+158
 00:12:17,520 --> 00:12:26,480
 I personally would just really tweak or adjust it a little bit to make it the most effective
 
-162
+159
 00:12:26,480 --> 00:12:27,480
 one.
 
-163
+160
 00:12:27,480 --> 00:12:29,480
 Could you change that color?
 
-164
+161
 00:12:29,480 --> 00:12:31,480
 Could you change that color?
 
-165
+162
 00:12:31,480 --> 00:12:36,200
 It might be hard for a few people watching on small phones and stuff.
 
-166
+163
 00:12:36,200 --> 00:12:39,440
 Yeah, I agree too.
 
-167
+164
 00:12:39,440 --> 00:12:41,280
 But I don't know how to set it.
 
-168
+165
 00:12:41,280 --> 00:12:45,280
 I think the ones you've already got there, yeah, that's perfect.
 
-169
+166
 00:12:45,280 --> 00:12:46,440
 So you can see the rejection.
 
-170
+167
 00:12:46,440 --> 00:12:54,120
 Oh, I got it. I got it. I got it. Okay. I got it. So, yep, this will be the another one.
 
-171
+168
 00:12:54,120 --> 00:13:02,060
 And you can see there is a retest on this breakout after this breakout and near the 50
 
-172
+169
 00:13:02,060 --> 00:13:06,560
 EMA also above the 9 EMA when the EMA starts
 
-173
+170
 00:13:06,560 --> 00:13:11,060
 crossing back when the 9 is above the 21 too.
 
-174
+171
 00:13:11,060 --> 00:13:17,740
 And this is, I believe like in those areas, if you're training a breakout, you just can't
 
-175
+172
 00:13:17,740 --> 00:13:19,500
 get it through tight entry.
 
-176
+173
 00:13:19,500 --> 00:13:25,660
 I think these two days, like for this day, it just maybe works in the first hour or the
 
-177
+174
 00:13:25,660 --> 00:13:31,860
 first or second hour, and they just face at the right back to the 50 EMA.
 
-178
+175
 00:13:31,860 --> 00:13:39,500
 But if you're training pullbacks, then you may like catch this video uptrend on this
 
-179
+176
 00:13:39,500 --> 00:13:40,900
 pullback here.
 
-180
+177
 00:13:40,900 --> 00:13:48,120
 So sometimes it's just like there are pullbacks
 
-181
+178
 00:13:48,120 --> 00:13:55,340
 and pullbacks are like just going like sometimes
 
-182
+179
 00:13:55,340 --> 00:13:59,660
 you can you have more opportunities on the breakouts and sometimes you can you have more
 
-183
+180
 00:13:59,660 --> 00:14:06,540
 opportunities on the pullbacks and it just allows you to enter the strong names more
 
-184
+181
 00:14:06,540 --> 00:14:14,540
 more often and you have more entry points on getting the stocks that you really wanted to get in,
 
-185
+182
 00:14:14,540 --> 00:14:19,040
 especially maybe it's on a hot bean, maybe it's really
 
-186
+183
 00:14:19,040 --> 00:14:23,540
 strong or you have really high conviction into one stocks.
 
-187
+184
 00:14:23,540 --> 00:14:28,540
 So that is another example for the end of the year.
 
-188
+185
 00:14:28,540 --> 00:14:30,500
 Yeah, a few questions on that one, Martin.
 
-189
+186
 00:14:30,500 --> 00:14:31,740
 Sorry.
 
-190
+187
 00:14:31,740 --> 00:14:35,860
 Could you break down the overall, the base bombing process too?
 
-191
+188
 00:14:35,860 --> 00:14:38,220
 Because you've got constructive price and volume action
 
-192
+189
 00:14:38,220 --> 00:14:41,700
 at the bottom there where it goes tight, it pops higher,
 
-193
+190
 00:14:41,700 --> 00:14:44,260
 and then starts forming the lower highs.
 
-194
+191
 00:14:44,260 --> 00:14:48,300
 Are you looking for maybe to act around that first higher low
 
-195
+192
 00:14:48,300 --> 00:14:51,540
-or second higher low as it flips above the anchor view up
+or second higher low as it flips above the anchored VWAP
 
-196
+193
 00:14:51,540 --> 00:14:53,100
 and retest it from below?
 
-197
+194
 00:14:53,100 --> 00:14:54,660
 Yeah, could you just kind of break down this example
 
-198
+195
 00:14:54,660 --> 00:14:56,940
 a little bit more starting from that kind of base bombing
 
-199
+196
 00:14:56,940 --> 00:15:04,060
 process. That would be good. Yeah, that's a really good question. And I'm not going to like,
 
-200
+197
 00:15:05,340 --> 00:15:12,060
 like, random, randomly buying like any, any pullbacks or like any, any pullbacks into the
 
-201
+198
 00:15:12,060 --> 00:15:20,540
 ankle for you or, or any EMAs. So, yeah, very, very true that this, this pop here is really a
 
-202
+199
 00:15:20,540 --> 00:15:25,900
 change of character. Right. Like that catches your attention. Yeah. Yeah. Yeah. Yeah. Although I'm
 
-203
+200
 00:15:25,900 --> 00:15:31,070
 I'm not sure it will get into my radar and
 
-204
+201
 00:15:31,070 --> 00:15:36,240
 it's really a strong move and a huge green
 
-205
+202
 00:15:36,240 --> 00:15:40,880
 bar which is up 8% and close above the
 
-206
+203
 00:15:40,880 --> 00:15:45,520
 50 EMA and this is a really strong one.
 
-207
+204
 00:15:45,520 --> 00:15:52,880
 So then it pulls back and forms the higher lows and then the EMA starts crossing back.
 
-208
+205
 00:15:52,880 --> 00:15:57,600
 So this is maybe
 
-209
+206
 00:15:57,600 --> 00:16:02,320
 a wedge pop from Olyphical.
 
-210
+207
 00:16:02,320 --> 00:16:09,520
 And this is the first green, like the green shoots or a sign, a bullish sign, that are
 
-211
+208
 00:16:09,520 --> 00:16:14,560
 maybe botaning and starting another uptrend.
 
-212
+209
 00:16:14,560 --> 00:16:19,240
 And I think maybe so apart from like buying
 
-213
+210
 00:16:19,240 --> 00:16:23,920
 the pullbacks into the end of the world here.
 
-214
+211
 00:16:23,920 --> 00:16:31,120
 And I personally think although I'm trading in hindsight, but a pullback into both the
 
-215
+212
 00:16:31,120 --> 00:16:37,280
 nine and 21 EMA where the nine is above 21 and they're very close to each other.
 
-216
+213
 00:16:37,280 --> 00:16:44,280
 that is an area that I would like also focus on.
 
-217
+214
 00:16:44,280 --> 00:16:50,280
 Because if the market of the NVIDIA is really starting a new uptrend,
 
-218
+215
 00:16:50,280 --> 00:16:56,280
 generally it has to find support on the rising EMAs.
 
-219
+216
 00:16:56,280 --> 00:17:01,280
 So if it's working, if it's starting a new uptrend,
 
-220
+217
 00:17:01,280 --> 00:17:08,280
 then it is probably a good level that I can find an entry.
 
-221
+218
 00:17:08,280 --> 00:17:11,780
 And if I'm right, it's probably not starting a new up-chain
 
-222
+219
 00:17:11,780 --> 00:17:16,280
 that gets rejected by the declining, maybe 50 or the declining
 
-223
+220
 00:17:16,280 --> 00:17:20,280
 Anchor VWAP, and starting a new up-chain and go further down.
 
-224
+221
 00:17:20,280 --> 00:17:27,280
 So it's really a crucial level that I can have tried.
 
-225
+222
 00:17:27,280 --> 00:17:34,000
 and if it just test it whether it works out or not and yeah I think this is a
 
-226
+223
 00:17:34,000 --> 00:17:41,640
 also a good pullback by day for especially it it's not getting up but
 
-227
+224
 00:17:41,640 --> 00:17:49,760
 it like is it's putting back into the EMAs intraday so I really love the stock
 
-228
+225
 00:17:49,760 --> 00:17:57,760
 that is gaping up or like climbs higher in reverse. So rather than...
 
-229
+226
 00:17:59,680 --> 00:18:05,360
 So I really love this stock, this is gaping up and then reverses or just the stock is
 
-230
+227
 00:18:06,080 --> 00:18:13,440
 opening lower and then just go down and just falling into the support level,
 
-231
+228
 00:18:13,440 --> 00:18:21,680
-such as the YMAs for this case or sometimes the angle feel well. Rather than like is opening
+such as the YMAs for this case or sometimes the anchored VWAP. Rather than like is opening
 
-232
+229
 00:18:21,680 --> 00:18:29,440
 maybe rather than opening weak and then it just climbs right back. I really love the like is
 
-233
+230
 00:18:29,440 --> 00:18:34,720
 pulling back and then it's a fee-shaped recovery and
 
-234
+231
 00:18:34,720 --> 00:18:40,000
 from the touch and go actions from the stock.

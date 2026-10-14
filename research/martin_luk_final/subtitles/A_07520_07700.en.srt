@@ -32,7 +32,7 @@ But yeah, but still is a loss, is a losing trade.
 
 9
 00:00:52,120 --> 00:00:58,040
-I take the short mainly because I believe I used the anchor free web from this borough
+I take the short mainly because I believe I used the anchored VWAP from this borough
 
 10
 00:00:58,040 --> 00:01:06,200
@@ -120,11 +120,11 @@ A weekly, yeah.
 
 31
 00:02:24,580 --> 00:02:25,540
-Still above the 90 MA.
+Still above the 9 EMA.
 
 32
 00:02:25,540 --> 00:02:28,940
-Yeah, still above the 90 MA.
+Yeah, still above the 9 EMA.
 
 33
 00:02:28,940 --> 00:02:33,940

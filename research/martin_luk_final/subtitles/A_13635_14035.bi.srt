@@ -15,7 +15,7 @@ your own trade feedbacks is the most important one.
 
 4
 00:00:12,320 --> 00:00:19,480
-所以真的很糟糕。你新头寸的表现如何？而这
+关键就是新仓是否有效、能否按预期推进。
 So it's really bad. It's really whether your new positions are working or not. And this
 
 5
@@ -26,7 +26,7 @@ is this one of yeah, this is the major parts and another one is definitely the m
 6
 00:00:27,000 --> 00:00:32,000
 整体指数，我也关注QQQ和IWM，
-the general indices, I also look at the Qs and IWM,
+the general indices, I also look at the QQQ and IWM,
 
 7
 00:00:32,520 --> 00:00:35,880
@@ -35,8 +35,8 @@ I think every day, so I keep monitoring them.
 
 8
 00:00:35,880 --> 00:00:40,880
-例如，当Qs，”
-And for example, when Qs,
+例如，当QQQ
+And for example, when QQQ,
 
 9
 00:00:40,880 --> 00:00:45,880
@@ -50,7 +50,7 @@ or even months, so you can see on the late July,
 
 11
 00:00:50,640 --> 00:00:53,480
-那也是我卖出流中仓位的地方
+那也是我逢强卖出持仓的位置，
 that's also where I sell my positions in the stream
 
 12
@@ -70,8 +70,8 @@ but it's actually a sharp one.
 
 15
 00:01:05,600 --> 00:01:11,080
-我想要说的是，通过观察队列，
-But what I want to say would be for looking at the queues,
+我想说的是，观察QQQ
+But what I want to say would be for looking at the QQQ,
 
 16
 00:01:11,080 --> 00:01:14,280
@@ -80,8 +80,8 @@ that you can get the general market picture.
 
 17
 00:01:14,280 --> 00:01:18,080
-所以通过队列，它实际上是在延伸。
-So with the queues, it's really kind of extending.
+当QQQ已经明显延伸，
+So with the QQQ, it's really kind of extending.
 
 18
 00:01:18,080 --> 00:01:23,240
@@ -100,7 +100,7 @@ really aggressive and take a lot of the new breakouts or the new entries
 
 21
 00:01:34,160 --> 00:01:39,400
-与可能之后相比，可能之后这种较小的基础相比，
+相比之下，经过这种小平台整理之后，
 compared to maybe after, maybe after this kind of a small base,
 
 22
@@ -120,17 +120,17 @@ But sometimes I would get like too bearish or like too skeptical because the mar
 
 25
 00:01:55,480 --> 00:02:02,480
-这也是我有点过度敏感，有点过度
+这也是我有点过度敏感，
 So this is also like the, I'm like too sensitive a little bit and a little
 
 26
 00:02:02,480 --> 00:02:09,480
-敏感会导致我过早卖出我的头寸。
+有点过度敏感会导致我过早卖出我的头寸。
 bit would like would lead to like the early early sale of my of my positions.
 
 27
 00:02:09,480 --> 00:02:15,480
-然后我就做空了，你知道有些股票出现了回调，有些表现不佳的股票。
+甚至会尝试做空，因为看到一些弱股下破，
 And then I'm in I mean even like trying shorts and then I know there's some breakdowns in some weaker names.
 
 28
@@ -140,7 +140,7 @@ We can name it.
 
 29
 00:02:16,320 --> 00:02:19,120
-应该买入，同时指数出现延伸。
+同时指数又已经延伸，就会想：
 Should I like, and the index is extended.
 
 30
@@ -180,8 +180,8 @@ Be aggressive, the better place is
 
 37
 00:02:45,000 --> 00:02:52,440
-特别是在去年，你可以看到Q股一直支持在
-Especially last year, you can see like the Qs are like keep serving the nine and I and they find support on the
+尤其去年，QQQ常沿EMA9上行，在
+Especially last year, you can see like the QQQ are like keep serving the nine and I and they find support on the
 
 38
 00:02:52,840 --> 00:02:54,680
@@ -190,22 +190,22 @@ rising EMA and
 
 39
 00:02:54,680 --> 00:02:58,760
-不仅找到支撑，而且立即找到支撑
+不只是找到支撑，而是一到支撑就马上向上。
 Not only find support but find support and it just goes right away
 
 40
 00:02:58,760 --> 00:03:00,760
-它不喜欢花太多时间在这里
+它没有在那里停留很久。
 It didn't like spend much time here
 
 41
 00:03:00,760 --> 00:03:08,360
-然后我认为最 aggressive 的买入时机是在 QS 的回调期间
-And then I think the best time to buy them to be aggressive would be during the pullbacks of the Qs
+我觉得比较适合积极买入的时机，是QQQ
+And then I think the best time to buy them to be aggressive would be during the pullbacks of the QQQ
 
 42
 00:03:09,000 --> 00:03:14,040
-或者主要指数的走势，像大多数个股一样，跟随指数
+或者整体指数回调时，因为大多数个股会跟随指数。
 Or the of the general indices as the individual stocks like most individual stocks follow the indices
 
 43
@@ -224,226 +224,221 @@ at for building my situational awareness.
 And the third one would be managing my own watch list.
 
 46
-00:03:28,040 --> 00:03:30,540
-所以我在尝试，如果滞后观察名单中的名字越
-So I'm trying to like if there are
+00:03:28,040 --> 00:03:33,040
+我会看Lagging落后名单是否越来越多，
+So I'm trying to like if there are more and more names in the lagging watch list
 
 47
-00:03:30,540 --> 00:03:33,040
-来越多，或者领先观察名单中的名字越来越多，
-more and more names in the lagging watch list
-
-48
 00:03:33,040 --> 00:03:35,040
-那么这意味着市场正在改善或恶化。
+或者Leading领涨名单是否越来越多，
 or more and more names in the leading watch list,
 
-49
+48
 00:03:35,040 --> 00:03:38,040
-但我想我之前提到的一个重要事情是小盘和微盘的观察名单，
+以此判断市场在改善还是恶化。
 then it means the market is improving or declining.
 
-50
+49
 00:03:38,040 --> 00:03:43,360
-我跟踪过这些名单，我有很
+但有一点：我之前提过，
 But so one thing that I think I really I off the
 
-51
+50
 00:03:43,360 --> 00:03:48,680
-多这样的快速变化的名字，
+我观察的小盘、微盘名单里
 top earlier is the the small and micro cap watch list that I
 
-52
+51
 00:03:48,680 --> 00:03:55,000
-但其中许多名字在十二
+有很多走势快的小市值股票，
 tracked that I have a lot of this this fast but like
 
-53
+52
 00:03:55,000 --> 00:04:01,320
-月之前就已经开始下跌，
+其中不少在12月已经
 the smaller cap names but many of them like they are they would
 
-54
+53
 00:04:01,320 --> 00:04:09,560
-他们看起来并不乐观。
+开始走弱，看起来不太好，
 they would like, um, crap down before like in December, they're really not looking,
 
-55
+54
 00:04:09,560 --> 00:04:13,880
 看起来不太好，比如像ALGM这样的，它们正在走弱。
 they're not really looking well, such as like this one ALGM, like they're trending
 
-56
+55
 00:04:13,880 --> 00:04:18,680
 在所有EMA之上，然后它们正在回调到下降的EMA之中，我认为，哦，
 above all EMAs, then they're pulling back into the declining EMAs, and I think, oh,
 
-57
+56
 00:04:18,680 --> 00:04:26,200
 这是做空的好时机，但结果不是这样。所以这就是困难的部分，
 this would be the good time for like doing shorts, but it turns out it isn't. So that's the hard part,
 
-58
+57
 00:04:26,200 --> 00:04:34,400
 我认为我不得不承认，我在那些市场中并不是那么擅长。
 I think I I have to admit that I've not that really good at like those market in those market
 
-59
+58
 00:04:34,400 --> 00:04:41,520
 条件也是如此。所以我只是尝试尽可能限制我的交易，减少在那些条件下的交易，
 condition too. So I'm just trying to like really try maybe limit my trades like trade less in
 
-60
+59
 00:04:41,520 --> 00:04:49,760
-尤其是QS仍然高挂在EMA之上，的
-those condition. Yeah. Yeah, especially the Qs are still like hanging up above the EMAs and the
+尤其QQQ仍在均线上方，
+those condition. Yeah. Yeah, especially the QQQ are still like hanging up above the EMAs and the
 
-61
+60
 00:04:49,760 --> 00:04:54,760
 IWM表现非常强劲。
 The IWM is really strong and outperforming.
 
-62
+61
 00:04:54,760 --> 00:04:59,600
 然后有一些人对交易之外的东西很好奇。
 And then there are a few people who are curious about outside of trading.
 
-63
+62
 00:04:59,600 --> 00:05:02,200
 你有什么准备措施吗？
 Is there anything you do to prepare for the session?
 
-64
+63
 00:05:02,200 --> 00:05:08,280
 你的早晨例行程序看起来是怎么样的，你知道，是在美国市场之前。
 So what does your kind of morning routine look like, you know, before the U.S. market
 
-65
+64
 00:05:08,280 --> 00:05:09,280
 开了吗？
 opened?
 
-66
+65
 00:05:09,280 --> 00:05:12,240
 显然你的香港时间，所以情况有些不同。
 Obviously your Hong Kong time, so things are a little bit different.
 
-67
+66
 00:05:12,240 --> 00:05:14,960
-你做的一些关键事情是什么，以便保持正确的状态 mindset。
+开盘前，你会做哪些事让自己准备好、进入合适的状态？
 What are some kind of the key things that you do to kind of be in the right headspace
 
-68
+67
 00:05:14,960 --> 00:05:19,960
 这段交易操作，做好准备，准备好迎接今天的交易时段。
 piece of trade and just feel prepared and ready for the session.
 
-69
+68
 00:05:19,960 --> 00:05:25,460
 一般来说，我会提前45分钟到
 Generally, I would start my pre-market routine to
 
-70
+69
 00:05:25,460 --> 00:05:30,960
 一小时开始我的盘前例行程序。
 be 45 minutes to one hour before the market
 
-71
+70
 00:05:30,960 --> 00:05:38,400
 打开，我会进行扫描，我会浏览我监控名单上的所有股票。
 opened and I would do the scans and I would go over all the stocks in my watch list and
 
-72
+71
 00:05:38,400 --> 00:05:41,200
 现有的头寸。
 the existing positions.
 
-73
+72
 00:05:41,200 --> 00:05:44,520
 那就是。
 And I mean, that's it.
 
-74
+73
 00:05:44,520 --> 00:05:45,800
 我只是过一遍。
 I'm just going through all of them.
 
-75
+74
 00:05:45,800 --> 00:05:50,680
 我看是否有好的入场机会，好的入场点。
 I see whether there are any good setup, good entry points,
 
-76
+75
 00:05:50,680 --> 00:05:54,480
 或者出现大的跳空走势，比如向上跳空，还是向下跳空？
 or are there any huge like a gap down, so a gap ups,
 
-77
+76
 00:05:54,480 --> 00:05:56,200
 或者任何值得我注意的。
 or anything that really worth my attention.
 
-78
+77
 00:05:56,200 --> 00:05:58,760
 就像Joe，这次反转真的很丑陋。
 Like, Joe, this reversal is really ugly.
 
-79
+78
 00:05:58,760 --> 00:06:02,800
 然后我只是开始注意到，OK。
 Then I'm just, I would start noticing, OK.
 
-80
+79
 00:06:02,800 --> 00:06:05,720
-有很多那些referrer。
+其中不少已经延伸很远了。
 So lots of those referes.
 
-81
+80
 00:06:05,720 --> 00:06:10,720
 股市好像已经气喘吁吁了。
 Maybe the market is like, the breath is declining,
 
-82
+81
 00:06:10,920 --> 00:06:13,760
-他们可能会开始失去一些动力 maybe
+可能开始失去一些动量，
 they may be start losing some steam maybe
 
-83
+82
 00:06:13,760 --> 00:06:15,960
 因为去年12月的经历，
 because of the last December experience,
 
-84
+83
 00:06:15,960 --> 00:06:20,960
 我不希望在前期显得过于看空。
 I don't wanna be like too bearish in the earlier stage.
 
-85
+84
 00:06:22,000 --> 00:06:25,040
 但是现在，比如Q-SYS正在下跌。
 But for now, like Q-SYS is getting down
 
-86
+85
 00:06:25,040 --> 00:06:28,000
 将所有EMA都调低，我觉得合理。
 to lower all the EMAs, I think it's reasonable
 
-87
+86
 00:06:28,000 --> 00:06:32,360
 开始寻找，或开始做好准备。
 to start looking or start be prepared
 
-88
+87
 00:06:32,360 --> 00:06:35,600
 或者对于进一步的下行风险。
 or like for any more like further downside
 
-89
+88
 00:06:35,600 --> 00:06:38,400
 或者出现更深的回调，因为有些也类似。
 or deeper correction as there are some also like
 
-90
+89
 00:06:39,360 --> 00:06:40,000
-对个别股票的拒绝，出现 weakness 。
+出现个股遇阻、转弱的迹象。
 to some rejection of the individual stocks, the weakness.

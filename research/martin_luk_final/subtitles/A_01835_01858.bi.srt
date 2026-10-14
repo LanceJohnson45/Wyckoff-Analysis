@@ -5,12 +5,12 @@ Okay, so then I'm going to the next item.
 
 2
 00:00:02,820 --> 00:00:10,320
-然后我的交易风格就是使用严格的止损，胜率较低。
+我的风格是紧止损、低胜率。
 And then my trading style would be using tight stop with a low win rate.
 
 3
 00:00:10,320 --> 00:00:12,460
-你的胜率 pretty 低。
+可以看到，我的胜率很低，
 So as you can see, my win rate is pretty low.
 
 4
@@ -30,5 +30,5 @@ So really mostly under 2.5%.
 
 7
 00:00:22,100 --> 00:00:23,000
-右侧图表描述的是止损与的抛物线关系。
+右边图表描述止损距离与收益倍数之间的关系。
 And the right side is the chart describing the parabolic relationship between the stop

@@ -1,46 +1,46 @@
 1
 00:00:05,280 --> 00:00:12,240
-我喜欢我在S&DQ的ADX。
+我很喜欢SNDK的那次加仓入口。
 I really like my ad on S&DQ.
 
 2
 00:00:12,240 --> 00:00:18,100
-如果我错过了第一次介绍，
+如果错过第一笔入口，
 If I missed my first intro, I'll probably
 
 3
 00:00:18,100 --> 00:00:23,960
-我会尝试在广告中进入。
+我可能会在后来加仓的位置尝试入场。
 try to enter it on my ad.
 
 4
 00:00:23,960 --> 00:00:32,500
-而且今天对于SNDK来说，是一个
+这一天SNDK表现相当强，
 And also for this day, it is a pretty strong
 
 5
 00:00:32,500 --> 00:00:41,040
-比较强劲的日子，它开盘就下跌了。
+虽然开盘下跌了
 day on SNDK, which it opens, it's down like
 
 6
 00:00:41,040 --> 00:00:48,680
-3%，开盘附近上涨3%，日内继续走高。
+3%，接近3%，但随后日内持续反弹。
 3%, near 3% at the open, and keeps rallying intraday.
 
 7
 00:00:48,680 --> 00:00:54,220
-我觉得我在第一次回调进入 hourly 50
+第一次反弹到小时EMA50时，
 I think I took a loss on the first pullback
 
 8
 00:00:54,220 --> 00:00:59,760
-EMA 时已经出现了亏损，但我还是继续观察。
+我尝试做空亏损了，但仍继续观察，
 into the hourly 50 EMA, but I still keep watching
 
 9
 00:00:59,760 --> 00:01:07,640
-它，我只关注日线，然后日线一直反弹到第九天，甚至
+再看日线。它继续反弹到日线EMA9，甚至
 it and I just focus on the daily and then it keeps rallying into the daily nine, even
 
 10
@@ -50,7 +50,7 @@ like breaking out from the previous day high.
 
 11
 00:01:16,320 --> 00:01:20,320
-继续观察日内任何潜在弱点。
+我就继续等待日内可能出现的转弱。
 keep watching for any potential weakness intraday.
 
 12
@@ -65,10 +65,10 @@ shorted it on this candle.
 
 14
 00:01:34,320 --> 00:01:39,660
-几分钟前，刚
+几分钟前，
 After getting stopped out a few
 
 15
 00:01:39,660 --> 00:01:45,000
-刚被止损出局。
+刚刚被止损出局。
 minutes ago, a couple of minutes ago.

@@ -20,7 +20,7 @@ is this one of yeah, this is the major parts and another one is definitely the m
 
 6
 00:00:27,000 --> 00:00:32,000
-the general indices, I also look at the Qs and IWM,
+the general indices, I also look at the QQQ and IWM,
 
 7
 00:00:32,520 --> 00:00:35,880
@@ -28,7 +28,7 @@ I think every day, so I keep monitoring them.
 
 8
 00:00:35,880 --> 00:00:40,880
-And for example, when Qs,
+And for example, when QQQ,
 
 9
 00:00:40,880 --> 00:00:45,880
@@ -56,7 +56,7 @@ but it's actually a sharp one.
 
 15
 00:01:05,600 --> 00:01:11,080
-But what I want to say would be for looking at the queues,
+But what I want to say would be for looking at the QQQ,
 
 16
 00:01:11,080 --> 00:01:14,280
@@ -64,7 +64,7 @@ that you can get the general market picture.
 
 17
 00:01:14,280 --> 00:01:18,080
-So with the queues, it's really kind of extending.
+So with the QQQ, it's really kind of extending.
 
 18
 00:01:18,080 --> 00:01:23,240
@@ -144,7 +144,7 @@ Be aggressive, the better place is
 
 37
 00:02:45,000 --> 00:02:52,440
-Especially last year, you can see like the Qs are like keep serving the nine and I and they find support on the
+Especially last year, you can see like the QQQ are like keep serving the nine and I and they find support on the
 
 38
 00:02:52,840 --> 00:02:54,680
@@ -160,7 +160,7 @@ It didn't like spend much time here
 
 41
 00:03:00,760 --> 00:03:08,360
-And then I think the best time to buy them to be aggressive would be during the pullbacks of the Qs
+And then I think the best time to buy them to be aggressive would be during the pullbacks of the QQQ
 
 42
 00:03:09,000 --> 00:03:14,040
@@ -179,181 +179,177 @@ at for building my situational awareness.
 And the third one would be managing my own watch list.
 
 46
-00:03:28,040 --> 00:03:30,540
-So I'm trying to like if there are
+00:03:28,040 --> 00:03:33,040
+So I'm trying to like if there are more and more names in the lagging watch list
 
 47
-00:03:30,540 --> 00:03:33,040
-more and more names in the lagging watch list
-
-48
 00:03:33,040 --> 00:03:35,040
 or more and more names in the leading watch list,
 
-49
+48
 00:03:35,040 --> 00:03:38,040
 then it means the market is improving or declining.
 
-50
+49
 00:03:38,040 --> 00:03:43,360
 But so one thing that I think I really I off the
 
-51
+50
 00:03:43,360 --> 00:03:48,680
 top earlier is the the small and micro cap watch list that I
 
-52
+51
 00:03:48,680 --> 00:03:55,000
 tracked that I have a lot of this this fast but like
 
-53
+52
 00:03:55,000 --> 00:04:01,320
 the smaller cap names but many of them like they are they would
 
-54
+53
 00:04:01,320 --> 00:04:09,560
 they would like, um, crap down before like in December, they're really not looking,
 
-55
+54
 00:04:09,560 --> 00:04:13,880
 they're not really looking well, such as like this one ALGM, like they're trending
 
-56
+55
 00:04:13,880 --> 00:04:18,680
 above all EMAs, then they're pulling back into the declining EMAs, and I think, oh,
 
-57
+56
 00:04:18,680 --> 00:04:26,200
 this would be the good time for like doing shorts, but it turns out it isn't. So that's the hard part,
 
-58
+57
 00:04:26,200 --> 00:04:34,400
 I think I I have to admit that I've not that really good at like those market in those market
 
-59
+58
 00:04:34,400 --> 00:04:41,520
 condition too. So I'm just trying to like really try maybe limit my trades like trade less in
 
-60
+59
 00:04:41,520 --> 00:04:49,760
-those condition. Yeah. Yeah, especially the Qs are still like hanging up above the EMAs and the
+those condition. Yeah. Yeah, especially the QQQ are still like hanging up above the EMAs and the
 
-61
+60
 00:04:49,760 --> 00:04:54,760
 The IWM is really strong and outperforming.
 
-62
+61
 00:04:54,760 --> 00:04:59,600
 And then there are a few people who are curious about outside of trading.
 
-63
+62
 00:04:59,600 --> 00:05:02,200
 Is there anything you do to prepare for the session?
 
-64
+63
 00:05:02,200 --> 00:05:08,280
 So what does your kind of morning routine look like, you know, before the U.S. market
 
-65
+64
 00:05:08,280 --> 00:05:09,280
 opened?
 
-66
+65
 00:05:09,280 --> 00:05:12,240
 Obviously your Hong Kong time, so things are a little bit different.
 
-67
+66
 00:05:12,240 --> 00:05:14,960
 What are some kind of the key things that you do to kind of be in the right headspace
 
-68
+67
 00:05:14,960 --> 00:05:19,960
 piece of trade and just feel prepared and ready for the session.
 
-69
+68
 00:05:19,960 --> 00:05:25,460
 Generally, I would start my pre-market routine to
 
-70
+69
 00:05:25,460 --> 00:05:30,960
 be 45 minutes to one hour before the market
 
-71
+70
 00:05:30,960 --> 00:05:38,400
 opened and I would do the scans and I would go over all the stocks in my watch list and
 
-72
+71
 00:05:38,400 --> 00:05:41,200
 the existing positions.
 
-73
+72
 00:05:41,200 --> 00:05:44,520
 And I mean, that's it.
 
-74
+73
 00:05:44,520 --> 00:05:45,800
 I'm just going through all of them.
 
-75
+74
 00:05:45,800 --> 00:05:50,680
 I see whether there are any good setup, good entry points,
 
-76
+75
 00:05:50,680 --> 00:05:54,480
 or are there any huge like a gap down, so a gap ups,
 
-77
+76
 00:05:54,480 --> 00:05:56,200
 or anything that really worth my attention.
 
-78
+77
 00:05:56,200 --> 00:05:58,760
 Like, Joe, this reversal is really ugly.
 
-79
+78
 00:05:58,760 --> 00:06:02,800
 Then I'm just, I would start noticing, OK.
 
-80
+79
 00:06:02,800 --> 00:06:05,720
 So lots of those referes.
 
-81
+80
 00:06:05,720 --> 00:06:10,720
 Maybe the market is like, the breath is declining,
 
-82
+81
 00:06:10,920 --> 00:06:13,760
 they may be start losing some steam maybe
 
-83
+82
 00:06:13,760 --> 00:06:15,960
 because of the last December experience,
 
-84
+83
 00:06:15,960 --> 00:06:20,960
 I don't wanna be like too bearish in the earlier stage.
 
-85
+84
 00:06:22,000 --> 00:06:25,040
 But for now, like Q-SYS is getting down
 
-86
+85
 00:06:25,040 --> 00:06:28,000
 to lower all the EMAs, I think it's reasonable
 
-87
+86
 00:06:28,000 --> 00:06:32,360
 to start looking or start be prepared
 
-88
+87
 00:06:32,360 --> 00:06:35,600
 or like for any more like further downside
 
-89
+88
 00:06:35,600 --> 00:06:38,400
 or deeper correction as there are some also like
 
-90
+89
 00:06:39,360 --> 00:06:40,000
 to some rejection of the individual stocks, the weakness.

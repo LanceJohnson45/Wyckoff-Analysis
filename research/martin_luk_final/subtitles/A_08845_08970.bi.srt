@@ -20,17 +20,17 @@ it's up 3R or 5R. But sometimes if
 
 5
 00:00:23,800 --> 00:00:28,600
-如果市场真的很强，有时我会
+如果市场很强，
 if the market is really strong and I sometimes would
 
 6
 00:00:28,600 --> 00:00:33,400
-选择不参与，如果我认为市场
+有时我不分批兑现；如果市场
 not take part shows, if I think the market
 
 7
 00:00:33,400 --> 00:00:40,280
-非常强劲，其他位置我也有很大的缓冲， yeah，我有时候会
+很强、其他仓位又有厚利润垫，有时我会
 is really strong and I have huge cushions on other positions, and yeah, I sometimes would
 
 8
@@ -60,50 +60,45 @@ extended if you're just trying to see from here, especially given the fact that 
 
 13
 00:01:13,720 --> 00:01:19,780
-一直向上走，我觉得是30%或者50
+一直向上，
 been going straight, I think you say 30% or 50%
 
 14
 00:01:19,780 --> 00:01:25,840
-%，最好是50%的日内更新然后它就
+可能一天涨30%或50%，然后
 like 50% day update and then it has a
 
 15
-00:01:25,840 --> 00:01:28,580
-一天的 consolidation，然后它又继续
-one day consolidation and it keeps going again and then
+00:01:25,840 --> 00:01:31,320
+整理一天，再继续上行。我觉得这时可以
+one day consolidation and it keeps going again and then I think this is it should be a time
 
 16
-00:01:28,580 --> 00:01:31,320
-了，然后我觉得这就是我们要找的，应该是个时机。
-I think this is it should be a time
-
-17
 00:01:31,320 --> 00:01:37,500
 卖出部分利润，然后我一般会拿出大约15%，我通常会这样做的。
 to take some profits and then I just take around like 15% and I really I normally would
 
-18
+17
 00:01:37,500 --> 00:01:42,620
-每次我认为这只股票有延伸
+每次卖出约15%的仓位。
 trade my position at around 15% each. So
 
-19
+18
 00:01:42,620 --> 00:01:47,740
-，我就在15%的位置平仓。
+每当觉得股票已经延伸，
 every time I think this stock is extended,
 
-20
+19
 00:01:47,740 --> 00:01:54,380
-卖出15%，然后在触及9 A
+卖出15%，然后在触及9 AMA
 I sell 15%. And then I close this trade on
 
-21
+20
 00:01:54,380 --> 00:02:01,020
-MA的第一个收盘价下方平仓。
+的第一个收盘价下方平仓。
 the first close below the 9 AMA. Yes, this
 
-22
+21
 00:02:01,020 --> 00:02:05,000
 是处理这笔交易的方式，但抱歉 Martin，对于entry是怎么做的
 is how I handle the trade so but yeah for the entry what sorry sorry Martin for

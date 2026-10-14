@@ -248,6 +248,17 @@
     ]
   },
   {
+    "key": "A_9397.66",
+    "time": 9397.66,
+    "kind": "number_difference",
+    "en": "This is a purple long that I traded at the April slow.",
+    "zh": "这是我在4月低点附近做的一笔极端超跌反转多头。",
+    "source": [],
+    "target": [
+      "4"
+    ]
+  },
+  {
     "key": "A_9482.5",
     "time": 9482.5,
     "kind": "number_difference",
@@ -273,6 +284,20 @@
     ]
   },
   {
+    "key": "A_9641.2",
+    "time": 9641.2,
+    "kind": "number_difference",
+    "en": "Oh yeah, it's also near the five minute, around 120,",
+    "zh": "对，也接近5分钟图上大约120的位置，",
+    "source": [
+      "120"
+    ],
+    "target": [
+      "120",
+      "5"
+    ]
+  },
+  {
     "key": "A_9651.48",
     "time": 9651.48,
     "kind": "number_difference",
@@ -287,6 +312,42 @@
     ]
   },
   {
+    "key": "A_9665.56",
+    "time": 9665.56,
+    "kind": "number_difference",
+    "en": "So it's like, I think one, one minute it just like going up for like three or four",
+    "zh": "我记得1分钟就可能上涨3或4",
+    "source": [],
+    "target": [
+      "1",
+      "3",
+      "4"
+    ]
+  },
+  {
+    "key": "A_9670.6",
+    "time": 9670.6,
+    "kind": "number_difference",
+    "en": "percent in just two or three minutes.",
+    "zh": "个百分点，2～3分钟内就出现这样的波动。",
+    "source": [],
+    "target": [
+      "2",
+      "3"
+    ]
+  },
+  {
+    "key": "A_9710.2",
+    "time": 9710.2,
+    "kind": "number_difference",
+    "en": "the volatility is really huge during those times, the period back in April. So I really want to",
+    "zh": "4月那段时间波动非常大，所以我很想",
+    "source": [],
+    "target": [
+      "4"
+    ]
+  },
+  {
     "key": "A_10409.96",
     "time": 10409.96,
     "kind": "number_difference",
@@ -295,6 +356,17 @@
     "source": [],
     "target": [
       "4"
+    ]
+  },
+  {
+    "key": "A_10486.98",
+    "time": 10486.98,
+    "kind": "number_difference",
+    "en": "Like the market is rallying in like three months in a row.",
+    "zh": "当时市场已经连续上涨约3个月，",
+    "source": [],
+    "target": [
+      "3"
     ]
   },
   {
@@ -346,7 +418,7 @@
     "time": 12445.02,
     "kind": "number_difference",
     "en": "to the 21 EMA be or the nine.",
-    "zh": "到21 EMA的位置或者9EMA的位置。",
+    "zh": "回调到EMA21或EMA9附近。",
     "source": [
       "21"
     ],
@@ -365,6 +437,17 @@
     "target": [
       "5"
     ]
+  },
+  {
+    "key": "A_13268.28",
+    "time": 13268.28,
+    "kind": "number_difference",
+    "en": "still... yeah. So it's not on the daily, it's on the anchored VWAP 2. So this one I think",
+    "zh": "不是在日线均线，而也参考锚定VWAP。这个例子我认为",
+    "source": [
+      "2"
+    ],
+    "target": []
   },
   {
     "key": "A_13734.4",
