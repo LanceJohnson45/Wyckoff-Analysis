@@ -1,0 +1,528 @@
+[
+  {
+    "key": "A_4264.74",
+    "time": 4264.74,
+    "kind": "number_difference",
+    "en": "at the 150 EMA and the anchored VWAP on at August 2.",
+    "zh": "在150 EMA和锚定的VWAP的位置上，是在8月2日。",
+    "source": [
+      "150",
+      "2"
+    ],
+    "target": [
+      "150",
+      "2",
+      "8"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6269.68",
+    "time": 6269.68,
+    "kind": "number_difference",
+    "en": "So if I'm trading life like if I'm trading back in in the August",
+    "zh": "如果当时正在实时交易，例如回到8月的行情，",
+    "source": [],
+    "target": [
+      "8"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6455.14",
+    "time": 6455.14,
+    "kind": "number_difference",
+    "en": "and on this day on the 13th of August it",
+    "zh": "在8月13日这一天，它",
+    "source": [
+      "13"
+    ],
+    "target": [
+      "13",
+      "8"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6530.82",
+    "time": 6530.82,
+    "kind": "number_difference",
+    "en": "maybe we can look at zoom in and look at the potential entries for the five",
+    "zh": "我们可以放大图表，看看5分钟级别潜在的入场点，",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6553.98",
+    "time": 6553.98,
+    "kind": "number_difference",
+    "en": "5th... oh... August? Okay.",
+    "zh": "第五... 哦... 8月？好的。",
+    "source": [
+      "5"
+    ],
+    "target": [
+      "8"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6573.66",
+    "time": 6573.66,
+    "kind": "number_difference",
+    "en": "So it's like some, that's why I'm not using the angle view",
+    "zh": "所以我不会一开始就在5分钟图上使用多日锚定",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "邻接句上下文补明；非逐词对齐"
+  },
+  {
+    "key": "A_6603.96",
+    "time": 6603.96,
+    "kind": "number_difference",
+    "en": "on the lower timeframe, maybe one minute",
+    "zh": "比如1分钟",
+    "source": [],
+    "target": [
+      "1"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6606.04",
+    "time": 6606.04,
+    "kind": "number_difference",
+    "en": "or five minute timeframe,",
+    "zh": "或5分钟图。",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6728.08",
+    "time": 6728.08,
+    "kind": "number_difference",
+    "en": "The 30 okay. Yeah, so",
+    "zh": "三十号好了。嗯，所以",
+    "source": [
+      "30"
+    ],
+    "target": [],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_6980.38",
+    "time": 6980.38,
+    "kind": "number_difference",
+    "en": "Yes, I believe I bought this one minute breakouts for the previous bar high.",
+    "zh": "我记得买的是向上突破前一根K线高点的1分钟入口。",
+    "source": [],
+    "target": [
+      "1"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_7047.06",
+    "time": 7047.06,
+    "kind": "number_difference",
+    "en": "a one minute chart, not because normally for the first 15 minutes before market open, if",
+    "zh": "这里用1分钟图。他提到最初15分钟〔开盘前/后措辞听辨存疑〕，如果",
+    "source": [
+      "15"
+    ],
+    "target": [
+      "1",
+      "15"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "邻接句上下文补明；非逐词对齐"
+  },
+  {
+    "key": "A_7704.28",
+    "time": 7704.28,
+    "kind": "number_difference",
+    "en": "and just purely shot a pullback into a decline nine or 21",
+    "zh": "仅仅因为反弹到下降的9或21均线就去做空，",
+    "source": [
+      "21"
+    ],
+    "target": [
+      "21",
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_7744.38",
+    "time": 7744.38,
+    "kind": "number_difference",
+    "en": "SoFi, yeah, this one is more, so it's a December trade.",
+    "zh": "SOFI。对，这是12月的一笔交易。",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8027.18",
+    "time": 8027.18,
+    "kind": "number_difference",
+    "en": "at the very beginning of the losing kind of a losing streak in the very beginning of December.",
+    "zh": "在12月亏损趋势的开始。",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8403.88",
+    "time": 8403.88,
+    "kind": "number_difference",
+    "en": "So I shorted the, I think the five minute breakdown.",
+    "zh": "所以我用5分钟下破来做空。",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8409.12",
+    "time": 8409.12,
+    "kind": "number_difference",
+    "en": "So I didn't catch this five minute breakdown",
+    "zh": "我没赶上这次5分钟下破，",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8429.54",
+    "time": 8429.54,
+    "kind": "number_difference",
+    "en": "take a five minute breakdown on this candle here and also like closest below the five",
+    "zh": "在这里这根K线做5分钟下破，也收在5分钟",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8434.3",
+    "time": 8434.3,
+    "kind": "number_difference",
+    "en": "minute nine EMA. So I think it could be okay. And it has some follow through on the same",
+    "zh": "EMA9下方。我觉得可以尝试，当天也出现了一些",
+    "source": [],
+    "target": [
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_8587.08",
+    "time": 8587.08,
+    "kind": "number_difference",
+    "en": "Like most of them are really like death by 1,000 cuts.",
+    "zh": "大多数像是被许多小亏损慢慢消耗。",
+    "source": [
+      "000",
+      "1"
+    ],
+    "target": [],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "death by 1,000 cuts成语意译；非实际交易数量"
+  },
+  {
+    "key": "A_8629.72",
+    "time": 8629.72,
+    "kind": "number_difference",
+    "en": "So that's probably how the December drawdown came.",
+    "zh": "这大概就是12月资金回撤的来源。",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_9000.0",
+    "time": 9000.0,
+    "kind": "number_difference",
+    "en": "So yeah, I'm buying it at the first five minute candle.",
+    "zh": "所以我是买在第一根5分钟K线。",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_9482.5",
+    "time": 9482.5,
+    "kind": "number_difference",
+    "en": "So it's like 20% below the one hour EMA.",
+    "zh": "所以它大约低于1小时EMA 20%。",
+    "source": [
+      "20"
+    ],
+    "target": [
+      "1",
+      "20"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_9543.22",
+    "time": 9543.22,
+    "kind": "number_difference",
+    "en": "for this TQQQ, I bought it at one minute, but I think it didn't work.",
+    "zh": "这笔TQQQ，我用了1分钟入口，但我想没有成功。",
+    "source": [],
+    "target": [
+      "1"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "已识别ASR同音误识，沿用已审阅稿/图表核对"
+  },
+  {
+    "key": "A_9651.48",
+    "time": 9651.48,
+    "kind": "number_difference",
+    "en": "So it's really near the hourly one hour nine year may also the 21 EMA too.",
+    "zh": "所以它非常接近小时EMA9，也接近EMA21。",
+    "source": [
+      "21"
+    ],
+    "target": [
+      "21",
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_10409.96",
+    "time": 10409.96,
+    "kind": "number_difference",
+    "en": "after the April sell off",
+    "zh": "4月的回调之后",
+    "source": [],
+    "target": [
+      "4"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_10499.98",
+    "time": 10499.98,
+    "kind": "number_difference",
+    "en": "And then at July and then I think maybe it's a bit extended and then I should sell my winners",
+    "zh": "然后在7月，我认为可能会有一些延伸，然后我应该卖出我的赢家。",
+    "source": [],
+    "target": [
+      "7"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_10728.06",
+    "time": 10728.06,
+    "kind": "number_difference",
+    "en": "I'm not sure whether it is this one minute candle,",
+    "zh": "我不确定是不是这根1分钟K线，",
+    "source": [],
+    "target": [
+      "1"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_11614.84",
+    "time": 11614.84,
+    "kind": "number_difference",
+    "en": "whether... oops this one is... yeah this one I traded the I think the five minute",
+    "zh": "是否……哦，这个是……嗯，这个我应该是交易的5分钟",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_12139.84",
+    "time": 12139.84,
+    "kind": "number_difference",
+    "en": "minute breakups um let's zoom in oh so it would be a one minute breakout I believe so it's a one",
+    "zh": "分钟突破——放大看看。哦，我记得应该是1分钟突破，是1",
+    "source": [],
+    "target": [
+      "1"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_12445.02",
+    "time": 12445.02,
+    "kind": "number_difference",
+    "en": "to the 21 EMA be or the nine.",
+    "zh": "到21 EMA的位置或者9EMA的位置。",
+    "source": [
+      "21"
+    ],
+    "target": [
+      "21",
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_12482.58",
+    "time": 12482.58,
+    "kind": "number_difference",
+    "en": "also the five minute breakouts.",
+    "zh": "也包括5分钟级别的突破。",
+    "source": [],
+    "target": [
+      "5"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_13734.4",
+    "time": 13734.4,
+    "kind": "number_difference",
+    "en": "the pullback to the nine EMA or the pullback to the 21 EMA compared to here.",
+    "zh": "与这里相比，9 EMA或21 EMA的回调。",
+    "source": [
+      "21"
+    ],
+    "target": [
+      "21",
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_13800.0",
+    "time": 13800.0,
+    "kind": "number_difference",
+    "en": "Especially last year, you can see like the QQQ are like keep serving the nine and I and they find support on the",
+    "zh": "尤其去年，QQQ常沿EMA9上行，在",
+    "source": [],
+    "target": [
+      "9"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_13863.68",
+    "time": 13863.68,
+    "kind": "number_difference",
+    "en": "tracked that I have a lot of this this fast but like the smaller cap names but many of them like they are they would",
+    "zh": "有很多走势快的小市值股票，其中不少在12月已经",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "邻接句上下文补明；非逐词对齐"
+  },
+  {
+    "key": "A_14008.76",
+    "time": 14008.76,
+    "kind": "number_difference",
+    "en": "because of the last December experience,",
+    "zh": "因为去年12月的经历，",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_14319.6",
+    "time": 14319.6,
+    "kind": "number_difference",
+    "en": "This is outperforming the QQQ throughout the whole December.",
+    "zh": "整个12月它都跑赢QQQ。",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_14576.52",
+    "time": 14576.52,
+    "kind": "number_difference",
+    "en": "mental and physical capital too. And also like the December drawdown like prevents",
+    "zh": "也会消耗你的心理和身体状态。而12月的回撤还使我",
+    "source": [],
+    "target": [
+      "12"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  },
+  {
+    "key": "A_14693.52",
+    "time": 14693.52,
+    "kind": "number_difference",
+    "en": "the Wall Street bad guys or the Raccoon guy who has a 26% drawdown in December.",
+    "zh": "也可以像那些华尔街反面人物，或者那个12月回撤26%的“浣熊”一样交易。",
+    "source": [
+      "26"
+    ],
+    "target": [
+      "12",
+      "26"
+    ],
+    "review_status": "已对照英文及上下文检查",
+    "disposition": "英语数字词/月份转数字，或语义保持的断句调整"
+  }
+]

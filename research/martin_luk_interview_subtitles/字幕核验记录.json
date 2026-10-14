@@ -1,0 +1,45 @@
+{
+  "source": "VKNEJA5r8zw",
+  "range_start_seconds": 3930.0,
+  "video_duration_seconds": 14950.609,
+  "segments": 2134,
+  "cues": 2789,
+  "first_cue": 3930.64,
+  "last_cue": 14941.02,
+  "timing": "原视频绝对时间；范围内有静音/停顿，未用假字幕填空",
+  "timeline_checks": "passed",
+  "number_flags": 38,
+  "sha256_zh_srt": "f3826f4f24f3391b2161da05bc1f05a11f136dc151bb44338935111764ae0467",
+  "limits": [
+    "机器转写/翻译，未逐句人工听校",
+    "长句比例拆分，并非逐词强制对齐",
+    "含混数字保留原转写并在重点处标注，不按策略常识猜改"
+  ],
+  "srt_disk_parse": "passed",
+  "outputs": [
+    {
+      "file": "Martin_Luk_VKNEJA5r8zw_从01h05m30s至片尾_原视频时间轴.bi.srt",
+      "cues": 2789,
+      "bytes": 338158,
+      "sha256": "7b77e597a9018b038903e0aba99c7665c724b881f40dbba1ba5514d7277cfd9c"
+    },
+    {
+      "file": "Martin_Luk_VKNEJA5r8zw_从01h05m30s至片尾_原视频时间轴.en.srt",
+      "cues": 2789,
+      "bytes": 226711,
+      "sha256": "af34b39ce21d81c4d43ee8f27424c4836ce6332483eb9ae066f92e93f2c7e81a"
+    },
+    {
+      "file": "Martin_Luk_VKNEJA5r8zw_从01h05m30s至片尾_原视频时间轴.zh.srt",
+      "cues": 2789,
+      "bytes": 210743,
+      "sha256": "f3826f4f24f3391b2161da05bc1f05a11f136dc151bb44338935111764ae0467"
+    }
+  ],
+  "manual_translation_corrections": 252,
+  "source_correction_events": 128,
+  "maximum_internal_gap_seconds": 8.24,
+  "explicit_uncertainty_cues": 4,
+  "number_difference_review": "38条差异均已对照：数字词/月份、ASR同音、成语或相邻句衔接；详见数字差异复核记录.json",
+  "preview_limit": "本机ffmpeg未包含libass subtitles滤镜，未生成硬字幕预览；未在桌面播放器逐条播放"
+}
