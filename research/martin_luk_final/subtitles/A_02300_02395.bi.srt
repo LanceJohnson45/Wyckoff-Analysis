@@ -1,0 +1,104 @@
+1
+00:00:00,000 --> 00:00:02,700
+非常波动的资金曲线。所以如果是同意的话就进场吧。
+extremely volatile equity curves. So yeah, jump in if you agree with that or
+
+2
+00:00:02,700 --> 00:00:11,580
+不同意任何一点。是的，我同意。但还是认为如果你
+disagree on any points. Yeah, I do. Yeah, but still I think if you're
+
+3
+00:00:11,580 --> 00:00:15,420
+如果你用的是紧密的数据，仍然可能会经历非常波动的
+if you're training with tight stuff you can still experience a very volatile
+
+4
+00:00:15,420 --> 00:00:21,300
+资金曲线，就像我特别喜欢的那样，我觉得它真的很棒，255。
+equity curve like I did especially like in, I think it's really whole 255 like
+
+5
+00:00:21,300 --> 00:00:24,940
+你的欧几里德，看起来很波动我觉得。
+my eukaryocryphus, like pretty volatile I think.
+
+6
+00:00:24,940 --> 00:00:32,820
+我觉得还有上行风险，设置一个较紧的止损也是合适的，但也有很大的上行空间。
+And I think also like this is the upside for setting a tight stop, but there's also a lot
+
+7
+00:00:32,820 --> 00:00:33,820
+下行风险。
+of downsides.
+
+8
+00:00:33,820 --> 00:00:41,420
+你会遇到一些行为上的睡眠页面，当你……
+So one of them is will you like encounter some behavioral sleep page when you are having
+
+9
+00:00:41,420 --> 00:00:49,060
+连续巨大的亏损，或同一日内连续多根阴线，尤其是
+a huge consecutive loss or a number of losing trees in a row or within the same day, especially
+
+10
+00:00:49,060 --> 00:00:55,540
+在市场出现巨大下跌，尤其是跳空低开的情况下。
+on a huge, maybe after a big gap down in the market.
+
+11
+00:00:55,540 --> 00:00:59,100
+你的整个投资组合都下跌了。
+So your whole portfolio went down.
+
+12
+00:00:59,100 --> 00:01:00,980
+然后在同一时间，你可能会面临
+And then at the same day, you may face
+
+13
+00:01:00,980 --> 00:01:04,140
+连续三笔或五笔亏损交易。
+or three or five losing trades in a row.
+
+14
+00:01:04,140 --> 00:01:07,380
+然后它有时候确实是非常显著地
+Then it really sometimes was really significantly
+
+15
+00:01:07,380 --> 00:01:09,100
+降低了你的心理资本。
+reduced your mental capital.
+
+16
+00:01:09,100 --> 00:01:12,700
+你会进行很多随意的交易。
+And you would take a lot of random trades.
+
+17
+00:01:12,700 --> 00:01:14,900
+实际上，我在十二月也做了。
+And actually, I did in December too.
+
+18
+00:01:14,900 --> 00:01:18,660
+而且还有很大的 downside 风险。
+And so there were really a lot of also the downside
+
+19
+00:01:18,660 --> 00:01:24,020
+设置一个较紧的止损，你可能会希望增加你的交易数量。
+for like setting a tight stop and as you would probably like increase your number of trade
+
+20
+00:01:24,020 --> 00:01:29,510
+是的，频率和频率，所以这 definitely 不是 t
+and frequency and yeah so it is definitely not
+
+21
+00:01:29,510 --> 00:01:35,000
+he best 或 the only way 你应该。
+the best or the only way that you should

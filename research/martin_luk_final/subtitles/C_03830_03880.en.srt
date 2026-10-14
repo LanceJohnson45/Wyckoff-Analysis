@@ -1,0 +1,31 @@
+1
+00:00:05,860 --> 00:00:14,220
+My stop was at the 5 minute candle high.
+
+2
+00:00:14,220 --> 00:00:16,300
+I mean 1598.
+
+3
+00:00:16,300 --> 00:00:24,700
+Yes, I think 1598.
+
+4
+00:00:24,700 --> 00:00:32,220
+And the high of this candle is 16, like 2 cents away.
+
+5
+00:00:32,220 --> 00:00:35,500
+That's that.
+
+6
+00:00:35,500 --> 00:00:42,220
+I love setting tight stops and that's the disadvantage.
+
+7
+00:00:42,220 --> 00:00:47,220
+That's the tradeoff.
+
+8
+00:00:47,220 --> 00:00:50,000
+AMD is strong.

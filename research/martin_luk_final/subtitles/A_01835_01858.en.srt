@@ -1,0 +1,27 @@
+1
+00:00:00,000 --> 00:00:02,820
+Okay, so then I'm going to the next item.
+
+2
+00:00:02,820 --> 00:00:10,320
+And then my trading style would be using tight stop with a low win rate.
+
+3
+00:00:10,320 --> 00:00:12,460
+So as you can see, my win rate is pretty low.
+
+4
+00:00:12,460 --> 00:00:16,140
+It's below 25%.
+
+5
+00:00:16,140 --> 00:00:17,940
+And I set my stop really tight.
+
+6
+00:00:17,940 --> 00:00:22,100
+So really mostly under 2.5%.
+
+7
+00:00:22,100 --> 00:00:23,000
+And the right side is the chart describing the parabolic relationship between the stop

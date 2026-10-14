@@ -1,0 +1,276 @@
+{
+  "text": " you EMDs are at a really strong support level. Weekly 9 is also the previous one. If it goes further lower a little bit, if the market gets a little bit weaker, then And maybe it could be a long entry in some point. you you you you you you you you you",
+  "segments": [
+    {
+      "id": 0,
+      "seek": 6000,
+      "start": 60.0,
+      "end": 62.06,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.5920535922050476,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9447779655456543
+    },
+    {
+      "id": 1,
+      "seek": 12000,
+      "start": 120.0,
+      "end": 133.52,
+      "text": " EMDs are at a really strong support level.",
+      "tokens": [
+        50364,
+        16237,
+        35,
+        82,
+        366,
+        412,
+        257,
+        534,
+        2068,
+        1406,
+        1496,
+        13,
+        51040
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.5951300048828125,
+      "compression_ratio": 1.013157894736842,
+      "no_speech_prob": 0.32873502373695374
+    },
+    {
+      "id": 2,
+      "seek": 12000,
+      "start": 133.52,
+      "end": 147.24,
+      "text": " Weekly 9 is also the previous one.",
+      "tokens": [
+        51040,
+        35945,
+        1722,
+        307,
+        611,
+        264,
+        3894,
+        472,
+        13,
+        51726
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.5951300048828125,
+      "compression_ratio": 1.013157894736842,
+      "no_speech_prob": 0.32873502373695374
+    },
+    {
+      "id": 3,
+      "seek": 14724,
+      "start": 147.24,
+      "end": 155.64000000000001,
+      "text": " If it goes further lower a little bit, if the market gets a little bit weaker, then",
+      "tokens": [
+        50364,
+        759,
+        309,
+        1709,
+        3052,
+        3126,
+        257,
+        707,
+        857,
+        11,
+        498,
+        264,
+        2142,
+        2170,
+        257,
+        707,
+        857,
+        24286,
+        11,
+        550,
+        50784
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.3727472139441449,
+      "compression_ratio": 1.1527777777777777,
+      "no_speech_prob": 0.10445783287286758
+    },
+    {
+      "id": 4,
+      "seek": 15564,
+      "start": 155.64,
+      "end": 165.39999999999998,
+      "text": " And maybe it could be a long entry in some point.",
+      "tokens": [
+        50364,
+        400,
+        1310,
+        309,
+        727,
+        312,
+        257,
+        938,
+        8729,
+        294,
+        512,
+        935,
+        13,
+        50852
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.4937898635864258,
+      "compression_ratio": 0.8909090909090909,
+      "no_speech_prob": 0.037472255527973175
+    },
+    {
+      "id": 5,
+      "seek": 21564,
+      "start": 215.64,
+      "end": 217.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.7398484945297241,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.943489670753479
+    },
+    {
+      "id": 6,
+      "seek": 24564,
+      "start": 245.64,
+      "end": 247.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.6895859837532043,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9478479623794556
+    },
+    {
+      "id": 7,
+      "seek": 36564,
+      "start": 365.64,
+      "end": 367.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.6787559986114502,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9433937072753906
+    },
+    {
+      "id": 8,
+      "seek": 39564,
+      "start": 395.64,
+      "end": 397.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.5528179407119751,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9419705867767334
+    },
+    {
+      "id": 9,
+      "seek": 42564,
+      "start": 425.64,
+      "end": 427.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.5356942415237427,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9412057995796204
+    },
+    {
+      "id": 10,
+      "seek": 45564,
+      "start": 455.64,
+      "end": 457.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.6137267351150513,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9434745907783508
+    },
+    {
+      "id": 11,
+      "seek": 48564,
+      "start": 485.64,
+      "end": 487.7,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.7229819297790527,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.9420060515403748
+    },
+    {
+      "id": 12,
+      "seek": 54564,
+      "start": 545.64,
+      "end": 547.6999999999999,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.6516886949539185,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.943230152130127
+    },
+    {
+      "id": 13,
+      "seek": 57564,
+      "start": 575.64,
+      "end": 577.6999999999999,
+      "text": " you",
+      "tokens": [
+        50364,
+        291,
+        50467
+      ],
+      "temperature": 0.0,
+      "avg_logprob": -0.8644403219223022,
+      "compression_ratio": 0.2727272727272727,
+      "no_speech_prob": 0.8525368571281433
+    }
+  ],
+  "language": "en"
+}

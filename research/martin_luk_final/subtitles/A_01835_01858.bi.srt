@@ -1,0 +1,34 @@
+1
+00:00:00,000 --> 00:00:02,820
+好的，然后我继续下一个项目。
+Okay, so then I'm going to the next item.
+
+2
+00:00:02,820 --> 00:00:10,320
+然后我的交易风格就是使用严格的止损，胜率较低。
+And then my trading style would be using tight stop with a low win rate.
+
+3
+00:00:10,320 --> 00:00:12,460
+你的胜率 pretty 低。
+So as you can see, my win rate is pretty low.
+
+4
+00:00:12,460 --> 00:00:16,140
+低于25%。
+It's below 25%.
+
+5
+00:00:16,140 --> 00:00:17,940
+我把止损设置得很紧。
+And I set my stop really tight.
+
+6
+00:00:17,940 --> 00:00:22,100
+基本上在2.5%以下。
+So really mostly under 2.5%.
+
+7
+00:00:22,100 --> 00:00:23,000
+右侧图表描述的是止损与的抛物线关系。
+And the right side is the chart describing the parabolic relationship between the stop
