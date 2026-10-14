@@ -71,7 +71,7 @@ def build() -> None:
         label = f"{clip['source']} {clock(clip['start'])}～{clock(clip['end'])}"
         markup = f'''<details class="teaching-clip" id="clip-{cid}">
 <summary>视频讲解 · {title} · {clip['end'] - clip['start']}秒</summary>
-<p class="clip-meta">原录屏：{label}。已独立裁剪，片内从00:00开始。</p>
+<p class="clip-meta">原录屏：{label}。1080p原画质，音视频流直接复制；片内从00:00开始。</p>
 <video controls playsinline preload="none" aria-label="{title} {label}" data-clip="{cid}">
 <source src="clips/{cid}.mp4" type="video/mp4">浏览器不支持视频播放。</video>
 <div class="clip-controls"><label>字幕：<select aria-label="{title}字幕" data-for="{cid}">

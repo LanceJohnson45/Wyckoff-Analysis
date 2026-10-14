@@ -25,10 +25,10 @@ def check_media(clip: dict) -> dict:
     video = next(s for s in info["streams"] if s["codec_type"] == "video")
     audio = next(s for s in info["streams"] if s["codec_type"] == "audio")
     assert video["codec_name"] == "h264" and audio["codec_name"] == "aac"
-    assert video["width"] == 1280 and video["height"] == 720
+    assert video["width"] == 1920 and video["height"] == 1080
     for seek in [0, max(0, duration - .5)]:
         subprocess.run(["ffmpeg", "-hide_banner", "-v", "error", "-ss", str(seek), "-i", str(path), "-frames:v", "1", "-an", "-f", "null", "-"], check=True, capture_output=True)
-    return {"id": clip["id"], "duration": duration, "bytes": path.stat().st_size, "start_time": info["format"]["start_time"], "decode": "first/last passed"}
+    return {"id": clip["id"], "duration": duration, "bytes": path.stat().st_size, "start_time": info["format"]["start_time"], "width": video["width"], "height": video["height"], "decode": "first/last passed"}
 
 
 def main() -> None:
