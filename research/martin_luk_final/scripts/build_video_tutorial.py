@@ -52,10 +52,8 @@ def target_prefix(clip: dict) -> str:
 
 def build() -> None:
     """Render relative MP4 sources and self-contained subtitle cue data."""
-    backup = ROOT / "Martin_Luk_详细实操教程_V3.0_纯图文历史备份.html"
-    if not backup.exists():
-        backup.write_bytes(PAGE.read_bytes())
-    soup = BeautifulSoup(backup.read_text(encoding="utf-8"), "html.parser")
+    base = ROOT / "Martin_Luk_详细实操教程_V4.0_图文底稿.html"
+    soup = BeautifulSoup(base.read_text(encoding="utf-8"), "html.parser")
     manifest = json.loads((ROOT / "clips_manifest.json").read_text(encoding="utf-8"))
     cue_data = json.loads((ROOT / "subtitles" / "clip_cues.json").read_text(encoding="utf-8"))
     for clip in manifest:
@@ -83,7 +81,7 @@ def build() -> None:
 </details>'''
         anchor.insert_before(BeautifulSoup(markup, "html.parser"))
     note = soup.new_tag("p", attrs={"class": "video-edition-note"})
-    note.string = "视频课程版 V3.1：正文各节附51段独立教学视频，共约165分钟。展开“视频讲解”即可播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git仓库上传；克隆后需自行提供同名MP4。移动教程时保留clips文件夹。图片和网页字幕已内嵌，不需访问原始录屏。"
+    note.string = "实操教程 V4.0：补充逐课操作细节、案例图解及逐根训练；正文各节附51段独立教学视频，共约165分钟。展开“视频讲解”即可播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git仓库上传；克隆后需自行提供同名MP4。移动教程时保留clips文件夹。图片和网页字幕已内嵌，不需访问原始录屏。"
     soup.find("h1").insert_after(note)
     style = soup.new_tag("style")
     style.string = """

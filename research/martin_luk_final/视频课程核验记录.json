@@ -465,6 +465,5 @@
       "height": 1080,
       "decode": "first/last passed"
     }
-  ],
-  "quality_verification": "51/51: every compressed video packet SHA256 matches original source; no video re-encoding"
+  ]
 }

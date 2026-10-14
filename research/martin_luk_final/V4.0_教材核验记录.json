@@ -1,0 +1,18 @@
+{
+  "version": "V4.0",
+  "source_sha256": "46ca852458296544a0e3e8da635be23eca15e4cbaef3fd94da8c16c245f595da",
+  "characters": 46294,
+  "lessons": 15,
+  "subsections": 101,
+  "embedded_images_html_and_word": 21,
+  "body_blocks_checked": 439,
+  "arithmetic_cases": 12,
+  "unique_anchors_and_links": "passed",
+  "docx_zip": "passed",
+  "limits": [
+    "未逐秒人工听校四视频",
+    "未逐页在Word应用检查分页",
+    "字幕沿用原机器译文及已有修订",
+    "未做策略回测或独立核实成交"
+  ]
+}

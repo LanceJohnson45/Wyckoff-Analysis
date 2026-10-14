@@ -56,7 +56,9 @@ def main() -> None:
     html = BeautifulSoup((ROOT / "Martin_Luk_详细实操教程_V3.0.html").read_text(encoding="utf-8"), "html.parser")
     assert len(html.select("video[data-clip]")) == len(manifest)
     assert len(html.select("details.teaching-clip")) == len(manifest)
-    assert len(html.select("img")) == 6
+    source_md = (ROOT / "Martin_Luk_回调买入法与其他交易方法_V2.0_最终整合版.md").read_text(encoding="utf-8")
+    assert len(html.select("img")) == len(re.findall(r"!\[[^\]]*\]\([^)]+\)", source_md))
+    assert all(img.get("src", "").startswith("data:image/") for img in html.select("img"))
     assert len([h for h in html.find_all("h2") if re.match(r"第\d+课", h.get_text())]) == 15
     for node in html.select("video source, .clip-controls a"):
         value = node.get("src") or node.get("href")
