@@ -1,0 +1,24 @@
+{
+  "version": "V4.1",
+  "source_sha256": "fbd026547edc1b07ef51c1bf4d30c4d5549142698a23f34145512a36ee717d3b",
+  "characters": 53785,
+  "lessons": 15,
+  "subsections": 111,
+  "embedded_images_html_and_word": 28,
+  "body_blocks_checked": 491,
+  "arithmetic_cases": 12,
+  "new_case_checks": [
+    "GME加权R",
+    "COIN加权R",
+    "仓位漂移",
+    "胜率分母"
+  ],
+  "unique_anchors_and_links": "passed",
+  "docx_zip": "passed",
+  "limits": [
+    "未逐秒人工听校五视频",
+    "未逐页在Word应用检查分页",
+    "新增E字幕为机器译文及重点修订",
+    "未做策略回测或独立核实成交"
+  ]
+}

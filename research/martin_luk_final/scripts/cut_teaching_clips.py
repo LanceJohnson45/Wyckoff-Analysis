@@ -4,6 +4,7 @@ from pathlib import Path
 import json,subprocess,structlog
 r=Path(__file__).resolve().parents[1]
 sources={'A':'/Users/wxjer/Downloads/YTDown.com_YouTube_Media_VKNEJA5r8zw_969-Return-in-1-Year-The-Pullback-Strategy-of-a-Trading-Champion_001_1080p.mp4','B':'/Volumes/E/Download/YTDown.com_YouTube_Media_WjkWNi-ASn8_EP104-13-Oct-2026_001_1080p.mp4','C':'/Volumes/E/Download/YTDown.com_YouTube_Media_7NKlKaRIW9g_My-first-stream-12-Nov-2025_001_1080p.mp4','D':'/Volumes/E/Download/YTDown.com_YouTube_Media_z_IxO8qskgs_Short-updates-12-Oct-2026_001_1080p.mp4'}
+sources['E']='/Users/wxjer/Downloads/YTDown.com_YouTube_Media_-6lPuMFSMG0_Martin-Luk-s-Winning-Trading-Strategy-Step-by-Step-Performance_001_1080p.mp4'
 log=structlog.get_logger()
 rows=json.loads((r/'clips_manifest.json').read_text())
 for i,c in enumerate(rows):

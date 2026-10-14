@@ -355,5 +355,45 @@
     "start": 5595,
     "end": 5830,
     "topic": "QBTS、PLTR、SK hynix"
+  },
+  {
+    "id": "E_00170_00302",
+    "source": "E",
+    "start": 170,
+    "end": 302,
+    "topic": "第三方解说：三类扫描器",
+    "source_kind": "third_party"
+  },
+  {
+    "id": "E_00416_00545",
+    "source": "E",
+    "start": 416,
+    "end": 545,
+    "topic": "第三方解说：风控与退出（需对照修订）",
+    "source_kind": "third_party"
+  },
+  {
+    "id": "E_00545_00610",
+    "source": "E",
+    "start": 545,
+    "end": 610,
+    "topic": "第三方解说：GME案例",
+    "source_kind": "third_party"
+  },
+  {
+    "id": "E_00610_00730",
+    "source": "E",
+    "start": 610,
+    "end": 730,
+    "topic": "第三方解说：COIN关联交易与退出",
+    "source_kind": "third_party"
+  },
+  {
+    "id": "E_00809_00930",
+    "source": "E",
+    "start": 809,
+    "end": 930,
+    "topic": "第三方解说：名单与执行流程",
+    "source_kind": "third_party"
   }
 ]

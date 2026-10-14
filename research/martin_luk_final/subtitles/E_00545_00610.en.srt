@@ -1,0 +1,51 @@
+1
+00:00:00,000 --> 00:00:06,480
+Let's now look at a case study from Martin's trade in 2024, the GameStop trade.
+
+2
+00:00:06,480 --> 00:00:11,520
+Martin's May 2024 GameStop trade exemplifies his evolved methodology.
+
+3
+00:00:11,520 --> 00:00:18,640
+Entering at $26.30 with a stop at $25.47, he captured a 40-risk multiple return as the
+
+4
+00:00:18,640 --> 00:00:22,400
+stock exploded to over $50.
+
+5
+00:00:22,400 --> 00:00:27,200
+The entry came on the opening-range breakout in this gap-up on a one-minute timeframe,
+
+6
+00:00:27,200 --> 00:00:32,560
+the stop set at the prior minute bar low rather than the days low. This was an episodic pivot
+
+7
+00:00:32,560 --> 00:00:37,360
+trade that violated his typical day-low stop rule, but the day-low would have required
+
+8
+00:00:37,360 --> 00:00:40,240
+over 6% risk, unacceptable for his system, so
+
+9
+00:00:40,240 --> 00:00:43,120
+he adapted in this trade to manage the
+
+10
+00:00:43,120 --> 00:00:48,720
+risk. For exit, he trimmed half the position at 12
+
+11
+00:00:48,720 --> 00:00:54,880
+risk multiples. Near $37, a 37% move. The remainder he held
+
+12
+00:00:55,000 --> 00:01:02,280
+the parabolic move, finally exiting near $56 as the stock approached 2021 resistance levels.
+
+13
+00:01:04,360 --> 00:01:05,000
+Let's look at another trade, the Coin-Bitcoin Correlation Play.

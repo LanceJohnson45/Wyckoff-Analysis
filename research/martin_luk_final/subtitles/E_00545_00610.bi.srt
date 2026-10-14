@@ -1,0 +1,64 @@
+1
+00:00:00,000 --> 00:00:06,480
+现在让我们来看一下马丁2024年的GameStop交易案例。
+Let's now look at a case study from Martin's trade in 2024, the GameStop trade.
+
+2
+00:00:06,480 --> 00:00:11,520
+Martin的2024年GameStop交易展示了他进化了的交易方法。
+Martin's May 2024 GameStop trade exemplifies his evolved methodology.
+
+3
+00:00:11,520 --> 00:00:18,640
+进入价格为26.30美元，止损设在25.47美元，他获得了40风险倍数的回报
+Entering at $26.30 with a stop at $25.47, he captured a 40-risk multiple return as the
+
+4
+00:00:18,640 --> 00:00:22,400
+这只股票暴涨到超过50美元。
+stock exploded to over $50.
+
+5
+00:00:22,400 --> 00:00:27,200
+跳空高开后，他用1分钟周期的开盘区间突破入场，
+The entry came on the opening-range breakout in this gap-up on a one-minute timeframe,
+
+6
+00:00:27,200 --> 00:00:32,560
+止损放在前一分钟K线低点，而不是当日低点。这是一笔EP
+the stop set at the prior minute bar low rather than the days low. This was an episodic pivot
+
+7
+00:00:32,560 --> 00:00:37,360
+违反了他的典型当日低点止损规则，但当日低点将会要求
+trade that violated his typical day-low stop rule, but the day-low would have required
+
+8
+00:00:37,360 --> 00:00:40,240
+超过6%的风险，对于他的系统来说不可接受
+over 6% risk, unacceptable for his system, so
+
+9
+00:00:40,240 --> 00:00:43,120
+，所以他在这个交易中调整了管理风险的方式。
+he adapted in this trade to manage the
+
+10
+00:00:43,120 --> 00:00:48,720
+风险。退出时，他在约12
+risk. For exit, he trimmed half the position at 12
+
+11
+00:00:48,720 --> 00:00:54,880
+R、约37美元附近卖出一半，讲者称涨幅约37%。余仓继续持有，
+risk multiples. Near $37, a 37% move. The remainder he held
+
+12
+00:00:55,000 --> 00:01:02,280
+随抛物线式上涨，最后在接近2021年阻力的约56美元附近退出。
+the parabolic move, finally exiting near $56 as the stock approached 2021 resistance levels.
+
+13
+00:01:04,360 --> 00:01:05,000
+再看另一笔：COIN与Bitcoin的关联交易。
+Let's look at another trade, the Coin-Bitcoin Correlation Play.

@@ -1,0 +1,91 @@
+1
+00:00:00,000 --> 00:00:02,960
+Let's look at another trade, the Coin-Bitcoin Correlation Play.
+
+2
+00:00:04,480 --> 00:00:08,320
+Rather than waiting for a traditional breakout setup in Coin itself,
+
+3
+00:00:08,320 --> 00:00:12,720
+Martin identified a correlation opportunity through Bitcoin's price action.
+
+4
+00:00:13,600 --> 00:00:18,720
+When Bitcoin formed an inside-day pattern and attempted to break above the prior day's high,
+
+5
+00:00:18,720 --> 00:00:21,760
+he anticipated that Coinbase would follow Bitcoin's momentum.
+
+6
+00:00:23,360 --> 00:00:28,320
+Martin's coin entry violated his typical prior day high breakout methodology.
+
+7
+00:00:29,040 --> 00:00:32,960
+He bought the stock near the day's lows as it tried to reclaim that level,
+
+8
+00:00:32,960 --> 00:00:38,080
+likely using an anchor VWAP breakout during the session as a specific trigger.
+
+9
+00:00:40,240 --> 00:00:45,440
+Martin was essentially trading Bitcoin through Coin, which is why he did not follow his typical
+
+10
+00:00:45,440 --> 00:00:50,640
+rules on coins price, but rather relied on Bitcoin's breakout.
+
+11
+00:00:50,640 --> 00:00:55,360
+Despite the trade's initial success, he made a significant execution error that he openly
+
+12
+00:00:55,360 --> 00:01:00,980
+acknowledges. Rather than following his systematic exit rules, he panicked the position during
+
+13
+00:01:00,980 --> 00:01:04,840
+what appeared to be normal consolidation action.
+
+14
+00:01:04,840 --> 00:01:09,720
+The stock was still respecting the 9 EMA and hadn't violated any of his predetermined
+
+15
+00:01:09,720 --> 00:01:15,120
+exit criteria. However, psychological pressure led him to exit randomly in the middle of
+
+16
+00:01:15,120 --> 00:01:20,000
+what turned out to be the early stages of a much larger move.
+
+17
+00:01:20,000 --> 00:01:24,720
+This perhaps was an effect of significant drift from his own entry rules in Coin. He
+
+18
+00:01:24,720 --> 00:01:30,320
+later traded Coin again as an episodic pivot and rode the trade properly, selling part into
+
+19
+00:01:30,320 --> 00:01:35,600
+strength and as a rest when the price dropped below the nine-day EMA.
+
+20
+00:01:35,600 --> 00:01:40,280
+He entered the trade at $117 with a stop at
+
+21
+00:01:40,280 --> 00:01:44,960
+$114.50, a 2% stop loss. He exited the entire
+
+22
+00:01:44,960 --> 00:01:52,360
+position at 20x risk, a 40% return. Had he followed his sell rules and exited half at
+
+23
+00:01:52,360 --> 00:02:00,000
+that point, the full exit would have been near $240, a 105% move in a few days.

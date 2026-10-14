@@ -1,0 +1,134 @@
+1
+00:00:00,000 --> 00:00:03,280
+在大多数仓位上创建了一个丑陋的红色K线。
+created an ugly red candle across most positions.
+
+2
+00:00:03,280 --> 00:00:05,920
+扫描到执行的工作流程
+The scanning to execution workflow
+
+3
+00:00:05,920 --> 00:00:11,800
+Martin的日常流程体现系统性。强市时他盘前准备约30分钟，
+Martin's daily routine demonstrates systematic consistency. His 30-minute morning preparation
+
+4
+00:00:11,800 --> 00:00:18,160
+调整市则缩短到15～20分钟，因为机会
+in strong markets reduces to 15-20 minutes during corrections, reflecting reduced opportunity
+
+5
+00:00:18,160 --> 00:00:20,160
+减少。
+sets.
+
+6
+00:00:20,160 --> 00:00:24,160
+这些观察名单提供组织结构。
+These watch lists provide organisational structure.
+
+7
+00:00:24,160 --> 00:00:29,320
+主要监控名单关注关键股票和即时交易想法。
+The main watch list is for key stocks and immediate trade ideas.
+
+8
+00:00:29,320 --> 00:00:35,240
+Leading指明确上升趋势的股票，EMA9在EMA21之上，EMA
+Leading stocks are names in clear uptrends, where the 9 EMA is above the 21 EMA and the
+
+9
+00:00:35,240 --> 00:00:38,560
+21又在EMA50之上。
+21 above the 50.
+
+10
+00:00:38,560 --> 00:00:42,520
+普通股票没有明确的方向性倾向。
+Mediocre stocks without clear directional bias.
+
+11
+00:00:42,520 --> 00:00:51,100
+Lagging是下降趋势的股票；Pillar是影响指数的超大型权重股。
+lagging names in downtrends, and pillar, mega-cup stocks affecting indices.
+
+12
+00:00:51,100 --> 00:00:56,440
+每个类别中的股票数量作为市场健康指标。当领先的
+The number of stocks in each category serves as a market health indicator. When the leading
+
+13
+00:00:56,440 --> 00:01:03,520
+组收缩、Lagging扩大时，意味着突破策略的环境不利。
+list contracts and lagging expands, it signals unfavorable conditions for breakout strategies.
+
+14
+00:01:03,520 --> 00:01:08,360
+在市场交易时段，他会寻找与精确进入标准相匹配的突破进入点。
+In market hours, he looks for breakout entries aligning with the precise entry criterion
+
+15
+00:01:08,360 --> 00:01:11,240
+提供非常紧的止损。
+that offer very tight stops.
+
+16
+00:01:11,240 --> 00:01:17,720
+一旦进入股票，他就遵循他精心制定的出场规则。
+Once he's in the stocks, he follows his well-laid-out exit rules.
+
+17
+00:01:17,720 --> 00:01:20,760
+Martin的交易方法会随着市场条件的变化而演变。
+Martin's approach evolves with market conditions.
+
+18
+00:01:20,760 --> 00:01:25,920
+在2024年回调期间，他发展了针对反弹后股票做空的策略。
+During the late 2024 correction, he developed short-selling setups targeting stocks bouncing
+
+19
+00:01:25,920 --> 00:01:29,480
+进入下降并拢的EMA。
+into declining, converging EMAs.
+
+20
+00:01:29,480 --> 00:01:34,960
+这些逆突破同样运用风险管理系统，但利用下行趋势。
+These inverse breakouts apply the same risk management principles but capitalise on downward
+
+21
+00:01:34,960 --> 00:01:37,280
+趋势。
+momentum.
+
+22
+00:01:37,280 --> 00:01:40,420
+他的资金曲线反馈原则至关重要。
+His equity curve feedback principle proves crucial.
+
+23
+00:01:40,420 --> 00:01:45,560
+如果你的交易在指数挣扎时表现良好，也要保持适度谨慎。
+If your trades work while indices struggle, continue with slight caution.
+
+24
+00:01:45,560 --> 00:01:50,040
+如果指数强劲但自己的交易失败，就应认真重新评估。
+If indices are strong but your trades fail, reassess aggressively.
+
+25
+00:01:50,040 --> 00:01:56,400
+这可以防止错误地与自己的绩效数据作对。
+This prevents the common mistake of fighting your own performance data.
+
+26
+00:01:56,400 --> 00:02:00,840
+也许最重要的是，马丁的旅程展示了所需的心理进化。
+Perhaps most importantly, Martin's journey illustrates the psychological evolution required
+
+27
+00:02:00,840 --> 00:02:01,000
+为了交易成功。
+for trading success.

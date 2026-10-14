@@ -46,7 +46,7 @@ def render() -> None:
     normal.font.name = "Arial"
     normal.font.size = Pt(10.5)
     normal.element.rPr.rFonts.set(qn("w:eastAsia"), "宋体")
-    doc.sections[0].header.paragraphs[0].text = "Martin Luk · V4.0 操作细节与案例拆解"
+    doc.sections[0].header.paragraphs[0].text = "Martin Luk · V4.1 操作细节与解说核对"
     for node in list(body.children):
         if not getattr(node, "name", None):
             continue
@@ -81,13 +81,13 @@ def render() -> None:
         img["width"] = str(size["width"])
         img["height"] = str(size["height"])
         img["loading"] = "lazy"
-    soup = BeautifulSoup("<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Martin Luk 实操教程 V4.0</title></head><body><main></main></body></html>", "html.parser")
+    soup = BeautifulSoup("<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Martin Luk 实操教程 V4.1</title></head><body><main></main></body></html>", "html.parser")
     style = soup.new_tag("style")
     style.string = old.style.string + "\nfigure{margin:20px 0}td{overflow-wrap:anywhere}.table-scroll{overflow-x:auto}.contents details{margin:8px 0}.contents summary{cursor:pointer}.contents a{display:block}h4{color:#265878}"
     soup.head.append(style)
     main = soup.main
     notice = soup.new_tag("p", attrs={"class": "notice"})
-    notice.string = "V4.0 · 操作细节、真实案例与逐根演练 · 图片内嵌 · 视频1080p原始流"
+    notice.string = "V4.1 · 操作细节、解说核对与逐根演练 · 图片内嵌 · 视频1080p原始流"
     main.append(notice)
     nav = soup.new_tag("nav", attrs={"class": "contents", "aria-label": "课程目录"})
     title = soup.new_tag("strong");title.string = "课程目录（展开查看操作小节）";nav.append(title)

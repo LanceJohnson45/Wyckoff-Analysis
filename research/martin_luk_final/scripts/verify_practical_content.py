@@ -30,7 +30,7 @@ def verify() -> None:
     assert len(ids) == len(set(ids)), "重复章节ID"
     for link in final.select('a[href^="#"]'):
         assert link["href"][1:] in ids, link["href"]
-    assert "V4.0" in final.title.get_text()
+    assert "V4.1" in final.title.get_text()
     with zipfile.ZipFile(ROOT / "Martin_Luk_详细实操教程_V3.0.docx") as archive:
         assert archive.testzip() is None
         xml = ElementTree.fromstring(archive.read("word/document.xml"))
@@ -48,7 +48,7 @@ def verify() -> None:
             assert value in normalize(final.main.get_text()), f"视频网页遗漏正文: {value[:60]}"
             checked += 1
     pictures = final.select("main img")
-    assert len(pictures) == word_images == 21
+    assert len(pictures) == word_images == len(re.findall(r"!\[[^\]]*\]\(", source.read_text()))
     for picture in pictures:
         assert int(picture["width"]) > 0 and int(picture["height"]) > 0
         data = base64.b64decode(picture["src"].split(",", 1)[1], validate=True)
@@ -78,8 +78,12 @@ def verify() -> None:
     profit = 100 * (Decimal("20.69") - Decimal("20.03")) + 127 * (Decimal("20.45") - Decimal("20.03"))
     assert profit == Decimal("119.34")
     assert round(profit / Decimal("49.94"), 2) == Decimal("2.39")
-    report = {"version": "V4.0", "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(), "characters": len(source.read_text()), "lessons": 15, "subsections": len(base.select("main h3")), "embedded_images_html_and_word": word_images, "body_blocks_checked": checked, "arithmetic_cases": len(examples), "unique_anchors_and_links": "passed", "docx_zip": "passed", "limits": ["未逐秒人工听校四视频", "未逐页在Word应用检查分页", "字幕沿用原机器译文及已有修订", "未做策略回测或独立核实成交"]}
-    (ROOT / "V4.0_教材核验记录.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
+    assert round((Decimal("46.50") - Decimal("26.30")) / Decimal("0.83"), 2) == Decimal("24.34")
+    assert (Decimal("203.50") - Decimal("117")) / Decimal("2.50") == Decimal("34.60")
+    assert round(Decimal("4500") / Decimal("11500") * 100, 2) == Decimal("39.13")
+    assert round(Decimal(104) / Decimal(423) * 100, 2) == Decimal("24.59")
+    report = {"version": "V4.1", "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(), "characters": len(source.read_text()), "lessons": 15, "subsections": len(base.select("main h3")), "embedded_images_html_and_word": word_images, "body_blocks_checked": checked, "arithmetic_cases": len(examples), "new_case_checks": ["GME加权R", "COIN加权R", "仓位漂移", "胜率分母"], "unique_anchors_and_links": "passed", "docx_zip": "passed", "limits": ["未逐秒人工听校五视频", "未逐页在Word应用检查分页", "新增E字幕为机器译文及重点修订", "未做策略回测或独立核实成交"]}
+    (ROOT / "V4.1_教材核验记录.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

@@ -12,6 +12,11 @@ from bs4 import BeautifulSoup
 ROOT = Path(__file__).resolve().parents[1]
 PAGE = ROOT / "Martin_Luk_详细实操教程_V3.0.html"
 ANCHORS = {
+    "第三方解说：三类扫描器": "2.4 ",
+    "第三方解说：风控与退出（需对照修订）": "11.7 ",
+    "第三方解说：GME案例": "13.8 ",
+    "第三方解说：COIN关联交易与退出": "13.9 ",
+    "第三方解说：名单与执行流程": "2.5 ",
     "市场和自身反馈": "1.3 ",
     "名单、板块强弱与扫描": "2.3 ",
     "AVWAP、回调与首次回测": "3.3 ",
@@ -67,9 +72,10 @@ def build() -> None:
         cid = html.escape(clip["id"], quote=True)
         title = html.escape(clip["topic"])
         label = f"{clip['source']} {clock(clip['start'])}～{clock(clip['end'])}"
+        source_label = "第三方解说（请对照正文，非本人新增亲述）" if clip["source"] == "E" else "本人访谈/直播"
         markup = f'''<details class="teaching-clip" id="clip-{cid}">
 <summary>视频讲解 · {title} · {clip['end'] - clip['start']}秒</summary>
-<p class="clip-meta">原录屏：{label}。1080p原画质，音视频流直接复制；片内从00:00开始。</p>
+<p class="clip-meta">来源：{source_label} · {label}。1080p原画质，音视频流直接复制；片内从00:00开始。</p>
 <video controls playsinline preload="none" aria-label="{title} {label}" data-clip="{cid}">
 <source src="clips/{cid}.mp4" type="video/mp4">浏览器不支持视频播放。</video>
 <div class="clip-controls"><label>字幕：<select aria-label="{title}字幕" data-for="{cid}">
@@ -79,9 +85,14 @@ def build() -> None:
 <a href="clips/{cid}.mp4" download>视频文件</a></div>
 <p class="clip-status" role="status">展开后点击播放。字幕为本地机器翻译，交易术语和数字请结合原文；字幕时间来自机器转写，未逐句人工校时。</p>
 </details>'''
-        anchor.insert_before(BeautifulSoup(markup, "html.parser"))
+        # E的新课文先解释二手证据，再在该小节末尾提供核对片段。
+        target = anchor.find_next(["h2", "h3"]) if clip["source"] == "E" else anchor
+        if target is None:
+            raise ValueError(f"Missing following heading: {prefix}")
+        target.insert_before(BeautifulSoup(markup, "html.parser"))
     note = soup.new_tag("p", attrs={"class": "video-edition-note"})
-    note.string = "实操教程 V4.0：补充逐课操作细节、案例图解及逐根训练；正文各节附51段独立教学视频，共约165分钟。展开“视频讲解”即可播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git仓库上传；克隆后需自行提供同名MP4。移动教程时保留clips文件夹。图片和网页字幕已内嵌，不需访问原始录屏。"
+    duration = sum(clip["end"] - clip["start"] for clip in manifest)
+    note.string = f"实操教程 V4.1：新增三类扫描、名单迁移、仓位漂移及GME/COIN收益核算；A～D为本人访谈/直播，E为第三方解说，分歧见正文。附{len(manifest)}段独立教学视频，共{int(duration // 60)}分{int(duration % 60)}秒。展开‘视频讲解’播放，可切换中文、双语、英文或关闭字幕。视频位于同目录clips文件夹，仅保留本地，未随Git上传；移动教程请保留clips和subtitles相对目录。图片和网页字幕已内嵌。"
     soup.find("h1").insert_after(note)
     style = soup.new_tag("style")
     style.string = """

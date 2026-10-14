@@ -1,10 +1,10 @@
 {
-  "clips": 51,
-  "duration_seconds": 9925.900985,
-  "bytes": 736006661,
-  "source_segments": 1589,
-  "translated_segments": 1589,
-  "caption_cues": 1887,
+  "clips": 56,
+  "duration_seconds": 10493.100985,
+  "bytes": 783672655,
+  "source_segments": 1703,
+  "translated_segments": 1703,
+  "caption_cues": 2005,
   "media": [
     {
       "id": "A_13635_14035",
@@ -460,6 +460,51 @@
       "id": "D_05595_05830",
       "duration": 235.02,
       "bytes": 30474370,
+      "start_time": "0.000000",
+      "width": 1920,
+      "height": 1080,
+      "decode": "first/last passed"
+    },
+    {
+      "id": "E_00170_00302",
+      "duration": 132.04,
+      "bytes": 9568246,
+      "start_time": "0.000000",
+      "width": 1920,
+      "height": 1080,
+      "decode": "first/last passed"
+    },
+    {
+      "id": "E_00416_00545",
+      "duration": 129.04,
+      "bytes": 7121240,
+      "start_time": "0.000000",
+      "width": 1920,
+      "height": 1080,
+      "decode": "first/last passed"
+    },
+    {
+      "id": "E_00545_00610",
+      "duration": 65.04,
+      "bytes": 5183696,
+      "start_time": "0.000000",
+      "width": 1920,
+      "height": 1080,
+      "decode": "first/last passed"
+    },
+    {
+      "id": "E_00610_00730",
+      "duration": 120.04,
+      "bytes": 17691814,
+      "start_time": "0.000000",
+      "width": 1920,
+      "height": 1080,
+      "decode": "first/last passed"
+    },
+    {
+      "id": "E_00809_00930",
+      "duration": 121.04,
+      "bytes": 8100998,
       "start_time": "0.000000",
       "width": 1920,
       "height": 1080,

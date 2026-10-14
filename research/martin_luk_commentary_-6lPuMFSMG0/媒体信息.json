@@ -1,0 +1,21 @@
+{
+  "programs": [],
+  "stream_groups": [],
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio"
+    }
+  ],
+  "format": {
+    "duration": "1049.054331",
+    "size": "81976151"
+  },
+  "source_file": "/Users/wxjer/Downloads/YTDown.com_YouTube_Media_-6lPuMFSMG0_Martin-Luk-s-Winning-Trading-Strategy-Step-by-Step-Performance_001_1080p.mp4"
+}
