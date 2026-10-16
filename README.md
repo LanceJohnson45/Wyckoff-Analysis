@@ -38,6 +38,17 @@ Web + CLI 双通道，Gemini / Claude / OpenAI 三选一，GitHub Actions 定时
 | 通用 Agent 能力 | 执行命令、读写文件、抓取网页 — 发一个 CSV 路径即可分析，不只是股票工具 |
 | 多通道推送 | 飞书 / 企微 / 钉钉 / Telegram |
 
+## Martin Luk 日线辅助工作台
+
+网页版支持 A 股／美股自选股和日线 CSV，识别强势回调、收紧突破、U&R，展示延伸／偏弱预警、日K与均线图和单股观察卡。数据链路为 Actions 更新云端 PostgreSQL → 本机增量同步 SQLite → 网页离线计算。首次先同步，再启动网页：
+
+```bash
+.venv/bin/python scripts/sync_local_market.py --market all
+.venv/bin/python -m streamlit run martin_luk_app.py --server.address 127.0.0.1
+```
+
+主应用左侧也可进入“Martin 辅助扫描”。每批最多20只，扫描不在线补拉行情；网页提供显式云端同步按钮。规则尚未验证交易优势，不包含分钟入场或自动下单。[使用、同步与规则说明](docs/martin_luk_web.md)。
+
 ## 数据源
 
 个股日线自动降级：

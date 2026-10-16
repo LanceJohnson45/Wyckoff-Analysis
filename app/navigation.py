@@ -11,6 +11,7 @@ def show_right_nav():
         st.page_link("streamlit_app.py", label="读盘室", icon="💬")
         st.page_link("pages/Export.py", label="数据导出", icon="📁")
         st.page_link("pages/WyckoffScreeners.py", label="沙里淘金", icon="🧭")
+        st.page_link("pages/MartinLuk.py", label="Martin 辅助扫描", icon="🔎")
         st.page_link("pages/AIAnalysis.py", label="大师模式", icon="🤖")
         st.page_link("pages/Portfolio.py", label="持仓管理", icon="💼")
         st.page_link("pages/RecommendationTracking.py", label="推荐跟踪", icon="🎯")

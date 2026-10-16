@@ -25,7 +25,7 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      PG_ENABLED: ${{ secrets.PG_ENABLED }}
+      PG_ENABLED: "1"
       PG_HOST: ${{ secrets.PG_HOST }}
       PG_PORT: ${{ secrets.PG_PORT }}
       PG_DATABASE: ${{ secrets.PG_DATABASE }}
@@ -75,6 +75,10 @@ jobs:
           pip install -e .
           echo "::endgroup::"
 
+      - name: Verify PostgreSQL target
+        run: |
+          python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
+
       - name: Prepare logs dir
         run: mkdir -p logs
 
@@ -112,6 +116,14 @@ jobs:
             echo "::error title=Prewarm failed::US prewarm exited with code ${prewarm_status}."
           fi
           exit "${prewarm_status}"
+
+      - name: Refresh analysis benchmark daily bars
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        run: |
+          set -o pipefail
+          python -u scripts/refresh_market_benchmarks.py --market us \
+            2>&1 | tee logs/benchmark_us.console.log
 
       - name: Save prewarm state
         if: always()
