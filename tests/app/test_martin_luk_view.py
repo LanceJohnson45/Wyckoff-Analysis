@@ -2,6 +2,7 @@
 
 from datetime import date
 from pathlib import Path
+import os
 
 import pandas as pd
 import pytest
@@ -158,3 +159,102 @@ def test_error_web_missing_local_store_does_not_fetch_online(tmp_path: Path, mon
     assert not app.exception
     assert any("先同步本地日线" in error.value for error in app.error)
     assert not path.exists()
+
+
+def test_error_empty_watchlist_cannot_trigger_all_market_sync(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】自选同步的空输入必须拒绝，不能隐式变成全市场同步。"""
+    def forbidden_sync(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("不应进入同步传输")
+
+    monkeypatch.setattr("integrations.market_data_sync.sync_market", forbidden_sync)
+    app = AppTest.from_file(str(ROOT / "martin_luk_app.py")).run(timeout=20)
+    app.text_area[0].set_value("")
+    app.button(key="luk_sync").click().run(timeout=20)
+
+    assert not app.exception
+    assert any("请输入至少一个股票代码" in error.value for error in app.error)
+    assert not any("同步完成" in status.label for status in app.status)
+
+
+@pytest.mark.skipif(os.getenv("LUK_REAL_DATA_TESTS") != "1" or not (ROOT / "data/local_market.sqlite3").is_file(), reason="手工集成验证需要已同步的真实旧行情库；CI 不附带该数据文件")
+@pytest.mark.parametrize("market,symbols", [("A 股", "600519,300750,000333"), ("美股", "AAPL,MSFT,NVDA")])
+def test_real_existing_history_full_component_flow(market: str, symbols: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【真实旧数据】日期、参数、形态筛选与切卡使用实际只读行情库。"""
+    monkeypatch.setenv("LOCAL_MARKET_DB_PATH", str(ROOT / "data/local_market.sqlite3"))
+    app = AppTest.from_file(str(ROOT / "martin_luk_app.py")).run(timeout=30)
+    app.radio[0].set_value(market).run(timeout=30)
+    app.text_area[0].set_value(symbols)
+    app.date_input[0].set_value(date(2026, 10, 8))
+    app.checkbox[0].uncheck()
+    app.number_input[0].set_value(0.5)
+    app.number_input[1].set_value(4.0)
+    app.slider[0].set_value(0.6)
+    app.button[0].click().run(timeout=30)
+    assert not app.exception
+    assert any(m.label == "已分析" and m.value == "3" for m in app.metric)
+    table = next(df.value for df in app.dataframe if "规则版本" in df.value.columns)
+    assert set(table["数据日期"]) == {"2026-10-08"}
+    assert set(table["支撑带宽/ATR"]) == {0.5}
+    assert set(table["延伸预警/ATR"]) == {4.0}
+    assert set(table["区间收缩比例"]) == {0.6}
+    app.selectbox[1].set_value(symbols.split(",")[-1]).run(timeout=30)
+    assert any(symbols.split(",")[-1] in s.value for s in app.subheader)
+    tag = app.selectbox[0].options[-1]
+    app.selectbox[0].set_value(tag).run(timeout=30)
+    table = next(df.value for df in app.dataframe if "规则版本" in df.value.columns)
+    assert table["观察标签"].str.contains(tag, regex=False).all()
+    app.date_input[0].set_value(date(2026, 9, 15))
+    app.button[0].click().run(timeout=30)
+    assert not app.exception
+    table = next(df.value for df in app.dataframe if "规则版本" in df.value.columns)
+    assert table["数据日期"].le("2026-09-15").all()
+
+
+def test_error_sync_failure_is_visible_and_preserves_page(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】云端不可达不崩溃，明确显示同步未完成。"""
+    def unavailable(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("测试云端连接不可用")
+
+    monkeypatch.setattr("integrations.market_data_sync.sync_market", unavailable)
+    app = AppTest.from_file(str(ROOT / "martin_luk_app.py")).run(timeout=20)
+    app.button(key="luk_sync").click().run(timeout=20)
+    assert not app.exception
+    assert any("同步未完成：测试云端连接不可用" in error.value for error in app.error)
+    assert not app.success
+
+
+@pytest.mark.skipif(os.getenv("LUK_REAL_DATA_TESTS") != "1" or not (ROOT / "data/local_market.sqlite3").is_file(), reason="需要本机已同步的真实行情库")
+def test_real_data_quality_errors_do_not_produce_cards(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【真实旧数据异常】坏日线、零量、短历史、缺失代码均明确拒绝。"""
+    from integrations.local_market_store import read_local_issues
+
+    monkeypatch.setenv("LOCAL_MARKET_DB_PATH", str(ROOT / "data/local_market.sqlite3"))
+    bad_symbol = read_local_issues("cn").iloc[0]["代码"]
+    app = AppTest.from_file(str(ROOT / "martin_luk_app.py")).run(timeout=30)
+    app.text_area[0].set_value(f"{bad_symbol},000016,001237,999999")
+    app.date_input[0].set_value(date(2026, 10, 8))
+    app.checkbox[0].uncheck()
+    app.button[0].click().run(timeout=30)
+    assert not app.exception
+    assert any("没有可分析的数据" in e.value for e in app.error)
+    failures = next(df.value for df in app.dataframe if "问题" in df.value.columns)
+    assert len(failures) == 4
+    messages = " ".join(failures["问题"])
+    assert "异常" in messages and "成交量为零" in messages and "至少需要 100" in messages and "本地没有" in messages
+    assert not app.subheader
+
+
+@pytest.mark.skipif(os.getenv("LUK_REAL_DATA_TESTS") != "1" or not (ROOT / "data/local_market.sqlite3").is_file(), reason="需要本机已同步的真实行情与 SPY 基准")
+def test_real_us_increment_and_benchmark_reach_web(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【真实同步结果】新美股日线与SPY基准进入网页，相对强度不再留空。"""
+    monkeypatch.setenv("LOCAL_MARKET_DB_PATH", str(ROOT / "data/local_market.sqlite3"))
+    app = AppTest.from_file(str(ROOT / "martin_luk_app.py")).run(timeout=30)
+    app.radio[0].set_value("美股").run(timeout=30)
+    app.date_input[0].set_value(date(2026, 10, 15))
+    app.button[0].click().run(timeout=30)
+    assert not app.exception
+    table = next(df.value for df in app.dataframe if "规则版本" in df.value.columns)
+    assert len(table) == 3
+    assert set(table["数据日期"]) == {"2026-10-15"}
+    assert table["相对基准20日超额百分点"].notna().all()
+    assert not any("基准加载失败" in w.value for w in app.warning)

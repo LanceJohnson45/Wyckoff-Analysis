@@ -113,7 +113,7 @@ def render_local_sync(market: str, symbols_text: str) -> tuple[object, ...]:
             from integrations.market_data_sync import sync_market, sync_symbols
 
             try:
-                symbols = sync_symbols(symbols_text, market) if scope == "当前自选股" else ()
+                symbols = sync_symbols(",".join(parse_symbols(symbols_text, market)), market) if scope == "当前自选股" else ()
                 with st.status("正在只读云端数据库并写入本机…", expanded=True) as status:
                     detail = st.empty()
                     result = sync_market(market, symbols=symbols, progress=lambda rows: detail.caption(f"已写入/核对 {rows:,} 行"))
@@ -217,21 +217,19 @@ def render_martin_luk() -> None:
     market: Literal["cn", "us"] = "cn" if market_label == "A 股" else "us"
     mode = st.radio("行情输入", INPUT_MODES, horizontal=True, key="luk_mode")
     completed_day = resolve_end_calendar_day_for_market(market)
+    # 代码也供表单外的同步按钮使用，必须即时提交，不能被扫描表单缓存。
+    symbols_text = st.text_area(
+        "股票代码" if mode == INPUT_MODES[0] else "单股 CSV 对应代码（有 symbol 列时忽略）",
+        value=LUK_DEFAULT_SYMBOLS[market], key=f"luk_symbols_{market}_{mode}",
+        help=f"用逗号或换行分隔；每次最多 {MAX_SYMBOLS} 只。示例代码用于输入格式说明。",
+        height=90, max_chars=500,
+    )
     with st.form("luk_scan_form"):
-        left, right = st.columns([3, 1])
-        with left:
-            symbols_text = st.text_area(
-                "股票代码" if mode == INPUT_MODES[0] else "单股 CSV 对应代码（有 symbol 列时忽略）",
-                value=LUK_DEFAULT_SYMBOLS[market], key=f"luk_symbols_{market}_{mode}",
-                help=f"用逗号或换行分隔；每次最多 {MAX_SYMBOLS} 只。示例代码用于输入格式说明。",
-                height=90, max_chars=500,
-            )
-        with right:
-            as_of = st.date_input("分析截止日", value=completed_day, max_value=completed_day, key=f"luk_date_{market}")
-            st.caption("按市场时区排除当日未完成日线。节假日会使用数据中的最近交易日。")
+        as_of = st.date_input("分析截止日", value=completed_day, max_value=completed_day, key=f"luk_date_{market}")
+        st.caption("按市场时区排除当日未完成日线。节假日会使用数据中的最近交易日。")
         uploaded = None
         if mode == INPUT_MODES[1]:
-            uploaded = st.file_uploader("UTF-8 CSV · 最大 5 MB", type=["csv"])
+            uploaded = st.file_uploader("UTF-8 CSV · 最大 5 MB", type=["csv"], max_upload_size=MAX_CSV_BYTES // (1024 * 1024))
             st.caption("必需列：date, open, high, low, close, volume；多股增加 symbol 列。也支持对应中文列名。")
         use_benchmark = st.checkbox(f"读取本地基准 {'沪深300' if market == 'cn' else 'SPY'}，计算相对强度", value=mode == INPUT_MODES[0])
         with st.expander("研究参数"):
