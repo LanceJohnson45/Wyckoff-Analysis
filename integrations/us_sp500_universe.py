@@ -7,16 +7,13 @@ from pathlib import Path
 import re
 from tempfile import NamedTemporaryFile
 from typing import Any
+from zoneinfo import ZoneInfo
+
+from integrations.market_data_policy import exclusion_applies, load_security_overrides
 
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 _SNAPSHOT_PATH = _DATA_DIR / "us_sp500_constituents.json"
-_DELISTED_OR_UNSUPPORTED_SYMBOLS = {
-    # Coterra was removed from the live US funnel because Yahoo Finance no
-    # longer returns a timezone/history payload for this ticker in our source
-    # chain, causing a guaranteed fetch failure on every run.
-    "CTRA",
-}
 _INPUT_PATHS = {
     "dowjones": _DATA_DIR / "dowjones.json",
     "sp500": _DATA_DIR / "sp500.json",
@@ -69,6 +66,8 @@ def _normalize_symbols(symbols: list[str], *, market: str = "us") -> list[str]:
     out: list[str] = []
     seen: set[str] = set()
     market_norm = str(market or "us").strip().lower()
+    overrides = load_security_overrides()
+    today = datetime.now(ZoneInfo("Asia/Shanghai")).date()
     for raw in symbols:
         s = str(raw).strip()
         if not s:
@@ -77,7 +76,7 @@ def _normalize_symbols(symbols: list[str], *, market: str = "us") -> list[str]:
             s = s.upper()
             if not re.fullmatch(r"[A-Z][A-Z0-9._-]{0,14}", s):
                 continue
-            if s in _DELISTED_OR_UNSUPPORTED_SYMBOLS:
+            if exclusion_applies(overrides.get(("us", s), {}), today):
                 continue
         elif market_norm == "hk":
             s = s.upper()

@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
+      TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
+      TIKFLOW_API_KEY: ${{ secrets.TIKFLOW_API_KEY }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
@@ -38,19 +40,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
         run: |
           echo "::group::Install packages"
-          python -m pip install --upgrade pip
-          pip install -e .
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
           echo "::endgroup::"
 
       - name: Verify PostgreSQL target
         run: |
-          python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
+          uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
 
       - name: Prepare logs dir
         run: mkdir -p logs
@@ -71,7 +73,7 @@ jobs:
           echo "::group::Prewarm cache (CN)"
           set -o pipefail
           set +e
-          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" python -u scripts/funnel_prewarm.py --market cn --trading-days ${FUNNEL_PREWARM_DAYS} \
+          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_cn.console.log
           prewarm_status=${PIPESTATUS[0]}
           set -e
@@ -88,7 +90,7 @@ jobs:
         timeout-minutes: 5
         run: |
           set -o pipefail
-          python -u scripts/refresh_market_benchmarks.py --market cn \
+          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market cn \
             2>&1 | tee logs/benchmark_cn.console.log
 
       - name: Save prewarm state
@@ -105,7 +107,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: daily-job-logs-${{ github.run_number }}
-          path: logs/*.log
+          path: |
+            logs/*.log
+            logs/prewarm_*.csv
+            logs/prewarm_*.json
           retention-days: 7
           if-no-files-found: warn
 

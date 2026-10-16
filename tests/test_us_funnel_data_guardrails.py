@@ -164,7 +164,7 @@ def test_prewarm_repairs_full_window_when_cache_has_only_a_few_rows(monkeypatch:
     monkeypatch.setattr(
         prewarm,
         "fetch_stock_hist",
-        lambda **kwargs: calls.append((kwargs["start"], kwargs["end"])) or _valid_hist(1),
+        lambda **kwargs: calls.append((kwargs["start"], kwargs["end"])) or _valid_hist(1).assign(date=str(kwargs["start"])),
     )
     monkeypatch.setattr(prewarm, "upsert_cache_data", lambda **kwargs: True)
 

@@ -64,20 +64,19 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
         run: |
           echo "::group::Install packages"
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
           echo "::endgroup::"
 
       - name: Verify PostgreSQL target
         run: |
-          python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
+          uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
 
       - name: Prepare logs dir
         run: mkdir -p logs
@@ -85,7 +84,8 @@ jobs:
       - name: Sync S&P500 constituents
         run: |
           echo "::group::Sync S&P 500 Constituents"
-          python -u scripts/us_sp500_maintenance.py sync --bootstrap-new --bootstrap-trading-days ${US_SP500_SYNC_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
+          set -o pipefail
+          uv run --frozen --no-dev python -u scripts/us_sp500_maintenance.py sync --bootstrap-new --bootstrap-trading-days ${US_SP500_SYNC_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/us_sp500_sync.console.log
           echo "::endgroup::"
 
@@ -105,7 +105,7 @@ jobs:
           echo "::group::Prewarm cache (US)"
           set -o pipefail
           set +e
-          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" python -u scripts/funnel_prewarm.py --market us --trading-days ${FUNNEL_PREWARM_DAYS} \
+          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market us --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_us.console.log
           prewarm_status=${PIPESTATUS[0]}
           set -e
@@ -122,7 +122,7 @@ jobs:
         timeout-minutes: 5
         run: |
           set -o pipefail
-          python -u scripts/refresh_market_benchmarks.py --market us \
+          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market us \
             2>&1 | tee logs/benchmark_us.console.log
 
       - name: Save prewarm state
@@ -139,7 +139,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: daily-job-us-logs-${{ github.run_number }}
-          path: logs/*.log
+          path: |
+            logs/*.log
+            logs/prewarm_*.csv
+            logs/prewarm_*.json
           retention-days: 7
           if-no-files-found: warn
 

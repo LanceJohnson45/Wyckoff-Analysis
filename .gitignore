@@ -40,3 +40,6 @@ logs/
 # 回测产物与快照缓存（体积大，本地生成即可）
 analysis/backtest/
 analysis/
+
+# uv的项目依赖锁必须随源码保存。
+!uv.lock

@@ -4,6 +4,7 @@ import os
 import re
 import time
 from bisect import bisect_right
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, timedelta
 from functools import lru_cache
@@ -215,7 +216,7 @@ def _stock_name_from_code(symbol: str) -> str:
     return str(row.iloc[0])
 
 
-def get_all_stocks() -> list[dict[str, str]]:
+def get_all_stocks(*, force_refresh: bool = False, on_warning: Callable[[str], None] | None = None) -> list[dict[str, str]]:
     """
     Get all A-share stock codes and names.
     Returns:
@@ -243,7 +244,7 @@ def get_all_stocks() -> list[dict[str, str]]:
     try:
         if cache_path.exists():
             age = time.time() - cache_path.stat().st_mtime
-            if age <= cache_ttl_seconds:
+            if not force_refresh and age <= cache_ttl_seconds:
                 cached = _read_cache()
                 if cached:
                     return cached
@@ -254,7 +255,9 @@ def get_all_stocks() -> list[dict[str, str]]:
     # 1. 尝试从 akshare 获取最新数据
     try:
         info = ak.stock_info_a_code_name()
-        info["code"] = info["code"].astype(str)
+        if info is None or info.empty or not {"code", "name"}.issubset(info.columns):
+            raise RuntimeError("A股名单接口返回空数据或字段不完整")
+        info["code"] = info["code"].astype(str).str.zfill(6)
         info["name"] = info["name"].astype(str)
         records = info.to_dict("records")
 
@@ -267,6 +270,8 @@ def get_all_stocks() -> list[dict[str, str]]:
         return records
     except Exception as e:
         print(f"Network error fetching stock list: {e}. Trying cache...")
+        if on_warning is not None:
+            on_warning("A股最新名单获取失败，正在使用旧缓存；新上市/退市覆盖尚未确认")
         # 3. 网络失败，尝试读取缓存（即使已过期也比空好）
         cached = _read_cache()
         if cached:

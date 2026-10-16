@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "securities": [
+    {
+      "market": "cn",
+      "symbol": "000004",
+      "exclude": true,
+      "effective_from": "2026-07-14",
+      "reason": "confirmed_delisted",
+      "evidence": "https://disc.static.szse.cn/disc/disk03/finalpage/2026-07-14/7ac00e87-c015-4085-b165-23f2a5a1ca42.PDF"
+    },
+    {
+      "market": "us",
+      "symbol": "CTRA",
+      "exclude": true,
+      "effective_from": "2026-05-07",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://www.devonenergy.com/news/2026/Devon-Energy-and-Coterra-Energy-Complete-Merger"
+    },
+    {
+      "market": "cn",
+      "symbol": "001237",
+      "listing_date": "2026-05-22",
+      "evidence": "https://dataclouds.cninfo.com.cn/sjother2/regulatory/2026/20260522/f408c9034bdc163e7e111cfb5efa89f5.pdf"
+    },
+    {
+      "market": "cn",
+      "symbol": "001248",
+      "listing_date": "2026-07-02",
+      "evidence": "https://www.szse.cn/disclosure/notice/company/t20260701_621407.html"
+    },
+    {
+      "market": "cn",
+      "symbol": "301666",
+      "listing_date": "2026-04-16",
+      "evidence": "https://docs.static.szse.cn/www/market/periodical/month/W020260511542158346514.html"
+    },
+    {
+      "market": "cn",
+      "symbol": "002808",
+      "exclude": true,
+      "effective_from": "2026-07-14",
+      "reason": "confirmed_delisted",
+      "evidence": "https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-07-14/473d1b6c-2f3d-40dc-b335-eb7ed542457a.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "002898",
+      "exclude": true,
+      "effective_from": "2026-07-17",
+      "reason": "confirmed_delisted",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-07-17/1225428193.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "300029",
+      "exclude": true,
+      "effective_from": "2026-07-10",
+      "reason": "confirmed_delisted",
+      "evidence": "https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-07-10/4fbba685-0443-44d0-9e1a-561bb696277a.PDF"
+    }
+  ]
+}

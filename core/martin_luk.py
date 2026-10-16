@@ -209,7 +209,10 @@ def analyze_daily(
         if aligned.notna().all():
             bench_return = (aligned.iloc[-1] / aligned.iloc[0] - 1) * 100
             rs20 = round(float(latest["return20"] - bench_return), 2)
-            reasons.append(f"同日期20日收益较基准高 {rs20:+.2f} 个百分点")
+            comparison = "领先" if rs20 > 0 else "落后" if rs20 < 0 else "持平"
+            reasons.append(f"同日期20日收益较基准{comparison} {abs(rs20):.2f} 个百分点")
+            if rs20 < 0:
+                warnings.append("近20日跑输基准；均线趋势或形态标签不代表跑赢基准，需复核相对强弱。")
         else:
             warnings.append("基准与个股交易日期未完全对齐，不计算相对强度")
     if not tags:

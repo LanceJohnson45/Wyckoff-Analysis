@@ -30,6 +30,8 @@ from http.client import RemoteDisconnected
 
 import pandas as pd
 
+from integrations.market_data_policy import BeforeListingRange, yahoo_first_trade_date
+
 
 _BAOSTOCK_LOGGED = False
 _BAOSTOCK_EXIT_HOOKED = False
@@ -668,6 +670,9 @@ def _fetch_stock_yfinance(
         progress=False,
     )
     if df is None or df.empty:
+        first_trade = yahoo_first_trade_date(symbol)
+        if first_trade is not None and end_req_ts.date() < first_trade:
+            raise BeforeListingRange(first_trade)
         raise RuntimeError("yfinance empty")
 
     work = df.copy()
@@ -700,7 +705,15 @@ def _fetch_stock_yfinance(
         (work["日期"] >= start_iso) & (work["日期"] <= end_iso)
     ].copy()
     if work.empty:
+        first_trade = yahoo_first_trade_date(symbol)
+        if first_trade is not None and end_req_ts.date() < first_trade:
+            raise BeforeListingRange(first_trade)
         raise RuntimeError("yfinance empty after date filter")
+    if work["日期"].min() > start_iso:
+        first_trade = yahoo_first_trade_date(symbol)
+        if first_trade is not None:
+            work.attrs["listing_date"] = first_trade.isoformat()
+            work.attrs["listing_date_source"] = "Yahoo firstTradeDate"
     for col in ["开盘", "最高", "最低", "收盘", "成交量"]:
         work[col] = pd.to_numeric(work[col], errors="coerce")
 
@@ -1039,6 +1052,8 @@ def fetch_stock_hist(
             if not _has_valid_ohlc(yf_frame):
                 raise RuntimeError("yfinance returned no valid OHLC rows")
             return _tag_source(yf_frame, "yfinance")
+        except BeforeListingRange:
+            raise
         except Exception as e:
             _debug_source_fail(f"yfinance({market_norm})", e)
             failed_sources.append("yfinance")
@@ -1127,6 +1142,8 @@ def fetch_stock_hist(
                 return _tag_source(
                     _fetch_stock_yfinance(yf_symbol, start_s, end_s), "yfinance"
                 )
+            except BeforeListingRange:
+                raise
             except Exception as e:
                 _debug_source_fail("yfinance(cn)", e)
                 failed_sources.append("yfinance")
@@ -1207,7 +1224,11 @@ def fetch_stock_hist(
             failed_details.append(f"baostock={_compact_error(e)}")
         except Exception as e:
             _debug_source_fail("baostock", e)
-            _baostock_mark_failure(_compact_error(e))
+            if str(e) == "baostock empty":
+                # 成功连接但该区间无成交，不应熔断其他正常股票的备用源。
+                _baostock_mark_success()
+            else:
+                _baostock_mark_failure(_compact_error(e))
             failed_sources.append("baostock")
             failed_details.append(f"baostock={_compact_error(e)}")
 

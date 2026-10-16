@@ -263,6 +263,9 @@ class TestFunnelPrewarm:
             {
                 "cn": {
                     "status": "ok",
+                    "validation_version": mod.PREWARM_VALIDATION_VERSION,
+                    "policy_digest": mod._policy_digest(),
+                    "recent_gap_max_age_days": mod._RECENT_GAP_MAX_AGE_DAYS,
                     "end_trade_date": "2026-07-10",
                     "trading_days": 320,
                     "symbol_count": 2,
@@ -356,7 +359,7 @@ class TestFunnelPrewarm:
         checkpoint_statuses = []
         real_save_progress = mod._save_prewarm_progress
 
-        def fake_prefetch(symbol, market, trading_days, *, dry_run=False):
+        def fake_prefetch(symbol, market, trading_days, *, dry_run=False, **kwargs):
             return (symbol, "gap_repaired", 1, 1, 31, 320, [], 0)
 
         def recording_save_progress(**kwargs):
@@ -366,6 +369,9 @@ class TestFunnelPrewarm:
         monkeypatch.setattr(mod, "_PREWARM_RUN_STATE_PATH", state_path)
         monkeypatch.setattr(mod, "_PREWARM_CHECKPOINT_EVERY", 1)
         monkeypatch.setattr(mod, "_job_end_calendar_day", lambda: end_day)
+        from integrations.fetch_a_share_csv import TradingWindow
+        monkeypatch.setattr(mod, "_resolve_trading_window", lambda **kwargs: TradingWindow(end_day, end_day))
+        monkeypatch.setattr(mod, "_expected_trade_dates", lambda *args: [end_day])
         monkeypatch.setattr(
             mod,
             "_normalize_symbols",
@@ -381,6 +387,7 @@ class TestFunnelPrewarm:
                 "cn",
                 "--symbols",
                 "000001,000002",
+                "--review-dir", str(tmp_path),
                 "--trading-days",
                 "320",
             ],
@@ -617,6 +624,8 @@ class TestMainlineCnCompatibility:
         )
         monkeypatch.setattr(mod, "fetch_sector_map", lambda: {"000001": "银行", "000002": "地产"})
         monkeypatch.setattr(mod, "fetch_market_cap_map", lambda: {"000001": 100.0, "000002": 10.0})
+        # 兼容指标用固定市值样本；份额行情I/O不能覆盖该样本或写真实缓存。
+        monkeypatch.setattr(mod, "build_market_cap_map_from_shares", lambda **kwargs: (dict(kwargs["base_map"]), {}))
         monkeypatch.setattr(mod, "_stock_name_map", lambda: {"000001": "平安银行", "000002": "万科A"})
         monkeypatch.setattr(mod, "fetch_index_hist", lambda *args, **kwargs: sample_df.copy())
         monkeypatch.setattr(

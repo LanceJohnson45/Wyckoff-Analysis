@@ -84,3 +84,25 @@ LUK_REAL_DATA_TESTS=1 .venv/bin/python -m pytest \
 - A股最新仍为10月8日；缺基准和50根异常行情需要云端数据维护后再同步。分钟入场、事件/板块判断、自动交易不属于当前功能。
 
 浏览器附记：切换数据重绘期间捕获到Vega的`Infinite extent`警告（date/OHLC/volume字段）；最终价格图与成交量图均已用截图确认完整渲染。未据此声称浏览器控制台零警告，暂未定位该绘图库重绘警告的根因。
+
+## 用户完成美股Actions后的复测（2026-10-16 15:47，UTC+8）
+
+本轮使用uv创建的临时Python 3.12.9环境，保留项目原有虚拟环境。无业务代码修改，无提交或部署操作。最初测试收集因临时环境缺少akshare失败；补装与原环境相同的akshare版本1.18.54后，完整执行以下相关回归，最终62项通过（19.18秒）：
+
+```sh
+LUK_REAL_DATA_TESTS=1 /tmp/luk-verify-312/bin/python3.12 -m pytest \
+  tests/test_local_market_store.py tests/test_martin_luk.py \
+  tests/app/test_martin_luk_view.py tests/test_trading_clock.py \
+  tests/test_indicator_rule_engine.py -q
+```
+
+实际运行美股增量同步：读取/核对2921行、2批，新增异常0；股票日线总数194877，最新2026-10-15。退出码2源于仍存在WBD的已隔离坏数据。云端仅只读查询，本地行情库及同步水位更新。
+
+随后按2026-10-15截止逐股调用真实本地读取函数与分析器，并传入实际SPY基准：
+
+- 516只股票，512只成功生成历史观察，未处理程序异常0；512只均可对齐各自交易日期并计算相对SPY强度。
+- 其中509只的实际数据日期为2026-10-15。其余3只仍为旧日期：AVB为2026-08-24；BK、SATS为2026-07-17。相对强度也对应其历史日期，不能当作10月15日结果；尚未确定缺失原因。
+- CTRA、EA、EQR最新成交量为零而被拒绝；WBD因一根隔离坏数据被拒绝。
+- AAPL/MSFT/NVDA的真实网页组件扫描到10月15日，结果及相对强度字段通过现有AppTest验收。本轮未重新操作浏览器上传下载；这些操作复用前次证据。
+
+本轮明细：`logs/martin_luk_us_1015_retest.json`（逐股结果）、`logs/martin_luk_us_1015_retest_sync.jsonl`（同步记录），均为本机日志，不入Git。本报告补记未提交。

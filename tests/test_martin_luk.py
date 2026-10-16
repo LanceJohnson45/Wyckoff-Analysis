@@ -154,3 +154,57 @@ def test_param_invalid_thresholds_are_rejected(kwargs: dict[str, float]) -> None
     """【参数校验】拒绝无意义的支撑带和收缩阈值。"""
     with pytest.raises(ValueError):
         LukParameters(**kwargs)
+
+
+@pytest.mark.parametrize("length", [100, 137, 200], ids=["minimum-history", "middle-cutoff", "full-history"])
+def test_normal_indicators_match_independent_arithmetic(length: int) -> None:
+    """【正常值】逐步算术独立核对EMA、跳空真实区间、ATR、ADR与20日收益。"""
+    from math import sin
+
+    records = []
+    for i, day in enumerate(pd.bdate_range("2025-01-01", periods=200)):
+        close = 50 + i * 0.05 + sin(i / 3) + (5 if i >= 190 else 0)
+        opening = close - 0.4 if i % 2 else close + 0.2
+        records.append({"date": day, "open": opening, "high": max(opening, close) + 0.3,
+                        "low": min(opening, close) - 0.5, "close": close, "volume": 1000 + i})
+    frame = pd.DataFrame(records)
+    known = records[:length]
+    averages = {window: known[0]["close"] for window in (9, 21, 50)}
+    ranges = []
+    for i, row in enumerate(known):
+        if i:
+            for window in averages:
+                alpha = 2 / (window + 1)
+                averages[window] = alpha * row["close"] + (1 - alpha) * averages[window]
+        ranges.append(max(row["high"] - row["low"], abs(row["high"] - known[i-1]["close"]),
+                          abs(row["low"] - known[i-1]["close"])) if i else row["high"] - row["low"])
+    expected_atr = sum(ranges[-14:]) / 14
+    expected_adr = sum((r["high"] / r["low"] - 1) * 100 for r in known[-20:]) / 20
+    expected_return = (known[-1]["close"] / known[-21]["close"] - 1) * 100
+
+    result = analyze_daily(frame, symbol="TEST", market="us", as_of=known[-1]["date"].date())
+    latest = result.frame.iloc[-1]
+
+    for window, expected in averages.items():
+        assert latest[f"ema{window}"] == pytest.approx(expected, rel=1e-12)
+    assert latest["atr14"] == pytest.approx(expected_atr, rel=1e-12)
+    assert latest["adr20"] == pytest.approx(expected_adr, rel=1e-12)
+    assert latest["return20"] == pytest.approx(expected_return, rel=1e-12)
+    assert latest["distance_atr"] == pytest.approx((known[-1]["close"] - averages[21]) / expected_atr)
+
+
+@pytest.mark.parametrize("benchmark_growth,word", [(0.02, "落后"), (0.0, "领先")], ids=["underperform", "outperform"])
+def test_normal_relative_strength_explanation_matches_sign(rising_daily: pd.DataFrame, benchmark_growth: float, word: str) -> None:
+    """【正常值】相对收益负数明确写落后，正数写领先，不把负数描述成更强。"""
+    benchmark = rising_daily.copy()
+    benchmark["close"] = [40 * (1 + benchmark_growth) ** i for i in range(len(benchmark))]
+    benchmark["open"] = benchmark["close"]
+    benchmark["high"] = benchmark["close"] * 1.01
+    benchmark["low"] = benchmark["close"] * 0.99
+
+    result = analyze_daily(rising_daily, symbol="TEST", market="us", as_of=rising_daily.iloc[-1]["date"].date(), benchmark=benchmark)
+
+    assert any(f"较基准{word}" in reason for reason in result.reasons)
+    if word == "落后":
+        assert result.rs20_pct < 0
+        assert any("不代表跑赢基准" in warning for warning in result.warnings)

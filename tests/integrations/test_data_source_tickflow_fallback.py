@@ -28,6 +28,8 @@ def _sample_cn_hist() -> pd.DataFrame:
 
 
 def _disable_other_fallbacks(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TICKFLOW_API_KEY", raising=False)
+    monkeypatch.delenv("TIKFLOW_API_KEY", raising=False)
     monkeypatch.setenv("DATA_SOURCE_DISABLE_AKSHARE", "1")
     monkeypatch.setenv("DATA_SOURCE_DISABLE_BAOSTOCK", "1")
     monkeypatch.setenv("DATA_SOURCE_DISABLE_EFINANCE", "1")
@@ -203,3 +205,65 @@ def test_fetch_stock_hist_hk_falls_back_to_tickflow_when_yfinance_failed(monkeyp
     out = ds.fetch_stock_hist("0700.HK", "2026-04-10", "2026-04-18", adjust="qfq", market="hk")
     assert not out.empty
     assert out.attrs.get("source") == "tickflow"
+
+
+@pytest.mark.parametrize("market,symbol", [("cn", "001237"), ("us", "NEWIPO")], ids=["cn-before-ipo", "us-before-ipo"])
+def test_normal_explicit_prelisting_boundary_survives_fallback_chain(monkeypatch: pytest.MonkeyPatch, market: str, symbol: str) -> None:
+    """【正常值】确认上市前没有K线是有效边界，不再当多源故障或退市。"""
+    from datetime import date
+    from integrations.market_data_policy import BeforeListingRange
+
+    _disable_other_fallbacks(monkeypatch)
+    monkeypatch.setattr(ds, "_fetch_stock_yfinance", lambda *args: (_ for _ in ()).throw(BeforeListingRange(date(2026, 5, 22))))
+
+    with pytest.raises(BeforeListingRange) as exc:
+        ds.fetch_stock_hist(symbol, "2026-01-01", "2026-05-21", market=market)
+
+    assert exc.value.listing_date == date(2026, 5, 22)
+
+
+def test_normal_yahoo_metadata_confirms_filter_empty_before_ipo(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】请求扩展区间含首日，但目标区间在上市前时用元数据确认边界。"""
+    from datetime import date
+    import yfinance as yf
+    from integrations.market_data_policy import BeforeListingRange
+
+    frame = pd.DataFrame({"Open": [10], "High": [11], "Low": [9], "Close": [10], "Volume": [1000]}, index=pd.DatetimeIndex(["2026-05-22"], name="Date"))
+    monkeypatch.setattr(yf, "download", lambda *args, **kwargs: frame)
+    monkeypatch.setattr(ds, "yahoo_first_trade_date", lambda symbol: date(2026, 5, 22))
+
+    with pytest.raises(BeforeListingRange) as exc:
+        ds._fetch_stock_yfinance("001237.SZ", "20250101", "20260521")
+
+    assert exc.value.listing_date == date(2026, 5, 22)
+
+
+def test_error_yahoo_empty_without_metadata_is_not_confirmed_delisting(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】空下载且无首次交易日，仍为待审核故障而非自动批准排除。"""
+    import yfinance as yf
+    from integrations.market_data_policy import BeforeListingRange
+
+    monkeypatch.setattr(yf, "download", lambda *args, **kwargs: pd.DataFrame())
+    monkeypatch.setattr(ds, "yahoo_first_trade_date", lambda symbol: None)
+
+    with pytest.raises(RuntimeError, match="yfinance empty") as exc:
+        ds._fetch_stock_yfinance("000004.SZ", "20260901", "20261015")
+
+    assert not isinstance(exc.value, BeforeListingRange)
+
+
+def test_boundary_baostock_empty_does_not_open_network_circuit(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【边界值】连续计数到9次后合法空行情不能将其他股票备用源熔断。"""
+    _disable_other_fallbacks(monkeypatch)
+    monkeypatch.delenv("DATA_SOURCE_DISABLE_BAOSTOCK", raising=False)
+    monkeypatch.setenv("DATA_SOURCE_DISABLE_YFINANCE", "1")
+    monkeypatch.setattr(ds, "_BAOSTOCK_CONSEC_FAILS", 9)
+    monkeypatch.setattr(ds, "_BAOSTOCK_CIRCUIT_OPEN", False)
+    monkeypatch.setattr(ds, "_BAOSTOCK_CIRCUIT_THRESHOLD", 10)
+    monkeypatch.setattr(ds, "_fetch_stock_baostock", lambda *args: (_ for _ in ()).throw(RuntimeError("baostock empty")))
+
+    with pytest.raises(RuntimeError):
+        ds.fetch_stock_hist("001237", "2025-01-01", "2026-05-21")
+
+    assert ds._BAOSTOCK_CONSEC_FAILS == 0
+    assert not ds._BAOSTOCK_CIRCUIT_OPEN

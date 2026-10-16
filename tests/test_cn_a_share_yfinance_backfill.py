@@ -86,6 +86,8 @@ def test_normalize_batch_download_extracts_symbol_frame():
 
 
 def test_run_batch_backfill_downloads_once_for_many_symbols(monkeypatch):
+    # 单测替身只提供逐股缓存；本机.env不能使批量查询绕过它访问真实PG。
+    monkeypatch.setattr(mod, "postgres_enabled", lambda: False)
     expected = [date(2025, 7, 7), date(2025, 7, 8)]
     written = set()
 
@@ -148,6 +150,7 @@ def test_run_batch_backfill_downloads_once_for_many_symbols(monkeypatch):
 
 
 def test_run_batch_backfill_reports_cache_ready_when_no_download_needed(monkeypatch):
+    monkeypatch.setattr(mod, "postgres_enabled", lambda: False)
     expected = [date(2025, 7, 7), date(2025, 7, 8)]
     monkeypatch.setattr(mod, "load_cached_dates", lambda *args, **kwargs: expected)
     monkeypatch.setattr(
