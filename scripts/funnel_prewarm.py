@@ -43,7 +43,7 @@ except ImportError:
 
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from integrations.data_source import fetch_index_hist, fetch_stock_hist
-from integrations.market_data_policy import BeforeListingRange, exclusion_applies, fetch_cn_suspensions, load_security_overrides
+from integrations.market_data_policy import BeforeListingRange, exclusion_applies, fetch_cn_listing_dates, fetch_cn_suspensions, load_security_overrides
 from integrations.market_data_review import review_reason, write_review
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached, get_all_stocks, TradingWindow
 from scripts.prewarm_workers import PrewarmBudgetExpired, bounded_call, iter_bounded_jobs
@@ -463,7 +463,9 @@ def _prefetch_one(
             if gap_start > gap_end:
                 continue
         try:
-            frame = fetch_stock_hist(symbol=symbol, start=gap_start, end=gap_end, adjust="qfq", market=market)
+            # 冷启动且上市日期未知时先发现元数据；明确边界后才强制完整交易日覆盖。
+            coverage = {"required_dates": [d for d in effective_expected_dates if gap_start <= d <= gap_end]} if listing_date or cached_dates else {}
+            frame = fetch_stock_hist(symbol=symbol, start=gap_start, end=gap_end, adjust="qfq", market=market, **coverage)
             if not known_listing_date and frame.attrs.get("listing_date"):
                 listing_date = date.fromisoformat(frame.attrs["listing_date"])
             norm = normalize_hist_df(frame)
@@ -477,7 +479,7 @@ def _prefetch_one(
             rows_written += len(norm.index)
         except BeforeListingRange as exc:
             if known_listing_date and known_listing_date != exc.listing_date:
-                errors.append(f"{gap_start}..{gap_end}: 人工上市日期与行情源首次交易日不一致，待审核")
+                errors.append(f"{gap_start}..{gap_end}: 已确认上市日期与行情源首次交易日不一致，待审核")
             else:
                 listing_date = exc.listing_date
         except Exception as exc:
@@ -653,6 +655,22 @@ def main() -> int:
     ready_updates: dict[str, dict] = {}
     suspensions: dict[str, str] = {}
     if market == "cn" and symbols_to_check:
+        for exchange, prefixes in (("bj", ("4", "8", "92")), ("sz", ("0", "3"))):
+            candidates = [sym for sym in symbols_to_check if sym.startswith(prefixes) and not overrides.get((market, sym), {}).get("listing_date")]
+            if not candidates:
+                continue
+            try:
+                metadata = bounded_call(fetch_cn_listing_dates, exchange, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
+                applied = 0
+                for sym in candidates:
+                    if sym in metadata:
+                        row = metadata[sym]
+                        overrides.setdefault((market, sym), {}).update(listing_date=row["listing_date"])
+                        records[sym]["evidence"] = row["evidence"]
+                        applied += 1
+                _log(f"prewarm listing metadata exchange={exchange} applied={applied}")
+            except Exception as exc:
+                _log(f"prewarm listing lookup failed exchange={exchange}: {type(exc).__name__}: {exc}; 未确认边界仍保留缺口审核")
         try:
             suspensions = bounded_call(fetch_cn_suspensions, end_day, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
         except Exception as exc:

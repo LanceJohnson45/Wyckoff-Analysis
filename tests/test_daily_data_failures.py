@@ -14,6 +14,32 @@ def _frame() -> pd.DataFrame:
     return pd.DataFrame({"date": days.date, "open": 10., "high": 11., "low": 9., "close": 10., "volume": 1000})
 
 
+@pytest.mark.parametrize("bad_kind", ["missing", "invalid"], ids=["missing-day", "invalid-ohlc"])
+@pytest.mark.parametrize("fallback_complete", [True, False], ids=["complete-fallback", "all-incomplete"])
+def test_boundary_incomplete_stock_history_continues_fallback(monkeypatch: pytest.MonkeyPatch, bad_kind: str, fallback_complete: bool) -> None:
+    """【边界值】首源缺失请求交易日或该日日线无效时切源；所有源不完整仍报错。"""
+    full = _frame().tail(2).rename(columns={"date": "日期", "open": "开盘", "high": "最高", "low": "最低", "close": "收盘", "volume": "成交量"})
+    bad = full.iloc[:1].copy() if bad_kind == "missing" else full.copy()
+    if bad_kind == "invalid":
+        bad.loc[bad.index[-1], "开盘"] = float("nan")
+    for source in ("YFINANCE", "TICKFLOW"):
+        monkeypatch.delenv(f"DATA_SOURCE_DISABLE_{source}", raising=False)
+    for source in ("AKSHARE", "BAOSTOCK", "EFINANCE"):
+        monkeypatch.setenv(f"DATA_SOURCE_DISABLE_{source}", "1")
+    monkeypatch.setenv("TICKFLOW_API_KEY", "test-key")
+    monkeypatch.setattr(ds, "_fetch_stock_yfinance", lambda *args: bad)
+    monkeypatch.setattr(ds, "_fetch_stock_tickflow", lambda *args: full if fallback_complete else bad)
+    required = [date(2026, 10, 15), date(2026, 10, 16)]
+
+    if not fallback_complete:
+        with pytest.raises(RuntimeError, match="missing required trading dates"):
+            ds.fetch_stock_hist("301569", required[0], required[-1], required_dates=required)
+    else:
+        result = ds.fetch_stock_hist("301569", required[0], required[-1], required_dates=required)
+        assert result.attrs["source"] == "tickflow"
+        assert set(pd.to_datetime(result["日期"]).dt.date) == set(required)
+
+
 def test_error_index_primary_sources_fail_but_sina_updates(monkeypatch: pytest.MonkeyPatch) -> None:
     """【异常值】Yahoo和东财失败时，真实降级链仍返回同一个沪深300。"""
     def fail(*args: object, **kwargs: object) -> None:
