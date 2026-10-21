@@ -14,6 +14,7 @@ from tempfile import NamedTemporaryFile
 import akshare as ak
 import pandas as pd
 import requests
+import structlog
 
 from utils import extract_symbols_from_text, safe_filename_part, stock_sector_em
 
@@ -269,7 +270,28 @@ def get_all_stocks(*, force_refresh: bool = False, on_warning: Callable[[str], N
 
         return records
     except Exception as e:
-        print(f"Network error fetching stock list: {e}. Trying cache...")
+        structlog.get_logger().warning("stock_list_primary_failed", error=str(e))
+        try:
+            # 上交所域名不可达时仍可独立获取沪深京名单；缺任一市场不能冒充全量。
+            spot = ak.stock_zh_a_spot()
+            if spot is None or spot.empty or not {"代码", "名称"}.issubset(spot.columns):
+                raise RuntimeError("新浪A股名单为空或缺字段")
+            symbols = spot["代码"].astype(str).str.lower()
+            valid = symbols.str.fullmatch(r"(?:sh|sz|bj)\d{6}")
+            if not valid.all() or set(symbols.str[:2]) != {"sh", "sz", "bj"}:
+                raise RuntimeError("新浪A股名单代码无效或未覆盖沪深京")
+            fallback = pd.DataFrame({"code": symbols.str[2:], "name": spot["名称"].astype(str)})
+            if fallback["code"].duplicated().any():
+                raise RuntimeError("新浪A股名单存在重复代码")
+            records = fallback.to_dict("records")
+        except Exception as fallback_error:
+            structlog.get_logger().warning("stock_list_sina_failed", error=str(fallback_error))
+        else:
+            try:
+                _atomic_json_dump(cache_path, records)
+            except OSError as cache_error:
+                structlog.get_logger().warning("stock_list_cache_write_failed", error=str(cache_error))
+            return records
         if on_warning is not None:
             on_warning("A股最新名单获取失败，正在使用旧缓存；新上市/退市覆盖尚未确认")
         # 3. 网络失败，尝试读取缓存（即使已过期也比空好）

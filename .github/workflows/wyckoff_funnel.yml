@@ -31,7 +31,7 @@ jobs:
       PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
       PG_DSN: ${{ secrets.PG_DSN }}
       FUNNEL_PREWARM_DAYS: "320"
-      # 全A股首次补齐包含策略池外历史，给冷启动留出余量；同日重跑仍复用检查点。
+      # 60分钟停止派发、65分钟结束预热；70分钟仅作最后保护。
       FUNNEL_PREWARM_TIMEOUT_MINUTES: "70"
       TZ: Asia/Shanghai
 
@@ -74,7 +74,10 @@ jobs:
           echo "::group::Prewarm cache (CN)"
           set -o pipefail
           set +e
-          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
+          timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
+            --symbol-timeout-seconds 60 \
+            --dispatch-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 10) * 60 ))" \
+            --run-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 5) * 60 ))" \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_cn.console.log
           prewarm_status=${PIPESTATUS[0]}
           set -e

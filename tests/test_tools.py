@@ -350,7 +350,7 @@ class TestFunnelPrewarm:
         )
 
     def test_main_checkpoints_completed_symbols_during_run(
-        self, tmp_path, monkeypatch
+        self, tmp_path, monkeypatch, inline_prewarm
     ):
         import scripts.funnel_prewarm as mod
 
@@ -378,6 +378,7 @@ class TestFunnelPrewarm:
             lambda symbols, *, market: list(symbols),
         )
         monkeypatch.setattr(mod, "_prefetch_one", fake_prefetch)
+        monkeypatch.setattr(mod, "fetch_cn_suspensions", lambda target: {})
         monkeypatch.setattr(mod, "_save_prewarm_progress", recording_save_progress)
         monkeypatch.setattr(
             "sys.argv",

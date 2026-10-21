@@ -99,8 +99,33 @@ def test_error_all_index_sources_fail_reports_each_cause(monkeypatch: pytest.Mon
     monkeypatch.setattr(ds, "_fetch_index_yfinance", fail)
     monkeypatch.setattr(ds, "_fetch_index_akshare", fail)
     monkeypatch.setattr(ak, "stock_zh_index_daily", fail)
-    with pytest.raises(RuntimeError, match="yfinance=.*eastmoney=.*sina="):
+    monkeypatch.setattr(ak, "stock_zh_index_daily_tx", fail)
+    with pytest.raises(RuntimeError, match="yfinance=.*eastmoney=.*sina=.*tencent="):
         ds.fetch_index_hist("000300", "20260401", "20261016", market="cn")
+
+
+@pytest.mark.parametrize("stale", [False, True], ids=["fresh-tencent", "all-stale"])
+def test_boundary_tencent_index_fallback_enforces_target_and_volume_units(monkeypatch: pytest.MonkeyPatch, stale: bool) -> None:
+    """【边界值】前三源过时则读取腾讯同一指数，统一成交量且不接受昨日数据。"""
+    old = _frame().iloc[:-1]
+    monkeypatch.setattr(ds, "_fetch_index_yfinance", lambda *args: old)
+    monkeypatch.setattr(ds, "_fetch_index_akshare", lambda *args: old)
+    monkeypatch.setattr(ak, "stock_zh_index_daily", lambda **kwargs: old)
+
+    def tencent(**kwargs: object) -> pd.DataFrame:
+        assert kwargs["symbol"] == "sh000300"
+        frame = (old if stale else _frame()).copy()
+        return frame.rename(columns={"volume": "amount"})
+
+    monkeypatch.setattr(ak, "stock_zh_index_daily_tx", tencent)
+    if stale:
+        with pytest.raises(RuntimeError, match="tencent=.*index stale"):
+            ds.fetch_index_hist("000300", "20260401", "20261016", market="cn", min_rows=100, required_end=date(2026, 10, 16))
+    else:
+        result = ds.fetch_index_hist("000300", "20260401", "20261016", market="cn", min_rows=100, required_end=date(2026, 10, 16))
+        assert result.iloc[-1]["date"] == "2026-10-16"
+        assert result.iloc[-1]["volume"] == 100000
+        assert result.iloc[-1]["pct_chg"] == 0
 
 
 def test_normal_refresh_benchmark_writes_sina_same_index_after_primary_failure(monkeypatch: pytest.MonkeyPatch) -> None:
