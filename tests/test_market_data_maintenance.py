@@ -21,6 +21,7 @@ def maintenance(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, inline_prewarm)
     requests = []
     monkeypatch.setattr(prewarm, "_PREWARM_RUN_STATE_PATH", tmp_path / "state.json")
     monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {})
+    monkeypatch.setattr(prewarm, "fetch_cn_listing_dates", lambda exchange: {}, raising=False)
     monkeypatch.setattr(prewarm, "_RECENT_GAP_MAX_AGE_DAYS", 0)
     monkeypatch.setattr(prewarm, "_job_end_calendar_day", lambda: dates[-1])
     monkeypatch.setattr(prewarm, "_resolve_trading_window", lambda **kwargs: TradingWindow(dates[0], kwargs["end_calendar_day"]))
@@ -183,6 +184,48 @@ def test_normal_cold_start_uses_explicit_provider_listing_metadata(maintenance: 
     assert result[1] == "gap_repaired"
     assert min(maintenance["cache"]["001237"]) == ipo
     assert result[4] == len([d for d in maintenance["dates"] if d >= ipo])
+
+
+@pytest.mark.parametrize("symbol,exchange", [("920296", "bj"), ("301569", "sz")], ids=["bse-ipo", "sz-ipo"])
+def test_normal_main_uses_official_listing_dates_on_cold_start(maintenance: dict, monkeypatch: pytest.MonkeyPatch, symbol: str, exchange: str) -> None:
+    """【正常值】首次维护新股先读交易所上市日期，成功保存日期与来源证据。"""
+    ipo = date(2026, 10, 15)
+    evidence = "https://www.bse.cn/nq/listedcompany.html" if exchange == "bj" else "https://www.szse.cn/market/product/stock/list/index.html"
+    monkeypatch.setattr(prewarm, "fetch_cn_listing_dates", lambda requested: {symbol: {"listing_date": str(ipo), "evidence": evidence}})
+
+    def fetch(**kwargs: object) -> pd.DataFrame:
+        frame = maintenance["fetch"](**kwargs)
+        return frame.loc[frame["date"] >= str(ipo)].copy()
+
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", fetch)
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", symbol, "--review-dir", str(maintenance["path"])])
+
+    assert prewarm.main() == 0
+    coverage = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_coverage.csv", dtype=str)
+    assert maintenance["requests"] == [(symbol, ipo, ipo)]
+    assert coverage.iloc[0]["listing_date"] == str(ipo)
+    assert coverage.iloc[0]["evidence"] == evidence
+    state = json.loads((maintenance["path"] / "state.json").read_text())["cn"]
+    assert state["ready_symbols"][symbol]["listing_date"] == str(ipo)
+
+
+@pytest.mark.parametrize("exchange", ["bj", "sz"], ids=["bse-schema", "sz-schema"])
+def test_boundary_official_listing_dates_require_valid_metadata(monkeypatch: pytest.MonkeyPatch, exchange: str) -> None:
+    """【边界值】交易所日期转换为业务日期，未知日期不能推断或批准边界。"""
+    import akshare as ak
+    from integrations.market_data_policy import fetch_cn_listing_dates
+
+    code_column, date_column = ("证券代码", "上市日期") if exchange == "bj" else ("A股代码", "A股上市日期")
+    rows = [{code_column: "920296" if exchange == "bj" else "001246", date_column: "2026-10-15"},
+            {code_column: "000002", date_column: "unknown"}]
+    function = "stock_info_bj_name_code" if exchange == "bj" else "stock_info_sz_name_code"
+    monkeypatch.setattr(ak, function, lambda **kwargs: pd.DataFrame(rows))
+
+    result = fetch_cn_listing_dates(exchange)
+
+    assert len(result) == 1
+    assert next(iter(result.values()))["listing_date"] == "2026-10-15"
+    assert "000002" not in result
 
 
 def test_normal_main_freezes_target_when_run_crosses_day_switch(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:

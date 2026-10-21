@@ -379,6 +379,7 @@ class TestFunnelPrewarm:
         )
         monkeypatch.setattr(mod, "_prefetch_one", fake_prefetch)
         monkeypatch.setattr(mod, "fetch_cn_suspensions", lambda target: {})
+        monkeypatch.setattr(mod, "fetch_cn_listing_dates", lambda exchange: {})
         monkeypatch.setattr(mod, "_save_prewarm_progress", recording_save_progress)
         monkeypatch.setattr(
             "sys.argv",

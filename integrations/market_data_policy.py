@@ -70,6 +70,36 @@ def fetch_cn_suspensions(target: date) -> dict[str, str]:
     return result
 
 
+def fetch_cn_listing_dates(exchange: str) -> dict[str, dict[str, str]]:
+    """批量读取交易所明确上市日期，不用行情首行推断上市日。"""
+    import akshare as ak
+    import pandas as pd
+
+    if exchange == "bj":
+        frame = ak.stock_info_bj_name_code()
+        code_column, date_column = "证券代码", "上市日期"
+        evidence = "https://www.bse.cn/nq/listedcompany.html"
+    elif exchange == "sz":
+        frame = ak.stock_info_sz_name_code(symbol="A股列表")
+        code_column, date_column = "A股代码", "A股上市日期"
+        evidence = "https://www.szse.cn/market/product/stock/list/index.html"
+    else:
+        raise ValueError(f"unsupported listing-date exchange: {exchange}")
+    if frame is None or not {code_column, date_column}.issubset(frame.columns):
+        raise RuntimeError("交易所上市日期接口缺少字段")
+    result = {}
+    for row in frame.to_dict("records"):
+        code = str(row[code_column]).zfill(6)
+        listing = pd.to_datetime(row[date_column], errors="coerce")
+        if len(code) == 6 and code.isdigit() and not pd.isna(listing):
+            if code in result:
+                raise ValueError(f"交易所上市日期代码重复: {code}")
+            result[code] = {"listing_date": listing.date().isoformat(), "evidence": evidence}
+    if not result:
+        raise RuntimeError("交易所上市日期接口无有效记录")
+    return result
+
+
 def yahoo_first_trade_date(symbol: str) -> date | None:
     """读取Yahoo明确给出的firstTradeDate，不把最早缓存行推断为上市日。"""
     import yfinance as yf

@@ -1032,11 +1032,14 @@ def fetch_stock_hist(
     end: str | date,
     adjust: Literal["", "qfq", "hfq"] = "qfq",
     market: Literal["cn", "us", "hk"] = "cn",
+    *,
+    required_dates: list[date] | None = None,
 ) -> pd.DataFrame:
     """
     个股日线：A 股 yfinance 优先，失败时回退 tickflow/akshare/baostock/efinance。
     北交所在tickflow之后优先新浪bj日线，跳过不支持北交所的BaoStock。
     US/HK 个股优先 yfinance，失败回退 tickflow。
+    required_dates由维护入口提供；缺少必需交易日时继续尝试下一数据源。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_YFINANCE=1
     - DATA_SOURCE_DISABLE_TICKFLOW=1
@@ -1058,6 +1061,19 @@ def fetch_stock_hist(
         end.strftime("%Y%m%d") if isinstance(end, date) else str(end).replace("-", "")
     )
 
+    def checked(frame: pd.DataFrame, source: str) -> pd.DataFrame:
+        if required_dates:
+            columns = ["开盘", "最高", "最低", "收盘", "成交量"]
+            if frame is None or frame.empty or not {"日期", *columns}.issubset(frame.columns):
+                raise RuntimeError("missing required trading dates: empty or invalid schema")
+            numeric = frame[columns].apply(pd.to_numeric, errors="coerce")
+            valid = numeric.notna().all(axis=1) & numeric["成交量"].ge(0)
+            present = set(pd.to_datetime(frame.loc[valid, "日期"], errors="coerce").dt.date)
+            missing = sorted(set(required_dates) - present)
+            if missing:
+                raise RuntimeError(f"missing required trading dates: {','.join(str(day) for day in missing[:5])}")
+        return _tag_source(frame, source)
+
     if market_norm in {"us", "hk"}:
         failed_sources: list[str] = []
         failed_details: list[str] = []
@@ -1071,7 +1087,7 @@ def fetch_stock_hist(
             yf_frame = _fetch_stock_yfinance(symbol, start_s, end_s)
             if not _has_valid_ohlc(yf_frame):
                 raise RuntimeError("yfinance returned no valid OHLC rows")
-            return _tag_source(yf_frame, "yfinance")
+            return checked(yf_frame, "yfinance")
         except BeforeListingRange:
             raise
         except Exception as e:
@@ -1090,7 +1106,7 @@ def fetch_stock_hist(
             failed_details.append("tickflow=api_key_missing")
         else:
             try:
-                return _tag_source(
+                return checked(
                     _fetch_stock_tickflow_global(
                         symbol,
                         start_s,
@@ -1159,7 +1175,7 @@ def fetch_stock_hist(
             failed_details.append("yfinance=unsupported_cn_symbol")
         else:
             try:
-                return _tag_source(
+                return checked(
                     _fetch_stock_yfinance(yf_symbol, start_s, end_s), "yfinance"
                 )
             except BeforeListingRange:
@@ -1181,7 +1197,7 @@ def fetch_stock_hist(
         failed_details.append("tickflow=api_key_missing(支持 TICKFLOW_API_KEY / TIKFLOW_API_KEY)")
     else:
         try:
-            return _tag_source(
+            return checked(
                 _fetch_stock_tickflow(symbol, start_s, end_s, adjust),
                 "tickflow",
             )
@@ -1193,7 +1209,7 @@ def fetch_stock_hist(
     # 北交所没有Yahoo映射；优先同一市场的新浪接口，避免东财失败后串行排队。
     if not disable_akshare and str(symbol).startswith(("4", "8", "92")):
         try:
-            return _tag_source(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
+            return checked(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
         except Exception as exc:
             _debug_source_fail("sina(bse)", exc)
             failed_sources.append("sina_bse")
@@ -1207,7 +1223,7 @@ def fetch_stock_hist(
         last_akshare_err: Exception | None = None
         for attempt in range(1, _AKSHARE_RETRY_TIMES + 1):
             try:
-                return _tag_source(
+                return checked(
                     _fetch_stock_akshare(symbol, start_s, end_s, adjust), "akshare"
                 )
             except ModuleNotFoundError as e:
@@ -1249,7 +1265,7 @@ def fetch_stock_hist(
                     f"baostock slow={elapsed:.2f}s > {_BAOSTOCK_MAX_SECONDS:.2f}s"
                 )
             _baostock_mark_success()
-            return _tag_source(df, "baostock")
+            return checked(df, "baostock")
         except ModuleNotFoundError as e:
             _debug_source_fail("baostock", e)
             _baostock_mark_failure(_compact_error(e))
@@ -1271,7 +1287,7 @@ def fetch_stock_hist(
         failed_details.append("efinance=disabled_by_env")
     else:
         try:
-            return _tag_source(
+            return checked(
                 _fetch_stock_efinance(symbol, start_s, end_s), "efinance"
             )
         except ModuleNotFoundError as e:
