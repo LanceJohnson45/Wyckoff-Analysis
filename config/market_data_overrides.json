@@ -66,6 +66,22 @@
       "effective_from": "2026-07-30",
       "reason": "confirmed_delisted",
       "evidence": "https://www.bse.cn/disclosure/2026/2026-07-29/8a64d7d9ca1641609307b4f2aa5fecaf.pdf"
+    },
+    {
+      "market": "cn",
+      "symbol": "601059",
+      "exclude": true,
+      "effective_from": "2026-10-19",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-10-19/1225610027.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "601198",
+      "exclude": true,
+      "effective_from": "2026-10-19",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-10-19/1225610019.PDF"
     }
   ]
 }

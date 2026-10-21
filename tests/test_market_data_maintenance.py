@@ -1,6 +1,6 @@
 """上市边界、日线覆盖和人工审核的行为回归。"""
 
-from datetime import date
+from datetime import date, timedelta
 import json
 from pathlib import Path
 
@@ -14,12 +14,13 @@ from scripts import funnel_prewarm as prewarm
 
 
 @pytest.fixture
-def maintenance(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
+def maintenance(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, inline_prewarm) -> dict:
     """【正常值】隔离行情I/O，真实执行缺口处理、主入口和文件写出。"""
     dates = list(pd.bdate_range("2026-03-02", "2026-10-15").date)
     cache: dict[str, list[date]] = {}
     requests = []
     monkeypatch.setattr(prewarm, "_PREWARM_RUN_STATE_PATH", tmp_path / "state.json")
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {})
     monkeypatch.setattr(prewarm, "_RECENT_GAP_MAX_AGE_DAYS", 0)
     monkeypatch.setattr(prewarm, "_job_end_calendar_day", lambda: dates[-1])
     monkeypatch.setattr(prewarm, "_resolve_trading_window", lambda **kwargs: TradingWindow(dates[0], kwargs["end_calendar_day"]))
@@ -52,6 +53,54 @@ def test_normal_known_ipo_does_not_request_prelisting_data(maintenance: dict) ->
     assert all(start >= ipo for _, start, _ in maintenance["requests"])
     assert result[8]["latest_date"] == "2026-10-15"
     assert result[8]["listing_date"] == "2026-05-22"
+
+
+def test_normal_main_suspension_preserves_history_and_rechecks_resumption(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】已确认当天停牌不补造K线，取消停牌证据后必须恢复拉取。"""
+    history = maintenance["dates"][:-1]
+    maintenance["cache"]["601326"] = history.copy()
+    evidence = "https://data.eastmoney.com/tfpxx/ (query_date=2026-10-15)"
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {"601326": evidence})
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", "601326", "--review-dir", str(maintenance["path"])])
+
+    assert prewarm.main() == 0
+    coverage = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_coverage.csv", dtype=str)
+    assert coverage.iloc[0]["status"] == "suspended"
+    assert coverage.iloc[0]["evidence"] == evidence
+    assert maintenance["cache"]["601326"] == history
+    assert not maintenance["requests"]
+
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {})
+    assert prewarm.main() == 0
+    assert maintenance["cache"]["601326"] == maintenance["dates"]
+    assert maintenance["requests"] == [("601326", date(2026, 10, 15), date(2026, 10, 15))]
+
+
+def test_error_suspension_lookup_failure_does_not_hide_missing_bars(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】停牌证据接口失败时，缺失当天日线仍报错。"""
+    def fail(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("network unavailable")
+
+    maintenance["cache"]["601326"] = maintenance["dates"][:-1]
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", fail)
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", fail)
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", "601326", "--review-dir", str(maintenance["path"])])
+
+    assert prewarm.main() == 2
+
+
+def test_boundary_suspension_evidence_rejects_intraday_and_resumed_rows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【边界值】只认目标日全天停牌；不放行盘中停牌、已复牌和未来停牌。"""
+    import akshare as ak
+    from integrations.market_data_policy import fetch_cn_suspensions
+
+    common = {"停牌时间": "2026-10-14", "停牌截止时间": None, "预计复牌时间": None, "停牌期限": "连续停牌"}
+    rows = [dict(common, 代码="601326"), dict(common, 代码="000001", 停牌期限="盘中停牌"),
+            dict(common, 代码="000002", 预计复牌时间="2026-10-15"), dict(common, 代码="000003", 停牌时间="2026-10-16"),
+            dict(common, 代码="000005", 停牌截止时间="2026-10-14")]
+    monkeypatch.setattr(ak, "stock_tfp_em", lambda **kwargs: pd.DataFrame(rows))
+
+    assert set(fetch_cn_suspensions(date(2026, 10, 15))) == {"601326"}
 
 
 @pytest.mark.parametrize("market,symbol", [("cn", "001257"), ("us", "NEWIPO")], ids=["cn-ipo", "us-ipo"])
@@ -94,6 +143,28 @@ def test_error_old_gap_failure_keeps_latest_repair_and_requires_review(maintenan
     assert result[8]["latest_date"] == "2026-10-15"
     assert result[8]["listing_date"] == ""
     assert "possibly delisted" in result[8]["errors"][0]
+
+
+@pytest.mark.parametrize("missing_recent", [False, True], ids=["recent-complete", "recent-gap"])
+def test_boundary_short_cache_repairs_only_configured_recent_window(maintenance: dict, monkeypatch: pytest.MonkeyPatch, missing_recent: bool) -> None:
+    """【边界值】短缓存同样按45天策略补数，近期缺口必须修复、旧缺口不请求。"""
+    cutoff = date(2026, 10, 15) - timedelta(days=45)
+    cached = [d for d in maintenance["dates"] if d >= cutoff]
+    maintenance["cache"]["920011"] = cached[:-1] if missing_recent else cached.copy()
+    monkeypatch.setattr(prewarm, "_RECENT_GAP_MAX_AGE_DAYS", 45)
+
+    def fetch(**kwargs: object) -> pd.DataFrame:
+        if kwargs["start"] < cutoff:
+            raise RuntimeError("不应请求策略窗口以外的旧区间")
+        return maintenance["fetch"](**kwargs)
+
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", fetch)
+    result = prewarm._prefetch_one("920011", "cn", 320)
+
+    assert result[1] == ("gap_repaired" if missing_recent else "cache_ready")
+    assert not result[8]["errors"]
+    assert maintenance["cache"]["920011"] == cached
+    assert all(start >= cutoff for _, start, _ in maintenance["requests"])
 
 
 def test_normal_cold_start_uses_explicit_provider_listing_metadata(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -222,6 +293,16 @@ def test_boundary_yunchuang_exclusion_starts_on_delisting_date() -> None:
     assert record["evidence"].startswith("https://www.bse.cn/disclosure/")
 
 
+@pytest.mark.parametrize("symbol", ["601059", "601198"], ids=["cinda", "dongxing"])
+def test_boundary_merged_brokers_excluded_only_after_delisting(symbol: str) -> None:
+    """【边界值】合并退市从公告摘牌日生效，原代码的历史数据仍保留。"""
+    record = load_security_overrides().get(("cn", symbol), {})
+
+    assert not exclusion_applies(record, date(2026, 10, 18))
+    assert exclusion_applies(record, date(2026, 10, 19))
+    assert record["evidence"].startswith("https://static.cninfo.com.cn/")
+
+
 def test_normal_main_excludes_delisted_yunchuang_and_preserves_history(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """【正常值】名单残留云创退时不补退市后行情，保留缓存及排除审计。"""
     history = [date(2026, 7, 29)]
@@ -291,7 +372,6 @@ def test_error_failed_symbols_stay_invalid_after_multiple_checkpoints(maintenanc
     prewarm._save_prewarm_progress(run_state={}, market="cn", status="ok", end_trade_date=date(2026, 10, 15), trading_days=320,
         symbols=symbols, pool_mode="cli_symbols", cache_ready=2, fast_skipped=0, repaired_symbols=0, repaired_ranges=0, repaired_rows=0, ready_updates=entries)
     monkeypatch.setattr(prewarm, "_PREWARM_CHECKPOINT_EVERY", 1)
-    monkeypatch.setattr(prewarm, "as_completed", lambda futures: iter(futures))
     monkeypatch.setattr(prewarm, "fetch_stock_hist", lambda **kwargs: (_ for _ in ()).throw(RuntimeError("Connection reset")))
     monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", ",".join(symbols), "--force", "--review-dir", str(maintenance["path"])])
 
@@ -327,6 +407,7 @@ def test_error_empty_universe_provider_preserves_last_good_snapshot(tmp_path: Pa
     cache.write_text(json.dumps([{"code": "000001", "name": "有效旧名单"}]))
     monkeypatch.setattr(source, "__file__", str(tmp_path / "integrations" / "source.py"))
     monkeypatch.setattr(source.ak, "stock_info_a_code_name", lambda: pd.DataFrame())
+    monkeypatch.setattr(source.ak, "stock_zh_a_spot", lambda: pd.DataFrame())
     warnings = []
 
     result = source.get_all_stocks(force_refresh=True, on_warning=warnings.append)
@@ -334,6 +415,30 @@ def test_error_empty_universe_provider_preserves_last_good_snapshot(tmp_path: Pa
     assert result[0]["code"] == "000001"
     assert len(json.loads(cache.read_text())) == 1
     assert warnings and "旧缓存" in warnings[0]
+
+
+@pytest.mark.parametrize("complete", [True, False], ids=["all-exchanges", "missing-bse"])
+def test_boundary_universe_fallback_requires_all_three_exchanges(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, complete: bool) -> None:
+    """【边界值】交易所名单失败后用新浪完整名单，缺北交所时保留旧缓存和警告。"""
+    from integrations import fetch_a_share_csv as source
+
+    cache = tmp_path / "data" / "stock_list_cache.json"
+    cache.parent.mkdir()
+    old = [{"code": "000001", "name": "旧名单"}]
+    cache.write_text(json.dumps(old))
+    monkeypatch.setattr(source, "__file__", str(tmp_path / "integrations" / "source.py"))
+    monkeypatch.setattr(source.ak, "stock_info_a_code_name", lambda: pd.DataFrame())
+    rows = [{"代码": "sh688001", "名称": "科创样本"}, {"代码": "sz000010", "名称": "*ST样本"}]
+    if complete:
+        rows.append({"代码": "bj920001", "名称": "北交样本"})
+    monkeypatch.setattr(source.ak, "stock_zh_a_spot", lambda: pd.DataFrame(rows))
+    warnings = []
+
+    result = source.get_all_stocks(force_refresh=True, on_warning=warnings.append)
+
+    assert result == ([{"code": row["代码"][2:], "name": row["名称"]} for row in rows] if complete else old)
+    assert json.loads(cache.read_text()) == result
+    assert bool(warnings) is not complete
 
 
 def test_normal_confirmed_listing_boundary_survives_daily_checkpoint() -> None:
@@ -387,3 +492,61 @@ def test_normal_job_log_survives_vendor_stdout_redirection(capfd: pytest.Capture
     assert event["event"] == "prewarm test status"
     assert event["timestamp"].endswith("+08:00")
     assert hidden.getvalue() == ""
+
+
+def test_error_budget_saves_pending_and_next_run_resumes(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】预算耗尽返回2，保存成功检查点和待办审核；续跑只补未完成股票。"""
+    from concurrent.futures import Future
+    from scripts.prewarm_workers import PrewarmBudgetExpired
+
+    inline = prewarm.iter_bounded_jobs
+
+    def stop_after_first(function, jobs, **options):
+        for index, job in enumerate(jobs):
+            if index == 0:
+                yield from inline(function, [job])
+            else:
+                future = Future()
+                future.set_exception(PrewarmBudgetExpired("batch deadline"))
+                yield job[0], future
+
+    monkeypatch.setattr(prewarm, "iter_bounded_jobs", stop_after_first)
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", "000001,000002", "--review-dir", str(maintenance["path"])])
+
+    assert prewarm.main() == 2
+    state = json.loads((maintenance["path"] / "state.json").read_text())["cn"]
+    summary = json.loads((maintenance["path"] / "prewarm_cn_2026-10-15_summary.json").read_text())
+    assert state["status"] == "partial"
+    assert set(state["ready_symbols"]) == {"000001"}
+    assert summary["counts"]["pending"] == 1
+
+    monkeypatch.setattr(prewarm, "iter_bounded_jobs", inline)
+    maintenance["requests"].clear()
+    assert prewarm.main() == 0
+    assert {symbol for symbol, _, _ in maintenance["requests"]} == {"000002"}
+
+
+def test_error_symbol_timeout_preserves_other_stock_checkpoint(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【异常值】单票超时单独入审核，其他股票完成并保存检查点，整批返回2。"""
+    from concurrent.futures import Future
+
+    inline = prewarm.iter_bounded_jobs
+
+    def timeout_first(function, jobs, **options):
+        for index, job in enumerate(jobs):
+            if index == 0:
+                future = Future()
+                future.set_exception(TimeoutError("symbol timeout: 000001 exceeded 60s"))
+                yield job[0], future
+            else:
+                yield from inline(function, [job])
+
+    monkeypatch.setattr(prewarm, "iter_bounded_jobs", timeout_first)
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", "000001,000002", "--review-dir", str(maintenance["path"])])
+
+    assert prewarm.main() == 2
+    report = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_review.csv", dtype=str)
+    state = json.loads((maintenance["path"] / "state.json").read_text())["cn"]
+    assert report["symbol"].tolist() == ["000001"]
+    assert report.iloc[0]["reason"] == "symbol_timeout"
+    assert set(state["ready_symbols"]) == {"000002"}

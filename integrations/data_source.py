@@ -1322,6 +1322,26 @@ def _fetch_index_sina(code: str, start: str, end: str) -> pd.DataFrame:
     return frame.loc[frame["date"].between(lower, upper)].reset_index(drop=True)
 
 
+def _fetch_index_tencent(code: str, start: str, end: str) -> pd.DataFrame:
+    """腾讯同一指数历史备用源，SDK的amount实际为成交量（手），统一为股。"""
+    import akshare as ak
+
+    digits, suffix = _cn_index_to_yfinance_symbol(code).rsplit(".", 1)
+    frame = ak.stock_zh_index_daily_tx(
+        symbol=f"{'sh' if suffix == 'SS' else 'sz'}{digits}",
+        start_date=start,
+        end_date=end,
+    )
+    if frame is None or frame.empty:
+        raise RuntimeError("tencent index empty")
+    frame = frame.copy().sort_values("date").drop_duplicates("date", keep="last")
+    for col in ("open", "high", "low", "close", "amount"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame["volume"] = frame["amount"] * 100
+    frame["pct_chg"] = frame["close"].pct_change(fill_method=None) * 100
+    return frame[["date", "open", "high", "low", "close", "volume", "pct_chg"]]
+
+
 def _fetch_index_akshare(code: str, start: str, end: str) -> pd.DataFrame:
     """akshare 大盘指数日线 fallback（tushare 不可用时自动降级）。"""
     import akshare as ak
@@ -1362,7 +1382,7 @@ def fetch_index_hist(
     required_end: date | None = None,
 ) -> pd.DataFrame:
     """
-    大盘指数日线：A股依次尝试Yahoo、东财、新浪；US/HK 使用Yahoo。
+    大盘指数日线：A股依次尝试Yahoo、东财、新浪、腾讯；US/HK 使用Yahoo。
     min_rows/required_end供日常基准任务拒绝过短或过时的上游响应。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
     """
@@ -1427,8 +1447,14 @@ def fetch_index_hist(
         _debug_source_fail("sina(index)", exc)
         errors.append(f"sina={_compact_error(exc)}")
 
+    try:
+        return checked(_fetch_index_tencent(code, start_s, end_s))
+    except Exception as exc:
+        _debug_source_fail("tencent(index)", exc)
+        errors.append(f"tencent={_compact_error(exc)}")
+
     raise RuntimeError(
-        f"大盘指数 {code} 拉取失败：已尝试 yfinance({yfinance_symbol}) -> akshare(东财) -> sina。失败详情：{'；'.join(errors)}"
+        f"大盘指数 {code} 拉取失败：已尝试 yfinance({yfinance_symbol}) -> akshare(东财) -> sina -> tencent。失败详情：{'；'.join(errors)}"
     )
 
 

@@ -7,11 +7,13 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import closing
 from datetime import date, timedelta
 from datetime import datetime
 from functools import lru_cache
+from multiprocessing.connection import Connection
 from pathlib import Path
+from threading import Event
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -41,9 +43,10 @@ except ImportError:
 
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from integrations.data_source import fetch_index_hist, fetch_stock_hist
-from integrations.market_data_policy import BeforeListingRange, exclusion_applies, load_security_overrides
+from integrations.market_data_policy import BeforeListingRange, exclusion_applies, fetch_cn_suspensions, load_security_overrides
 from integrations.market_data_review import review_reason, write_review
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached, get_all_stocks, TradingWindow
+from scripts.prewarm_workers import PrewarmBudgetExpired, bounded_call, iter_bounded_jobs
 from scripts.wyckoff_funnel import (
     HK_MAIN_BENCH_CODE,
     HK_SMALLCAP_BENCH_CODE,
@@ -412,6 +415,7 @@ def _prefetch_one(
     listing_date: date | None = None,
     trading_window: TradingWindow | None = None,
     expected_dates: list[date] | None = None,
+    suspension_evidence: str = "",
 ) -> tuple:
     """优先更新近期行情；上市前不补K，旧缺口失败不能阻止其他缺口。"""
     end_day = end_calendar_day if end_calendar_day is not None else _job_end_calendar_day()
@@ -427,6 +431,8 @@ def _prefetch_one(
         raise RuntimeError("expected trade dates empty")
     if listing_date:
         expected_dates = [d for d in expected_dates if d >= listing_date]
+    if suspension_evidence:
+        expected_dates = [d for d in expected_dates if d != window.end_trade_date]
     cached_dates = sorted(set(load_cached_dates(cache_symbol, "qfq", window.start_trade_date, window.end_trade_date, context="background")))
     effective_expected_dates = expected_dates
     if cached_dates and _RECENT_GAP_MAX_AGE_DAYS > 0:
@@ -435,16 +441,17 @@ def _prefetch_one(
 
     def result(status: str, rows: int, gaps: list[tuple[date, date]], ignored: int = 0, *, preview: list[tuple[date, date]] | None = None) -> tuple:
         detail = {"latest_date": str(max(cached_dates)) if cached_dates else "", "target_date": str(window.end_trade_date),
-                  "listing_date": str(listing_date) if listing_date else "", "errors": errors.copy()}
+                  "listing_date": str(listing_date) if listing_date else "", "errors": errors.copy(), "suspension_evidence": suspension_evidence}
         return (symbol, status, rows, len(gaps), len(effective_expected_dates), len(cached_dates), (gaps if preview is None else preview)[:5], ignored, detail)
 
     if not expected_dates:
-        return result("not_listed", 0, [])
-    if cached_dates and set(effective_expected_dates).issubset(cached_dates) and max(cached_dates) >= window.end_trade_date:
-        return result("cache_ready", 0, [])
+        return result("suspended" if suspension_evidence else "not_listed", 0, [])
+    if cached_dates and set(effective_expected_dates).issubset(cached_dates) and max(cached_dates) >= expected_dates[-1]:
+        return result("suspended" if suspension_evidence else "cache_ready", 0, [])
     gap_ranges = _missing_ranges(expected_dates, cached_dates)
     ignored_ranges: list[tuple[date, date]] = []
-    if len(cached_dates) >= max(20, int(len(expected_dates) * 0.5)) and gap_ranges:
+    # 补数与上面的近期验收使用同一窗口；短缓存也不能反复请求窗口外历史。
+    if cached_dates and gap_ranges:
         gap_ranges, ignored_ranges = _trim_recent_gap_ranges(gap_ranges, end_trade_date=window.end_trade_date, max_age_days=_RECENT_GAP_MAX_AGE_DAYS)
     if dry_run:
         return result("dry_run_missing" if gap_ranges else "dry_run_noop", 0, gap_ranges, len(ignored_ranges))
@@ -483,14 +490,38 @@ def _prefetch_one(
     remaining = _missing_ranges(effective_expected_dates, cached_dates)
     if errors or remaining:
         return result("fetch_failed" if errors and not rows_written else "gap_partial", rows_written, gap_ranges, len(ignored_ranges), preview=remaining)
-    return result("gap_repaired", rows_written, gap_ranges, len(ignored_ranges))
+    return result("suspended" if suspension_evidence else "gap_repaired", rows_written, gap_ranges, len(ignored_ranges))
 
 
 def _parse_manual_symbols(raw: str) -> list[str]:
     return [x.strip() for x in str(raw or "").split(",") if x.strip()]
 
 
+def _load_cn_universe() -> tuple[list[dict[str, str]], list[str]]:
+    """在隔离进程内取得名单及降级警告，避免回调状态丢失。"""
+    warnings: list[str] = []
+    items = get_all_stocks(force_refresh=True, on_warning=warnings.append)
+    return items, warnings
+
+
+def _configure_prewarm_worker(connection: Connection) -> None:
+    """限频槽由父进程统一分配，子进程被强杀也不会遗留锁。"""
+    from integrations import data_source
+
+    def wait_tickflow_slot() -> None:
+        interval = data_source._TICKFLOW_DAILY_MIN_INTERVAL_SECONDS
+        if interval > 0:
+            connection.send(("rate_limit", interval))
+            reserved = connection.recv()
+            Event().wait(max(reserved - time.monotonic(), 0))
+
+    data_source._wait_tickflow_daily_slot = wait_tickflow_slot
+
+
 def main() -> int:
+    """限时维护日线并保存成功、失败及未派发的审核记录。"""
+    outer_seconds = float(os.getenv("FUNNEL_PREWARM_TIMEOUT_MINUTES", "70")) * 60
+    default_run_budget = max(outer_seconds - 300, 1)
     parser = argparse.ArgumentParser(description="Warm funnel cache for the current symbol pool")
     parser.add_argument("--market", choices=["cn", "us", "hk"], default=None)
     parser.add_argument("--trading-days", type=int, default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30))
@@ -503,7 +534,17 @@ def main() -> int:
     parser.add_argument("--universe", choices=["strategy", "all"], default="strategy", help="all维护全A股（包含ST/科创/北交所），不沿用策略筛选池")
     parser.add_argument("--review-dir", type=Path, default=ROOT / "logs")
     parser.add_argument("--end-date", type=date.fromisoformat, default=None, help="固定本轮截止日，YYYY-MM-DD")
+    parser.add_argument("--symbol-timeout-seconds", type=float, default=60, help="单票总时限，超时终止对应子进程")
+    parser.add_argument("--dispatch-budget-seconds", type=float, default=max(default_run_budget - 300, 1), help="启动后停止派发新股票的秒数")
+    parser.add_argument("--run-budget-seconds", type=float, default=default_run_budget, help="启动后结束在途任务的秒数；必须小于Action外层时限")
     args = parser.parse_args()
+    if not (0 < args.symbol_timeout_seconds < float("inf") and 0 < args.dispatch_budget_seconds <= args.run_budget_seconds < float("inf")):
+        parser.error("单票时限须为正数，且0 < 派发预算 <= 收尾预算")
+    if "FUNNEL_PREWARM_TIMEOUT_MINUTES" in os.environ and args.run_budget_seconds >= outer_seconds:
+        parser.error("收尾预算必须小于Action外层预热时限")
+    started = time.monotonic()
+    dispatch_deadline = started + args.dispatch_budget_seconds
+    run_deadline = started + args.run_budget_seconds
 
     if args.market:
         os.environ["FUNNEL_MARKET"] = args.market
@@ -513,12 +554,11 @@ def main() -> int:
         symbols = _parse_manual_symbols(args.symbols)
         stats = {"pool_mode": "cli_symbols"}
     elif market == "cn" and args.universe == "all":
-        universe_warnings: list[str] = []
-        items = get_all_stocks(force_refresh=True, on_warning=universe_warnings.append)
+        items, universe_warnings = bounded_call(_load_cn_universe, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
         symbols = [item["code"] for item in items]
         stats = {"pool_mode": "all_cn", "names": {item["code"]: item.get("name", "") for item in items}, "universe_warning": "; ".join(universe_warnings)}
     else:
-        symbols, names, stats = _resolve_symbol_pool_from_env()
+        symbols, names, stats = bounded_call(_resolve_symbol_pool_from_env, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
         stats["names"] = names
     normalized = _normalize_symbols(symbols, market=market)
     if args.limit > 0:
@@ -527,8 +567,8 @@ def main() -> int:
         _log(f"prewarm skipped market={market} reason=empty_symbol_pool mode={stats.get('pool_mode')}")
         return 1
 
-    run_window = (_resolve_us_window if market in {"us", "hk"} else _resolve_trading_window)(end_calendar_day=end_day, trading_days=max(int(args.trading_days), 1))
-    run_dates = _expected_trade_dates(run_window, market)
+    run_window = bounded_call(_resolve_us_window if market in {"us", "hk"} else _resolve_trading_window, end_calendar_day=end_day, trading_days=max(int(args.trading_days), 1), timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
+    run_dates = bounded_call(_expected_trade_dates, run_window, market, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
     end_day = run_window.end_trade_date
     overrides = load_security_overrides()
     records = {sym: {"market": market, "symbol": sym, "name": stats.get("names", {}).get(sym, ""), "status": "pending", "target_date": str(end_day)} for sym in normalized}
@@ -568,6 +608,7 @@ def main() -> int:
     ok = 0
     fail = 0
     partial = 0
+    deferred = 0
     cache_ready = 0
     repaired_symbols = 0
     repaired_ranges = 0
@@ -610,24 +651,25 @@ def main() -> int:
             )
 
     ready_updates: dict[str, dict] = {}
+    suspensions: dict[str, str] = {}
+    if market == "cn" and symbols_to_check:
+        try:
+            suspensions = bounded_call(fetch_cn_suspensions, end_day, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
+        except Exception as exc:
+            _log(f"prewarm suspension lookup failed: {type(exc).__name__}: {exc}; 未确认停牌仍按正常缺口核验")
     completed_since_checkpoint = 0
-    with ThreadPoolExecutor(max_workers=max(int(args.max_workers), 1)) as executor:
-        futures = {
-            executor.submit(
-                _prefetch_one,
-                sym,
-                market,
-                run_trading_days,
-                dry_run=bool(args.dry_run),
-                end_calendar_day=end_day,
-                trading_window=run_window,
-                expected_dates=run_dates,
-                listing_date=_confirmed_listing_date(market, sym, overrides, ready_symbols),
-            ): sym
-            for sym in symbols_to_check
-        }
-        for future in as_completed(futures):
-            symbol = futures[future]
+    jobs = ((sym, (sym, market, run_trading_days), {
+        "dry_run": bool(args.dry_run), "end_calendar_day": end_day,
+        "trading_window": run_window, "expected_dates": run_dates,
+        "listing_date": _confirmed_listing_date(market, sym, overrides, ready_symbols),
+        "suspension_evidence": suspensions.get(sym, ""),
+    }) for sym in symbols_to_check)
+    with closing(iter_bounded_jobs(_prefetch_one, jobs, max_workers=max(int(args.max_workers), 1),
+                                   task_timeout=args.symbol_timeout_seconds,
+                                   dispatch_deadline=dispatch_deadline, run_deadline=run_deadline,
+                                   initializer=_configure_prewarm_worker,
+                                   dispatch_interval=max(args.sleep_seconds, 0))) as outcomes:
+        for symbol, future in outcomes:
             if isinstance(ready_symbols, dict):
                 ready_symbols.pop(_cache_symbol_for_market(symbol, market), None)
             try:
@@ -643,13 +685,15 @@ def main() -> int:
                     ignored_count,
                 ) = outcome[:8]
                 detail = outcome[8] if len(outcome) > 8 else {}
-                if status not in {"cache_ready", "gap_repaired", "not_listed", "dry_run_missing", "dry_run_noop", "gap_partial", "fetch_failed"}:
+                if status not in {"cache_ready", "gap_repaired", "suspended", "not_listed", "dry_run_missing", "dry_run_noop", "gap_partial", "fetch_failed"}:
                     raise ValueError(f"未知预热结果状态：{status}")
                 records[symbol].update(status=status, target_date=detail.get("target_date", str(end_day)), latest_date=detail.get("latest_date", ""), listing_date=detail.get("listing_date", ""), missing_ranges=", ".join(f"{a}..{b}" for a, b in gap_preview) if status in {"gap_partial", "fetch_failed", "dry_run_missing"} else "")
                 if detail.get("errors"):
                     records[symbol]["detail"] = " | ".join(detail["errors"])[:2000]
                     reason, action = review_reason(records[symbol]["detail"])
                     records[symbol].update(reason=reason, suggested_action=action)
+                if status == "suspended":
+                    records[symbol].update(reason="confirmed_full_day_suspension", evidence=detail["suspension_evidence"], suggested_action="仅目标日免补日线；下次运行重新核验停复牌状态")
                 if status in {"gap_partial", "fetch_failed"}:
                     partial += int(status == "gap_partial")
                     fail += int(status == "fetch_failed")
@@ -673,6 +717,8 @@ def main() -> int:
                         f"prewarm ok {symbol} cache_ready "
                         f"cached={cached_count}/{expected_count}"
                     )
+                elif status == "suspended":
+                    _log(f"prewarm suspended {symbol} target_date={end_day} rows={rows}")
                 elif status in {"gap_partial", "fetch_failed"}:
                     repaired_symbols += 1
                     repaired_ranges += int(gap_count)
@@ -706,9 +752,15 @@ def main() -> int:
                             )
                         )
                     _log(f"prewarm ok {symbol} gap_ranges={gap_count} rows={rows}")
+            except PrewarmBudgetExpired as e:
+                deferred += 1
+                records[symbol].update(status="pending", reason="batch_deadline", suggested_action="批次预算耗尽；保留已写入行情，下轮续跑", detail=str(e))
+                _log(f"prewarm deferred {symbol}: {e}")
             except Exception as e:
                 fail += 1
                 reason, action = review_reason(str(e))
+                if isinstance(e, TimeoutError):
+                    reason, action = "symbol_timeout", "单票总时限已到，执行进程已回收；检查上游耗时后续跑"
                 records[symbol].update(status="failed", reason=reason, suggested_action=action, detail=f"{type(e).__name__}: {e}")
                 _log(f"prewarm fail {symbol}: {type(e).__name__}: {e}")
             completed_since_checkpoint += 1
@@ -735,25 +787,28 @@ def main() -> int:
                 ready_symbols = run_state[str(market).lower()]["ready_symbols"]
                 _log(
                     "prewarm checkpoint "
-                    f"market={market} completed={ok + fail + partial} "
+                    f"market={market} completed={ok + fail + partial + deferred} "
                     f"manifest_ready={manifest_ready} fail={fail}"
                 )
                 write_review(args.review_dir, market, str(end_day), records, pool_mode=str(stats.get("pool_mode")), status="partial", universe_warning=str(stats.get("universe_warning", "")))
                 completed_since_checkpoint = 0
-            if args.sleep_seconds > 0:
-                time.sleep(max(float(args.sleep_seconds), 0.0))
     _log(
         "prewarm done "
-        f"market={market} ok={ok} fail={fail} partial={partial} excluded={len(excluded)} "
+        f"market={market} ok={ok} fail={fail} partial={partial} deferred={deferred} excluded={len(excluded)} "
         f"cache_ready={cache_ready} fast_skipped={fast_skipped} "
         f"repaired_symbols={repaired_symbols} "
         f"repaired_ranges={repaired_ranges} repaired_rows={repaired_rows}"
     )
+    final_status = "partial" if deferred else "dry_run" if args.dry_run else "partial" if fail or partial or stats.get("universe_warning") else "ok"
     if not args.dry_run:
+        checkpoint_status = final_status
+        # 含停牌的轮次必须再次查询证据，不能整轮跳过后漏掉复牌。
+        if final_status == "ok" and any(row["status"] == "suspended" for row in records.values()):
+            checkpoint_status = "suspended"
         _save_prewarm_progress(
             run_state=run_state,
             market=market,
-            status="ok" if fail == 0 and partial == 0 and not stats.get("universe_warning") else "partial",
+            status=checkpoint_status,
             end_trade_date=end_day,
             trading_days=run_trading_days,
             symbols=normalized,
@@ -765,9 +820,8 @@ def main() -> int:
             repaired_rows=repaired_rows,
             ready_updates=ready_updates,
         )
-    final_status = "dry_run" if args.dry_run else "partial" if fail or partial or stats.get("universe_warning") else "ok"
     write_review(args.review_dir, market, str(end_day), records, pool_mode=str(stats.get("pool_mode")), status=final_status, final=True, universe_warning=str(stats.get("universe_warning", "")))
-    return 0 if args.dry_run or (fail == 0 and partial == 0 and not stats.get("universe_warning")) else 2
+    return 0 if not deferred and (args.dry_run or (fail == 0 and partial == 0 and not stats.get("universe_warning"))) else 2
 
 
 if __name__ == "__main__":

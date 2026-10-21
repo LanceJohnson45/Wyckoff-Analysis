@@ -31,3 +31,22 @@ def mock_supabase():
     client = MagicMock()
     client.table.return_value.select.return_value.execute.return_value.data = []
     return client
+
+
+@pytest.fixture
+def inline_prewarm(monkeypatch):
+    """行为测试在本进程使用隔离I/O；真实进程终止由专门用例验证。"""
+    from concurrent.futures import Future
+    from scripts import funnel_prewarm as prewarm
+
+    def execute(function, jobs, **options):
+        for symbol, args, kwargs in jobs:
+            future = Future()
+            try:
+                future.set_result(function(*args, **kwargs))
+            except Exception as exc:
+                future.set_exception(exc)
+            yield symbol, future
+
+    monkeypatch.setattr(prewarm, "bounded_call", lambda function, *args, timeout, **kwargs: function(*args, **kwargs))
+    monkeypatch.setattr(prewarm, "iter_bounded_jobs", execute)

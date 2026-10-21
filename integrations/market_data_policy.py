@@ -44,6 +44,32 @@ def exclusion_applies(record: dict, target: date) -> bool:
     return bool(record.get("exclude") and (not record.get("effective_from") or date.fromisoformat(record["effective_from"]) <= target))
 
 
+def fetch_cn_suspensions(target: date) -> dict[str, str]:
+    """读取指定交易日全天停牌证据；不把预期复牌日外推为永久排除。"""
+    import akshare as ak
+    import pandas as pd
+
+    frame = ak.stock_tfp_em(date=target.strftime("%Y%m%d"))
+    required = {"代码", "停牌时间", "停牌截止时间", "预计复牌时间", "停牌期限"}
+    if frame is None or not required.issubset(frame.columns):
+        raise RuntimeError("停复牌接口缺少核验字段")
+    result = {}
+    for row in frame.to_dict("records"):
+        start = pd.to_datetime(row["停牌时间"], errors="coerce")
+        end = pd.to_datetime(row["停牌截止时间"], errors="coerce")
+        resume = pd.to_datetime(row["预计复牌时间"], errors="coerce")
+        if row["停牌期限"] not in {"连续停牌", "全天", "全天停牌", "1天"}:
+            continue
+        if pd.isna(start) or start.date() > target:
+            continue
+        if (not pd.isna(end) and end.date() < target) or (not pd.isna(resume) and resume.date() <= target):
+            continue
+        code = str(row["代码"]).zfill(6)
+        if len(code) == 6 and code.isdigit():
+            result[code] = f"https://data.eastmoney.com/tfpxx/ (query_date={target.isoformat()})"
+    return result
+
+
 def yahoo_first_trade_date(symbol: str) -> date | None:
     """读取Yahoo明确给出的firstTradeDate，不把最早缓存行推断为上市日。"""
     import yfinance as yf
