@@ -18,6 +18,7 @@ load_dotenv(BENCHMARK_SCRIPT_ROOT / ".env")
 from core.kline_quality import check_kline_quality
 from core.stock_cache import normalize_hist_df, upsert_cache_data
 from integrations.data_source import fetch_index_hist
+from integrations.fetch_a_share_csv import _resolve_trading_window
 from integrations.market_data_sync import BENCHMARK_SYMBOLS
 from utils.trading_clock import resolve_end_calendar_day_for_market
 
@@ -28,7 +29,8 @@ def refresh_benchmark(market: str, *, calendar_days: int = 550) -> int:
         raise ValueError("市场必须为 cn/us，历史窗口至少200个自然日")
     symbol = BENCHMARK_SYMBOLS[market]
     end = resolve_end_calendar_day_for_market(market)
-    frame = normalize_hist_df(fetch_index_hist(symbol, end - timedelta(days=calendar_days), end, market=market))
+    required_end = _resolve_trading_window(end, 1).end_trade_date if market == "cn" else None
+    frame = normalize_hist_df(fetch_index_hist(symbol, end - timedelta(days=calendar_days), end, market=market, min_rows=100, required_end=required_end))
     report = check_kline_quality(frame)
     if not report.ok or len(frame) < 100:
         raise ValueError("基准历史不足或质量检查未通过")

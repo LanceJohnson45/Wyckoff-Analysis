@@ -95,7 +95,7 @@ jobs:
           path: |
             data/funnel_prewarm_state.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          key: funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
 
@@ -132,7 +132,7 @@ jobs:
           path: |
             data/funnel_prewarm_state.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          key: funnel-prewarm-state-us-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload artifacts
         if: always()

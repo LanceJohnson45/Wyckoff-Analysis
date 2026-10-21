@@ -407,6 +407,24 @@ def fetch_stock_spot_snapshot(
 # --- 个股 ---
 
 
+def _fetch_stock_sina_bse(symbol: str, start: str, end: str, adjust: str) -> pd.DataFrame:
+    """北交所使用新浪bj代码及复权日线，保留SDK成交量股单位。"""
+    import akshare as ak
+
+    frame = ak.stock_zh_a_daily(symbol=f"bj{symbol}", start_date=start, end_date=end, adjust=adjust)
+    if frame is None or frame.empty:
+        raise RuntimeError("sina bse empty")
+    frame = frame.copy().sort_values("date")
+    frame["pct_chg"] = pd.to_numeric(frame["close"], errors="coerce").pct_change(fill_method=None) * 100
+    if "turnover" in frame.columns:
+        frame["turnover"] = pd.to_numeric(frame["turnover"], errors="coerce") * 100
+    frame = frame.rename(columns={"date": "日期", "open": "开盘", "high": "最高", "low": "最低", "close": "收盘", "volume": "成交量", "amount": "成交额", "turnover": "换手率", "pct_chg": "涨跌幅"})
+    frame["日期"] = pd.to_datetime(frame["日期"], errors="coerce").dt.strftime("%Y-%m-%d")
+    if not _has_valid_ohlc(frame):
+        raise RuntimeError("sina bse invalid OHLC")
+    return frame
+
+
 def _fetch_stock_akshare(
     symbol: str, start: str, end: str, adjust: str
 ) -> pd.DataFrame:
@@ -418,6 +436,7 @@ def _fetch_stock_akshare(
         start_date=start,
         end_date=end,
         adjust=adjust if adjust else "",
+        timeout=15,
     )
     if df is None or df.empty:
         raise RuntimeError("akshare empty")
@@ -1016,6 +1035,7 @@ def fetch_stock_hist(
 ) -> pd.DataFrame:
     """
     个股日线：A 股 yfinance 优先，失败时回退 tickflow/akshare/baostock/efinance。
+    北交所在tickflow之后优先新浪bj日线，跳过不支持北交所的BaoStock。
     US/HK 个股优先 yfinance，失败回退 tickflow。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_YFINANCE=1
@@ -1170,6 +1190,15 @@ def fetch_stock_hist(
             failed_sources.append("tickflow")
             failed_details.append(f"tickflow={_compact_error(e)}")
 
+    # 北交所没有Yahoo映射；优先同一市场的新浪接口，避免东财失败后串行排队。
+    if not disable_akshare and str(symbol).startswith(("4", "8", "92")):
+        try:
+            return _tag_source(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
+        except Exception as exc:
+            _debug_source_fail("sina(bse)", exc)
+            failed_sources.append("sina_bse")
+            failed_details.append(f"sina_bse={_compact_error(exc)}")
+
     # 3. akshare
     if disable_akshare:
         failed_sources.append("akshare(disabled)")
@@ -1202,6 +1231,10 @@ def fetch_stock_hist(
     if disable_baostock:
         failed_sources.append("baostock(disabled)")
         failed_details.append("baostock=disabled_by_env")
+    elif str(symbol).startswith(("4", "8", "92")):
+        # BaoStock只提供沪深代码，不能把北交所代码拼成sz并占用串行会话。
+        failed_sources.append("baostock(unsupported_bse)")
+        failed_details.append("baostock=unsupported_bse")
     elif baostock_circuit_open:
         note = baostock_circuit_note or "circuit_open"
         failed_sources.append("baostock(circuit_open)")
@@ -1261,12 +1294,32 @@ def fetch_stock_hist(
         else "请检查该标的是否已退市或处于长期停牌期。"
     )
     raise RuntimeError(
-        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已按顺序尝试 yfinance→tickflow→akshare→baostock→efinance，"
+        f"数据拉取全线失败 [标:{symbol}, 范围:{start_s}..{end_s}, 复权:{adjust}]：已尝试 {'→'.join(failed_sources)}，"
         f"均无可用 K 线数据。{terminal_cause}{detail_suffix}{hint_suffix}"
     )
 
 
 # --- 大盘指数 ---
+
+
+def _fetch_index_sina(code: str, start: str, end: str) -> pd.DataFrame:
+    """东财不可用时读取新浪同一指数，按请求区间截取，不用ETF替代。"""
+    import akshare as ak
+
+    yf_symbol = _cn_index_to_yfinance_symbol(code)
+    digits, suffix = yf_symbol.rsplit(".", 1)
+    frame = ak.stock_zh_index_daily(symbol=f"{'sh' if suffix == 'SS' else 'sz'}{digits}")
+    if frame is None or frame.empty:
+        raise RuntimeError("sina index empty")
+    frame = frame.copy()
+    frame["date"] = pd.to_datetime(frame["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+    for col in ("open", "high", "low", "close", "volume"):
+        frame[col] = pd.to_numeric(frame[col], errors="coerce")
+    frame = frame.sort_values("date").drop_duplicates("date", keep="last")
+    frame["pct_chg"] = frame["close"].pct_change(fill_method=None) * 100
+    lower = pd.to_datetime(start, format="%Y%m%d").strftime("%Y-%m-%d")
+    upper = pd.to_datetime(end, format="%Y%m%d").strftime("%Y-%m-%d")
+    return frame.loc[frame["date"].between(lower, upper)].reset_index(drop=True)
 
 
 def _fetch_index_akshare(code: str, start: str, end: str) -> pd.DataFrame:
@@ -1305,9 +1358,12 @@ def fetch_index_hist(
     end: str | date,
     *,
     market: Literal["cn", "us", "hk"] = "cn",
+    min_rows: int = 1,
+    required_end: date | None = None,
 ) -> pd.DataFrame:
     """
-    大盘指数日线：A股优先 yfinance，失败后回退 akshare；US/HK 使用 yfinance。
+    大盘指数日线：A股依次尝试Yahoo、东财、新浪；US/HK 使用Yahoo。
+    min_rows/required_end供日常基准任务拒绝过短或过时的上游响应。
     返回列：date, open, high, low, close, volume, pct_chg（小写，供 step2 使用）
     """
     start_s = (
@@ -1320,9 +1376,25 @@ def fetch_index_hist(
     )
 
     market_norm = str(market or "cn").strip().lower()
+    if min_rows < 1:
+        raise ValueError("min_rows must be positive")
+
+    def checked(frame: pd.DataFrame) -> pd.DataFrame:
+        if frame is None or frame.empty or "date" not in frame.columns:
+            raise RuntimeError("index empty or missing date")
+        dates = pd.to_datetime(frame["date"], errors="coerce")
+        filtered = frame.loc[dates.between(pd.to_datetime(start_s), pd.to_datetime(end_s))].copy()
+        filtered["date"] = pd.to_datetime(filtered["date"]).dt.strftime("%Y-%m-%d")
+        filtered = filtered.sort_values("date").drop_duplicates("date", keep="last").reset_index(drop=True)
+        if len(filtered) < min_rows:
+            raise RuntimeError(f"index insufficient history rows={len(filtered)}, minimum={min_rows}")
+        if required_end and filtered["date"].max() < required_end.isoformat():
+            raise RuntimeError(f"index stale latest={filtered['date'].max()}, required={required_end}")
+        return filtered
+
     if market_norm in {"us", "hk"}:
         try:
-            return _fetch_index_yfinance(str(code).strip(), start_s, end_s)
+            return checked(_fetch_index_yfinance(str(code).strip(), start_s, end_s))
         except Exception as e:
             _debug_source_fail("yfinance(index)", e)
             raise RuntimeError(f"{market_norm.upper()} index {code} fetch failed via yfinance: {_compact_error(e)}") from e
@@ -1335,20 +1407,28 @@ def fetch_index_hist(
             start=start_s,
             end=end_s,
         ):
-            return frame
+            return checked(frame)
         raise RuntimeError(
             f"yfinance insufficient history rows={len(frame)} for range {start_s}..{end_s}"
         )
     except Exception as e1:
         _debug_source_fail("yfinance(index:cn)", e1)
+        errors = [f"yfinance={_compact_error(e1)}"]
 
     try:
-        return _fetch_index_akshare(code, start_s, end_s)
+        return checked(_fetch_index_akshare(code, start_s, end_s))
     except Exception as e2:
         _debug_source_fail("akshare(index)", e2)
+        errors.append(f"eastmoney={_compact_error(e2)}")
+
+    try:
+        return checked(_fetch_index_sina(code, start_s, end_s))
+    except Exception as exc:
+        _debug_source_fail("sina(index)", exc)
+        errors.append(f"sina={_compact_error(exc)}")
 
     raise RuntimeError(
-        f"大盘指数 {code} 拉取失败：已尝试 yfinance({yfinance_symbol}) -> akshare，请检查网络连通性。"
+        f"大盘指数 {code} 拉取失败：已尝试 yfinance({yfinance_symbol}) -> akshare(东财) -> sina。失败详情：{'；'.join(errors)}"
     )
 
 

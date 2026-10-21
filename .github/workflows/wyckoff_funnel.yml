@@ -31,7 +31,8 @@ jobs:
       PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
       PG_DSN: ${{ secrets.PG_DSN }}
       FUNNEL_PREWARM_DAYS: "320"
-      FUNNEL_PREWARM_TIMEOUT_MINUTES: "45"
+      # 全A股首次补齐包含策略池外历史，给冷启动留出余量；同日重跑仍复用检查点。
+      FUNNEL_PREWARM_TIMEOUT_MINUTES: "70"
       TZ: Asia/Shanghai
 
     steps:
@@ -63,12 +64,12 @@ jobs:
           path: |
             data/funnel_prewarm_state.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
 
       - name: Fetch daily market data
-        timeout-minutes: 50
+        timeout-minutes: 75
         run: |
           echo "::group::Prewarm cache (CN)"
           set -o pipefail
@@ -100,7 +101,7 @@ jobs:
           path: |
             data/funnel_prewarm_state.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}
+          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Upload artifacts
         if: always()

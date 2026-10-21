@@ -679,7 +679,7 @@ def main() -> int:
                     repaired_rows += int(rows)
                     preview = ", ".join(f"{s}..{e}" for s, e in gap_preview) or "-"
                     _log(
-                        f"prewarm partial {symbol} rows={rows} "
+                        f"prewarm {'fail' if status == 'fetch_failed' else 'partial'} {symbol} rows={rows} "
                         f"remaining_ranges=[{preview}] ignored_old_ranges={ignored_count}"
                     )
                 elif args.dry_run:

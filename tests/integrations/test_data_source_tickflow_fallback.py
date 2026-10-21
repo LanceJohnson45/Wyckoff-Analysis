@@ -105,7 +105,8 @@ def test_fetch_stock_hist_error_message_contains_tickflow_chain(monkeypatch: pyt
 
     with pytest.raises(RuntimeError) as exc:
         ds.fetch_stock_hist("000001", "2026-04-10", "2026-04-18", adjust="qfq")
-    assert "yfinance→tickflow→akshare→baostock→efinance" in str(exc.value)
+    assert "yfinance→tickflow(unconfigured)→akshare(disabled)→baostock(disabled)→efinance(disabled)" in str(exc.value)
+    assert "tickflow=api_key_missing" in str(exc.value)
 
 
 def test_fetch_stock_hist_network_failure_message_does_not_blame_delisting(
