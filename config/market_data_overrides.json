@@ -58,6 +58,14 @@
       "effective_from": "2026-07-10",
       "reason": "confirmed_delisted",
       "evidence": "https://disc.static.szse.cn/download/disc/disk03/finalpage/2026-07-10/4fbba685-0443-44d0-9e1a-561bb696277a.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "920305",
+      "exclude": true,
+      "effective_from": "2026-07-30",
+      "reason": "confirmed_delisted",
+      "evidence": "https://www.bse.cn/disclosure/2026/2026-07-29/8a64d7d9ca1641609307b4f2aa5fecaf.pdf"
     }
   ]
 }

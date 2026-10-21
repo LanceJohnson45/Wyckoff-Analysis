@@ -212,6 +212,44 @@ def test_normal_manual_exclusion_has_evidence_and_effective_date() -> None:
     assert exclusion_applies(records[("us", "CTRA")], date(2026, 10, 15))
 
 
+def test_boundary_yunchuang_exclusion_starts_on_delisting_date() -> None:
+    """【边界值】云创退仅从摘牌日排除，最后交易日的历史维护仍保留。"""
+    record = load_security_overrides().get(("cn", "920305"), {})
+
+    assert not exclusion_applies(record, date(2026, 7, 29))
+    assert exclusion_applies(record, date(2026, 7, 30))
+    assert record["reason"] == "confirmed_delisted"
+    assert record["evidence"].startswith("https://www.bse.cn/disclosure/")
+
+
+def test_normal_main_excludes_delisted_yunchuang_and_preserves_history(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】名单残留云创退时不补退市后行情，保留缓存及排除审计。"""
+    history = [date(2026, 7, 29)]
+    maintenance["cache"]["920305"] = history.copy()
+    items = [{"code": "920305", "name": "*ST云创"}, {"code": "920001", "name": "北交样本"}]
+
+    def fetch(**kwargs: object) -> pd.DataFrame:
+        if kwargs["symbol"] == "920305":
+            raise RuntimeError("退市后无行情")
+        return maintenance["fetch"](**kwargs)
+
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", fetch)
+    monkeypatch.setattr(prewarm, "get_all_stocks", lambda **kwargs: items)
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--universe", "all", "--review-dir", str(maintenance["path"])])
+
+    code = prewarm.main()
+    coverage = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_coverage.csv", dtype=str).set_index("symbol")
+    review = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_review.csv", dtype=str)
+
+    assert code == 0
+    assert maintenance["cache"]["920305"] == history
+    assert all(symbol != "920305" for symbol, _, _ in maintenance["requests"])
+    assert coverage.loc["920305", "status"] == "excluded"
+    assert coverage.loc["920305", "reason"] == "confirmed_delisted"
+    assert coverage.loc["920305", "evidence"] == load_security_overrides()[("cn", "920305")]["evidence"]
+    assert review.empty
+
+
 def test_error_forced_failure_invalidates_previous_ready_checkpoint(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """【边界值】强制重跑失败后，不得沿用旧ready令下一次跳过该股票。"""
     prewarm._save_prewarm_progress(run_state={}, market="cn", status="ok", end_trade_date=date(2026, 10, 15), trading_days=320,
