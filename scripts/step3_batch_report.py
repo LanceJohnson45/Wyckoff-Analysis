@@ -17,6 +17,7 @@ import pandas as pd
 # Ensure project root is on sys.path for direct script invocation
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.market_scope import excluded_cn_board
 from core.prompts import WYCKOFF_FUNNEL_SYSTEM_PROMPT
 from core.kline_quality import (
     check_kline_quality_map,
@@ -772,6 +773,10 @@ def run(
         market_norm = str((benchmark_context or {}).get("market") or "cn").strip().lower()
     if market_norm not in {"cn", "us", "hk"}:
         market_norm = "cn"
+
+    items = [item for item in items if not excluded_cn_board(str(item.get("code", "")), str(item.get("market") or market_norm))]
+    if not items:
+        return (True, "skipped_excluded_cn_boards", "")
 
     end_day = _job_end_calendar_day()
     if market_norm == "us":

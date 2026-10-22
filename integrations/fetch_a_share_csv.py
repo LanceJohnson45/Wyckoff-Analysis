@@ -5,6 +5,7 @@ import re
 import time
 from bisect import bisect_right
 from collections.abc import Callable
+
 from dataclasses import dataclass
 from datetime import date, timedelta
 from functools import lru_cache
@@ -13,9 +14,11 @@ from tempfile import NamedTemporaryFile
 
 import akshare as ak
 import pandas as pd
+
 import requests
 import structlog
 
+from core.market_scope import excluded_cn_board
 from utils import extract_symbols_from_text, safe_filename_part, stock_sector_em
 
 
@@ -456,7 +459,7 @@ def _normalize_symbols(symbols: list[str], *, market: str = "cn") -> list[str]:
         if not s:
             continue
         if market_norm == "cn":
-            if not re.fullmatch(r"\d{6}", s):
+            if not re.fullmatch(r"\d{6}", s) or excluded_cn_board(s):
                 continue
         elif market_norm == "hk":
             s = s.upper()

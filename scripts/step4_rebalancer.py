@@ -24,6 +24,7 @@ import pandas as pd
 # Ensure project root is on sys.path for direct script invocation
 if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.market_scope import excluded_cn_board
 from core.wyckoff_engine import normalize_hist_from_fetch, FunnelConfig
 from core.holding_diagnostic import diagnose_one_stock, format_diagnostic_for_llm
 from core.prompts import PRIVATE_PM_DECISION_JSON_PROMPT
@@ -1698,6 +1699,9 @@ def run(
         f"[step4] 持仓来源: {portfolio_source} | portfolio_id={portfolio_id} | state_sig={state_signature or '-'}"
     )
 
+    if any(excluded_cn_board(position.code, getattr(position, "market", "cn")) for position in portfolio.positions):
+        return (False, "excluded_cn_board: 当前持仓包含北交所/科创板，本项目不分析这些股票")
+
     if not str(tg_bot_token or "").strip() or not str(tg_chat_id or "").strip():
         print("[step4] tg_bot_token/tg_chat_id 未配置，跳过 Step4 推送")
         return (True, "skipped_telegram_unconfigured")
@@ -1750,6 +1754,8 @@ def run(
             continue
         code = _clean_text(item.get("code"))
         item_market = _normalize_market(item.get("market"), portfolio_market)
+        if excluded_cn_board(code, item_market):
+            continue
         if item_market == "cn" and not re.fullmatch(r"\d{6}", code):
             continue
         if item_market == "us":
@@ -1765,6 +1771,8 @@ def run(
         candidate_codes.append(code)
         candidate_items.append(item)
     for code in _extract_stock_codes(external_report):
+        if excluded_cn_board(code, portfolio_market):
+            continue
         if code in position_code_set or code in seen_candidate_codes:
             continue
         seen_candidate_codes.add(code)

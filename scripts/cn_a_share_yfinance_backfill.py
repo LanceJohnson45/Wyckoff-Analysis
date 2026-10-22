@@ -17,6 +17,7 @@ if __name__ == "__main__" or not __package__:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.constants import TABLE_STOCK_HIST_CACHE
+from core.market_scope import excluded_cn_board
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from integrations.data_source import _cn_stock_to_yfinance_symbol, _fetch_stock_yfinance
 from integrations.fetch_a_share_csv import _trade_dates_cached, get_all_stocks
@@ -205,7 +206,7 @@ def _load_supported_symbols(limit: int = 0) -> tuple[list[str], int]:
         code = str(row.get("code", "")).strip()
         if not code:
             continue
-        if _cn_stock_to_yfinance_symbol(code):
+        if not excluded_cn_board(code) and _cn_stock_to_yfinance_symbol(code):
             supported.append(code)
         else:
             unsupported += 1

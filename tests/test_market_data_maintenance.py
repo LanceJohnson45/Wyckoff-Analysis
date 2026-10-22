@@ -202,6 +202,11 @@ def test_normal_main_uses_official_listing_dates_on_cold_start(maintenance: dict
 
     assert prewarm.main() == 0
     coverage = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_coverage.csv", dtype=str)
+    if exchange == "bj":
+        assert maintenance["requests"] == []
+        assert coverage.iloc[0]["status"] == "excluded"
+        assert coverage.iloc[0]["reason"] == "excluded_cn_board"
+        return
     assert maintenance["requests"] == [(symbol, ipo, ipo)]
     assert coverage.iloc[0]["listing_date"] == str(ipo)
     assert coverage.iloc[0]["evidence"] == evidence
@@ -274,8 +279,8 @@ def test_error_main_partial_success_returns_nonzero_and_persists_review(maintena
         assert report.iloc[0]["reason"] == "source_or_network_error"
 
 
-def test_normal_all_cn_pool_keeps_st_star_and_bse_but_skips_approved_delisting(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
-    """【正常值】数据维护池不漏ST/科创/北交所；已批准000004只退出拉取。"""
+def test_normal_all_cn_pool_keeps_st_but_excludes_star_bse_and_delisting(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】数据维护保留ST，但按项目范围排除科创/北交所及已批准退市代码。"""
     items = [{"code": "000004", "name": "国华退"}, {"code": "000010", "name": "*ST美丽"}, {"code": "688001", "name": "科创样本"}, {"code": "920001", "name": "北交样本"}]
     monkeypatch.setattr(prewarm, "get_all_stocks", lambda **kwargs: items)
     monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--universe", "all", "--review-dir", str(maintenance["path"])])
@@ -284,7 +289,9 @@ def test_normal_all_cn_pool_keeps_st_star_and_bse_but_skips_approved_delisting(m
     coverage = pd.read_csv(maintenance["path"] / "prewarm_cn_2026-10-15_coverage.csv", dtype=str).set_index("symbol")
 
     assert code == 0
-    assert set(maintenance["cache"]) == {"000010", "688001", "920001"}
+    assert set(maintenance["cache"]) == {"000010"}
+    assert coverage.loc["688001", "status"] == "excluded"
+    assert coverage.loc["920001", "status"] == "excluded"
     assert coverage.loc["000004", "status"] == "excluded"
     assert coverage.loc["000004", "reason"] == "confirmed_delisted"
     assert len(coverage) == 4
@@ -593,3 +600,17 @@ def test_error_symbol_timeout_preserves_other_stock_checkpoint(maintenance: dict
     assert report["symbol"].tolist() == ["000001"]
     assert report.iloc[0]["reason"] == "symbol_timeout"
     assert set(state["ready_symbols"]) == {"000002"}
+
+
+@pytest.mark.parametrize("force", [False, True])
+def test_manual_excluded_boards_do_not_fetch_even_when_forced(maintenance: dict, monkeypatch: pytest.MonkeyPatch, force: bool) -> None:
+    """显式代码及force均不能绕过板块排除，不把正常排除计为失败。"""
+    args=['prewarm','--market','cn','--symbols','688001,689009,920002,430047','--review-dir',str(maintenance['path'])]
+    if force:
+        args.append('--force')
+    monkeypatch.setattr('sys.argv',args)
+    assert prewarm.main()==0
+    assert maintenance['requests']==[]
+    coverage=pd.read_csv(maintenance['path']/'prewarm_cn_2026-10-15_coverage.csv',dtype=str)
+    assert len(coverage)==4
+    assert set(coverage['status'])=={'excluded'}
