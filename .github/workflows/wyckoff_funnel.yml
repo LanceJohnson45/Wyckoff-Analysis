@@ -118,8 +118,21 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+      - name: Notify daily data result
+        id: notify_data
+        if: ${{ always() && !cancelled() }}
+        env:
+          DATA_REPORT_WEBHOOK_URL: ${{ secrets.DATA_REPORT_WEBHOOK_URL }}
+          FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          DATA_RUN_STATUS: ${{ job.status }}
+          DATA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          uv run --frozen --no-dev python -m scripts.market_data_notification \
+            --market cn --summary-dir logs \
+            --run-status "${DATA_RUN_STATUS}" --run-url "${DATA_RUN_URL}"
+
       - name: Notify on failure
-        if: failure()
+        if: ${{ failure() && steps.notify_data.outcome != 'success' }}
         env:
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
