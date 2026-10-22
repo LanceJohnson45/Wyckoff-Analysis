@@ -16,6 +16,8 @@ from typing import NamedTuple
 import numpy as np
 import pandas as pd
 
+from core.market_scope import excluded_cn_board
+
 
 def normalize_hist_from_fetch(df: pd.DataFrame) -> pd.DataFrame:
     """将 fetch_a_share_csv._fetch_hist 返回的 DataFrame 转为筛选器所需格式。"""
@@ -351,6 +353,8 @@ def layer1_filter(
     l1_roe_negative = 0
     l1_high_debt = 0
     for sym in symbols:
+        if excluded_cn_board(sym):
+            continue
         if cfg.require_cn_main_or_chinext and not _is_main_or_chinext(sym):
             continue
         name = name_map.get(sym, "")

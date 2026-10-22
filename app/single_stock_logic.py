@@ -13,6 +13,7 @@ import platform
 import os
 import yfinance as yf
 
+from core.market_scope import excluded_cn_board
 from integrations.fetch_a_share_csv import _fetch_hist_with_market, _resolve_trading_window, _resolve_us_window, _stock_name_from_code
 from utils import extract_symbols_from_text, stock_sector_em
 from integrations.llm_client import call_llm
@@ -483,6 +484,9 @@ def _run_analysis(
     """执行分析流程"""
     end_calendar = date.today() - timedelta(days=1)
     market_norm = str(market or "cn").strip().lower()
+    if excluded_cn_board(symbol, market_norm):
+        st.info("当前项目不分析北交所和科创板股票，请选择主板或创业板股票。")
+        return
     try:
         if market_norm == "us":
             window = _resolve_us_window(end_calendar, TRADING_DAYS_OHLCV)

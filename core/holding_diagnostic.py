@@ -24,6 +24,8 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from core.market_scope import excluded_cn_board, require_supported_stock
+
 from core.wyckoff_engine import (
     FunnelConfig,
     _sorted_if_needed,
@@ -265,6 +267,7 @@ def diagnose_one_stock(
     bench_df : 大盘基准 OHLCV（用于 L2 通道 RS 计算，可选）
     cfg  : FunnelConfig，默认使用全局默认值
     """
+    require_supported_stock(code)
     if cfg is None:
         cfg = FunnelConfig()
 
@@ -498,6 +501,8 @@ def diagnose_holdings(
     """
     results = []
     for code, name, cost in holdings:
+        if excluded_cn_board(code):
+            continue
         df = df_map.get(code)
         if df is None or df.empty:
             # 无数据时返回最小诊断

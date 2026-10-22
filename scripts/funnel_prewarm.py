@@ -42,6 +42,7 @@ except ImportError:
     pass
 
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
+from core.market_scope import excluded_cn_board
 from integrations.data_source import fetch_index_hist, fetch_stock_hist
 from integrations.market_data_policy import BeforeListingRange, exclusion_applies, fetch_cn_listing_dates, fetch_cn_suspensions, load_security_overrides
 from integrations.market_data_review import review_reason, write_review
@@ -533,7 +534,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="Only inspect cache gaps; do not fetch or write")
     parser.add_argument("--force", action="store_true", help="Ignore prewarm run-state cache and execute anyway")
     parser.add_argument("--symbols", default="", help="Comma-separated symbols to inspect instead of pool resolution")
-    parser.add_argument("--universe", choices=["strategy", "all"], default="strategy", help="all维护全A股（包含ST/科创/北交所），不沿用策略筛选池")
+    parser.add_argument("--universe", choices=["strategy", "all"], default="strategy", help="all维护主板/创业板（包含ST，不含北交所/科创板），不沿用策略筛选池")
     parser.add_argument("--review-dir", type=Path, default=ROOT / "logs")
     parser.add_argument("--end-date", type=date.fromisoformat, default=None, help="固定本轮截止日，YYYY-MM-DD")
     parser.add_argument("--symbol-timeout-seconds", type=float, default=60, help="单票总时限，超时终止对应子进程")
@@ -562,9 +563,21 @@ def main() -> int:
     else:
         symbols, names, stats = bounded_call(_resolve_symbol_pool_from_env, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
         stats["names"] = names
+    overrides = load_security_overrides()
+    board_excluded = [str(sym).strip() for sym in symbols if excluded_cn_board(sym, market)]
+    board_records = {sym: {"market": market, "symbol": sym, "name": stats.get("names", {}).get(sym, ""), "status": "excluded", "target_date": str(end_day),
+                           "reason": "excluded_cn_board", "evidence": "项目范围：不维护北交所/科创板", "suggested_action": "保留历史，不更新、不分析"} for sym in board_excluded}
+    for sym, record in board_records.items():
+        policy = overrides.get((market, sym), {})
+        if exclusion_applies(policy, end_day):
+            record.update(reason=policy["reason"], evidence=policy["evidence"])
     normalized = _normalize_symbols(symbols, market=market)
     if args.limit > 0:
         normalized = normalized[: args.limit]
+    if not normalized and board_excluded:
+        write_review(args.review_dir, market, str(end_day), board_records, pool_mode=str(stats.get("pool_mode")), status="ok", final=True)
+        _log(f"prewarm skipped market={market} reason=excluded_cn_boards count={len(board_excluded)}")
+        return 0
     if not normalized:
         _log(f"prewarm skipped market={market} reason=empty_symbol_pool mode={stats.get('pool_mode')}")
         return 1
@@ -572,8 +585,10 @@ def main() -> int:
     run_window = bounded_call(_resolve_us_window if market in {"us", "hk"} else _resolve_trading_window, end_calendar_day=end_day, trading_days=max(int(args.trading_days), 1), timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
     run_dates = bounded_call(_expected_trade_dates, run_window, market, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
     end_day = run_window.end_trade_date
-    overrides = load_security_overrides()
     records = {sym: {"market": market, "symbol": sym, "name": stats.get("names", {}).get(sym, ""), "status": "pending", "target_date": str(end_day)} for sym in normalized}
+    for record in board_records.values():
+        record["target_date"] = str(end_day)
+    records.update(board_records)
     excluded = []
     for sym in normalized:
         policy = overrides.get((market, sym), {})

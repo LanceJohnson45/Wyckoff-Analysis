@@ -9,6 +9,8 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
+from core.market_scope import require_supported_stock
+
 from core.kline_quality import REQUIRED_COLUMNS, check_kline_quality
 
 MIN_HISTORY = 100
@@ -125,6 +127,7 @@ def analyze_daily(
     """使用截止日内数据生成多标签观察结果；所有参考位只来自当时可知数据。"""
     if market not in MARKET_LABELS:
         raise ValueError("仅支持 A 股 cn 或美股 us")
+    require_supported_stock(symbol, market)
     frame = normalize_daily_frame(df, as_of=as_of)
     close, high, low, volume = (frame[c] for c in ("close", "high", "low", "volume"))
     for window in (9, 21, 50):

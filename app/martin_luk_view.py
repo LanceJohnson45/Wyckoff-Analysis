@@ -10,6 +10,8 @@ import re
 from typing import Literal
 
 import pandas as pd
+
+from core.market_scope import require_supported_stock
 import streamlit as st
 
 from core.martin_luk import (
@@ -50,6 +52,8 @@ def parse_symbols(text: str, market: str) -> list[str]:
     if invalid:
         raise ValueError(f"代码格式不符：{', '.join(invalid[:3])}")
     symbols = list(dict.fromkeys(tokens))
+    for symbol in symbols:
+        require_supported_stock(symbol, market)
     if len(symbols) > MAX_SYMBOLS:
         raise ValueError(f"每次最多分析 {MAX_SYMBOLS} 只自选股")
     return symbols

@@ -46,6 +46,8 @@ def test_load_supported_symbols_filters_non_yfinance_codes(monkeypatch):
             {"code": "600519", "name": "茅台"},
             {"code": "000001", "name": "平安银行"},
             {"code": "430001", "name": "北交所示例"},
+            {"code": "688001", "name": "科创板"},
+            {"code": "689009", "name": "科创板存托凭证"},
             {"code": "600519", "name": "重复"},
         ],
     )
@@ -53,7 +55,7 @@ def test_load_supported_symbols_filters_non_yfinance_codes(monkeypatch):
     symbols, unsupported = mod._load_supported_symbols()
 
     assert symbols == ["000001", "600519"]
-    assert unsupported == 1
+    assert unsupported == 3
 
 
 def test_normalize_batch_download_extracts_symbol_frame():

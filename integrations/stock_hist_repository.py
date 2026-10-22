@@ -6,6 +6,7 @@ from typing import Literal
 
 import pandas as pd
 
+from core.market_scope import require_supported_stock
 from core.stock_cache import (
     CacheMeta,
     denormalize_hist_df,
@@ -144,6 +145,7 @@ def get_stock_hist(
     if market_norm not in {"cn", "us", "hk"}:
         raise ValueError(f"unsupported market: {market}")
 
+    require_supported_stock(symbol, market_norm)
     if market_norm == "cn":
         cache_symbol = symbol
     elif market_norm == "us":
