@@ -1038,7 +1038,7 @@ def fetch_stock_hist(
 ) -> pd.DataFrame:
     """
     个股日线：A 股 yfinance 优先，失败时回退 tickflow/tencent/akshare/baostock/efinance。
-    北交所在tickflow之后优先新浪bj日线，跳过不支持北交所的BaoStock。
+    北交所优先新浪bj日线，失败回退tickflow；跳过不支持北交所的BaoStock。
     US/HK 个股优先 yfinance，失败回退 tickflow。
     required_dates由维护入口提供；缺少必需交易日时继续尝试下一数据源。
     可用环境变量按需禁用数据源：
@@ -1187,6 +1187,15 @@ def fetch_stock_hist(
                 failed_sources.append("yfinance")
                 failed_details.append(f"yfinance={_compact_error(e)}")
 
+    # 北交所先用新浪日线；失败再进入TickFlow限频队列，避免全池日更被串行化。
+    if not disable_akshare and str(symbol).startswith(("4", "8", "92")):
+        try:
+            return checked(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
+        except Exception as exc:
+            _debug_source_fail("sina(bse)", exc)
+            failed_sources.append("sina_bse")
+            failed_details.append(f"sina_bse={_compact_error(exc)}")
+
     # 2. tickflow（固定 qfq）
     if disable_tickflow:
         failed_sources.append("tickflow(disabled)")
@@ -1207,15 +1216,6 @@ def fetch_stock_hist(
             _debug_source_fail("tickflow", e)
             failed_sources.append("tickflow")
             failed_details.append(f"tickflow={_compact_error(e)}")
-
-    # 北交所没有Yahoo映射；优先同一市场的新浪接口，避免东财失败后串行排队。
-    if not disable_akshare and str(symbol).startswith(("4", "8", "92")):
-        try:
-            return checked(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
-        except Exception as exc:
-            _debug_source_fail("sina(bse)", exc)
-            failed_sources.append("sina_bse")
-            failed_details.append(f"sina_bse={_compact_error(exc)}")
 
     # 腾讯原始日线配合新浪比例因子，不把腾讯等差复权混入现有历史。
     if os.getenv("DATA_SOURCE_DISABLE_TENCENT", "").strip().lower() in {"1", "true", "yes", "on"}:
