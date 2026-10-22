@@ -178,3 +178,35 @@ def test_normal_refresh_benchmark_writes_sina_same_index_after_primary_failure(m
     assert rows == len(_frame())
     assert writes[0][0] == "INDEX:CN:000300"
     assert writes[0][1].iloc[-1]["date"] == "2026-10-16"
+
+
+def test_bse_free_daily_precedes_rate_limited_tickflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """北交所日更优先公开源，避免全池被10次/分钟的TickFlow队列串行拖延。"""
+    monkeypatch.setenv("TICKFLOW_API_KEY", "configured-test-key")
+    for key in ("YFINANCE", "TICKFLOW", "AKSHARE"):
+        monkeypatch.setenv(f"DATA_SOURCE_DISABLE_{key}", "0")
+    expected = _frame().tail(2).rename(columns={"date":"日期", "open":"开盘", "high":"最高", "low":"最低", "close":"收盘", "volume":"成交量"})
+    monkeypatch.setattr(ds, "_fetch_stock_sina_bse", lambda *args: expected)
+    calls = []
+
+    def tickflow(*args: object) -> pd.DataFrame:
+        calls.append("tickflow")
+        return expected
+
+    monkeypatch.setattr(ds, "_fetch_stock_tickflow", tickflow)
+    result = ds.fetch_stock_hist("920002", "20261015", "20261016", required_dates=[date(2026,10,15),date(2026,10,16)])
+    assert result.attrs["source"] == "sina_bse"
+    assert calls == []
+
+
+def test_bse_incomplete_free_daily_still_uses_tickflow(monkeypatch: pytest.MonkeyPatch) -> None:
+    """新浪缺日时保留付费备用源，不能为提速跳过覆盖检查。"""
+    monkeypatch.setenv("TICKFLOW_API_KEY", "configured-test-key")
+    for key in ("YFINANCE", "TICKFLOW", "AKSHARE"):
+        monkeypatch.setenv(f"DATA_SOURCE_DISABLE_{key}", "0")
+    expected = _frame().tail(2).rename(columns={"date":"日期", "open":"开盘", "high":"最高", "low":"最低", "close":"收盘", "volume":"成交量"})
+    monkeypatch.setattr(ds, "_fetch_stock_sina_bse", lambda *args: expected.iloc[:1])
+    monkeypatch.setattr(ds, "_fetch_stock_tickflow", lambda *args: expected)
+    result = ds.fetch_stock_hist("920002", "20261015", "20261016", required_dates=[date(2026,10,15),date(2026,10,16)])
+    assert result.attrs["source"] == "tickflow"
+    assert set(pd.to_datetime(result["日期"]).dt.date) == {date(2026,10,15),date(2026,10,16)}
