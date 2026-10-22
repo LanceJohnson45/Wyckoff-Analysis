@@ -4,7 +4,7 @@
 # 商业授权请联系作者支付授权费用。
 
 """
-统一数据源：A 股个股日线 yfinance / tickflow / akshare / baostock / efinance 逐级回退；
+统一数据源：A 股个股日线 yfinance / tickflow / tencent / akshare / baostock / efinance 逐级回退；
 US/HK 个股优先 yfinance，失败回退 tickflow；A 股指数优先 yfinance，失败回退 akshare；行业/市值仅读缓存。
 
 输出格式与 akshare 兼容：日期, 开盘, 最高, 最低, 收盘, 成交量, 成交额, 涨跌幅, 换手率, 振幅
@@ -31,6 +31,7 @@ from http.client import RemoteDisconnected
 import pandas as pd
 
 from integrations.market_data_policy import BeforeListingRange, yahoo_first_trade_date
+from integrations.tencent_daily import fetch_tencent_daily as _fetch_stock_tencent
 
 
 _BAOSTOCK_LOGGED = False
@@ -1036,13 +1037,14 @@ def fetch_stock_hist(
     required_dates: list[date] | None = None,
 ) -> pd.DataFrame:
     """
-    个股日线：A 股 yfinance 优先，失败时回退 tickflow/akshare/baostock/efinance。
+    个股日线：A 股 yfinance 优先，失败时回退 tickflow/tencent/akshare/baostock/efinance。
     北交所在tickflow之后优先新浪bj日线，跳过不支持北交所的BaoStock。
     US/HK 个股优先 yfinance，失败回退 tickflow。
     required_dates由维护入口提供；缺少必需交易日时继续尝试下一数据源。
     可用环境变量按需禁用数据源：
     - DATA_SOURCE_DISABLE_YFINANCE=1
     - DATA_SOURCE_DISABLE_TICKFLOW=1
+    - DATA_SOURCE_DISABLE_TENCENT=1
     - DATA_SOURCE_DISABLE_AKSHARE=1
     - DATA_SOURCE_DISABLE_BAOSTOCK=1
     - DATA_SOURCE_DISABLE_EFINANCE=1
@@ -1214,6 +1216,21 @@ def fetch_stock_hist(
             _debug_source_fail("sina(bse)", exc)
             failed_sources.append("sina_bse")
             failed_details.append(f"sina_bse={_compact_error(exc)}")
+
+    # 腾讯原始日线配合新浪比例因子，不把腾讯等差复权混入现有历史。
+    if os.getenv("DATA_SOURCE_DISABLE_TENCENT", "").strip().lower() in {"1", "true", "yes", "on"}:
+        failed_sources.append("tencent(disabled)")
+        failed_details.append("tencent=disabled_by_env")
+    elif str(symbol).startswith(("4", "8", "92")):
+        failed_sources.append("tencent(unsupported_bse)")
+        failed_details.append("tencent=unsupported_bse")
+    else:
+        try:
+            return checked(_fetch_stock_tencent(symbol, start_s, end_s, adjust), "tencent")
+        except Exception as exc:
+            _debug_source_fail("tencent", exc)
+            failed_sources.append("tencent")
+            failed_details.append(f"tencent={_compact_error(exc)}")
 
     # 3. akshare
     if disable_akshare:

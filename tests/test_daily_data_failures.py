@@ -24,7 +24,7 @@ def test_boundary_incomplete_stock_history_continues_fallback(monkeypatch: pytes
         bad.loc[bad.index[-1], "开盘"] = float("nan")
     for source in ("YFINANCE", "TICKFLOW"):
         monkeypatch.delenv(f"DATA_SOURCE_DISABLE_{source}", raising=False)
-    for source in ("AKSHARE", "BAOSTOCK", "EFINANCE"):
+    for source in ("TENCENT", "AKSHARE", "BAOSTOCK", "EFINANCE"):
         monkeypatch.setenv(f"DATA_SOURCE_DISABLE_{source}", "1")
     monkeypatch.setenv("TICKFLOW_API_KEY", "test-key")
     monkeypatch.setattr(ds, "_fetch_stock_yfinance", lambda *args: bad)
