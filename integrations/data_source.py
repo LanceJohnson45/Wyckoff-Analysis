@@ -19,6 +19,10 @@ import json
 import os
 import re
 import socket
+import sys
+from collections.abc import Callable
+from uuid import uuid4
+from zoneinfo import ZoneInfo
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
@@ -29,6 +33,7 @@ from typing import Any, Literal
 from http.client import RemoteDisconnected
 
 import pandas as pd
+import structlog
 
 from integrations.market_data_policy import BeforeListingRange, yahoo_first_trade_date
 from integrations.tencent_daily import fetch_tencent_daily as _fetch_stock_tencent
@@ -1063,18 +1068,69 @@ def fetch_stock_hist(
         end.strftime("%Y%m%d") if isinstance(end, date) else str(end).replace("-", "")
     )
 
+    request_id = uuid4().hex
+    request_started = time.monotonic()
+    attempt_number = 0
+
+    def trace(event: str, **fields: Any) -> None:
+        if _DATA_SOURCE_DEBUG:
+            logger = structlog.wrap_logger(
+                structlog.PrintLogger(file=sys.stdout),
+                processors=[structlog.processors.JSONRenderer(ensure_ascii=False)],
+            )
+            logger.info(
+                event, request_id=request_id, process_id=os.getpid(), market=market_norm, symbol=symbol,
+                start=start_s, end=end_s, adjust=adjust,
+                timestamp=datetime.now(ZoneInfo("Asia/Shanghai")).isoformat(), **fields,
+            )
+
+    def fetch(source: str, function: Callable[..., pd.DataFrame], *args: Any, **kwargs: Any) -> pd.DataFrame:
+        nonlocal attempt_number
+        attempt_number += 1
+        started = time.monotonic()
+        trace("data_source_attempt", source=source, attempt=attempt_number)
+        try:
+            frame = function(*args, **kwargs)
+        except Exception as exc:
+            # 不输出上游异常原文，避免请求 URL/鉴权信息进入 Actions 日志。
+            text = str(exc).lower()
+            reason = (
+                "missing_required_dates" if "missing required trading dates" in text
+                else "empty_data" if "empty" in text or "no data" in text
+                else "timeout" if isinstance(exc, TimeoutError) or "timeout" in text
+                else "rate_limited" if "429" in text or "too many requests" in text
+                else "provider_error"
+            )
+            trace("data_source_failure", source=source, attempt=attempt_number,
+                  error_type=type(exc).__name__, reason=reason,
+                  elapsed_ms=round((time.monotonic() - started) * 1000, 2))
+            raise
+        trace("data_source_returned", source=source, attempt=attempt_number,
+              rows=0 if frame is None else len(frame.index),
+              elapsed_ms=round((time.monotonic() - started) * 1000, 2))
+        return frame
+
     def checked(frame: pd.DataFrame, source: str) -> pd.DataFrame:
         if required_dates:
             columns = ["开盘", "最高", "最低", "收盘", "成交量"]
             if frame is None or frame.empty or not {"日期", *columns}.issubset(frame.columns):
+                trace("data_source_rejected", source=source, reason="empty_or_invalid_schema")
                 raise RuntimeError("missing required trading dates: empty or invalid schema")
             numeric = frame[columns].apply(pd.to_numeric, errors="coerce")
             valid = numeric.notna().all(axis=1) & numeric["成交量"].ge(0)
             present = set(pd.to_datetime(frame.loc[valid, "日期"], errors="coerce").dt.date)
             missing = sorted(set(required_dates) - present)
             if missing:
+                trace("data_source_rejected", source=source, reason="missing_required_dates", missing_count=len(missing), missing_dates=[str(day) for day in missing[:5]])
                 raise RuntimeError(f"missing required trading dates: {','.join(str(day) for day in missing[:5])}")
+        trace("data_source_selected", source=source, rows=0 if frame is None else len(frame.index), attempts=attempt_number, elapsed_ms=round((time.monotonic() - request_started) * 1000, 2))
         return _tag_source(frame, source)
+
+    if _DATA_SOURCE_DEBUG:
+        trace("data_source_request", required_date_count=len(required_dates or []),
+              tickflow_configured=bool(os.getenv("TICKFLOW_API_KEY") or os.getenv("TIKFLOW_API_KEY")),
+              disabled_sources=[name.lower() for name in ("YFINANCE", "TICKFLOW", "TENCENT", "AKSHARE", "BAOSTOCK", "EFINANCE")
+                                if os.getenv(f"DATA_SOURCE_DISABLE_{name}", "").strip().lower() in {"1", "true", "yes", "on"}])
 
     if market_norm in {"us", "hk"}:
         failed_sources: list[str] = []
@@ -1086,7 +1142,7 @@ def fetch_stock_hist(
             "on",
         }
         try:
-            yf_frame = _fetch_stock_yfinance(symbol, start_s, end_s)
+            yf_frame = fetch("yfinance", _fetch_stock_yfinance, symbol, start_s, end_s)
             if not _has_valid_ohlc(yf_frame):
                 raise RuntimeError("yfinance returned no valid OHLC rows")
             return checked(yf_frame, "yfinance")
@@ -1109,7 +1165,7 @@ def fetch_stock_hist(
         else:
             try:
                 return checked(
-                    _fetch_stock_tickflow_global(
+                    fetch("tickflow", _fetch_stock_tickflow_global,
                         symbol,
                         start_s,
                         end_s,
@@ -1178,7 +1234,7 @@ def fetch_stock_hist(
         else:
             try:
                 return checked(
-                    _fetch_stock_yfinance(yf_symbol, start_s, end_s), "yfinance"
+                    fetch("yfinance", _fetch_stock_yfinance, yf_symbol, start_s, end_s), "yfinance"
                 )
             except BeforeListingRange:
                 raise
@@ -1190,7 +1246,7 @@ def fetch_stock_hist(
     # 北交所先用新浪日线；失败再进入TickFlow限频队列，避免全池日更被串行化。
     if not disable_akshare and str(symbol).startswith(("4", "8", "92")):
         try:
-            return checked(_fetch_stock_sina_bse(symbol, start_s, end_s, adjust), "sina_bse")
+            return checked(fetch("sina_bse", _fetch_stock_sina_bse, symbol, start_s, end_s, adjust), "sina_bse")
         except Exception as exc:
             _debug_source_fail("sina(bse)", exc)
             failed_sources.append("sina_bse")
@@ -1209,7 +1265,7 @@ def fetch_stock_hist(
     else:
         try:
             return checked(
-                _fetch_stock_tickflow(symbol, start_s, end_s, adjust),
+                fetch("tickflow", _fetch_stock_tickflow, symbol, start_s, end_s, adjust),
                 "tickflow",
             )
         except Exception as e:
@@ -1226,7 +1282,7 @@ def fetch_stock_hist(
         failed_details.append("tencent=unsupported_bse")
     else:
         try:
-            return checked(_fetch_stock_tencent(symbol, start_s, end_s, adjust), "tencent")
+            return checked(fetch("tencent", _fetch_stock_tencent, symbol, start_s, end_s, adjust), "tencent")
         except Exception as exc:
             _debug_source_fail("tencent", exc)
             failed_sources.append("tencent")
@@ -1241,7 +1297,7 @@ def fetch_stock_hist(
         for attempt in range(1, _AKSHARE_RETRY_TIMES + 1):
             try:
                 return checked(
-                    _fetch_stock_akshare(symbol, start_s, end_s, adjust), "akshare"
+                    fetch("akshare", _fetch_stock_akshare, symbol, start_s, end_s, adjust), "akshare"
                 )
             except ModuleNotFoundError as e:
                 _debug_source_fail("akshare", e)
@@ -1275,7 +1331,7 @@ def fetch_stock_hist(
     else:
         started = time.monotonic()
         try:
-            df = _fetch_stock_baostock(symbol, start_s, end_s)
+            df = fetch("baostock", _fetch_stock_baostock, symbol, start_s, end_s)
             elapsed = time.monotonic() - started
             if _BAOSTOCK_MAX_SECONDS > 0 and elapsed > _BAOSTOCK_MAX_SECONDS:
                 raise TimeoutError(
@@ -1305,7 +1361,7 @@ def fetch_stock_hist(
     else:
         try:
             return checked(
-                _fetch_stock_efinance(symbol, start_s, end_s), "efinance"
+                fetch("efinance", _fetch_stock_efinance, symbol, start_s, end_s), "efinance"
             )
         except ModuleNotFoundError as e:
             _debug_source_fail("efinance", e)

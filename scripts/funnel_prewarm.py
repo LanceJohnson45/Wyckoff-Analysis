@@ -466,7 +466,9 @@ def _prefetch_one(
         try:
             # 冷启动且上市日期未知时先发现元数据；明确边界后才强制完整交易日覆盖。
             coverage = {"required_dates": [d for d in effective_expected_dates if gap_start <= d <= gap_end]} if listing_date or cached_dates else {}
+            fetch_started = time.monotonic()
             frame = fetch_stock_hist(symbol=symbol, start=gap_start, end=gap_end, adjust="qfq", market=market, **coverage)
+            _log(f"prewarm fetched market={market} symbol={symbol} source={frame.attrs.get('source', 'unknown')} start={gap_start} end={gap_end} rows={len(frame.index)} elapsed_seconds={time.monotonic() - fetch_started:.3f}")
             if not known_listing_date and frame.attrs.get("listing_date"):
                 listing_date = date.fromisoformat(frame.attrs["listing_date"])
             norm = normalize_hist_df(frame)
@@ -516,7 +518,10 @@ def _configure_prewarm_worker(connection: Connection) -> None:
         if interval > 0:
             connection.send(("rate_limit", interval))
             reserved = connection.recv()
-            Event().wait(max(reserved - time.monotonic(), 0))
+            wait_seconds = max(reserved - time.monotonic(), 0)
+            if data_source._DATA_SOURCE_DEBUG:
+                _log(f"prewarm rate_limit process_id={os.getpid()} source=tickflow wait_seconds={wait_seconds:.3f} interval_seconds={interval}")
+            Event().wait(wait_seconds)
 
     data_source._wait_tickflow_daily_slot = wait_tickflow_slot
 
