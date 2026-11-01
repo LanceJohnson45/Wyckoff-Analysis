@@ -269,3 +269,31 @@ def test_boundary_baostock_empty_does_not_open_network_circuit(monkeypatch: pyte
 
     assert ds._BAOSTOCK_CONSEC_FAILS == 0
     assert not ds._BAOSTOCK_CIRCUIT_OPEN
+
+
+def test_normal_diagnostic_logs_explain_coverage_fallback(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    """【正常值】记录覆盖不足的回退原因、命中源及同一请求的耗时。"""
+    import json
+    from datetime import date
+
+    _disable_other_fallbacks(monkeypatch)
+    monkeypatch.setattr(ds, "_DATA_SOURCE_DEBUG", True)
+    monkeypatch.setenv("TICKFLOW_API_KEY", "dummy")
+    monkeypatch.setattr(ds, "_fetch_stock_yfinance", lambda *args: _sample_cn_hist())
+    valid = _sample_cn_hist()
+    valid.loc[0, "日期"] = "2026-04-17"
+    monkeypatch.setattr(ds, "_fetch_stock_tickflow", lambda *args: valid)
+
+    out = ds.fetch_stock_hist("600519", "2026-04-17", "2026-04-18", required_dates=[date(2026, 4, 17)])
+    logs = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
+
+    assert out.attrs["source"] == "tickflow"
+    rejected = next(row for row in logs if row["event"] == "data_source_rejected")
+    assert rejected["source"] == "yfinance"
+    assert rejected["missing_dates"] == ["2026-04-17"]
+    selected = next(row for row in logs if row["event"] == "data_source_selected")
+    assert selected["source"] == "tickflow"
+    assert selected["attempts"] == 2
+    assert selected["elapsed_ms"] >= 0
+    assert len({row["request_id"] for row in logs}) == 1
+    assert all(row["symbol"] == "600519" for row in logs)

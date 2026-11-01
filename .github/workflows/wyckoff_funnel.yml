@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 90
     env:
       PYTHONUNBUFFERED: "1"
+      DATA_SOURCE_DEBUG: "1"
       TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
       TIKFLOW_API_KEY: ${{ secrets.TIKFLOW_API_KEY }}
       TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
@@ -51,7 +52,17 @@ jobs:
           uv sync --frozen --no-dev
           echo "::endgroup::"
 
+      - name: Check target trading day
+        id: schedule
+        timeout-minutes: 3
+        run: |
+          mkdir -p logs
+          set -o pipefail
+          uv run --frozen --no-dev python -m scripts.market_data_schedule --market cn \
+            2>&1 | tee logs/market_data_schedule.log
+
       - name: Verify PostgreSQL target
+        if: steps.schedule.outputs.should_run == 'true'
         run: |
           uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
 
@@ -59,6 +70,7 @@ jobs:
         run: mkdir -p logs
 
       - name: Restore prewarm state
+        if: steps.schedule.outputs.should_run == 'true'
         uses: actions/cache/restore@v4
         with:
           path: |
@@ -69,12 +81,13 @@ jobs:
             funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
 
       - name: Fetch daily market data
+        if: steps.schedule.outputs.should_run == 'true'
         timeout-minutes: 75
         run: |
           echo "::group::Prewarm cache (CN)"
           set -o pipefail
           set +e
-          timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
+          timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --end-date "${{ steps.schedule.outputs.target_date }}" --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
             --symbol-timeout-seconds 60 \
             --dispatch-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 10) * 60 ))" \
             --run-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 5) * 60 ))" \
@@ -90,7 +103,7 @@ jobs:
           exit "${prewarm_status}"
 
       - name: Refresh analysis benchmark daily bars
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.schedule.outputs.should_run == 'true' }}
         timeout-minutes: 5
         run: |
           set -o pipefail
@@ -98,7 +111,7 @@ jobs:
             2>&1 | tee logs/benchmark_cn.console.log
 
       - name: Save prewarm state
-        if: always()
+        if: ${{ always() && steps.schedule.outputs.should_run == 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
@@ -120,7 +133,7 @@ jobs:
 
       - name: Notify daily data result
         id: notify_data
-        if: ${{ always() && !cancelled() }}
+        if: ${{ always() && !cancelled() && steps.schedule.outputs.should_run == 'true' }}
         env:
           DATA_REPORT_WEBHOOK_URL: ${{ secrets.DATA_REPORT_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
