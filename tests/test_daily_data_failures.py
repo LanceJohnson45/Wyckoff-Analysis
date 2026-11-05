@@ -210,3 +210,26 @@ def test_bse_incomplete_free_daily_still_uses_tickflow(monkeypatch: pytest.Monke
     result = ds.fetch_stock_hist("920002", "20261015", "20261016", required_dates=[date(2026,10,15),date(2026,10,16)])
     assert result.attrs["source"] == "tickflow"
     assert set(pd.to_datetime(result["日期"]).dt.date) == {date(2026,10,15),date(2026,10,16)}
+
+
+def test_normal_benchmark_uses_frozen_batch_target(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】所有批次跨日完成后，指数仍请求计划目标日而非新的当天。"""
+    from integrations.fetch_a_share_csv import TradingWindow
+    from scripts import refresh_market_benchmarks as benchmark
+
+    target = date(2026, 10, 16)
+    requested = []
+
+    def fetch(symbol: str, start: date, end: date, **kwargs: object) -> pd.DataFrame:
+        requested.append((end, kwargs["required_end"]))
+        return _frame()
+
+    monkeypatch.setattr(benchmark, "fetch_index_hist", fetch)
+    monkeypatch.setattr(benchmark, "resolve_end_calendar_day_for_market", lambda market: pytest.fail("有冻结目标日不能再读取当前日"))
+    monkeypatch.setattr(benchmark, "_resolve_trading_window", lambda end, days: TradingWindow(end, end))
+    monkeypatch.setattr(benchmark, "upsert_cache_data", lambda *args, **kwargs: True)
+
+    rows = benchmark.refresh_benchmark("cn", end_date=target)
+
+    assert rows == len(_frame())
+    assert requested == [(target, target)]

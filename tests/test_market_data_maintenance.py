@@ -614,3 +614,92 @@ def test_manual_excluded_boards_do_not_fetch_even_when_forced(maintenance: dict,
     coverage=pd.read_csv(maintenance['path']/'prewarm_cn_2026-10-15_coverage.csv',dtype=str)
     assert len(coverage)==4
     assert set(coverage['status'])=={'excluded'}
+
+
+def test_normal_batches_freeze_pool_date_and_keep_independent_resume(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】真实主入口分批不漏不重，跨日仍按冻结日，重跑首批复用自己的检查点。"""
+    from scripts.market_data_batches import create_plan
+
+    symbols = ["000002", "600000", "600004"]
+    target = maintenance["dates"][-1]
+    plan = create_plan([{"code": code, "name": code} for code in symbols],
+                       target_date=target, window_start=maintenance["dates"][0],
+                       trade_dates=maintenance["dates"], trading_days=320, batch_size=2)
+    plan_path = maintenance["path"] / "plan.json"
+    plan_path.write_text(json.dumps(plan))
+    monkeypatch.setattr(prewarm, "_job_end_calendar_day", lambda: target + timedelta(days=1))
+    monkeypatch.setattr(prewarm, "_load_cn_universe", lambda: pytest.fail("冻结计划不得重取名单"))
+    monkeypatch.setattr(prewarm, "_resolve_trading_window", lambda **kwargs: pytest.fail("冻结计划不得重算窗口"))
+
+    for batch_id in [0, 1, 0]:
+        folder = maintenance["path"] / f"batch-{batch_id}"
+        monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--batch-plan", str(plan_path), "--batch-id", str(batch_id), "--review-dir", str(folder)])
+        assert prewarm.main() == 0
+        summary = json.loads((folder / f"prewarm_cn_{target}_summary.json").read_text())
+        assert summary["target_date"] == str(target)
+        metadata = json.loads((folder / "batch_metadata.json").read_text())
+        assert metadata == {"batch_id": batch_id, "plan_id": plan["plan_id"]}
+
+    assert sorted(code for code, _, _ in maintenance["requests"]) == symbols
+    first = json.loads((maintenance["path"] / "batch-0" / f"prewarm_cn_{target}_summary.json").read_text())
+    assert first["counts"] == {"manifest_cached": 2}
+    assert (maintenance["path"] / "state.batch-0.json").exists()
+    assert (maintenance["path"] / "state.batch-1.json").exists()
+
+
+def test_normal_failed_batch_resume_preserves_other_batch_results(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】首批部分失败不阻断后批，只重跑失败批后全池汇总真实完成。"""
+    from scripts.market_data_batches import create_plan, merge_batches
+
+    target = maintenance["dates"][-1]
+    plan = create_plan([{"code": code} for code in ["000002", "600000", "600004"]],
+                       target_date=target, window_start=maintenance["dates"][0], trade_dates=maintenance["dates"],
+                       trading_days=320, batch_size=2)
+    plan_path = maintenance["path"] / "plan.json"
+    plan_path.write_text(json.dumps(plan))
+
+    def fetch(**kwargs: object) -> pd.DataFrame:
+        if kwargs["symbol"] == "600000":
+            raise TimeoutError("fixture provider timeout")
+        return maintenance["fetch"](**kwargs)
+
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", fetch)
+    for batch_id, expected in [(0, 2), (1, 0)]:
+        monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--batch-plan", str(plan_path), "--batch-id", str(batch_id), "--review-dir", str(maintenance["path"] / f"cn-daily-batch-{batch_id}")])
+        assert prewarm.main() == expected
+    incomplete = merge_batches(plan, maintenance["path"], maintenance["path"] / "aggregate")
+    assert incomplete["status"] == "partial"
+    assert incomplete["counts"]["failed"] == 1
+    second_before = (maintenance["path"] / f"cn-daily-batch-1/prewarm_cn_{target}_coverage.csv").read_bytes()
+
+    monkeypatch.setattr(prewarm, "fetch_stock_hist", maintenance["fetch"])
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--batch-plan", str(plan_path), "--batch-id", "0", "--review-dir", str(maintenance["path"] / "cn-daily-batch-0")])
+    assert prewarm.main() == 0
+    complete = merge_batches(plan, maintenance["path"], maintenance["path"] / "aggregate")
+
+    assert complete["status"] == "ok"
+    assert complete["total"] == 3
+    assert complete["counts"] == {"manifest_cached": 1, "gap_repaired": 2}
+    assert (maintenance["path"] / f"cn-daily-batch-1/prewarm_cn_{target}_coverage.csv").read_bytes() == second_before
+
+
+def test_normal_batch_plan_cli_emits_frozen_matrix(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】计划CLI实际落盘证券快照、交易窗口和供Actions消费的矩阵。"""
+    from scripts import market_data_batches as batches, prewarm_workers
+
+    target = maintenance["dates"][-1]
+    output = maintenance["path"] / "github-output"
+    plan_file = maintenance["path"] / "plan.json"
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output))
+    monkeypatch.setattr(prewarm_workers, "bounded_call", lambda function, *args, timeout, **kwargs: function(*args, **kwargs))
+    monkeypatch.setattr(prewarm, "_load_cn_universe", lambda: ([{"code": "600000"}, {"code": "000002"}], []))
+    monkeypatch.setattr("sys.argv", ["batches", "plan", "--target-date", str(target), "--batch-size", "1", "--output", str(plan_file)])
+
+    assert batches.main() == 0
+    plan = batches.load_plan(plan_file)
+
+    assert plan["target_date"] == str(target)
+    assert plan["trade_dates"][-1] == str(target)
+    assert plan["batches"][0]["securities"][0]["code"] == "000002"
+    assert 'matrix={"batch_id": [0, 1]}' in output.read_text()
+    assert f"target_date={target}" in output.read_text()

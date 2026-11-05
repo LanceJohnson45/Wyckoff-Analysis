@@ -49,7 +49,7 @@ def build_notice(directory: Path, market: str, run_status: str, run_url: str) ->
         lines = [f"目标交易日：{target}", f"任务结果：{label}", f"股票总数：{total}"]
         lines.extend(f"{_STATUS_LABELS.get(key, key)}：{value}" for key, value in sorted(counts.items()))
         if summary.get("universe_warning"):
-            lines.append("证券名单存在警告，详情见运行产物。")
+            lines.append("覆盖核验存在警告，详情见运行产物。")
     else:
         target = "目标日未生成"
         label = "❌ 未取得更新摘要"

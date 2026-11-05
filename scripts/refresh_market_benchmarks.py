@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import timedelta
+from datetime import date, timedelta
 import json
 from pathlib import Path
 import sys
@@ -23,12 +23,12 @@ from integrations.market_data_sync import BENCHMARK_SYMBOLS
 from utils.trading_clock import resolve_end_calendar_day_for_market
 
 
-def refresh_benchmark(market: str, *, calendar_days: int = 550) -> int:
+def refresh_benchmark(market: str, *, calendar_days: int = 550, end_date: date | None = None) -> int:
     """覆盖重取小规模基准历史，保留既有数据源的调整口径。"""
     if market not in BENCHMARK_SYMBOLS or calendar_days < 200:
         raise ValueError("市场必须为 cn/us，历史窗口至少200个自然日")
     symbol = BENCHMARK_SYMBOLS[market]
-    end = resolve_end_calendar_day_for_market(market)
+    end = end_date or resolve_end_calendar_day_for_market(market)
     required_end = _resolve_trading_window(end, 1).end_trade_date if market == "cn" else None
     frame = normalize_hist_df(fetch_index_hist(symbol, end - timedelta(days=calendar_days), end, market=market, min_rows=100, required_end=required_end))
     report = check_kline_quality(frame)
@@ -43,8 +43,9 @@ def main() -> int:
     """数据任务入口，不执行任何形态或交易策略。"""
     parser = argparse.ArgumentParser(description="更新本机分析使用的云端基准日线")
     parser.add_argument("--market", required=True, choices=["cn", "us"])
+    parser.add_argument("--end-date", type=date.fromisoformat, help="固定为本轮批次计划的目标日")
     args = parser.parse_args()
-    rows = refresh_benchmark(args.market)
+    rows = refresh_benchmark(args.market, end_date=args.end_date)
     sys.stdout.write(json.dumps({"market": args.market, "benchmark_rows": rows}, ensure_ascii=False) + "\n")
     return 0
 
