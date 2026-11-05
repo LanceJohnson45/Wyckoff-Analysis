@@ -601,7 +601,10 @@ def _main() -> int:
     if plan:
         items = plan["batches"][args.batch_id]["securities"]
         symbols = [item["code"] for item in items]
-        stats = {"pool_mode": plan["pool_mode"], "names": {item["code"]: item["name"] for item in items}, "universe_warning": plan["universe_warning"]}
+        # 本批只承诺冻结名单中的股票；全市场名单风险由merge读取原计划统一判定。
+        stats = {"pool_mode": plan["pool_mode"], "names": {item["code"]: item["name"] for item in items}, "universe_warning": ""}
+        if plan["universe_warning"]:
+            _log(f"prewarm batch global_warning_reported_by_aggregate: {plan['universe_warning']}")
         _log(f"prewarm batch id={args.batch_id} plan_id={plan['plan_id']} target_date={end_day} symbols={len(symbols)} batches={len(plan['batches'])}")
     elif args.symbols.strip():
         symbols = _parse_manual_symbols(args.symbols)

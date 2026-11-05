@@ -297,3 +297,19 @@ def test_normal_diagnostic_logs_explain_coverage_fallback(monkeypatch: pytest.Mo
     assert selected["elapsed_ms"] >= 0
     assert len({row["request_id"] for row in logs}) == 1
     assert all(row["symbol"] == "600519" for row in logs)
+
+
+def test_normal_efinance_locked_package_reaches_public_history(monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】实际安装包可导入并到达公开行情接口，不依赖已删除的私有模块。"""
+    import efinance as ef
+    import efinance.config as config
+
+    monkeypatch.setattr(config, "DATA_DIR", config.DATA_DIR)
+    monkeypatch.setattr(config, "SEARCH_RESULT_CACHE_PATH", config.SEARCH_RESULT_CACHE_PATH)
+    monkeypatch.setattr(ef.stock, "get_quote_history", lambda *args, **kwargs: _sample_cn_hist())
+
+    frame = ds._fetch_stock_efinance("600519", "20260410", "20260418")
+
+    assert len(frame) == 1
+    assert frame.iloc[0]["日期"] == "2026-04-18"
+    assert frame.iloc[0]["收盘"] == 10.3
