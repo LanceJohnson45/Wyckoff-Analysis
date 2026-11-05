@@ -8,6 +8,7 @@ import os
 import sys
 import time
 from contextlib import closing
+from contextvars import ContextVar
 from datetime import date, timedelta
 from datetime import datetime
 from functools import lru_cache
@@ -48,6 +49,7 @@ from integrations.market_data_policy import BeforeListingRange, exclusion_applie
 from integrations.market_data_review import review_reason, write_review
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached, get_all_stocks, TradingWindow
 from scripts.prewarm_workers import PrewarmBudgetExpired, bounded_call, iter_bounded_jobs
+from scripts.market_data_batches import load_plan
 from scripts.wyckoff_funnel import (
     HK_MAIN_BENCH_CODE,
     HK_SMALLCAP_BENCH_CODE,
@@ -83,6 +85,9 @@ _PREWARM_CHECKPOINT_EVERY = max(
 )
 
 
+_PREWARM_BATCH_ID: ContextVar[int | None] = ContextVar("prewarm_batch_id", default=None)
+
+
 @lru_cache(maxsize=1)
 def _policy_digest() -> str:
     """审核规则变化后，旧检查点必须重新核验。"""
@@ -104,26 +109,35 @@ def _cache_symbol_for_market(symbol: str, market: str) -> str:
     return symbol
 
 
+def _prewarm_state_path() -> Path:
+    """批次使用独立检查点，避免保存时剪掉其他批次的ready记录。"""
+    batch_id = _PREWARM_BATCH_ID.get()
+    if batch_id is None:
+        return _PREWARM_RUN_STATE_PATH
+    return _PREWARM_RUN_STATE_PATH.with_name(
+        f"{_PREWARM_RUN_STATE_PATH.stem}.batch-{batch_id}{_PREWARM_RUN_STATE_PATH.suffix}"
+    )
+
+
 def _load_prewarm_run_state() -> dict:
     try:
-        if not _PREWARM_RUN_STATE_PATH.exists():
+        if not _prewarm_state_path().exists():
             return {}
-        return json.loads(_PREWARM_RUN_STATE_PATH.read_text(encoding="utf-8"))
+        return json.loads(_prewarm_state_path().read_text(encoding="utf-8"))
     except Exception:
         return {}
 
 
 def _save_prewarm_run_state(payload: dict) -> None:
     try:
-        _PREWARM_RUN_STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
-        temp_path = _PREWARM_RUN_STATE_PATH.with_suffix(
-            f"{_PREWARM_RUN_STATE_PATH.suffix}.tmp"
-        )
+        state_path = _prewarm_state_path()
+        state_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = state_path.with_suffix(f"{state_path.suffix}.tmp")
         temp_path.write_text(
             json.dumps(payload, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
-        temp_path.replace(_PREWARM_RUN_STATE_PATH)
+        temp_path.replace(state_path)
     except Exception as e:
         _log(f"prewarm state save failed: {type(e).__name__}: {e}")
 
@@ -229,7 +243,8 @@ def _symbol_manifest_record_is_ready(
         return False
     if int(record.get("trading_days") or 0) != int(trading_days):
         return False
-    if int(record.get("recent_gap_max_age_days") or -1) != int(_RECENT_GAP_MAX_AGE_DAYS):
+    record_age = record.get("recent_gap_max_age_days")
+    if type(record_age) is not int or record_age != _RECENT_GAP_MAX_AGE_DAYS:
         return False
     return True
 
@@ -527,6 +542,15 @@ def _configure_prewarm_worker(connection: Connection) -> None:
 
 
 def main() -> int:
+    """单次CLI调用结束后重置批次上下文，兼容同进程连续调用。"""
+    token = _PREWARM_BATCH_ID.set(None)
+    try:
+        return _main()
+    finally:
+        _PREWARM_BATCH_ID.reset(token)
+
+
+def _main() -> int:
     """限时维护日线并保存成功、失败及未派发的审核记录。"""
     outer_seconds = float(os.getenv("FUNNEL_PREWARM_TIMEOUT_MINUTES", "70")) * 60
     default_run_budget = max(outer_seconds - 300, 1)
@@ -534,6 +558,8 @@ def main() -> int:
     parser.add_argument("--market", choices=["cn", "us", "hk"], default=None)
     parser.add_argument("--trading-days", type=int, default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30))
     parser.add_argument("--max-workers", type=int, default=max(int(os.getenv("FUNNEL_PREWARM_MAX_WORKERS", "8")), 1))
+    parser.add_argument("--batch-plan", type=Path, help="冻结的CN批次计划，替代实时名单与交易窗口")
+    parser.add_argument("--batch-id", type=int, help="计划中的批次编号（从0开始）")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
     parser.add_argument("--dry-run", action="store_true", help="Only inspect cache gaps; do not fetch or write")
@@ -557,8 +583,27 @@ def main() -> int:
     if args.market:
         os.environ["FUNNEL_MARKET"] = args.market
     market = _resolve_funnel_market()
-    end_day = args.end_date or _job_end_calendar_day()
-    if args.symbols.strip():
+    plan = None
+    if args.batch_id is not None and args.batch_plan is None:
+        parser.error("--batch-id必须与--batch-plan一起使用")
+    if args.batch_plan is not None:
+        if market != "cn" or args.symbols.strip() or args.limit:
+            parser.error("批次计划仅支持CN，不能同时指定--symbols或--limit")
+        plan = load_plan(args.batch_plan)
+        if args.batch_id is None or not 0 <= args.batch_id < len(plan["batches"]):
+            parser.error("--batch-id不在计划范围内")
+        if args.trading_days != plan["trading_days"] or (args.end_date and str(args.end_date) != plan["target_date"]):
+            parser.error("交易窗口或目标日与批次计划不一致")
+        _PREWARM_BATCH_ID.set(args.batch_id)
+        args.review_dir.mkdir(parents=True, exist_ok=True)
+        (args.review_dir / "batch_metadata.json").write_text(json.dumps({"plan_id": plan["plan_id"], "batch_id": args.batch_id}), encoding="utf-8")
+    end_day = date.fromisoformat(plan["target_date"]) if plan else args.end_date or _job_end_calendar_day()
+    if plan:
+        items = plan["batches"][args.batch_id]["securities"]
+        symbols = [item["code"] for item in items]
+        stats = {"pool_mode": plan["pool_mode"], "names": {item["code"]: item["name"] for item in items}, "universe_warning": plan["universe_warning"]}
+        _log(f"prewarm batch id={args.batch_id} plan_id={plan['plan_id']} target_date={end_day} symbols={len(symbols)} batches={len(plan['batches'])}")
+    elif args.symbols.strip():
         symbols = _parse_manual_symbols(args.symbols)
         stats = {"pool_mode": "cli_symbols"}
     elif market == "cn" and args.universe == "all":
@@ -587,8 +632,12 @@ def main() -> int:
         _log(f"prewarm skipped market={market} reason=empty_symbol_pool mode={stats.get('pool_mode')}")
         return 1
 
-    run_window = bounded_call(_resolve_us_window if market in {"us", "hk"} else _resolve_trading_window, end_calendar_day=end_day, trading_days=max(int(args.trading_days), 1), timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
-    run_dates = bounded_call(_expected_trade_dates, run_window, market, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
+    if plan:
+        run_window = TradingWindow(date.fromisoformat(plan["window_start"]), end_day)
+        run_dates = [date.fromisoformat(day) for day in plan["trade_dates"]]
+    else:
+        run_window = bounded_call(_resolve_us_window if market in {"us", "hk"} else _resolve_trading_window, end_calendar_day=end_day, trading_days=max(int(args.trading_days), 1), timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
+        run_dates = bounded_call(_expected_trade_dates, run_window, market, timeout=min(180, max(run_deadline - time.monotonic(), 0.01)))
     end_day = run_window.end_trade_date
     records = {sym: {"market": market, "symbol": sym, "name": stats.get("names", {}).get(sym, ""), "status": "pending", "target_date": str(end_day)} for sym in normalized}
     for record in board_records.values():

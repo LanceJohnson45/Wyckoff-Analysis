@@ -2,56 +2,56 @@ name: CN Daily Market Data
 
 on:
   schedule:
-    # 北京 18:00（UTC 10:00），A股收盘后，工作日周一至周五
+    # 北京18:00；交易日检查使用已收盘行情目标日。
     - cron: "0 10 * * 1-5"
   workflow_dispatch:
 
+# 整轮串行，后来的定时运行排队，不能取消尚未完成的批次。
 concurrency:
   group: daily-job-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+env:
+  PYTHONUNBUFFERED: "1"
+  DATA_SOURCE_DEBUG: "1"
+  TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
+  TIKFLOW_API_KEY: ${{ secrets.TIKFLOW_API_KEY }}
+  TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+  PG_ENABLED: "1"
+  PG_HOST: ${{ secrets.PG_HOST }}
+  PG_PORT: ${{ secrets.PG_PORT }}
+  PG_DATABASE: ${{ secrets.PG_DATABASE }}
+  PG_USER: ${{ secrets.PG_USER }}
+  PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+  PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+  PG_DSN: ${{ secrets.PG_DSN }}
+  FUNNEL_PREWARM_DAYS: "320"
+  # 60分钟停止派发、65分钟结束预热；70分钟仅作最后保护。
+  FUNNEL_PREWARM_TIMEOUT_MINUTES: "70"
+  TZ: Asia/Shanghai
 
 jobs:
-  run:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      PYTHONUNBUFFERED: "1"
-      DATA_SOURCE_DEBUG: "1"
-      TICKFLOW_API_KEY: ${{ secrets.TICKFLOW_API_KEY }}
-      TIKFLOW_API_KEY: ${{ secrets.TIKFLOW_API_KEY }}
-      TUSHARE_TOKEN: ${{ secrets.TUSHARE_TOKEN }}
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      PG_ENABLED: "1"
-      PG_HOST: ${{ secrets.PG_HOST }}
-      PG_PORT: ${{ secrets.PG_PORT }}
-      PG_DATABASE: ${{ secrets.PG_DATABASE }}
-      PG_USER: ${{ secrets.PG_USER }}
-      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
-      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
-      PG_DSN: ${{ secrets.PG_DSN }}
-      FUNNEL_PREWARM_DAYS: "320"
-      # 60分钟停止派发、65分钟结束预热；70分钟仅作最后保护。
-      FUNNEL_PREWARM_TIMEOUT_MINUTES: "70"
-      TZ: Asia/Shanghai
-
+    timeout-minutes: 15
+    outputs:
+      should_run: ${{ steps.schedule.outputs.should_run }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      target_date: ${{ steps.plan.outputs.target_date }}
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
-
       - name: Install dependencies
         run: |
-          echo "::group::Install packages"
           python -m pip install uv==0.12.5
           uv sync --frozen --no-dev
-          echo "::endgroup::"
-
       - name: Check target trading day
         id: schedule
         timeout-minutes: 3
@@ -60,90 +60,175 @@ jobs:
           set -o pipefail
           uv run --frozen --no-dev python -m scripts.market_data_schedule --market cn \
             2>&1 | tee logs/market_data_schedule.log
-
-      - name: Verify PostgreSQL target
+      - name: Freeze universe and batch plan
+        id: plan
         if: steps.schedule.outputs.should_run == 'true'
+        timeout-minutes: 10
+        env:
+          TARGET_DATE: ${{ steps.schedule.outputs.target_date }}
         run: |
-          uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，请配置同一本机同步使用的数据库；不会回退到Supabase')"
+          set -o pipefail
+          uv run --frozen --no-dev python -m scripts.market_data_batches plan \
+            --target-date "$TARGET_DATE" --trading-days "$FUNNEL_PREWARM_DAYS" \
+            --batch-size 400 --output logs/cn_daily_plan.json \
+            2>&1 | tee logs/cn_daily_plan.console.log
+      - name: Save frozen plan
+        if: steps.plan.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cn-daily-plan
+          path: logs/cn_daily_plan.json
+          retention-days: 7
+          overwrite: true
+      - name: Save preparation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cn-daily-preparation
+          path: logs/*.log
+          retention-days: 7
+          overwrite: true
 
+  fetch:
+    name: Fetch CN batch ${{ matrix.batch_id }}
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      # 同一账号限频共享：各批串行，不以并行作业绕过限频。
+      max-parallel: 1
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
+      - name: Load frozen plan
+        uses: actions/download-artifact@v4
+        with:
+          name: cn-daily-plan
+          path: data/batch-plan
+      - name: Verify PostgreSQL target
+        run: |
+          uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失，不会回退到Supabase')"
       - name: Prepare logs dir
         run: mkdir -p logs
-
-      - name: Restore prewarm state
-        if: steps.schedule.outputs.should_run == 'true'
+      - name: Restore batch checkpoint
         uses: actions/cache/restore@v4
         with:
           path: |
-            data/funnel_prewarm_state.json
+            data/funnel_prewarm_state.batch-${{ matrix.batch_id }}.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: cn-batch-v1-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ matrix.batch_id }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-
-
+            cn-batch-v1-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ matrix.batch_id }}-
       - name: Fetch daily market data
-        if: steps.schedule.outputs.should_run == 'true'
         timeout-minutes: 75
+        env:
+          BATCH_ID: ${{ matrix.batch_id }}
         run: |
-          echo "::group::Prewarm cache (CN)"
           set -o pipefail
-          set +e
-          timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn --end-date "${{ steps.schedule.outputs.target_date }}" --universe all --trading-days ${FUNNEL_PREWARM_DAYS} \
-            --symbol-timeout-seconds 60 \
+          timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" \
+            uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn \
+            --batch-plan data/batch-plan/cn_daily_plan.json --batch-id "$BATCH_ID" \
+            --trading-days "$FUNNEL_PREWARM_DAYS" --symbol-timeout-seconds 60 \
             --dispatch-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 10) * 60 ))" \
             --run-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 5) * 60 ))" \
-            2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_cn.console.log
-          prewarm_status=${PIPESTATUS[0]}
-          set -e
-          echo "::endgroup::"
-          if [ "${prewarm_status}" -eq 124 ]; then
-            echo "::error title=Prewarm timeout::CN prewarm exceeded ${FUNNEL_PREWARM_TIMEOUT_MINUTES} minutes; partial progress was checkpointed and a same-day rerun will resume it."
-          elif [ "${prewarm_status}" -ne 0 ]; then
-            echo "::error title=Prewarm failed::CN prewarm exited with code ${prewarm_status}."
-          fi
-          exit "${prewarm_status}"
-
-      - name: Refresh analysis benchmark daily bars
-        if: ${{ !cancelled() && steps.schedule.outputs.should_run == 'true' }}
-        timeout-minutes: 5
-        run: |
-          set -o pipefail
-          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market cn \
-            2>&1 | tee logs/benchmark_cn.console.log
-
-      - name: Save prewarm state
-        if: ${{ always() && steps.schedule.outputs.should_run == 'true' }}
+            2>&1 | tee logs/funnel_prewarm_cn.console.log
+      - name: Save batch checkpoint
+        if: always()
         uses: actions/cache/save@v4
         with:
           path: |
-            data/funnel_prewarm_state.json
+            data/funnel_prewarm_state.batch-${{ matrix.batch_id }}.json
             data/yfinance_shares_cache.json
-          key: funnel-prewarm-state-cn-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: cn-batch-v1-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ matrix.batch_id }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Upload batch artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cn-daily-batch-${{ matrix.batch_id }}
+          path: logs/*
+          retention-days: 7
+          if-no-files-found: warn
+          overwrite: true
 
-      - name: Upload artifacts
+  report:
+    needs: [prepare, fetch]
+    if: ${{ always() && !cancelled() && (needs.prepare.outputs.should_run == 'true' || needs.prepare.result == 'failure') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install dependencies
+        run: |
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
+      - name: Load frozen plan
+        if: needs.prepare.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: cn-daily-plan
+          path: data/batch-plan
+      - name: Download batch results
+        if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cn-daily-batch-*
+          path: batch-results
+          merge-multiple: false
+      - name: Verify complete pool coverage
+        if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+        run: |
+          mkdir -p logs
+          set -o pipefail
+          uv run --frozen --no-dev python -m scripts.market_data_batches merge \
+            --plan data/batch-plan/cn_daily_plan.json --source batch-results --output logs \
+            2>&1 | tee logs/cn_batch_merge.console.log
+      - name: Refresh analysis benchmark daily bars
+        if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+        timeout-minutes: 5
+        env:
+          TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+        run: |
+          mkdir -p logs
+          set -o pipefail
+          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market cn \
+            --end-date "$TARGET_DATE" 2>&1 | tee logs/benchmark_cn.console.log
+      - name: Upload aggregate artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: daily-job-logs-${{ github.run_number }}
-          path: |
-            logs/*.log
-            logs/prewarm_*.csv
-            logs/prewarm_*.json
+          path: logs/*
           retention-days: 7
           if-no-files-found: warn
-
+          overwrite: true
       - name: Notify daily data result
         id: notify_data
-        if: ${{ always() && !cancelled() && steps.schedule.outputs.should_run == 'true' }}
+        if: ${{ always() && !cancelled() }}
         env:
           DATA_REPORT_WEBHOOK_URL: ${{ secrets.DATA_REPORT_WEBHOOK_URL }}
           FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
-          DATA_RUN_STATUS: ${{ job.status }}
+          DATA_RUN_STATUS: ${{ needs.prepare.result == 'success' && needs.fetch.result == 'success' && job.status == 'success' && 'success' || 'failure' }}
           DATA_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           uv run --frozen --no-dev python -m scripts.market_data_notification \
             --market cn --summary-dir logs \
-            --run-status "${DATA_RUN_STATUS}" --run-url "${DATA_RUN_URL}"
-
+            --run-status "$DATA_RUN_STATUS" --run-url "$DATA_RUN_URL"
       - name: Notify on failure
         if: ${{ failure() && steps.notify_data.outcome != 'success' }}
         env:
