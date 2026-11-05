@@ -703,3 +703,26 @@ def test_normal_batch_plan_cli_emits_frozen_matrix(maintenance: dict, monkeypatc
     assert plan["batches"][0]["securities"][0]["code"] == "000002"
     assert 'matrix={"batch_id": [0, 1]}' in output.read_text()
     assert f"target_date={target}" in output.read_text()
+
+
+def test_normal_batch_warning_is_reported_once_at_pool_level(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【正常值】名单全局风险留在汇总，已完成固定批次不再重复判为个股更新失败。"""
+    from scripts.market_data_batches import create_plan, merge_batches
+
+    target = maintenance["dates"][-1]
+    plan = create_plan([{"code": "600000"}], target_date=target, window_start=maintenance["dates"][0],
+                       trade_dates=maintenance["dates"], trading_days=320, universe_warning="名单刷新失败，沿用旧缓存")
+    path = maintenance["path"] / "plan.json"
+    path.write_text(json.dumps(plan))
+    folder = maintenance["path"] / "cn-daily-batch-0"
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--batch-plan", str(path), "--batch-id", "0", "--review-dir", str(folder)])
+
+    code = prewarm.main()
+    summary = json.loads((folder / f"prewarm_cn_{target}_summary.json").read_text())
+    aggregate = merge_batches(plan, maintenance["path"], maintenance["path"] / "merged")
+
+    assert code == 0
+    assert summary["status"] == "ok"
+    assert aggregate["status"] == "partial"
+    assert aggregate["counts"] == {"gap_repaired": 1}
+    assert "名单刷新失败" in aggregate["universe_warning"]
