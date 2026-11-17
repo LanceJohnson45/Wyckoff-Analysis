@@ -67,7 +67,7 @@ def fetch_cn_suspensions(target: date) -> dict[str, SuspensionPeriod]:
         end = pd.to_datetime(row["停牌截止时间"], errors="coerce")
         resume = pd.to_datetime(row["预计复牌时间"], errors="coerce")
         kind = row["停牌期限"]
-        if kind not in {"连续停牌", "全天", "全天停牌", "1天"}:
+        if kind not in {"连续停牌", "全天", "全天停牌", "1天", "停牌一天"}:
             continue
         if pd.isna(start) or start.date() > target or (kind != "连续停牌" and start.date() != target):
             continue

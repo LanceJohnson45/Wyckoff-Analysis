@@ -98,11 +98,12 @@ def test_boundary_suspension_evidence_rejects_intraday_and_resumed_rows(monkeypa
     common = {"停牌时间": "2026-10-14", "停牌截止时间": None, "预计复牌时间": None, "停牌期限": "连续停牌"}
     rows = [dict(common, 代码="601326"), dict(common, 代码="000001", 停牌期限="盘中停牌"),
             dict(common, 代码="000002", 预计复牌时间="2026-10-15"), dict(common, 代码="000003", 停牌时间="2026-10-16"),
-            dict(common, 代码="000005", 停牌截止时间="2026-10-14")]
+            dict(common, 代码="000005", 停牌截止时间="2026-10-14"),
+            dict(common, 代码="300237", 停牌时间="2026-10-15", 停牌期限="停牌一天", 预计复牌时间="2026-10-16")]
     monkeypatch.setattr(ak, "stock_tfp_em", lambda **kwargs: pd.DataFrame(rows))
 
     periods = fetch_cn_suspensions(date(2026, 10, 15))
-    assert set(periods) == {"601326"}
+    assert set(periods) == {"601326", "300237"}
     assert periods["601326"].first_day == date(2026, 10, 14)
 
 
