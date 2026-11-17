@@ -18,10 +18,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 
 from core.market_scope import excluded_cn_board
-from integrations.market_data_policy import exclusion_applies, load_security_overrides
+from integrations.market_data_policy import exclusion_applies, fetch_cn_suspensions, load_security_overrides
 from integrations.postgres_base import get_postgres_dsn, postgres_configured, postgres_enabled
 from integrations.tickflow_client import normalize_cn_symbol, parse_ohlcv_payload
 from scripts.market_data_batches import BatchPlan, load_plan
+from scripts.prewarm_workers import bounded_call
 
 CN_TZ = ZoneInfo("Asia/Shanghai")
 BATCH_SIZE = 100
@@ -165,6 +166,18 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
         and not exclusion_applies(overrides.get(("cn", symbol), {}), target)
     ]
     missing = _missing_days(engine, symbols, days)
+    suspended = {}
+    if missing:
+        try:
+            suspended = bounded_call(fetch_cn_suspensions, target, timeout=15)
+        except (RuntimeError, TimeoutError) as exc:
+            LOGGER.warning("cn_tickflow_suspension_lookup_failed", error_type=type(exc).__name__)
+    for symbol in missing.keys() & suspended.keys():
+        pending = {day for day in missing[symbol] if day < suspended[symbol].first_day}
+        if pending:
+            missing[symbol] = pending
+        else:
+            del missing[symbol]
     rows = asyncio.run(_download(missing, target)) if missing else []
     inserted = 0
     if rows:
@@ -172,9 +185,9 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
         with engine.begin() as connection:
             for offset in range(0, len(rows), DB_WRITE_BATCH_SIZE):
                 inserted += len(connection.execute(stmt, rows[offset:offset + DB_WRITE_BATCH_SIZE]).all())
-    remaining = _missing_days(engine, symbols, {target})
+    remaining = _missing_days(engine, [symbol for symbol in symbols if symbol not in suspended], {target})
     LOGGER.info("cn_tickflow_prefill_done", target_date=str(target), active=len(symbols), symbols_requested=len(missing),
-                rows_inserted=inserted, target_date_missing=len(remaining))
+                rows_inserted=inserted, suspended=len(suspended.keys() & set(symbols)), target_date_missing=len(remaining))
     return inserted, len(remaining)
 
 
