@@ -48,3 +48,24 @@ def test_historical_suspension_uses_verified_continuous_range(monkeypatch: pytes
     )
     assert result == {"600519": {second, third}}
     assert queried == [third, second]
+
+
+def test_documented_suspension_is_bounded_and_works_without_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
+    """历史停牌以已披露区间为准，复牌后日线仍保留在核验范围。"""
+    from time import monotonic
+    from integrations.market_data_policy import announced_suspension_days, load_security_overrides
+    from scripts import funnel_prewarm as prewarm
+
+    prior, stopped, resumed, target = [date(2026, 11, day) for day in (2, 9, 10, 17)]
+    days = [prior, stopped, resumed, target]
+    known = announced_suspension_days(load_security_overrides()[("cn", "002623")], days)
+    assert known == {stopped}
+
+    def unexpected_lookup(*args, **kwargs):
+        pytest.fail("公告已确认的日期不应再次请求停牌接口")
+
+    monkeypatch.setattr(prewarm, "bounded_call", unexpected_lookup)
+    assert prewarm._confirm_historical_suspensions(
+        days, target, {"002623": {prior, resumed, target}}, {},
+        deadline=monotonic() + 10, announced={"002623": known},
+    ) == {"002623": {stopped}}

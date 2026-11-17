@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from collections.abc import Iterable
 import json
 from pathlib import Path
 from typing import NamedTuple
@@ -34,6 +35,10 @@ def load_security_overrides(path: Path = POLICY_PATH) -> dict[tuple[str, str], d
         for field in ("listing_date", "effective_from"):
             if row.get(field):
                 date.fromisoformat(row[field])
+        suspension_start, suspension_end = row.get("suspended_from"), row.get("suspended_through")
+        if suspension_start or suspension_end:
+            if not (suspension_start and suspension_end and date.fromisoformat(suspension_start) <= date.fromisoformat(suspension_end)):
+                raise ValueError("公告停牌区间须包含明确的起止日")
         if row.get("exclude") and not row.get("reason"):
             raise ValueError("排除证券必须写明人工确认原因")
         result[key] = dict(row)
@@ -43,6 +48,15 @@ def load_security_overrides(path: Path = POLICY_PATH) -> dict[tuple[str, str], d
 def exclusion_applies(record: dict, target: date) -> bool:
     """仅排除已批准且在本轮目标日期已生效的证券。"""
     return bool(record.get("exclude") and (not record.get("effective_from") or date.fromisoformat(record["effective_from"]) <= target))
+
+
+def announced_suspension_days(record: dict, dates: Iterable[date]) -> set[date]:
+    """只排除公告明确确认的日期，复牌及其后的根线仍需校验。"""
+    if not record.get("suspended_from"):
+        return set()
+    first = date.fromisoformat(record["suspended_from"])
+    last = date.fromisoformat(record["suspended_through"])
+    return {day for day in dates if first <= day <= last}
 
 
 class SuspensionPeriod(NamedTuple):

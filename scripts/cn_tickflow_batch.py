@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 
 from core.market_scope import excluded_cn_board
-from integrations.market_data_policy import exclusion_applies, fetch_cn_suspensions, load_security_overrides
+from integrations.market_data_policy import announced_suspension_days, exclusion_applies, fetch_cn_suspensions, load_security_overrides
 from integrations.postgres_base import get_postgres_dsn, postgres_configured, postgres_enabled
 from integrations.tickflow_client import normalize_cn_symbol, parse_ohlcv_payload
 from scripts.market_data_batches import BatchPlan, load_plan
@@ -166,6 +166,14 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
         and not exclusion_applies(overrides.get(("cn", symbol), {}), target)
     ]
     missing = _missing_days(engine, symbols, days)
+    announced_today = set()
+    for symbol in list(missing):
+        announced = announced_suspension_days(overrides.get(("cn", symbol), {}), missing[symbol])
+        if target in announced:
+            announced_today.add(symbol)
+        missing[symbol].difference_update(announced)
+        if not missing[symbol]:
+            del missing[symbol]
     suspended = {}
     if missing:
         try:
@@ -185,9 +193,10 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
         with engine.begin() as connection:
             for offset in range(0, len(rows), DB_WRITE_BATCH_SIZE):
                 inserted += len(connection.execute(stmt, rows[offset:offset + DB_WRITE_BATCH_SIZE]).all())
-    remaining = _missing_days(engine, [symbol for symbol in symbols if symbol not in suspended], {target})
+    suspended_today = announced_today | (suspended.keys() & set(symbols))
+    remaining = _missing_days(engine, [symbol for symbol in symbols if symbol not in suspended_today], {target})
     LOGGER.info("cn_tickflow_prefill_done", target_date=str(target), active=len(symbols), symbols_requested=len(missing),
-                rows_inserted=inserted, suspended=len(suspended.keys() & set(symbols)), target_date_missing=len(remaining))
+                rows_inserted=inserted, suspended=len(suspended_today), target_date_missing=len(remaining))
     return inserted, len(remaining)
 
 

@@ -3,6 +3,34 @@
   "securities": [
     {
       "market": "cn",
+      "symbol": "000831",
+      "suspended_from": "2026-11-02",
+      "suspended_through": "2026-11-15",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-11-14/1225671894.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "002129",
+      "suspended_from": "2026-11-02",
+      "suspended_through": "2026-11-15",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-11-14/1225672061.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "002623",
+      "suspended_from": "2026-11-03",
+      "suspended_through": "2026-11-09",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-11-10/1225664631.PDF"
+    },
+    {
+      "market": "cn",
+      "symbol": "300237",
+      "suspended_from": "2026-11-05",
+      "suspended_through": "2026-11-05",
+      "evidence": "https://static.cninfo.com.cn/finalpage/2026-11-05/1225658367.PDF"
+    },
+    {
+      "market": "cn",
       "symbol": "000004",
       "exclude": true,
       "effective_from": "2026-07-14",
