@@ -432,6 +432,7 @@ def _prefetch_one(
     trading_window: TradingWindow | None = None,
     expected_dates: list[date] | None = None,
     suspension_evidence: str = "",
+    initial_cached_dates: set[date] | None = None,
 ) -> tuple:
     """优先更新近期行情；上市前不补K，旧缺口失败不能阻止其他缺口。"""
     end_day = end_calendar_day if end_calendar_day is not None else _job_end_calendar_day()
@@ -449,7 +450,9 @@ def _prefetch_one(
         expected_dates = [d for d in expected_dates if d >= listing_date]
     if suspension_evidence:
         expected_dates = [d for d in expected_dates if d != window.end_trade_date]
-    cached_dates = sorted(set(load_cached_dates(cache_symbol, "qfq", window.start_trade_date, window.end_trade_date, context="background")))
+    if initial_cached_dates is None:
+        initial_cached_dates = set(load_cached_dates(cache_symbol, "qfq", window.start_trade_date, window.end_trade_date, context="background"))
+    cached_dates = sorted(initial_cached_dates)
     effective_expected_dates = expected_dates
     if cached_dates and _RECENT_GAP_MAX_AGE_DAYS > 0:
         effective_expected_dates = _filter_expected_dates_by_recent_window(expected_dates, end_trade_date=window.end_trade_date, max_age_days=_RECENT_GAP_MAX_AGE_DAYS)
@@ -744,12 +747,20 @@ def _main() -> int:
             suspensions = bounded_call(fetch_cn_suspensions, end_day, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
         except Exception as exc:
             _log(f"prewarm suspension lookup failed: {type(exc).__name__}: {exc}; 未确认停牌仍按正常缺口核验")
+    cached_by_symbol = None
+    if plan and symbols_to_check:
+        from integrations.postgres_base import postgres_enabled
+        from scripts.cn_tickflow_batch import load_cn_cache_days
+
+        if postgres_enabled():
+            cached_by_symbol = load_cn_cache_days(symbols_to_check, run_window.start_trade_date, run_window.end_trade_date)
     completed_since_checkpoint = 0
     jobs = ((sym, (sym, market, run_trading_days), {
         "dry_run": bool(args.dry_run), "end_calendar_day": end_day,
         "trading_window": run_window, "expected_dates": run_dates,
         "listing_date": _confirmed_listing_date(market, sym, overrides, ready_symbols),
         "suspension_evidence": suspensions.get(sym, ""),
+        "initial_cached_dates": cached_by_symbol.get(sym, set()) if cached_by_symbol is not None else None,
     }) for sym in symbols_to_check)
     with closing(iter_bounded_jobs(_prefetch_one, jobs, max_workers=max(int(args.max_workers), 1),
                                    task_timeout=args.symbol_timeout_seconds,
