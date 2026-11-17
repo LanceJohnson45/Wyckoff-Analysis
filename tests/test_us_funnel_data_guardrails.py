@@ -7,6 +7,21 @@ import pandas as pd
 import pytest
 
 
+@pytest.mark.parametrize("written, expected_status", [(0, 1), (1, 1), (2, 0)])
+def test_daily_refresh_reports_write_failures(monkeypatch: pytest.MonkeyPatch, written: int, expected_status: int) -> None:
+    """下载完成但部分或全部股票没写入时，日更命令返回失败。"""
+    from scripts import us_sp500_maintenance as maintenance
+    from integrations.us_sp500_universe import UniverseSnapshot
+
+    monkeypatch.setattr(maintenance, "get_sp500_constituents", lambda **kwargs: UniverseSnapshot("test", "2026-11-16", ["AAPL", "MSFT"]))
+    monkeypatch.setattr(maintenance, "save_sp500_snapshot", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        maintenance, "_run_batches",
+        lambda *args, **kwargs: {"symbols": written, "rows": written * 7, "failed": 0, "write_fail": 2 - written},
+    )
+    assert maintenance.refresh_constituents(trading_days=7, batch_size=2, sleep_seconds=0) == expected_status
+
+
 def _valid_hist(rows: int = 220) -> pd.DataFrame:
     dates = pd.date_range("2025-09-01", periods=rows, freq="B")
     close = pd.Series(range(100, 100 + rows), dtype=float)

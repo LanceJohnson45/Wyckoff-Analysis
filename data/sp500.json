@@ -977,7 +977,7 @@
     },
     {
         "name": "Bank of New York Mellon Corp/The",
-        "symbol": "BK",
+        "symbol": "BNY",
         "weight": "0.15%",
         "price": "138.75",
         "change": "0.83",
@@ -2169,7 +2169,7 @@
     },
     {
         "name": "EchoStar",
-        "symbol": "SATS",
+        "symbol": "ECHO",
         "weight": "0.06%",
         "price": "127.03",
         "change": "3.17",
@@ -2912,8 +2912,8 @@
         "changePercent": "(0.02%)"
     },
     {
-        "name": "Equity Residential",
-        "symbol": "EQR",
+        "name": "Vivmark Residential",
+        "symbol": "VMRK",
         "weight": "0.04%",
         "price": "61.88",
         "change": "0.03",
@@ -3608,8 +3608,8 @@
         "changePercent": "(1.05%)"
     },
     {
-        "name": "Paramount Skydance Corp",
-        "symbol": "PSKY",
+        "name": "Skydance Corp",
+        "symbol": "SKYD",
         "weight": "0.02%",
         "price": "11.71",
         "change": "0.10",

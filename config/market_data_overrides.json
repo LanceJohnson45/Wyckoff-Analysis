@@ -46,6 +46,70 @@
       "evidence": "https://www.devonenergy.com/news/2026/Devon-Energy-and-Coterra-Energy-Complete-Merger"
     },
     {
+      "market": "us",
+      "symbol": "BK",
+      "exclude": true,
+      "effective_from": "2026-05-21",
+      "reason": "ticker_changed_to_BNY",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/1390777/000139077726000086/bk-20260630.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "SATS",
+      "exclude": true,
+      "effective_from": "2026-06-24",
+      "reason": "ticker_changed_to_ECHO",
+      "evidence": "https://ir.echostar.com/node/33601/pdf"
+    },
+    {
+      "market": "us",
+      "symbol": "EA",
+      "exclude": true,
+      "effective_from": "2026-08-04",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/712515/000114036126031157/ef20079099_8k.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "AVB",
+      "exclude": true,
+      "effective_from": "2026-08-18",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/915912/000110465926097833/tm2623381d1_8k.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "EQR",
+      "exclude": true,
+      "effective_from": "2026-08-18",
+      "reason": "ticker_changed_to_VMRK",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/931182/000114036126033377/ef20080318_8k.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "WBD",
+      "exclude": true,
+      "effective_from": "2026-10-06",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/2041610/000110465926113913/tm2626659d7_8k.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "PSKY",
+      "exclude": true,
+      "effective_from": "2026-10-06",
+      "reason": "ticker_changed_to_SKYD",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/2041610/000110465926113913/tm2626659d7_8k.htm"
+    },
+    {
+      "market": "us",
+      "symbol": "KVUE",
+      "exclude": true,
+      "effective_from": "2026-11-02",
+      "reason": "merger_completed_former_ticker",
+      "evidence": "https://www.sec.gov/Archives/edgar/data/55785/000110465926120990/tm2628636d1_ex99-1.htm"
+    },
+    {
       "market": "cn",
       "symbol": "001237",
       "listing_date": "2026-05-22",
