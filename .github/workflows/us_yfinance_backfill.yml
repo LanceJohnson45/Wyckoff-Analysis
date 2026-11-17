@@ -1,9 +1,6 @@
 name: US YFinance Backfill
 
 on:
-  schedule:
-    - cron: "43 8 * * 2-6"
-      timezone: America/New_York
   workflow_dispatch:
     inputs:
       start_date:

@@ -1,9 +1,6 @@
 name: US Daily Bar Refresh
 
 on:
-  schedule:
-    - cron: "37 5 * * 2-6"
-      timezone: America/New_York
   workflow_dispatch:
 
 concurrency:
