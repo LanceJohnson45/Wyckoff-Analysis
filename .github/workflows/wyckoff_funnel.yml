@@ -29,14 +29,14 @@ env:
   PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
   PG_DSN: ${{ secrets.PG_DSN }}
   FUNNEL_PREWARM_DAYS: "320"
-  # 60分钟停止派发、65分钟结束预热；70分钟仅作最后保护。
-  FUNNEL_PREWARM_TIMEOUT_MINUTES: "70"
+  FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS: "45"
+  FUNNEL_PREWARM_TIMEOUT_MINUTES: "5"
   TZ: Asia/Shanghai
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 24
     outputs:
       should_run: ${{ steps.schedule.outputs.should_run }}
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -72,6 +72,14 @@ jobs:
             --target-date "$TARGET_DATE" --trading-days "$FUNNEL_PREWARM_DAYS" \
             --batch-size 400 --output logs/cn_daily_plan.json \
             2>&1 | tee logs/cn_daily_plan.console.log
+      - name: Prefill missing CN daily bars in TickFlow batches
+        if: steps.plan.outcome == 'success'
+        timeout-minutes: 8
+        run: |
+          set -o pipefail
+          uv run --frozen --no-dev python -m scripts.cn_tickflow_batch \
+            --plan logs/cn_daily_plan.json --recent-days "$FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS" \
+            2>&1 | tee logs/cn_tickflow_prefill.log
       - name: Save frozen plan
         if: steps.plan.outcome == 'success'
         uses: actions/upload-artifact@v4
@@ -94,7 +102,7 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       # 同一账号限频共享：各批串行，不以并行作业绕过限频。
@@ -131,7 +139,7 @@ jobs:
           restore-keys: |
             cn-batch-v1-${{ github.ref_name }}-${{ env.FUNNEL_PREWARM_DAYS }}-${{ matrix.batch_id }}-
       - name: Fetch daily market data
-        timeout-minutes: 75
+        timeout-minutes: 6
         env:
           BATCH_ID: ${{ matrix.batch_id }}
         run: |
@@ -140,8 +148,8 @@ jobs:
             uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn \
             --batch-plan data/batch-plan/cn_daily_plan.json --batch-id "$BATCH_ID" \
             --trading-days "$FUNNEL_PREWARM_DAYS" --symbol-timeout-seconds 60 \
-            --dispatch-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 10) * 60 ))" \
-            --run-budget-seconds "$(( (FUNNEL_PREWARM_TIMEOUT_MINUTES - 5) * 60 ))" \
+            --dispatch-budget-seconds 180 \
+            --run-budget-seconds 240 \
             2>&1 | tee logs/funnel_prewarm_cn.console.log
       - name: Save batch checkpoint
         if: always()
