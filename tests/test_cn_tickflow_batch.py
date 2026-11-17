@@ -3,6 +3,8 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from scripts.cn_tickflow_batch import _records
 
 
@@ -26,3 +28,23 @@ def test_batch_rows_keep_only_requested_day_and_valid_prices() -> None:
     assert abs(rows[0]["pct_chg"] - 2) < 1e-9
     assert rows[0]["amplitude"] == 5
     assert rows[0]["updated_at"] == now
+
+
+def test_historical_suspension_uses_verified_continuous_range(monkeypatch: pytest.MonkeyPatch) -> None:
+    """补漏只跳过有日期证据的停牌日，正常缺口仍需核验。"""
+    from time import monotonic
+    from scripts import funnel_prewarm as prewarm
+
+    first, second, third, end = [date(2026, 11, day) for day in (12, 13, 16, 17)]
+    queried = []
+
+    def lookup(function, day, *, timeout):
+        queried.append(day)
+        return {"600519": prewarm.SuspensionPeriod(second, "停牌证据")} if day == third else {}
+
+    monkeypatch.setattr(prewarm, "bounded_call", lookup)
+    result = prewarm._confirm_historical_suspensions(
+        [first, second, third, end], end, {"600519": {first, end}, "000001": {first, end}}, {}, deadline=monotonic() + 10,
+    )
+    assert result == {"600519": {second, third}}
+    assert queried == [third, second]

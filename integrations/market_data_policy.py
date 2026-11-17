@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date, datetime
 import json
 from pathlib import Path
+from typing import NamedTuple
 from zoneinfo import ZoneInfo
 
 POLICY_PATH = Path(__file__).resolve().parents[1] / "config" / "market_data_overrides.json"
@@ -44,8 +45,15 @@ def exclusion_applies(record: dict, target: date) -> bool:
     return bool(record.get("exclude") and (not record.get("effective_from") or date.fromisoformat(record["effective_from"]) <= target))
 
 
-def fetch_cn_suspensions(target: date) -> dict[str, str]:
-    """读取指定交易日全天停牌证据；不把预期复牌日外推为永久排除。"""
+class SuspensionPeriod(NamedTuple):
+    """截至指定目标日已核实的连续全天停牌。"""
+
+    first_day: date
+    evidence: str
+
+
+def fetch_cn_suspensions(target: date) -> dict[str, SuspensionPeriod]:
+    """读取目标日仍在停牌的区间，保留起始日用于历史缺口判断。"""
     import akshare as ak
     import pandas as pd
 
@@ -58,15 +66,16 @@ def fetch_cn_suspensions(target: date) -> dict[str, str]:
         start = pd.to_datetime(row["停牌时间"], errors="coerce")
         end = pd.to_datetime(row["停牌截止时间"], errors="coerce")
         resume = pd.to_datetime(row["预计复牌时间"], errors="coerce")
-        if row["停牌期限"] not in {"连续停牌", "全天", "全天停牌", "1天"}:
+        kind = row["停牌期限"]
+        if kind not in {"连续停牌", "全天", "全天停牌", "1天"}:
             continue
-        if pd.isna(start) or start.date() > target:
+        if pd.isna(start) or start.date() > target or (kind != "连续停牌" and start.date() != target):
             continue
         if (not pd.isna(end) and end.date() < target) or (not pd.isna(resume) and resume.date() <= target):
             continue
         code = str(row["代码"]).zfill(6)
         if len(code) == 6 and code.isdigit():
-            result[code] = f"https://data.eastmoney.com/tfpxx/ (query_date={target.isoformat()})"
+            result[code] = SuspensionPeriod(start.date(), f"https://data.eastmoney.com/tfpxx/ (query_date={target.isoformat()})")
     return result
 
 

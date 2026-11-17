@@ -45,7 +45,7 @@ except ImportError:
 from core.stock_cache import load_cached_dates, normalize_hist_df, upsert_cache_data
 from core.market_scope import excluded_cn_board
 from integrations.data_source import fetch_index_hist, fetch_stock_hist
-from integrations.market_data_policy import BeforeListingRange, exclusion_applies, fetch_cn_listing_dates, fetch_cn_suspensions, load_security_overrides
+from integrations.market_data_policy import BeforeListingRange, SuspensionPeriod, exclusion_applies, fetch_cn_listing_dates, fetch_cn_suspensions, load_security_overrides
 from integrations.market_data_review import review_reason, write_review
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached, get_all_stocks, TradingWindow
 from scripts.prewarm_workers import PrewarmBudgetExpired, bounded_call, iter_bounded_jobs
@@ -432,6 +432,8 @@ def _prefetch_one(
     trading_window: TradingWindow | None = None,
     expected_dates: list[date] | None = None,
     suspension_evidence: str = "",
+    suspension_start: date | None = None,
+    confirmed_suspended_dates: set[date] | None = None,
     initial_cached_dates: set[date] | None = None,
 ) -> tuple:
     """优先更新近期行情；上市前不补K，旧缺口失败不能阻止其他缺口。"""
@@ -449,7 +451,9 @@ def _prefetch_one(
     if listing_date:
         expected_dates = [d for d in expected_dates if d >= listing_date]
     if suspension_evidence:
-        expected_dates = [d for d in expected_dates if d != window.end_trade_date]
+        expected_dates = [d for d in expected_dates if d < (suspension_start or window.end_trade_date)]
+    if confirmed_suspended_dates:
+        expected_dates = [d for d in expected_dates if d not in confirmed_suspended_dates]
     if initial_cached_dates is None:
         initial_cached_dates = set(load_cached_dates(cache_symbol, "qfq", window.start_trade_date, window.end_trade_date, context="background"))
     cached_dates = sorted(initial_cached_dates)
@@ -493,8 +497,10 @@ def _prefetch_one(
             if norm is None or norm.empty:
                 raise RuntimeError("行情源返回空日线")
             norm = norm.loc[(norm["date"] >= str(gap_start)) & (norm["date"] <= str(gap_end))].copy()
+            if market == "cn":
+                norm = norm.loc[norm["volume"].gt(0)]
             if norm.empty:
-                raise RuntimeError("行情源返回的日线不在请求区间内")
+                raise RuntimeError("行情源未返回区间内有成交的日线")
             if not upsert_cache_data(symbol=cache_symbol, adjust="qfq", source=str(frame.attrs.get("source", "prewarm_gap_fill") or "prewarm_gap_fill"), df=norm, context="background"):
                 raise RuntimeError("日线写入失败")
             rows_written += len(norm.index)
@@ -514,6 +520,38 @@ def _prefetch_one(
     if errors or remaining:
         return result("fetch_failed" if errors and not rows_written else "gap_partial", rows_written, gap_ranges, len(ignored_ranges), preview=remaining)
     return result("suspended" if suspension_evidence else "gap_repaired", rows_written, gap_ranges, len(ignored_ranges))
+
+
+def _confirm_historical_suspensions(
+    run_dates: list[date], end_day: date, cached_by_symbol: dict[str, set[date]], current: dict[str, SuspensionPeriod], *, deadline: float,
+) -> dict[str, set[date]]:
+    # 从最近缺口倒查；一次确认连续停牌后，无需再查询区间内的较早日期。
+    recent_dates = _filter_expected_dates_by_recent_window(run_dates, end_trade_date=end_day, max_age_days=_RECENT_GAP_MAX_AGE_DAYS)
+    missing_by_day: dict[date, set[str]] = {}
+    for symbol, cached in cached_by_symbol.items():
+        if not cached:
+            continue
+        first_cached = min(cached)
+        suspension = current.get(symbol)
+        for day in recent_dates:
+            if day < end_day and day >= first_cached and day not in cached and (suspension is None or day < suspension.first_day):
+                missing_by_day.setdefault(day, set()).add(symbol)
+    confirmed: dict[str, set[date]] = {}
+    for day in sorted(missing_by_day, reverse=True):
+        candidates = {symbol for symbol in missing_by_day[day] if day not in confirmed.get(symbol, set())}
+        budget = min(10, deadline - time.monotonic())
+        if not candidates or budget <= 0:
+            continue
+        try:
+            periods = bounded_call(fetch_cn_suspensions, day, timeout=budget)
+        except (RuntimeError, TimeoutError) as exc:
+            _log(f"prewarm historical suspension lookup failed date={day}: {type(exc).__name__}")
+            break
+        for symbol in candidates & periods.keys():
+            period = periods[symbol]
+            confirmed.setdefault(symbol, set()).update(d for d in recent_dates if period.first_day <= d <= day)
+            _log(f"prewarm confirmed historical suspension symbol={symbol} from={period.first_day} through={day} evidence={period.evidence}")
+    return confirmed
 
 
 def _parse_manual_symbols(raw: str) -> list[str]:
@@ -725,7 +763,7 @@ def _main() -> int:
             )
 
     ready_updates: dict[str, dict] = {}
-    suspensions: dict[str, str] = {}
+    suspensions: dict[str, SuspensionPeriod] = {}
     if market == "cn" and symbols_to_check:
         for exchange, prefixes in (("bj", ("4", "8", "92")), ("sz", ("0", "3"))):
             candidates = [sym for sym in symbols_to_check if sym.startswith(prefixes) and not overrides.get((market, sym), {}).get("listing_date")]
@@ -754,12 +792,17 @@ def _main() -> int:
 
         if postgres_enabled():
             cached_by_symbol = load_cn_cache_days(symbols_to_check, run_window.start_trade_date, run_window.end_trade_date)
+    confirmed_suspended_dates = _confirm_historical_suspensions(
+        run_dates, end_day, cached_by_symbol, suspensions, deadline=dispatch_deadline,
+    ) if cached_by_symbol else {}
     completed_since_checkpoint = 0
     jobs = ((sym, (sym, market, run_trading_days), {
         "dry_run": bool(args.dry_run), "end_calendar_day": end_day,
         "trading_window": run_window, "expected_dates": run_dates,
         "listing_date": _confirmed_listing_date(market, sym, overrides, ready_symbols),
-        "suspension_evidence": suspensions.get(sym, ""),
+        "suspension_evidence": suspensions[sym].evidence if sym in suspensions else "",
+        "suspension_start": suspensions[sym].first_day if sym in suspensions else None,
+        "confirmed_suspended_dates": confirmed_suspended_dates.get(sym),
         "initial_cached_dates": cached_by_symbol.get(sym, set()) if cached_by_symbol is not None else None,
     }) for sym in symbols_to_check)
     with closing(iter_bounded_jobs(_prefetch_one, jobs, max_workers=max(int(args.max_workers), 1),
@@ -791,7 +834,7 @@ def _main() -> int:
                     reason, action = review_reason(records[symbol]["detail"])
                     records[symbol].update(reason=reason, suggested_action=action)
                 if status == "suspended":
-                    records[symbol].update(reason="confirmed_full_day_suspension", evidence=detail["suspension_evidence"], suggested_action="仅目标日免补日线；下次运行重新核验停复牌状态")
+                    records[symbol].update(reason="confirmed_full_day_suspension", evidence=detail["suspension_evidence"], suggested_action="已核实的连续停牌区间免补日线，下次运行重新核验停复牌状态")
                 if status in {"gap_partial", "fetch_failed"}:
                     partial += int(status == "gap_partial")
                     fail += int(status == "fetch_failed")

@@ -58,10 +58,10 @@ def test_normal_known_ipo_does_not_request_prelisting_data(maintenance: dict) ->
 
 def test_normal_main_suspension_preserves_history_and_rechecks_resumption(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
     """【正常值】已确认当天停牌不补造K线，取消停牌证据后必须恢复拉取。"""
-    history = maintenance["dates"][:-1]
+    history = maintenance["dates"][:-2]
     maintenance["cache"]["601326"] = history.copy()
     evidence = "https://data.eastmoney.com/tfpxx/ (query_date=2026-10-15)"
-    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {"601326": evidence})
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {"601326": prewarm.SuspensionPeriod(date(2026, 10, 14), evidence)})
     monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--symbols", "601326", "--review-dir", str(maintenance["path"])])
 
     assert prewarm.main() == 0
@@ -74,7 +74,7 @@ def test_normal_main_suspension_preserves_history_and_rechecks_resumption(mainte
     monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: {})
     assert prewarm.main() == 0
     assert maintenance["cache"]["601326"] == maintenance["dates"]
-    assert maintenance["requests"] == [("601326", date(2026, 10, 15), date(2026, 10, 15))]
+    assert maintenance["requests"] == [("601326", date(2026, 10, 14), date(2026, 10, 15))]
 
 
 def test_error_suspension_lookup_failure_does_not_hide_missing_bars(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -101,7 +101,9 @@ def test_boundary_suspension_evidence_rejects_intraday_and_resumed_rows(monkeypa
             dict(common, 代码="000005", 停牌截止时间="2026-10-14")]
     monkeypatch.setattr(ak, "stock_tfp_em", lambda **kwargs: pd.DataFrame(rows))
 
-    assert set(fetch_cn_suspensions(date(2026, 10, 15))) == {"601326"}
+    periods = fetch_cn_suspensions(date(2026, 10, 15))
+    assert set(periods) == {"601326"}
+    assert periods["601326"].first_day == date(2026, 10, 14)
 
 
 @pytest.mark.parametrize("market,symbol", [("cn", "001257"), ("us", "NEWIPO")], ids=["cn-ipo", "us-ipo"])
