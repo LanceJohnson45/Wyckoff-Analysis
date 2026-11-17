@@ -582,6 +582,7 @@ def backfill_symbol(
 
 
 def run_backfill(args: argparse.Namespace) -> int:
+    """补齐指定窗口，部分股票未覆盖时返回非零。"""
     start_day, end_day, expected_dates = _resolve_target_window(
         start_date=args.start_date,
         end_date=args.end_date,
@@ -618,7 +619,7 @@ def run_backfill(args: argparse.Namespace) -> int:
         stats.update(batch_stats)
         stats["expected_trade_dates"] = len(expected_dates)
         _log(f"us yfinance backfill done {json.dumps(stats, ensure_ascii=False)}")
-        return 0 if (int(stats["symbols_updated"]) > 0 or int(stats["symbols_cache_ready"]) > 0) else 1
+        return 1 if stats["symbols_failed"] else 0
     for idx, symbol in enumerate(symbols, start=1):
         try:
             result = backfill_symbol(
@@ -646,7 +647,7 @@ def run_backfill(args: argparse.Namespace) -> int:
         if idx < len(symbols):
             _sleep_between_symbols(float(args.sleep_seconds), float(args.jitter_seconds))
     _log(f"us yfinance backfill done {json.dumps(stats, ensure_ascii=False)}")
-    return 0 if (stats["symbols_updated"] > 0 or stats["symbols_cache_ready"] > 0) else 1
+    return 1 if stats["symbols_failed"] else 0
 
 
 def build_parser() -> argparse.ArgumentParser:

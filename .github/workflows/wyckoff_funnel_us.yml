@@ -2,12 +2,9 @@ name: US Daily Market Data
 
 on:
   schedule:
-    # 美东 23:59 近似调度（GitHub Actions cron 仅支持 UTC，且不自动处理 DST）：
-    # - 夏令时（大致 3-10 月）：UTC 03:59，对应美东前一交易日 23:59
-    # - 冬令时（大致 11-2 月）：UTC 04:59，对应美东前一交易日 23:59
-    # 由于 UTC 日期已进入次日，这里使用 Tue-Sat 触发来覆盖美东 Mon-Fri 晚间。
-    - cron: "59 3 * 3-10 2-6"
-    - cron: "59 4 * 11,12,1,2 2-6"
+    # 美东周二至周六凌晨，更新前一交易日的完整日线。
+    - cron: "23 0 * * 2-6"
+      timezone: America/New_York
   workflow_dispatch:
 
 concurrency:

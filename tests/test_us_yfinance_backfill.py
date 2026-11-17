@@ -4,8 +4,22 @@ from __future__ import annotations
 from datetime import date
 
 import pandas as pd
+import pytest
 
 from scripts import us_yfinance_backfill as mod
+
+
+@pytest.mark.parametrize("failed, expected_status", [(0, 0), (1, 1)])
+def test_batch_backfill_reports_partial_failure(monkeypatch: pytest.MonkeyPatch, failed: int, expected_status: int) -> None:
+    """已有覆盖的股票不能掩盖同一批次的补拉失败。"""
+    monkeypatch.setattr(
+        mod, "_run_batch_backfill",
+        lambda *args, **kwargs: {"symbols_cache_ready": 2 - failed, "symbols_failed": failed},
+    )
+    args = mod.build_parser().parse_args(
+        ["--symbols", "AAPL,MSFT", "--start-date", "2026-11-05", "--end-date", "2026-11-06", "--batch-size", "2"]
+    )
+    assert mod.run_backfill(args) == expected_status
 
 
 def test_symbol_helpers_normalize_us_cache_keys():
