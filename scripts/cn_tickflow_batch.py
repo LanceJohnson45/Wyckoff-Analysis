@@ -18,10 +18,10 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Engine
 
 from core.market_scope import excluded_cn_board
-from integrations.market_data_policy import announced_suspension_days, exclusion_applies, fetch_cn_suspensions, load_security_overrides
+from integrations.market_data_policy import SuspensionPeriod, announced_suspension_days, exclusion_applies, fetch_cn_suspensions, load_security_overrides
 from integrations.postgres_base import get_postgres_dsn, postgres_configured, postgres_enabled
 from integrations.tickflow_client import normalize_cn_symbol, parse_ohlcv_payload
-from scripts.market_data_batches import BatchPlan, load_plan
+from scripts.market_data_batches import BatchPlan, load_plan, write_suspension_snapshot
 from scripts.prewarm_workers import bounded_call
 
 CN_TZ = ZoneInfo("Asia/Shanghai")
@@ -152,8 +152,8 @@ async def _download(missing: dict[str, set[date]], target: date) -> list[dict]:
     return rows
 
 
-def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, int]:
-    """写入缺失的有效日线，返回新写行数和目标日仍待核验的股票数。"""
+def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, int, dict[str, SuspensionPeriod] | None]:
+    """写入有效缺失日线，返回写入行数、待核验数和本轮停牌证据。"""
     target = date.fromisoformat(plan["target_date"])
     cutoff = target - timedelta(days=recent_days)
     days = {date.fromisoformat(raw) for raw in plan["trade_dates"] if not recent_days or raw >= cutoff.isoformat()}
@@ -174,12 +174,14 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
         missing[symbol].difference_update(announced)
         if not missing[symbol]:
             del missing[symbol]
-    suspended = {}
+    suspension_snapshot: dict[str, SuspensionPeriod] | None = {}
     if missing:
         try:
-            suspended = bounded_call(fetch_cn_suspensions, target, timeout=15)
+            suspension_snapshot = bounded_call(fetch_cn_suspensions, target, timeout=15)
         except (RuntimeError, TimeoutError) as exc:
+            suspension_snapshot = None
             LOGGER.warning("cn_tickflow_suspension_lookup_failed", error_type=type(exc).__name__)
+    suspended = suspension_snapshot or {}
     for symbol in missing.keys() & suspended.keys():
         pending = {day for day in missing[symbol] if day < suspended[symbol].first_day}
         if pending:
@@ -197,7 +199,7 @@ def prefill(plan: BatchPlan, engine: Engine, *, recent_days: int) -> tuple[int, 
     remaining = _missing_days(engine, [symbol for symbol in symbols if symbol not in suspended_today], {target})
     LOGGER.info("cn_tickflow_prefill_done", target_date=str(target), active=len(symbols), symbols_requested=len(missing),
                 rows_inserted=inserted, suspended=len(suspended_today), target_date_missing=len(remaining))
-    return inserted, len(remaining)
+    return inserted, len(remaining), suspension_snapshot
 
 
 def main() -> int:
@@ -205,6 +207,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--recent-days", type=int, required=True)
+    parser.add_argument("--suspensions-out", type=Path)
     args = parser.parse_args()
     if args.recent_days < 0:
         parser.error("--recent-days 不得为负数")
@@ -212,13 +215,16 @@ def main() -> int:
         parser.error("TickFlow 批量日线需要 PostgreSQL 配置")
     engine = _cache_engine()
     try:
-        _, missing = prefill(load_plan(args.plan), engine, recent_days=args.recent_days)
+        plan = load_plan(args.plan)
+        _, missing, suspensions = prefill(plan, engine, recent_days=args.recent_days)
     finally:
         engine.dispose()
     # 数据源大面积缺当日 K 线时，阻止整池退回到原本按只限频的路径。
     if missing > MAX_TARGET_FALLBACK_SYMBOLS:
         LOGGER.error("cn_tickflow_target_coverage_low", target_date_missing=missing, fallback_limit=MAX_TARGET_FALLBACK_SYMBOLS)
         return 2
+    if args.suspensions_out:
+        write_suspension_snapshot(args.suspensions_out, plan, suspensions)
     return 0
 
 

@@ -49,7 +49,7 @@ from integrations.market_data_policy import BeforeListingRange, SuspensionPeriod
 from integrations.market_data_review import review_reason, write_review
 from integrations.fetch_a_share_csv import _resolve_trading_window, _resolve_us_window, _trade_dates_cached, get_all_stocks, TradingWindow
 from scripts.prewarm_workers import PrewarmBudgetExpired, bounded_call, iter_bounded_jobs
-from scripts.market_data_batches import load_plan
+from scripts.market_data_batches import load_plan, load_suspension_snapshot
 from scripts.wyckoff_funnel import (
     HK_MAIN_BENCH_CODE,
     HK_SMALLCAP_BENCH_CODE,
@@ -601,6 +601,7 @@ def _main() -> int:
     parser.add_argument("--trading-days", type=int, default=max(int(os.getenv("FUNNEL_TRADING_DAYS", "320")), 30))
     parser.add_argument("--max-workers", type=int, default=max(int(os.getenv("FUNNEL_PREWARM_MAX_WORKERS", "8")), 1))
     parser.add_argument("--batch-plan", type=Path, help="冻结的CN批次计划，替代实时名单与交易窗口")
+    parser.add_argument("--suspension-snapshot", type=Path, help="预填作业冻结的本轮停牌证据")
     parser.add_argument("--batch-id", type=int, help="计划中的批次编号（从0开始）")
     parser.add_argument("--limit", type=int, default=0)
     parser.add_argument("--sleep-seconds", type=float, default=0.0)
@@ -626,8 +627,8 @@ def _main() -> int:
         os.environ["FUNNEL_MARKET"] = args.market
     market = _resolve_funnel_market()
     plan = None
-    if args.batch_id is not None and args.batch_plan is None:
-        parser.error("--batch-id必须与--batch-plan一起使用")
+    if (args.batch_id is not None or args.suspension_snapshot is not None) and args.batch_plan is None:
+        parser.error("--batch-id和--suspension-snapshot必须与--batch-plan一起使用")
     if args.batch_plan is not None:
         if market != "cn" or args.symbols.strip() or args.limit:
             parser.error("批次计划仅支持CN，不能同时指定--symbols或--limit")
@@ -639,6 +640,7 @@ def _main() -> int:
         _PREWARM_BATCH_ID.set(args.batch_id)
         args.review_dir.mkdir(parents=True, exist_ok=True)
         (args.review_dir / "batch_metadata.json").write_text(json.dumps({"plan_id": plan["plan_id"], "batch_id": args.batch_id}), encoding="utf-8")
+    suspension_snapshot = load_suspension_snapshot(args.suspension_snapshot, plan) if plan and args.suspension_snapshot else None
     end_day = date.fromisoformat(plan["target_date"]) if plan else args.end_date or _job_end_calendar_day()
     if plan:
         items = plan["batches"][args.batch_id]["securities"]
@@ -764,7 +766,9 @@ def _main() -> int:
             )
 
     ready_updates: dict[str, dict] = {}
-    suspensions: dict[str, SuspensionPeriod] = {}
+    suspensions = suspension_snapshot or {}
+    if suspension_snapshot is not None:
+        _log(f"prewarm using frozen suspension snapshot target_date={end_day} count={len(suspensions)}")
     if market == "cn" and symbols_to_check:
         for exchange, prefixes in (("bj", ("4", "8", "92")), ("sz", ("0", "3"))):
             candidates = [sym for sym in symbols_to_check if sym.startswith(prefixes) and not overrides.get((market, sym), {}).get("listing_date")]
@@ -782,10 +786,11 @@ def _main() -> int:
                 _log(f"prewarm listing metadata exchange={exchange} applied={applied}")
             except Exception as exc:
                 _log(f"prewarm listing lookup failed exchange={exchange}: {type(exc).__name__}: {exc}; 未确认边界仍保留缺口审核")
-        try:
-            suspensions = bounded_call(fetch_cn_suspensions, end_day, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
-        except Exception as exc:
-            _log(f"prewarm suspension lookup failed: {type(exc).__name__}: {exc}; 未确认停牌仍按正常缺口核验")
+        if suspension_snapshot is None:
+            try:
+                suspensions = bounded_call(fetch_cn_suspensions, end_day, timeout=min(30, max(run_deadline - time.monotonic(), 0.01)))
+            except Exception as exc:
+                _log(f"prewarm suspension lookup failed: {type(exc).__name__}: {exc}; 未确认停牌仍按正常缺口核验")
     cached_by_symbol = None
     if plan and symbols_to_check:
         from integrations.postgres_base import postgres_enabled

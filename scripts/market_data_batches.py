@@ -15,6 +15,7 @@ from typing import Any, TypedDict, cast
 
 import structlog
 
+from integrations.market_data_policy import SuspensionPeriod
 from integrations.market_data_review import write_review
 
 PLAN_VERSION = 1
@@ -116,6 +117,32 @@ def validate_plan(payload: dict[str, Any]) -> BatchPlan:
 def load_plan(path: Path) -> BatchPlan:
     """所有作业读取同一份不可变计划。"""
     return validate_plan(json.loads(path.read_text(encoding="utf-8")))
+
+
+def write_suspension_snapshot(path: Path, plan: BatchPlan, periods: dict[str, SuspensionPeriod] | None) -> None:
+    """记录预填作业用过的停牌证据，空值表示查询不可用。"""
+    path.write_text(json.dumps({
+        "plan_id": plan["plan_id"],
+        "periods": None if periods is None else {
+            code: {"first_day": period.first_day.isoformat(), "evidence": period.evidence}
+            for code, period in periods.items()
+        },
+    }, ensure_ascii=False), encoding="utf-8")
+
+
+def load_suspension_snapshot(path: Path, plan: BatchPlan) -> dict[str, SuspensionPeriod] | None:
+    """拒绝复用与当前批次计划或目标日期不符的停牌证据。"""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload["plan_id"] != plan["plan_id"]:
+        raise ValueError("停牌快照与本轮批次计划不匹配")
+    raw = payload["periods"]
+    if raw is None:
+        return None
+    periods = {code: SuspensionPeriod(date.fromisoformat(value["first_day"]), value["evidence"]) for code, value in raw.items()}
+    target = date.fromisoformat(plan["target_date"])
+    if any(not re.fullmatch(r"[0-9]{6}", code) or period.first_day > target or not period.evidence for code, period in periods.items()):
+        raise ValueError("停牌快照含无效代码、日期或证据")
+    return periods
 
 
 def merge_batches(plan: BatchPlan, source: Path, output: Path) -> CoverageSummary:
