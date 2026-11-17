@@ -79,13 +79,17 @@ jobs:
           set -o pipefail
           uv run --frozen --no-dev python -m scripts.cn_tickflow_batch \
             --plan logs/cn_daily_plan.json --recent-days "$FUNNEL_PREWARM_RECENT_GAP_MAX_AGE_DAYS" \
+            --suspensions-out logs/cn_suspensions.json \
             2>&1 | tee logs/cn_tickflow_prefill.log
       - name: Save frozen plan
         if: steps.plan.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: cn-daily-plan
-          path: logs/cn_daily_plan.json
+          path: |
+            logs/cn_daily_plan.json
+            logs/cn_suspensions.json
+          if-no-files-found: error
           retention-days: 7
           overwrite: true
       - name: Save preparation logs
@@ -147,6 +151,7 @@ jobs:
           timeout --kill-after=30s "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" \
             uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market cn \
             --batch-plan data/batch-plan/cn_daily_plan.json --batch-id "$BATCH_ID" \
+            --suspension-snapshot data/batch-plan/cn_suspensions.json \
             --trading-days "$FUNNEL_PREWARM_DAYS" --symbol-timeout-seconds 60 \
             --dispatch-budget-seconds 180 \
             --run-budget-seconds 240 \

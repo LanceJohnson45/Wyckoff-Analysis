@@ -706,3 +706,31 @@ def test_normal_batch_plan_cli_emits_frozen_matrix(maintenance: dict, monkeypatc
     assert plan["batches"][0]["securities"][0]["code"] == "000002"
     assert 'matrix={"batch_id": [0, 1]}' in output.read_text()
     assert f"target_date={target}" in output.read_text()
+
+
+def test_batch_reuses_prepared_suspension_when_live_lookup_is_unavailable(maintenance: dict, monkeypatch: pytest.MonkeyPatch) -> None:
+    """准备阶段已确认停牌后，逐股核验复用该轮证据且无需再次查询。"""
+    from scripts.market_data_batches import create_plan, load_suspension_snapshot, write_suspension_snapshot
+
+    target = maintenance["dates"][-1]
+    stock = "600185"
+    maintenance["cache"][stock] = maintenance["dates"][:-2]
+    plan = create_plan([{"code": stock}], target_date=target, window_start=maintenance["dates"][0],
+                       trade_dates=maintenance["dates"], trading_days=320)
+    folder = maintenance["path"]
+    plan_path = folder / "plan.json"
+    plan_path.write_text(json.dumps(plan), encoding="utf-8")
+    snapshot_path = folder / "suspensions.json"
+    period = prewarm.SuspensionPeriod(maintenance["dates"][-2], "https://example.com/suspension")
+    write_suspension_snapshot(snapshot_path, plan, {stock: period})
+    with pytest.raises(ValueError, match="停牌快照"):
+        load_suspension_snapshot(snapshot_path, {**plan, "plan_id": "different"})
+    monkeypatch.setattr(prewarm, "fetch_cn_suspensions", lambda target: pytest.fail("不应重复查询当日停牌"))
+    monkeypatch.setattr("sys.argv", ["prewarm", "--market", "cn", "--batch-plan", str(plan_path), "--batch-id", "0",
+                                     "--suspension-snapshot", str(snapshot_path), "--review-dir", str(folder)])
+
+    assert prewarm.main() == 0
+    coverage = pd.read_csv(folder / f"prewarm_cn_{target}_coverage.csv", dtype=str)
+    assert coverage.iloc[0]["status"] == "suspended"
+    assert coverage.iloc[0]["evidence"] == period.evidence
+    assert not maintenance["requests"]
