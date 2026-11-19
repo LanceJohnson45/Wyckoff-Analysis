@@ -6,6 +6,11 @@ on:
     - cron: "23 0 * * 2-6"
       timezone: America/New_York
   workflow_dispatch:
+    inputs:
+      end_date:
+        description: "Optional completed US trading day (YYYY-MM-DD)"
+        required: false
+        type: string
 
 concurrency:
   group: daily-job-us-${{ github.ref }}
@@ -78,6 +83,16 @@ jobs:
       - name: Prepare logs dir
         run: mkdir -p logs
 
+      - name: Verify completed US daily bars
+        id: target
+        timeout-minutes: 2
+        env:
+          INPUT_END_DATE: ${{ inputs.end_date }}
+        run: |
+          set -o pipefail
+          uv run --frozen --no-dev python -m scripts.us_market_target --end-date "$INPUT_END_DATE" \
+            2>&1 | tee logs/us_market_target.log
+
       - name: Sync S&P500 constituents
         run: |
           echo "::group::Sync S&P 500 Constituents"
@@ -102,7 +117,7 @@ jobs:
           echo "::group::Prewarm cache (US)"
           set -o pipefail
           set +e
-          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market us --trading-days ${FUNNEL_PREWARM_DAYS} \
+          timeout "${FUNNEL_PREWARM_TIMEOUT_MINUTES}m" uv run --frozen --no-dev python -u scripts/funnel_prewarm.py --market us --end-date "${{ steps.target.outputs.target_date }}" --trading-days ${FUNNEL_PREWARM_DAYS} \
             2>&1 | tee -a ${{ github.workspace }}/logs/funnel_prewarm_us.console.log
           prewarm_status=${PIPESTATUS[0]}
           set -e
@@ -115,11 +130,11 @@ jobs:
           exit "${prewarm_status}"
 
       - name: Refresh analysis benchmark daily bars
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.target.outcome == 'success' }}
         timeout-minutes: 5
         run: |
           set -o pipefail
-          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market us \
+          uv run --frozen --no-dev python -u scripts/refresh_market_benchmarks.py --market us --end-date "${{ steps.target.outputs.target_date }}" \
             2>&1 | tee logs/benchmark_us.console.log
 
       - name: Save prewarm state
