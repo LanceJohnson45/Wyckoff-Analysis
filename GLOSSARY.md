@@ -514,3 +514,5 @@ flowchart LR
 **冻结锚点曲线**：从Martin原产物已确认锚点与完整冻结日线重建的日线累计典型价成交量均价。曲线从确认日显示，请求窗口不重置累计，末值核对原估算；辅助显示、硬过滤关闭。详见[个股图表](docs/stock_research_stock_view.md)。
 
 **量化worker执行边界**：API/CLI run对原生产量化的独立进程监督，取消/超时等候终态，父进程EOF使worker终止，校验成功后才发布缓存。按策略任务和追加尝试持久化，成功计算/初选复用；当前绑定投影保存到新报告修订，旧修订不补读后来产物。详见[量化执行](docs/stock_research_quant_execution.md)。
+
+**盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。无副作用计划入口输出日期/期限/预算，research_started=false，不能将runner completed当作研究完成。见[盘前入口](docs/stock_research_premarket.md)。

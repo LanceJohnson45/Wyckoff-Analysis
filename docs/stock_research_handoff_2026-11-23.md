@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：盘前原计划时刻与固定入口计划预览（2026-11-24）
+
+Personal三项只读接入已提交研究6d8c1e3f、services3b52256/文档6f60ac2并本机快进；运行宿主8802已加载、原11项保持。此后继续plan第10/11节，先修正direct cron固定脚本收不到原slot的问题。services本批代码f238c70：仅显式pass_schedule_context=true的direct计划追加五项原事件元数据至既有input.json，严格布尔/身份时刻一致；缺省保持原action/输入/幂等，原42计划未启用。生产网关部署副本未更新，不冒称新调度已生效。
+
+研究新增python -m stock_research.premarket --plan，按原slot纽约日期确定目标日、前一完整日、正式开盘减60分钟、纽约08:50恢复截止；节假日跳过不滚日。自动过期预算0，显式手动迟到仍标记且只用原手动事件起3000秒余额，重放不重置。输入16KiB/额外字段拒绝、ID/原时刻一致，runner文件限同一run目录并拒绝软链/越界，0600原子输出。仅生成mode=plan/research_started=false，不读取研究.env/Settings、不接HTTP/PG/模型/通知，不能将services completed当作研究成功。见stock_research_premarket.md；实际执行入口仍待后续接通。
+
+services原生隔离PG/HMAC事件→direct→固定股票argv→input/output真实联调1通过，四份产物回执；23日13:00Z事件延迟到24日观察，目标仍23日、行情20日、expired/预算0，无新研究。临时证明用例已移除，工程结果保留忽略目录.stock-research/bootstrap/premarket-context-bridge.{json,log}，不提交数据库、私有输入或日志。
+
+最终源码冻结后全量Python6060通过（无skip、50旧警告），新增计划专项20通过；services专项56、最终全量500通过及3原Docker条件skip。Ruff/1273文件格式、完整质量、root红线99文件、workflow/dependency hygiene和合成daily dry-run通过。Python LOC142401/+65.2%、TS36116/+94.2%旧基线警告保留。services四旧红线命中与6f60ac2独立基线文本相同（默认URL、load_state、两个旧测试helper），新helper已改TypedDict，新增0；不称其全仓零命中。未改Web，沿用a4f1408a完整Web409/API221及两项默认Upstash跳过。无依赖变化、函数豁免或pytest排除。
+
+主workspace零活动守卫后，仅更新本线程8788 API。旧25392及中间47423均终态143、PID消失/端口释放确认；补充手动预算固定后最终PID48204/session52210，日志premarket-context-main-api-final.log。ready200，独立连接/HTTP确认原行/摘要及完整cf8da076报告、a45bf9c4问答保持，跨workspace404、共享只读身份私人问答403。没有新研究、问答、个人记录或通知；共享Personal8802/网关/调度不重启。计划来源的两条历史资料断链已改为本地git核实存在的dc5fec0e固定提交链接，91处本轮本地文档链接检查通过。
+
+下一步接专用有限API身份、原期限内启动/等待/局部恢复、行情更新/60及180秒退避，再完成唯一stock-research-premarket六处清单/cron所有权与通知去重回查。已只读确认services存在/internal/deliver受工作区bus身份限制，另有内部task_delivery；接入需核对稳定业务键/未知投递状态，不能复制SA_INTERNAL或网关PG身份给股票workflow。正式Mac运行包/TCC、Tailscale/多用户、正常浏览器控件、旧行情更新协调/PIT及效果评估、wiki缺失、远端CI和另一个session整体审查继续保留，整个plan.md目标未完成。
+
 ## 续接检查点：Personal三项只读查询已加载（2026-11-24）
 
 私有问答有界重试已提交a4f1408a。本批personal-mcp命令先预览，只在提供原摘要后追加唯一Personal预设的stocks MCP；保留自定义JS标签和其余原文，不重新序列化整份运行配置。合作式文件锁、两次写前字节核对、0600备份和原子替换；精确撤回只删除本次插件，保留后来其他修改，撤回不依赖原源码或身份文件。默认预览不写入，命令不构造服务器Settings。查询子进程env -i只载既有query.env，不继承PG、模型或Personal身份；安装结果runtime_verified=false，不将写文件当成宿主已加载。详见stock_research_personal.md。
@@ -12,7 +26,7 @@
 
 仅重启本线程8788 API，旧PID17003终态143、端口释放已确认；当前PID25392/session78765，日志personal-mcp-main-api.log。ready200，独立连接/HTTP确认主workspace零活动研究/问答、全部原行和摘要保持，原完整报告及a45bf9c4问答可读，跨workspace404、只读身份读取私有问答403。26表未变；未创建研究/问答或修改个人事实、持仓、提醒与计划。
 
-services本批在独立codex/stock-research-personal工作树交付operator-config片段及Personal文档，基线d405f961；原checkout的hourly-report-review.md删除及platform/social/mail既有dirty保留。正式launchd运行包/TCC路径、Tailscale身份入口、浏览器正常登录控件、唯一stock-research-premarket工作流/六处注册/定时/通知回执、行情旧更新协调和数据缺口、PIT及效果评估仍待接续。独立wiki checkout缺失，远端CI与另一个session整体审查尚未通过，不声称可合入或全plan完成。
+本批代码已提交研究6d8c1e3f、services3b52256（文档6f60ac2），并本机快进合入原services分支，未推送；原checkout的hourly-report-review.md删除及platform/social/mail既有dirty保留。正式launchd运行包/TCC路径、Tailscale身份入口、浏览器正常登录控件、唯一stock-research-premarket工作流/六处注册/定时/通知回执、行情旧更新协调和数据缺口、PIT及效果评估仍待接续。独立wiki checkout缺失，远端CI与另一个session整体审查尚未通过，不声称可合入或全plan完成。
 
 ## 续接检查点：私有问答有界重试与逐次回执
 

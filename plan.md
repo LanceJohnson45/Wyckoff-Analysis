@@ -58,7 +58,7 @@
 | 本机dsh | 已安装0.2.2-rc.1，支持独立home、profile与运行入口 | Mac mini安装版本与接口仍须现场核验 |
 | AKQuant | 已查官方文档及声明，参考版本0.3.93 | 实施时固定版本、检查依赖并实测，当前尚未安装验证 |
 
-Personal服务的指定提交以代码及其验收记录为证据。Mac mini实时状态、配置与访问权限尚未核验。main同步不代表当前工作分支、远端fork或生产环境已经完成上游升级。
+Personal服务的指定提交以代码及其验收记录为证据。本机DSH Personal三项查询已读回确认；正式Mac运行包、访问入口和调度权限仍分别验收。main同步不代表当前工作分支、远端fork或生产环境已经完成上游升级。
 
 ## 4 总体边界
 
@@ -302,6 +302,8 @@ Wyckoff使用上游通过条件和排序，最多30只进入复核池。模型�
 7. 到开盘前60分钟发布当前报告状态并请求飞书通知。
 8. 局部失败继续有界重试至纽约08:50，补齐后发布新报告修订与恢复通知。
 9. 保持失败或未知的部分留下回执和可重跑入口，结束当次程序。
+
+固定入口已先接通[原计划上下文与无副作用计划预览](docs/stock_research_premarket.md)，尚未启用自动计划、研究写接口或通知；延迟事件不按启动当天换目标日。
 
 固定workflow总超时3300秒，内部执行截止3000秒。各模型阶段、行情请求及重试须服从剩余预算，取消后回收子进程并确认终止。网络中断后已经越过正常生成期限的补跑只生成标明迟到的研究，不伪装按时完成。
 
@@ -554,8 +556,8 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 ## 20 参考资料
 
 - [因子出处与待测参数核对](docs/martin_luk_factor_provenance_2026-11-23.md)
-- [现有Martin工作台规则](docs/martin_luk_web.md)
-- [Martin教程与资料入口](research/martin_luk_final/README.md)
+- [来源分支Martin工作台规则](https://github.com/LanceJohnson45/Wyckoff-Analysis/blob/dc5fec0e9d675adf6e619240f1fc478d0b821420/docs/martin_luk_web.md)
+- [Martin教程与资料入口](https://github.com/LanceJohnson45/Wyckoff-Analysis/blob/dc5fec0e9d675adf6e619240f1fc478d0b821420/research/martin_luk_final/README.md)
 - [上游22dc8c65](https://github.com/YoungCan-Wang/Wyckoff-Analysis/tree/22dc8c65)
 - [Personal接手基线680a67a](https://github.com/LanceJohnson45/dsh-superagent-services/tree/680a67ac88a73a30d345cb89f6e526a6d51b75a6)
 - [Personal运行契约](https://github.com/LanceJohnson45/dsh-superagent-services/blob/680a67ac88a73a30d345cb89f6e526a6d51b75a6/docs/api/run-contract.md)
