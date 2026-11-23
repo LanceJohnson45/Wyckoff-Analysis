@@ -498,3 +498,5 @@ flowchart LR
 **参数注册与发布**：parameter_sets保存不可变值，parameter_profiles绑定策略/版本名，strategy_parameter_activations追加发布修订。expected_revision防并发覆盖；无发布记录时才使用operator文件基线，存储错误不回退。新研究冻结完整参数与来源，旧运行保持原样。
 
 **参数草稿**：Agent研究视图中的完整JSON编辑值。载入版本仅改变草稿；登记保存不可变版本，发布才改变下一次研究使用的配置。当前配置与所看报告的冻结参数分别显示，发布冲突或结果未确认时先读取当前配置再操作。
+
+**输入准备回执**：run建立前的独立持久化尝试，记录参数/快照/量化/冻结阶段和真实质量。unconfirmed保持未知，ready仅确认输入已固定并关联run；failed/cancelled不清空历史报告或名单。API及CLI默认/指定快照入口共用，详情见[准备回执](docs/stock_research_preparations.md)。

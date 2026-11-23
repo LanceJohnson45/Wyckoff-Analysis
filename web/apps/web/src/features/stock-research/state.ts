@@ -61,7 +61,7 @@ export function useStockResearch() {
   return { report, runs, revisions, active, connectionProblem, page, setPage, runId, fixed: selection.reportId !== null, actions,
     selectRun: (id: string | null) => setSelection({ runId: id, reportId: null }),
     selectRevision: (id: string) => setSelection({ runId, reportId: id }),
-    refresh: () => { void report.refetch(); void runs.refetch(); if (runId) void revisions.refetch(); void client.invalidateQueries({ queryKey: ['research', 'watchlists'] }); void client.invalidateQueries({ queryKey: ['research', 'watch-events'] }) },
+    refresh: () => { void report.refetch(); void runs.refetch(); if (runId) void revisions.refetch(); void client.invalidateQueries({ queryKey: ['research', 'watchlists'] }); void client.invalidateQueries({ queryKey: ['research', 'watch-events'] }); void client.invalidateQueries({ queryKey: ['research', 'preparations'] }) },
   }
 }
 
@@ -81,6 +81,7 @@ function useResearchActions(report: ResearchReport | null, selectRun: (id: strin
       if (kind === 'create') {
         if (force && !report) throw new Error('请先选择原研究报告')
         const body = { market: 'us' as const, target_session: force && report ? report.run.target_session : target, preview: true as const, ...(force && report ? { force: true, parent_run_id: report.run.run_id } : {}) }
+        if (force) setTarget(body.target_session)
         const canonical = JSON.stringify(body)
         if (!request.current || request.current.body !== canonical) request.current = { body: canonical, key: crypto.randomUUID() }
         accepted = await createResearchRun(body, request.current.key)
@@ -91,7 +92,7 @@ function useResearchActions(report: ResearchReport | null, selectRun: (id: strin
       selectRun(accepted.run_id)
       await client.invalidateQueries({ queryKey: ['research'] })
     } catch (reason) { setError(reason instanceof Error ? reason.message : '研究操作未确认，请刷新运行记录') }
-    finally { inFlight.current = false; setBusy(null) }
+    finally { inFlight.current = false; setBusy(null); void client.invalidateQueries({ queryKey: ['research', 'preparations'] }) }
   }
   return { target, setTarget, busy, error, act }
 }

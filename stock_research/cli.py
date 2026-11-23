@@ -17,7 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from stock_research.artifacts import data_lock, write_once
 from stock_research.benchmarks import BenchmarkBundle, fetch_benchmarks, merge_benchmarks
-from stock_research.calendar import latest_complete_session, session_times, sessions_ending
+from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
@@ -252,15 +252,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     if args.command == "track-run":
         return asyncio.run(track_run_command(settings, args.id)), 0
     if args.command == "run":
-        path = args.snapshot_file
-        if path is None:
-            _, _, previous = session_times(args.target_session)
-            result, status = snapshot_command(settings, previous, offline=False)
-            if status:
-                return result, status
-            path = Path(result["path"])
         result = asyncio.run(
-            run_command(settings, path, args.target_session, parent_id=args.parent_run, force=args.force)
+            run_command(settings, args.snapshot_file, args.target_session, parent_id=args.parent_run, force=args.force)
         )
         return result, 0 if result["status"] == "completed" else 2
     if args.command == "benchmark":

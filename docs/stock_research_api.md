@@ -25,6 +25,7 @@
 | GET /v1/parameter-sets/{UUID} | 参数产物详情 |
 | POST /v1/strategies/{strategy}/activate-parameters | expected_revision发布，过期409 |
 | GET /v1/research-runs/{UUID}/parameters | 固定运行参数及来源，不用当前发布覆盖 |
+| GET /v1/preparations | 独立输入准备回执，可按target_session过滤和SQL分页；ready不等于模型完成 |
 | GET /openapi.json | 当前显式Pydantic输入/输出契约 |
 
 创建请求仅接受market=us、target_session、preview=true及可选force/parent_run_id。必须带16～128字符的Idempotency-Key。相同键只返回原运行，改变请求载荷返回409；force与parent_run_id须同时提供，生成关联父运行的新版本。请求不能设置文件路径、SQL、模型或连接配置。冻结失败返回503，质量报告仍由数据入口物化；它不是已接受的研究运行。此入口不执行行情同步、通知或订单，更新和services调度仍在后续阶段实现。
@@ -39,4 +40,4 @@ SSE游标是run内单调revision，断线后用Last-Event-ID继续。每条repor
 
 RunView现在带companies，名称来自同一冻结快照的当时分类或成分名称，不向当前市场查询改写历史身份。浏览器EventSource以after查询参数初始化游标，重连的Last-Event-ID继续有效。
 
-本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；[参数版本与CAS发布](stock_research_parameters.md)已接后台、API/CLI实际消费和Agent维护界面。未建run的数据失败回执、分组整池查询、主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。
+本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；[参数版本与CAS发布](stock_research_parameters.md)已接后台、API/CLI实际消费和Agent维护界面。[未建run的输入准备回执](stock_research_preparations.md)已接HTTP/CLI与Agent。分组整池查询、主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。

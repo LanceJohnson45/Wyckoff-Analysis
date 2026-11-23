@@ -23,3 +23,7 @@ class ResearchUnavailable(RuntimeError):
 
 class ResearchSourceChanged(ResearchUnavailable):
     """磁盘与已加载执行版本不同，必须重启后创建新研究。"""
+
+
+class ResearchQualityError(ResearchUnavailable):
+    """真实快照覆盖或基准质量未通过，不能创建研究运行。"""

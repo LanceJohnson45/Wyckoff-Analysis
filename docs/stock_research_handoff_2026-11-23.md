@@ -2,6 +2,16 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
+## 当前检查点：未建run的输入准备回执
+
+参数界面已提交d0f1f6ce。新增preparation_attempts（显式init-schema后21表），HTTP新建和CLI默认/指定快照入口在参数/快照/量化/冻结前后保存独立尝试；ready关联真实run且只表示输入已固定，失败/取消保存固定错误码，硬中断保留unconfirmed。GET /v1/preparations按目标日过滤和SQL分页，既有Agent运行操作下方展示质量/未知状态与对应run，不清空旧报告或名单。CLI默认分支不再在记录外提前生成快照；仍消费原run_preview，由冻结回调在模型前确认。
+
+最终完整Python5981通过（无skip、50旧警告），准备/流水线/参数专项17通过；完整Web gate为frozen-lockfile、TS strict、Web386、API221/默认两项外部Upstash跳过、Web/Pages-functions构建。Ruff/格式、全范围质量、红线、hygiene和daily dry-run通过，42份JS无两种研究身份。Python LOC138073/+60.2%、TS35231/+89.5%旧基线警告保留，增长对应本轮准备账本/API/CLI与界面。
+
+真实隔离workspace临时用100%覆盖要求，原快照501/518、96.72%对齐按预期未通过；默认CLI、缺失快照CLI及两次API共4失败均独立读回，run总数0。stocks覆盖要求/参数未改，原cf8da076报告ID/修订3/摘要及名单保持。主API旧源码ready503且报告可读，确认0活动任务后重启ready200；原生PG21表、stocks准备数0，不补造历史。未启动新模型或发送通知。
+
+实际浏览器仍待现有账号认证，控件未验收；wiki checkout不存在、远端CI和正式部署未验收。接续：完整分组/整池/比较/规则工具与研究聊天注册、主题/自选维护、锚点叠加、行情同步协调与单策略量化局部降级、Personal唯一调度及通知。无Personal仓库/secrets修改。
+
 ## 当前检查点：Agent参数维护界面
 
 后台参数版本已提交d4327e40。现有Agent研究视图新增当前配置/报告冻结参数、完整JSON草稿、登记版本SQL分页及显式发布。载入不发布，刷新/折叠保留草稿；发布按当前revision，成功/失败后先显式读回，409不自动换修订重试。代理新增固定参数GET/登记POST/两策略发布POST，无新增页面或前端研究凭据。

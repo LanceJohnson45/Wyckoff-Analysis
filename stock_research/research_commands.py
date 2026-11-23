@@ -6,11 +6,13 @@ from pathlib import Path
 from stock_research.analysis import MartinReport, compute_martin
 from stock_research.artifacts import write_once
 from stock_research.config import Settings
+from stock_research.errors import ResearchQualityError
 from stock_research.identity import digest
 from stock_research.models import Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.parameters import MartinParameters
 from stock_research.pipeline import run_preview
+from stock_research.preparations import record_preparation
 from stock_research.run_store import RunStore
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 from stock_research.store import close_engine, database_engine
@@ -69,31 +71,50 @@ def analyze_command(
 
 
 async def run_command(
-    settings: Settings, snapshot_path: Path, target_session: date, *, parent_id: str | None = None, force: bool = False
+    settings: Settings,
+    snapshot_path: Path | None,
+    target_session: date,
+    *,
+    parent_id: str | None = None,
+    force: bool = False,
 ) -> dict[str, object]:
     """CLI预览走相同账本与执行器；不发送通知或创建订单。"""
     import asyncio
 
-    snapshot = Snapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
+    ensure_source_current()
     engine = database_engine(settings)
     try:
-        settings, sources = await resolve_run_parameters(RunStore(engine, settings.workspace), settings)
-        analyses = {}
-        for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
-            output = await asyncio.to_thread(
-                analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy
+        async with record_preparation(RunStore(engine, settings.workspace), target_session, "cli") as attempt:
+            settings, sources = await resolve_run_parameters(RunStore(engine, settings.workspace), settings)
+            await attempt.checkpoint("snapshot")
+            if snapshot_path is None:
+                from stock_research.cli import snapshot_command
+
+                output, _ = await asyncio.to_thread(snapshot_command, settings, attempt.state.as_of, offline=True)
+                snapshot_path = Path(output["path"])
+            snapshot = Snapshot.model_validate_json(await asyncio.to_thread(snapshot_path.read_text, encoding="utf-8"))
+            await attempt.checkpoint("snapshot", snapshot.quality)
+            if not snapshot.quality.passed:
+                raise ResearchQualityError("快照未通过研究质量门槛")
+            await attempt.checkpoint("analysis")
+            analyses = {}
+            for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
+                output = await asyncio.to_thread(
+                    analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy
+                )
+                analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
+            await attempt.checkpoint("freeze")
+            return await run_preview(
+                engine,
+                settings,
+                snapshot,
+                analyses,
+                target_session,
+                parent_id=parent_id,
+                force=force,
+                parameter_sources=sources,
+                on_prepared=attempt.ready,
             )
-            analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
-        return await run_preview(
-            engine,
-            settings,
-            snapshot,
-            analyses,
-            target_session,
-            parent_id=parent_id,
-            force=force,
-            parameter_sources=sources,
-        )
     finally:
         await close_engine(engine)
 

@@ -10,10 +10,17 @@ from sqlalchemy.exc import SQLAlchemyError
 from stock_research.analysis import MartinReport
 from stock_research.calendar import session_times
 from stock_research.config import Settings
-from stock_research.errors import ResearchConflict, ResearchInputError, ResearchSourceChanged, ResearchUnavailable
-from stock_research.models import Snapshot
+from stock_research.errors import (
+    ResearchConflict,
+    ResearchInputError,
+    ResearchQualityError,
+    ResearchSourceChanged,
+    ResearchUnavailable,
+)
+from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import prepare_preview, resume_preview
+from stock_research.preparations import record_preparation
 from stock_research.request_store import RequestStore
 from stock_research.research_commands import analyze_command
 from stock_research.run_store import RunStore
@@ -35,13 +42,16 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
     except ValueError:
         raise ResearchInputError("目标日期不是正式交易日") from None
     try:
-        async with asyncio.timeout(120):
+        async with record_preparation(store, data.target_session, "api", request_id) as attempt, asyncio.timeout(120):
             settings, parameter_sources = await resolve_run_parameters(store, settings)
+            await attempt.checkpoint("snapshot")
             output, status = await asyncio.to_thread(snapshot_command, settings, previous, offline=True)
+            await attempt.checkpoint("snapshot", QualityReport.model_validate(output["quality"]))
             if status:
-                raise ResearchUnavailable("行情覆盖或基准未通过质量门槛")
+                raise ResearchQualityError("行情覆盖或基准未通过质量门槛")
             path = Path(output["path"])
             snapshot = await asyncio.to_thread(lambda: Snapshot.model_validate_json(path.read_text()))
+            await attempt.checkpoint("analysis")
             analyses = {}
             for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
                 result = await asyncio.to_thread(analyze_command, settings, path, previous, strategy=strategy)
@@ -49,6 +59,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                     lambda model=model, result=result: model.model_validate_json(Path(result["path"]).read_text())
                 )
             ensure_source_current()
+            await attempt.checkpoint("freeze")
             run_id, _connections = await prepare_preview(
                 store.engine,
                 settings,
@@ -60,6 +71,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 request_id=request_id,
                 parameter_sources=parameter_sources,
             )
+            await attempt.ready(run_id)
             return run_id
     except (OSError, SQLAlchemyError, TimeoutError, ValueError):
         raise ResearchUnavailable("无法冻结研究输入，请检查数据与执行配置") from None

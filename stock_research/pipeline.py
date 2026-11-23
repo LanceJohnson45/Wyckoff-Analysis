@@ -2,7 +2,7 @@
 
 import asyncio
 import hashlib
-from collections.abc import Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from datetime import date, datetime, timedelta
 from typing import Any
 
@@ -358,6 +358,7 @@ async def run_preview(
     parent_id: str | None = None,
     force: bool = False,
     parameter_sources: dict[str, object] | None = None,
+    on_prepared: Callable[[str], Awaitable[None]] | None = None,
 ) -> dict[str, object]:
     """CLI预览等待完整流程，HTTP可在冻结后独立调度同一恢复入口。"""
     run_id, connections = await prepare_preview(
@@ -370,6 +371,8 @@ async def run_preview(
         force=force,
         parameter_sources=parameter_sources,
     )
+    if on_prepared is not None:
+        await on_prepared(run_id)
     return await resume_preview(engine, settings, run_id, connections)
 
 

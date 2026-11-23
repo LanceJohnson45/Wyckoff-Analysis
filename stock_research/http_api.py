@@ -16,6 +16,7 @@ from stock_research.http_actions import register_actions
 from stock_research.http_events import register_events
 from stock_research.http_observations import register_observations
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
+from stock_research.http_preparations import register_preparations
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
 from stock_research.http_watchlists import register_watchlists
@@ -26,6 +27,7 @@ from stock_research.schema import (
     API_REQUESTS,
     PARAMETER_ACTIVATIONS,
     PARAMETER_PROFILES,
+    PREPARATION_ATTEMPTS,
     RESEARCH_RUNS,
     WATCHLIST_DAYS,
     WATCHLIST_EVENTS,
@@ -43,6 +45,7 @@ RUNTIME_TABLES = (
     WATCHLIST_DAYS,
     PARAMETER_PROFILES,
     PARAMETER_ACTIVATIONS,
+    PREPARATION_ATTEMPTS,
 )
 
 
@@ -87,6 +90,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_watchlists(app)
     register_parameter_reads(app)
     register_parameter_actions(app)
+    register_preparations(app)
     register_events(app)
     register_actions(app)
     return app

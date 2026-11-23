@@ -143,6 +143,20 @@ API_REQUESTS = execution_table(
     Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=True),
     UniqueConstraint("workspace", "key_hash"),
 )
+# lint-redline:ignore PS-10 输入准备可能尚无run，API关联请求，CLI无HTTP请求。
+PREPARATION_ATTEMPTS = execution_table(
+    "preparation_attempts",
+    Column("target_session", Date, nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("request_uuid", String(36), ForeignKey(API_REQUESTS.c.uuid), nullable=True),
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=True),
+)
+Index(
+    "idx_preparations_workspace_session_created",
+    PREPARATION_ATTEMPTS.c.workspace,
+    PREPARATION_ATTEMPTS.c.target_session,
+    PREPARATION_ATTEMPTS.c.create_time,
+)
 # lint-redline:ignore PS-10 阶段表依赖上方运行表。
 STAGE_RUNS = execution_table(
     "stage_runs",

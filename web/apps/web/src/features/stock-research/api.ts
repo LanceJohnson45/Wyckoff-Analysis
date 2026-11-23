@@ -1,8 +1,9 @@
 import { z } from 'zod'
 import { watchPageSchema, watchEventPageSchema } from './watch-contract'
-import { strategySchema, researchId as id, researchDay as day, researchHash as hash } from './contract-values'
+import { strategySchema, researchId as id, researchDay as day, researchHash as hash, researchQuality } from './contract-values'
 import { stockObservationSchema } from './stock-contract'
 import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strategyParametersSchema, type ParameterValues } from './parameter-contract'
+import { preparationPageSchema } from './preparation-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -16,7 +17,7 @@ export const runSchema = z.object({
   run_id: id, market: z.literal('us'), target_session: day, as_of: day,
   snapshot_id: id, snapshot_hash: hash, report_due: stamp, observed_at: stamp, late: z.boolean(), preview: z.boolean(),
   status: statusSchema, error_code: z.string().nullable(), companies: z.array(z.object({ symbol: z.string(), name: z.string().min(1) })),
-  quality: z.object({ passed: z.boolean(), coverage: z.number().min(0).max(1), aligned_count: z.number().int(), universe_count: z.number().int(), issues: z.array(z.object({ symbol: z.string(), reason: z.string(), strategy: z.string() })), limitations: z.array(z.string()) }),
+  quality: researchQuality,
   selections: z.array(z.object({ id, strategy: strategySchema, source, decision: z.object({ role: z.literal('select'), strategy: strategySchema, context_hash: hash, items: z.array(selectedItem).max(5), empty_reason: point.nullable() }) })),
   reviews: z.array(z.object({ id, strategy: strategySchema, source, decision: z.object({ role: z.literal('review'), strategy: strategySchema, context_hash: hash, target_selection_id: id, items: z.array(reviewItem).max(5) }) })),
   stages: z.array(z.object({ id, strategy: strategySchema, kind: z.enum(['select', 'review']), status: statusSchema, attempt_count: z.number().int(), target_selection_id: id.nullable(), context_hash: hash.nullable(), error: z.string().nullable(), receipt_available: z.boolean() })),
@@ -138,4 +139,10 @@ export async function publishParameterVersion(strategy: Strategy, parameterId: s
   const saved = await request(`/v1/strategies/${strategySchema.parse(strategy)}/activate-parameters`, strategyParameterSchema, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parameter_set_id: id.parse(parameterId), expected_revision: revision }) }, '参数发布结果未确认，请刷新当前参数后再操作')
   if (saved.strategy !== strategy || saved.parameter_set_id !== parameterId || saved.revision !== revision + 1 || saved.source !== 'published') throw new ResearchApiError('参数发布响应不一致，请读取当前配置核对', 503, 'invalid_response')
   return saved
+}
+
+export async function readPreparations(target: string, page: number, signal?: AbortSignal) {
+  const result = await request(`/v1/preparations?target_session=${day.parse(target)}&page=${page}&page_size=10`, preparationPageSchema, { signal })
+  if (result.items.some(item => item.target_session !== target)) throw new ResearchApiError('准备回执日期与当前查询不一致，请重新连接', 503, 'invalid_response')
+  return result
 }
