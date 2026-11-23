@@ -488,3 +488,5 @@ flowchart LR
 **固定股票观察**：由run_id限定当时快照和两策略量化产物，原因子ref、排除、分组与截止日日线可以回溯。未计算、未进入量化池、未正式入选和对方质疑是不同状态。
 
 **持续研究状态（watch-v1）**：new/waiting/near/invalid按已冻结策略事实投影；data_insufficient与not_reviewed独立附加，失败保留最后有效state_session/state_run_id证据。同一日第一份成功初选固定为名单来源，force报告供对照，不自动重写；不等于BUY。
+
+**当前名单与固定报告**：Agent同屏显示时，持续名单按自身检查/有效日期展示，不是历史报告当时名单的覆盖；固定初选与互评仍由报告修订定位。

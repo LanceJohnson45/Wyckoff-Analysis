@@ -1,11 +1,9 @@
 import { z } from 'zod'
+import { watchPageSchema, watchEventPageSchema } from './watch-contract'
+import { strategySchema, researchId as id, researchDay as day, researchHash as hash } from './contract-values'
 
-export const strategySchema = z.enum(['martin', 'wyckoff'])
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
-const id = z.string().uuid()
 const stamp = z.string().datetime({ offset: true })
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
-const hash = z.string().regex(/^[a-f0-9]{64}$/)
 const point = z.object({ text: z.string(), evidence_refs: z.array(z.string()).min(1) })
 const claim = z.object({ ref: z.string(), value: z.union([z.string(), z.number().finite(), z.boolean(), z.null()]) })
 const selectedItem = z.object({ symbol: z.string(), rationale: point, risks: z.array(point), confirmation_conditions: z.array(point), claims: z.array(claim) })
@@ -104,4 +102,11 @@ export function createResearchRun(body: CreateResearchRun, key: string) {
 }
 export function controlResearchRun(runId: string, action: 'retry' | 'cancel') {
   return request(`/v1/research-runs/${id.parse(runId)}/${action}`, acceptedSchema, { method: 'POST' })
+}
+
+export function readResearchWatchlist(page: number, strategy?: Strategy, signal?: AbortSignal) {
+  return request(`/v1/watchlists?page=${page}&page_size=10${strategy ? `&strategy=${strategySchema.parse(strategy)}` : ''}`, watchPageSchema, { signal })
+}
+export function readResearchWatchEvents(page: number, strategy?: Strategy, signal?: AbortSignal) {
+  return request(`/v1/watchlists/events?page=${page}&page_size=10${strategy ? `&strategy=${strategySchema.parse(strategy)}` : ''}`, watchEventPageSchema, { signal })
 }

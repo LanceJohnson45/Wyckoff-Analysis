@@ -27,6 +27,8 @@ function useReportEvents(runId: string | null, active: boolean, key: QueryKey) {
         client.setQueryData(key, (previous: unknown) => newestReport(previous, next))
         void client.invalidateQueries({ queryKey: ['research', 'revisions', runId] })
         void client.invalidateQueries({ queryKey: ['research', 'runs'] })
+        void client.invalidateQueries({ queryKey: ['research', 'watchlists'] })
+        void client.invalidateQueries({ queryKey: ['research', 'watch-events'] })
         setProblem('')
       } catch { source.close(); setProblem('研究进度响应异常，请刷新报告') }
     }
@@ -59,7 +61,7 @@ export function useStockResearch() {
   return { report, runs, revisions, active, connectionProblem, page, setPage, runId, fixed: selection.reportId !== null, actions,
     selectRun: (id: string | null) => setSelection({ runId: id, reportId: null }),
     selectRevision: (id: string) => setSelection({ runId, reportId: id }),
-    refresh: () => { void report.refetch(); void runs.refetch(); if (runId) void revisions.refetch(); void client.invalidateQueries({ queryKey: ['research', 'revisions', runId] }) },
+    refresh: () => { void report.refetch(); void runs.refetch(); if (runId) void revisions.refetch(); void client.invalidateQueries({ queryKey: ['research', 'watchlists'] }); void client.invalidateQueries({ queryKey: ['research', 'watch-events'] }) },
   }
 }
 

@@ -74,6 +74,9 @@ describe('本机研究代理策略', () => {
   it('固定路由与方法，不提供任意地址或文件读取', () => {
     expect(allowedResearchRoute('GET', '/v1/reports/latest')).toBe(true)
     expect(allowedResearchRoute('GET', `/v1/research-runs/${RUN}/events`)).toBe(true)
+    expect(allowedResearchRoute('GET', '/v1/watchlists/events')).toBe(true)
+    expect(allowedResearchRoute('GET', '/v1/stocks/ACGL/observations')).toBe(true)
+    expect(allowedResearchRoute('POST', '/v1/watchlists')).toBe(false)
     expect(allowedResearchRoute('POST', `/v1/research-runs/${RUN}/retry`)).toBe(true)
     expect(allowedResearchRoute('DELETE', `/v1/research-runs/${RUN}`)).toBe(false)
     expect(allowedResearchRoute('POST', '/v1/reports/latest')).toBe(false)

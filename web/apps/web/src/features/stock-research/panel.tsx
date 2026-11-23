@@ -1,6 +1,7 @@
 import { useStockResearch, isRunning } from './state'
 import { ResearchHistory } from './history'
 import { ResearchReportView } from './report'
+import { ResearchWatchlists } from './watch'
 
 export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: string) => void }) {
   const state = useStockResearch()
@@ -20,6 +21,7 @@ export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: st
       {!state.report.isPending && !state.report.error && !report && <p role="status" className="rounded-2xl border border-border p-8 text-sm text-muted-foreground">{state.active ? '研究已受理，正在固定输入并准备首份报告…' : '暂无研究报告。可选择目标交易日运行预览。'}</p>}
       {report && <ResearchReportView report={report} onDiscuss={discuss} />}
     </section></div>
+    <ResearchWatchlists />
   </div>
 }
 

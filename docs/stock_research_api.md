@@ -32,4 +32,4 @@ SSE游标是run内单调revision，断线后用Last-Event-ID继续。每条repor
 
 RunView现在带companies，名称来自同一冻结快照的当时分类或成分名称，不向当前市场查询改写历史身份。浏览器EventSource以after查询参数初始化游标，重连的Last-Event-ID继续有效。
 
-本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务与HTTP/CLI；名单面板、未建run的数据失败回执、分组整池查询、参数及主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。
+本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；未建run的数据失败回执、分组整池查询、参数及主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。
