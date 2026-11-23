@@ -51,6 +51,8 @@ API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整�
 
 研究入口使用 `.venv/bin/python -m stock_research.research_mcp`，与Personal原query_mcp入口分开。它复用同一专用只读配置，在原三项工具外增加stock_research_report_read、stock_research_market_overview、stock_research_group_strength、stock_research_compare_stocks、stock_research_strategy_rules，共八项，全部readOnlyHint，不增加写操作、通用HTTP或文件能力。HTTP客户端逐字段验证并核对报告ID，继续禁代理/重定向、单次20秒和2MB上限。
 
-原生PG/ASGI验证了原产物逐字段对拍、NULL排序、SQL分页、特殊组名、同快照比较、当前参数发布不改旧规则、跨workspace/池外拒绝和损坏绑定503；真实stdio握手验证研究八项及原Personal三项仍分离。实际调用与最终门禁见交接检查点。固定报告问答另以绑定八工具接入独立模型循环，见[研究问答](stock_research_chat.md)；完整股票池枚举和Personal部署注册仍需接续，不能以查询端点或stdio握手代替生产接线。
+原生PG/ASGI验证了原产物逐字段对拍、NULL排序、SQL分页、特殊组名、同快照比较、当前参数发布不改旧规则、跨workspace/池外拒绝和损坏绑定503；真实stdio握手验证研究八项及原Personal三项仍分离。实际调用与最终门禁见交接检查点。固定报告问答另以绑定八工具接入独立模型循环，见[研究问答](stock_research_chat.md)；整池浏览另见[股票池查询](stock_research_universe.md)，Personal部署注册仍需接续，不能以查询端点或stdio握手代替生产接线。
 
 本批实际验证：全量Python5983（无skip、50旧警告）、查询/HTTP/源码12通过；Web386、API221/两项默认Upstash跳过及完整Web gate通过。真实report cf8da076修订3的八工具各调用一次，126个原分组、两股比较、三基准5根及规则一致；另验证8股各60根，JSON约371KB，未超过2MB客户端上限。代理读200/跨站403，原报告不变。浏览器和聊天模型循环未据此声明完成，wiki不存在且远端CI/部署未验收。
+
+[完整冻结股票池](stock_research_universe.md)新增GET universe及ResearchReader.universe，SQL字面搜索/分页，保留缺数与初选未提交。绑定问答的market_overview使用view=universe，默认市场模式与独立研究八工具/Personal三工具保持原契约。

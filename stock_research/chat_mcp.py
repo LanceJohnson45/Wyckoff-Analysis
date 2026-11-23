@@ -14,6 +14,7 @@ from stock_research.query_client import ResearchReader
 from stock_research.query_settings import QuerySettings
 from stock_research.schemas.chat import ChatContext
 from stock_research.schemas.report_queries import Symbol
+from stock_research.schemas.universe import UniverseQuery
 
 CHAT_TOOLS = tuple(
     "mcp__chat__" + name
@@ -36,8 +37,17 @@ def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit
     annotations = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
 
     @server.tool(annotations=annotations)
-    async def market_overview(limit: Annotated[int, Field(ge=1, le=320)] = 5) -> ChatToolOutput:
-        """固定报告的市场与三基准；pool/count仅为量化池数量，不是正式初选。"""
+    async def market_overview(
+        limit: Annotated[int, Field(ge=1, le=320)] = 5,
+        view: Literal["market", "universe"] = "market",
+        page: Annotated[int, Field(ge=1, le=1_000_000)] = 1,
+        page_size: Annotated[int, Field(ge=1, le=100)] = 20,
+        search: Annotated[str | None, Field(min_length=1, max_length=100)] = None,
+    ) -> ChatToolOutput:
+        """market读三基准/量化池；universe按代码/名称搜索全部有效成员，不丢缺数股票。"""
+        if view == "universe":
+            query = UniverseQuery(page=page, page_size=page_size, search=search)
+            return await audit.respond("universe", lambda: reader.universe(context.report_id, query))
         return await audit.respond("market_overview", lambda: reader.market_overview(context.report_id, limit))
 
     @server.tool(annotations=annotations)

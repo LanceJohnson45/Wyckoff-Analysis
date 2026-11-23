@@ -5,6 +5,7 @@ import { stockObservationSchema } from './stock-contract'
 import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strategyParametersSchema, type ParameterValues } from './parameter-contract'
 import { preparationPageSchema } from './preparation-contract'
 import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
+import { universePageSchema } from './universe-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -120,6 +121,12 @@ export async function readResearchStock(report: ResearchReport, symbol: string, 
   const stock = await request(`/v1/stocks/${encodeURIComponent(symbol)}/observations?run_id=${report.run.run_id}&report_id=${report.report_id}&limit=320`, stockObservationSchema, { signal })
   if (stock.run_id !== report.run.run_id || stock.report_id !== report.report_id || stock.snapshot_hash !== report.run.snapshot_hash || stock.snapshot_id !== report.run.snapshot_id || stock.as_of !== report.run.as_of || stock.company.symbol !== symbol) throw new ResearchApiError('个股响应与当前固定报告不一致，请重新连接', 503, 'invalid_response')
   return stock
+}
+
+export async function readResearchUniverse(report: ResearchReport, page: number, search: string, signal?: AbortSignal) {
+  const result = await request(`/v1/reports/${id.parse(report.report_id)}/universe?page=${page}&page_size=20${search ? `&search=${encodeURIComponent(search)}` : ''}`, universePageSchema, { signal })
+  if (result.report_id !== report.report_id || result.run_id !== report.run.run_id || result.snapshot_id !== report.run.snapshot_id || result.snapshot_hash !== report.run.snapshot_hash || result.as_of !== report.run.as_of || result.target_session !== report.run.target_session || result.page !== page || result.page_size !== 20 || result.search !== (search || null)) throw new ResearchApiError('股票池响应与当前固定报告或查询不一致', 503, 'invalid_response')
+  return result
 }
 
 export function readCurrentParameters(signal?: AbortSignal) {

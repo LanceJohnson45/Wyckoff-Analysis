@@ -4,6 +4,7 @@ import type { KlineRow } from '@wyckoff/shared'
 import { readResearchStock, type ResearchReport } from './api'
 import type { StockEvidence, StockObservation } from './stock-contract'
 import { strategyLabels } from './state'
+import { ResearchUniverse } from './universe'
 
 const PriceChart = lazy(async () => ({ default: (await import('@/components/kline-chart')).KlineChart }))
 const factorLabels: Record<string, string> = { close: '收盘', ema_fast: '短周期EMA', ema_middle: '中周期EMA', ema_slow: '长周期EMA', atr: 'ATR', adr: 'ADR', rs: '相对SPY收益差', extension: '距中周期EMA / ATR', volume_ratio: '短期 / 基准均量', range_ratio: '短期 / 基准均幅' }
@@ -27,6 +28,7 @@ export function ResearchStockPanel({ report, onDiscuss }: { report: ResearchRepo
   }
   return <section className="space-y-4 rounded-2xl border border-border bg-card p-5" aria-label="固定报告个股证据">
     <div><h3 className="text-sm font-semibold">个股事实与快照行情</h3><p className="mt-2 text-xs text-muted-foreground">固定于上方报告修订。可查询本次完整股票池；未进入量化池与未正式入选分别表达。</p></div>
+    <ResearchUniverse report={report} selected={symbol} onSelect={choose} />
     <form className="flex flex-wrap items-center gap-2" onSubmit={(event) => { event.preventDefault(); setSymbol(input.trim().toUpperCase()) }}><label className="sr-only" htmlFor="research-stock-symbol">美股代码</label><input id="research-stock-symbol" value={input} required maxLength={32} onChange={(event) => setInput(event.target.value)} placeholder="如 ACGL" className="h-9 w-40 rounded-lg border border-border bg-background px-3 text-xs" /><button type="submit" className="h-9 rounded-lg border border-border px-3 text-xs">查询固定事实</button></form>
     {report.run.companies.length > 0 && <div className="flex flex-wrap gap-2">{report.run.companies.map(company => <button key={company.symbol} type="button" aria-pressed={symbol === company.symbol} onClick={() => choose(company.symbol)} className="rounded-full border border-border px-3 py-1 text-xs aria-pressed:bg-muted">{company.name} · {company.symbol}</button>)}</div>}
     {!symbol && <p className="text-xs text-muted-foreground">输入本次股票池内的代码以读取快照。</p>}

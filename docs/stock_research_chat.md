@@ -12,7 +12,7 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 证据与模型边界
 
-后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；实际注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。knowledge_search尚未授权接入。
+后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；实际注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。knowledge_search尚未授权接入。
 
 默认180秒、20次工具调用；一次JSON修正共享剩余预算。当前问答不会自动重试provider失败，错误保存为限流、暂不可用或执行失败，避免未知费用重复。选股任务原有重试边界保持。问答与研究运行在同一API实例共享两席执行容量，为证据查询预留数据库连接；满员409不创建新问答。
 

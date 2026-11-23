@@ -1,6 +1,17 @@
 # 股票研究开发交接（2026-11-23）
 
 
+## 续接检查点：完整冻结股票池搜索与分页
+
+固定报告问答已提交6f8f6c0c。本批增加GET /v1/reports/{report_id}/universe及最小ResearchReader.universe，基于原快照全部有效成员去重投影，由PG执行字面搜索/代码稳定排序/分页。search最多100字符，LIKE通配符不扩展；保留无行情/分类成员和未来分类排除。两策略data_eligible、calculation_available、in_pool、selected各自表达，未提交初选为null，已提交未入选为false，不重算策略。规范绑定问答market_overview增加view=universe，仍八工具且不能换报告；独立research_mcp原市场契约与Personal三工具保持。Agent原个股区加搜索/分页表格，点击公司接原固定事实与问答；豁免为单页修补，不增加页面或角色。
+
+真实cf8da076修订3通过只读HTTP完整翻完518只，稳定无重复；17只无行情、15只无行业仍在。Martin数据/实际计算491、量化池30、初选5，Wyckoff490/0/0，与原报告及原个股事实一致。独立stdio调用绑定market_overview(view=universe, search=gild)，取同报告GILD事实；前端客户端经Node代理读两个20项页面、搜索、打开固定个股及SSR对拍通过，跨站403。原报告和已完成问答的私有证据/回执逐字节保持；没有启动新模型、通知或参数发布。
+
+冻结源码后的全量Python5992通过（无skip、50旧警告），整池/固定查询/问答专项11通过；完整Web gate为frozen-lockfile、TS strict、Web393、API221/两项默认外部Upstash跳过、Web/Pages-functions构建。Ruff/格式、质量、红线、workflow/dependency hygiene与合成配置daily dry-run通过，42份JS无operator/只读/模型身份。Python LOC139707/+62.1%、TS35543/+91.2%旧基线警告保留，增长对应整池查询/工具分支/界面。新增设计与操作说明见stock_research_universe.md。
+
+主API旧源码ready503而报告可读，确认无活动研究/问答后只重启本线程拥有的8788服务，终态退出和端口释放确认后再启动。本机readiness/新端点及旧完成问答可读；数据库仍22表，无新DDL。实际浏览器控件仍待正常账号认证，IAB在/login且Mac锁屏；wiki checkout不存在，远端CI、独立整体审查与正式部署未验收。接续主题/自选的人工确认及实际输入消费、已确认锚点叠加、行情协调与局部量化降级、Personal唯一调度通知/部署；总体goal继续。
+
+
 ## 续接检查点：固定报告研究问答
 
 上一批固定报告查询已提交06eab5d1。本批新增chat_turns（显式init-schema后22表），POST创建/GET历史及单问/显式取消与Agent内问答接线。每问固定report_id，幂等键复用原记录，父问答CAS只允许一个后继；历史从PG重建最多六问/24000字符。私有问答仅operator可读写，API_READ_TOKEN连GET也拒绝。研究运行与问答共享两席容量，防止持有执行锁后耗尽证据查询连接；满员重放原请求仍可读。

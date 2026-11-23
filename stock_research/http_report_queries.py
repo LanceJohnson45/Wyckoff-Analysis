@@ -8,8 +8,23 @@ from pydantic import UUID4
 from stock_research.report_queries import compare_stocks, group_strength, market_overview, strategy_rules
 from stock_research.schemas.api import ApiResponse, Code
 from stock_research.schemas.report_queries import GroupPage, MarketOverview, StockComparison, StrategyRules, Symbol
+from stock_research.schemas.universe import UniversePage, UniverseQuery
+from stock_research.universe_queries import universe_page
 
 router = APIRouter()
+
+
+@router.get("/v1/reports/{report_id}/universe", response_model=ApiResponse[UniversePage])
+async def universe(
+    request: Request, report_id: UUID4, query: Annotated[UniverseQuery, Query()]
+) -> ApiResponse[UniversePage]:
+    """完整有效成员SQL分页，不因行情或分类缺失而悄悄缩池。"""
+    return ApiResponse(
+        code=Code.OK,
+        message="ok",
+        data=await universe_page(request.app.state.store, str(report_id), query),
+        correlation_id=request.state.correlation_id,
+    )
 
 
 @router.get("/v1/reports/{report_id}/market", response_model=ApiResponse[MarketOverview])

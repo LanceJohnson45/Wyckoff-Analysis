@@ -18,6 +18,7 @@ from stock_research.schemas.report_queries import (
     StockComparison,
     StrategyRules,
 )
+from stock_research.schemas.universe import UniversePage, UniverseQuery
 
 Result = TypeVar("Result", bound=BaseModel)
 ScopedResult = TypeVar("ScopedResult", bound=ReportScope)
@@ -105,6 +106,16 @@ class ResearchReader:
         if isinstance(limit, bool) or not 1 <= limit <= 320:
             raise QueryError("市场历史范围无效")
         return await self._scoped(report_id, "market", MarketOverview, {"limit": str(limit)})
+
+    async def universe(self, report_id: UUID, query: UniverseQuery | None = None) -> UniversePage:
+        """整池去重总数与搜索总数分别返回，查询限于固定报告。"""
+        query = query or UniverseQuery()
+        return await self._scoped(
+            report_id,
+            "universe",
+            UniversePage,
+            {key: str(value) for key, value in query.model_dump(exclude_none=True).items()},
+        )
 
     async def group_strength(
         self,

@@ -36,3 +36,5 @@ CI测试现在安装research extra并显式准备initdb/pg_ctl/createdb，研究
 [个股事实视图](stock_research_stock_view.md)已在报告内接入固定快照日线、两策略因子与排除、行业/主题和证据讨论；查询携带report_id，旧修订不读入后来意见。图表使用纯行情模式，实际画布和控件操作仍待登录验收。
 
 参数面板接线后完整Web gate通过：Web383、API221/外部Upstash默认两项跳过、TS strict、frozen-lockfile、Web及Pages-functions构建；实际客户端经独立Node代理在隔离workspace登记/发布/独立读回通过，旧修订409、跨站及只读写入403，主workspace当前及旧报告冻结参数不变。以上不替代尚待正常登录的控件验收。
+
+个股事实区增加[整池浏览](stock_research_universe.md)：搜索原代码/公司名、SQL分页、逐策略数据/计算/量化池/初选标记，点击公司接原个股查询。上方固定报告变化时重建整池状态；加载、空命中和连接失败分别显示。

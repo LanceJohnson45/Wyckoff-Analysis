@@ -1,6 +1,6 @@
 # 多策略股票研究系统实施计划
 
-日期为2026-11-23。本文保存已确认的实施计划；数据、量化、执行账本、完整真实互评及本机API已实现，Agent面板已接线且页面操作待登录验证。固定股票查询与三项只读CLI/MCP也已接通；持续名单的终态跟踪、HTTP/CLI与Agent面板，以及固定报告个股事实/行情图也已接通；参数版本与CAS发布已接后台、API/CLI消费和Agent维护界面；未建run的输入准备回执也已接HTTP/CLI和Agent；固定报告的市场、分组、比较和规则查询已接HTTP及独立研究MCP；固定报告研究问答已接独立模型循环、持久父链与Agent界面；页面操作、Personal工具注册、主题/自选维护、Mac mini部署及定时任务仍待实施，以第16节及交接文档检查点为准。用户已确认首版方向，本文将工程默认值作为可审阅的研究基线。
+日期为2026-11-23。本文保存已确认的实施计划；数据、量化、执行账本、完整真实互评及本机API已实现，Agent面板已接线且页面操作待登录验证。固定股票查询与三项只读CLI/MCP也已接通；持续名单的终态跟踪、HTTP/CLI与Agent面板，以及固定报告个股事实/行情图也已接通；参数版本与CAS发布已接后台、API/CLI消费和Agent维护界面；未建run的输入准备回执也已接HTTP/CLI和Agent；固定报告的市场、分组、比较和规则查询已接HTTP及独立研究MCP；固定报告研究问答已接独立模型循环、持久父链与Agent界面，整池搜索/分页已接HTTP、绑定工具与个股区；页面操作、Personal工具注册、主题/自选维护、Mac mini部署及定时任务仍待实施，以第16节及交接文档检查点为准。用户已确认首版方向，本文将工程默认值作为可审阅的研究基线。
 
 ## 1 目标与成功标准
 
@@ -345,6 +345,7 @@ Personal工具接入提供查询最新报告、查询股票观点及查询运行
 | GET /v1/research-runs/{run_id}/events | SSE进展及断线续读 |
 | POST /v1/research-runs/{run_id}/retry | 选择失败阶段重试 |
 | POST /v1/research-runs/{run_id}/cancel | 取消未完成阶段 |
+| GET /v1/reports/{id}/universe | 全部冻结有效成员、字面搜索与SQL分页，保留缺行情/分类状态 |
 | GET /v1/reports/latest | 指定市场及目标交易日的最新报告 |
 | GET /v1/reports/{report_id} | 固定修订、初选及互评 |
 | GET /v1/stocks/{symbol}/observations | 指定快照的事实和策略观察 |
@@ -481,7 +482,7 @@ doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并�
 
 交付可由用户日常查看与询问的独立工作台。验收真实入口、证据定位、旧报告复查和失败展示。
 
-续接进度：[固定报告研究问答](docs/stock_research_chat.md)已接后台隔离DSH八工具、逐值证据校验、PG幂等/父链、HTTP与Agent问答历史。只读身份拒绝私有问答，问答与选股共用两席容量；当前不自动重试provider失败。浏览器控件仍待正常登录，完整股票池、主题/自选、锚点叠加与部署继续实施。
+续接进度：[固定报告研究问答](docs/stock_research_chat.md)已接后台隔离DSH八工具、逐值证据校验、PG幂等/父链、HTTP与Agent问答历史。只读身份拒绝私有问答，问答与选股共用两席容量；当前不自动重试provider失败。[完整股票池浏览](docs/stock_research_universe.md)已接搜索/分页和逐策略状态，缺数成员保留。浏览器控件仍待正常登录，主题/自选、锚点叠加与部署继续实施。
 
 ### 阶段五 Mac mini自动运行
 
