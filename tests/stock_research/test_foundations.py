@@ -5,7 +5,7 @@ from datetime import date, datetime
 import pytest
 from pydantic import ValidationError
 
-from stock_research.calendar import session_times, sessions_ending
+from stock_research.calendar import latest_complete_session, session_times, sessions_ending
 from stock_research.config import Settings
 from stock_research.identity import SHANGHAI, digest
 from stock_research.models import Bar, UniverseMember, UniverseVersion, normalize_symbol
@@ -95,3 +95,18 @@ def test_content_hash_is_order_independent_and_rejects_nan() -> None:
     assert digest({"b": 2, "a": 1}) == digest({"a": 1, "b": 2})
     with pytest.raises(ValueError):
         digest({"close": float("nan")})
+
+
+@pytest.mark.parametrize(
+    "at,expected",
+    [
+        pytest.param("2026-11-23T08:00:00-05:00", date(2026, 11, 20), id="normal-premarket"),
+        pytest.param("2026-11-27T12:59:00-05:00", date(2026, 11, 25), id="boundary-before-half-day-close"),
+        pytest.param("2026-11-27T13:00:00-05:00", date(2026, 11, 27), id="boundary-half-day-close"),
+    ],
+)
+def test_normal_latest_complete_session_uses_actual_close(at: str, expected: date) -> None:
+    """【正常值】盘前与半日市使用正式收盘时刻判断完整交易日。"""
+    actual = latest_complete_session(datetime.fromisoformat(at))
+
+    assert actual == expected

@@ -2,11 +2,12 @@
 
 from datetime import date, datetime, timedelta
 from functools import lru_cache
+from zoneinfo import ZoneInfo
 
 import exchange_calendars as xcals
 import pandas as pd
 
-from stock_research.identity import SHANGHAI
+from stock_research.identity import SHANGHAI, now
 
 
 @lru_cache(maxsize=1)
@@ -35,3 +36,16 @@ def session_times(target: date) -> tuple[datetime, datetime, date]:
     opening = calendar.session_open(pd.Timestamp(target)).to_pydatetime().astimezone(SHANGHAI)
     previous = calendar.previous_session(pd.Timestamp(target)).date()
     return opening, opening - timedelta(minutes=60), previous
+
+
+def latest_complete_session(at: datetime | None = None) -> date:
+    """按正式收盘判断最近完整日线，包含半日市和纽约跨日。"""
+    at = at or now()
+    if at.tzinfo is None:
+        raise ValueError("判断完整交易日必须传入带时区时间")
+    calendar = exchange_calendar()
+    day = pd.Timestamp(at.astimezone(ZoneInfo("America/New_York")).date())
+    session = calendar.date_to_session(day, direction="previous")
+    if calendar.session_close(session) > pd.Timestamp(at):
+        session = calendar.previous_session(session)
+    return session.date()

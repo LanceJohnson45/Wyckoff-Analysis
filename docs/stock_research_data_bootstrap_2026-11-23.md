@@ -2,6 +2,8 @@
 
 交给 Mac mini 上继续开发的执行者：该机器目前没有 `data/local_market.sqlite3`，需要先用已有同步入口从授权的云端 PostgreSQL 建立本机行情库，再推进 plan.md 阶段一。本文补充[开发交接](stock_research_handoff_2026-11-23.md)，不表示同步或服务接入已经在 Mac mini 上执行。
 
+续接状态：上述为原始接入前检查点。Mac mini现已建立来源工作树、配置并执行首次同步，实际结果与剩余缺口见[最新交接检查点](stock_research_handoff_2026-11-23.md#mac-mini-续接检查点)和[数据CLI](stock_research_data_cli.md)，不要再按下文原始“无SQLite”的状态判断本机。
+
 ## 三项接入信息
 
 | 项目 | 已核对的信息 | Mac mini 需要处理的部分 |

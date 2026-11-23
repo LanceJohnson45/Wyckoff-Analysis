@@ -52,6 +52,7 @@ research = [
 [project.scripts]
 wyckoff = "cli.__main__:main"
 wyckoff-mcp = "mcp_server:main"
+stock-research = "stock_research.cli:main"
 
 [build-system]
 requires = ["setuptools>=68.0"]

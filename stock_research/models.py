@@ -35,6 +35,7 @@ class UniverseMember(FrozenModel):
     obtained_time: AwareDatetime
     symbol_aliases: tuple[str, ...] = ()
     confirmed_suspension: str | None = None
+    suspension_session: date | None = None
     _normalize = field_validator("symbol")(normalize_symbol)
 
     @model_validator(mode="after")
@@ -44,6 +45,8 @@ class UniverseMember(FrozenModel):
             raise ValueError("成员失效日期须晚于生效日期")
         if self.confirmed_suspension is not None and not self.confirmed_suspension.strip():
             raise ValueError("停牌必须有来源证据")
+        if bool(self.confirmed_suspension) != bool(self.suspension_session):
+            raise ValueError("停牌证据必须绑定单个交易日")
         return self
 
 
@@ -61,6 +64,13 @@ class UniverseVersion(FrozenModel):
         keys = [(m.index, m.symbol, m.effective_date) for m in self.members]
         if len(set(keys)) != len(keys):
             raise ValueError("股票池存在重复成员")
+        periods: dict[tuple[str, str], list[UniverseMember]] = {}
+        for member in self.members:
+            periods.setdefault((member.index, member.symbol), []).append(member)
+        for group in periods.values():
+            ordered = sorted(group, key=lambda member: member.effective_date)
+            if any(a.expiry_date is None or a.expiry_date > b.effective_date for a, b in zip(ordered, ordered[1:])):
+                raise ValueError("股票池同指数成员有效期重叠")
         return self
 
     def active(self, as_of: date) -> dict[str, tuple[UniverseMember, ...]]:
@@ -113,9 +123,10 @@ class Bar(FrozenModel):
     close: float = Field(gt=0)
     volume: float = Field(ge=0)
     adjustment: Literal["qfq"] = "qfq"
-    source: str
+    source: str = Field(min_length=1)
     source_revision: AwareDatetime
     observed_time: AwareDatetime
+    _normalize = field_validator("symbol")(normalize_symbol)
 
     @model_validator(mode="after")
     def validate_prices(self) -> "Bar":
@@ -139,6 +150,9 @@ class QualityReport(FrozenModel):
 
     passed: bool
     expected_session: date
+    window_start: date
+    history_rows: int = Field(ge=320)
+    rules_version: str = "data-v1"
     universe_count: int
     suspended_count: int
     aligned_count: int
@@ -173,6 +187,8 @@ class Snapshot(FrozenModel):
             raise ValueError("快照内容摘要不匹配")
         if any(bar.session_date > self.as_of for bar in self.bars):
             raise ValueError("快照包含截止日之后的行情")
+        if self.quality.expected_session != self.as_of:
+            raise ValueError("快照与质量报告截止日不一致")
         keys = [(b.kind, b.symbol, b.session_date) for b in self.bars]
         if len(set(keys)) != len(keys):
             raise ValueError("快照存在重复日线")
