@@ -4,7 +4,6 @@ import asyncio
 import hashlib
 from collections.abc import Coroutine
 from datetime import date, datetime, timedelta
-from pathlib import Path
 from typing import Any
 
 import structlog
@@ -23,21 +22,12 @@ from stock_research.models import Snapshot
 from stock_research.prompts import prompt_identity
 from stock_research.run_store import RunStore
 from stock_research.schema import FACTOR_RESULTS, RESEARCH_RUNS
+from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current, source_identity
 from stock_research.store import load_snapshot, save_snapshot
 from stock_research.wyckoff import WyckoffReport
 
 STRATEGIES = ("martin", "wyckoff")
 logger = structlog.get_logger(__name__)
-
-
-def source_identity() -> str:
-    """代码变化产生新运行，不能用新验证器覆盖旧版本初选。"""
-    return digest(
-        {
-            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
-            for path in sorted(Path(__file__).parent.glob("*.py"))
-        }
-    )
 
 
 def model_connections(settings: Settings) -> dict[str, ModelConnection]:
@@ -259,6 +249,7 @@ async def prepare_preview(
     request_id: str | None = None,
 ) -> tuple[str, dict[str, ModelConnection]]:
     """先冻结并保存输入，调用方取得run_id后才能调度执行。"""
+    ensure_source_current()
     _opening, report_due, previous = session_times(target_session)
     if snapshot.as_of != previous or set(analyses) != set(STRATEGIES) or not snapshot.quality.passed:
         raise ValueError("运行需要前一正式交易日的合格快照和两个策略产物")
@@ -270,7 +261,7 @@ async def prepare_preview(
     connections = {}
     config = {
         "workspace": settings.workspace,
-        "source_hash": source_identity(),
+        "source_hash": LOADED_SOURCE_IDENTITY,
         "prompt_hash": prompt_identity(),
         "target_session": str(target_session),
         "report_due": report_due.isoformat(),
@@ -309,6 +300,7 @@ async def prepare_preview(
             "analysis_hashes": {key: value.content_hash for key, value in analyses.items()},
             "models": {key: value.model_dump(mode="json") for key, value in connections.items()},
         }
+        ensure_source_current()
         run_id = await store.create_run(manifest, parent_id=parent_id, run_key=digest(config))
     return run_id, connections
 
@@ -317,6 +309,7 @@ async def resume_preview(
     engine: AsyncEngine, settings: Settings, run_id: str, connections: dict[str, ModelConnection] | None = None
 ) -> dict[str, object]:
     """仅从账本恢复固定输入；调用方不能替换原快照或已提交初选。"""
+    ensure_source_current()
     store = RunStore(engine, settings.workspace)
     connections = connections or {}
     async with store.execution_lock(run_id):

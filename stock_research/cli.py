@@ -20,6 +20,7 @@ from stock_research.benchmarks import BenchmarkBundle, fetch_benchmarks, merge_b
 from stock_research.calendar import latest_complete_session, session_times, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
+from stock_research.errors import ResearchSourceChanged
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
@@ -344,6 +345,8 @@ def main(argv: list[str] | None = None) -> int:
         result, status = execute(args, Settings())
     except ValidationError:
         result, status = {"error": "版本、行情或配置校验失败；检查必填字段、时区和摘要"}, 1
+    except ResearchSourceChanged as error:
+        result, status = {"error": str(error)}, 1
     except (
         OSError,
         sqlite3.Error,

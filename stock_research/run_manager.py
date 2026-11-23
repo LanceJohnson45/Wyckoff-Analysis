@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from stock_research.analysis import MartinReport
 from stock_research.calendar import session_times
 from stock_research.config import Settings
-from stock_research.errors import ResearchConflict, ResearchInputError, ResearchUnavailable
+from stock_research.errors import ResearchConflict, ResearchInputError, ResearchSourceChanged, ResearchUnavailable
 from stock_research.models import Snapshot
 from stock_research.pipeline import prepare_preview, resume_preview
 from stock_research.request_store import RequestStore
@@ -18,6 +18,7 @@ from stock_research.research_commands import analyze_command
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
 from stock_research.schemas.requests import CreateRun
+from stock_research.source_guard import ensure_source_current
 from stock_research.wyckoff import WyckoffReport
 
 logger = structlog.get_logger(__name__)
@@ -27,6 +28,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
     """只读operator固定行情路径；请求不接受文件、模型或连接配置。"""
     from stock_research.cli import snapshot_command
 
+    ensure_source_current()
     try:
         _, _, previous = session_times(data.target_session)
     except ValueError:
@@ -44,6 +46,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 analyses[strategy] = await asyncio.to_thread(
                     lambda model=model, result=result: model.model_validate_json(Path(result["path"]).read_text())
                 )
+            ensure_source_current()
             run_id, _connections = await prepare_preview(
                 store.engine,
                 settings,
@@ -78,6 +81,7 @@ class RunManager:
         """持有接单锁，避免多个请求同时冻结后突破任务容量。"""
         if self.closing:
             raise ResearchUnavailable("研究服务正在关闭")
+        ensure_source_current()
         if data.parent_run_id:
             await self.store.row(RESEARCH_RUNS, str(data.parent_run_id))
         async with self.requests.claim(key, data.model_dump(mode="json")) as request:
@@ -97,6 +101,7 @@ class RunManager:
         """保留任务强引用；已有任务不重启，完成后移除引用。"""
         if run_id in self.tasks:
             return
+        ensure_source_current()
         if self.closing or len(self.tasks) >= 2:
             raise ResearchConflict("研究任务正在关闭或容量已满")
         task = asyncio.create_task(self.run(run_id))
@@ -111,15 +116,20 @@ class RunManager:
             return
         except Exception as error:
             logger.error("研究后台任务失败", run_id=run_id, error_type=type(error).__name__)
+            code = (
+                "execution_version_changed"
+                if isinstance(error, ResearchSourceChanged)
+                else "executor_configuration_failed"
+            )
             try:
                 async with self.store.execution_lock(run_id):
                     body = await self.store.summary(run_id)
                     if body["status"] != "completed":
-                        await self.store.recover_stages(run_id, "executor_configuration_failed")
+                        await self.store.recover_stages(run_id, code)
                         await self.store.publish(
                             run_id,
                             "partial" if body["selections"] else "failed",
-                            "executor_configuration_failed",
+                            code,
                             track=True,
                         )
             except (OSError, SQLAlchemyError, ResearchConflict):
@@ -127,6 +137,7 @@ class RunManager:
 
     async def retry(self, run_id: str) -> None:
         """仅补未成功阶段；已完成运行必须通过force新建版本。"""
+        ensure_source_current()
         row = await self.store.row(RESEARCH_RUNS, run_id)
         if row["status"] == "completed" or run_id in self.tasks:
             raise ResearchConflict("当前运行不能重试")

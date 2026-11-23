@@ -16,6 +16,7 @@ from stock_research.errors import (
     ResearchInputError,
     ResearchIntegrityError,
     ResearchNotFound,
+    ResearchSourceChanged,
     ResearchUnavailable,
 )
 from stock_research.identity import new_id
@@ -65,6 +66,12 @@ def install_security(app: FastAPI, settings: Settings) -> None:
         response.headers["X-Correlation-Id"] = request.state.correlation_id
         return response
 
+    install_error_handlers(app)
+
+
+def install_error_handlers(app: FastAPI) -> None:
+    """领域错误在HTTP边界翻译，不向客户端暴露驱动或路径。"""
+
     async def not_found(request: Request, _error: ResearchNotFound) -> JSONResponse:
         return error_response(request, 404, Code.NOT_FOUND, "研究对象不存在")
 
@@ -76,6 +83,9 @@ def install_security(app: FastAPI, settings: Settings) -> None:
 
     async def unavailable(request: Request, _error: Exception) -> JSONResponse:
         return error_response(request, 503, Code.UNAVAILABLE, "研究存储或输入来源暂不可用")
+
+    async def source_changed(request: Request, _error: ResearchSourceChanged) -> JSONResponse:
+        return error_response(request, 503, Code.UNAVAILABLE, "研究代码已更新，请重启研究服务后重试；旧报告仍可读取")
 
     async def internal(request: Request, error: Exception) -> JSONResponse:
         logger.error("研究API内部错误", error_type=type(error).__name__, correlation_id=request.state.correlation_id)
@@ -94,6 +104,7 @@ def install_security(app: FastAPI, settings: Settings) -> None:
         (SQLAlchemyError, unavailable),
         (ResearchIntegrityError, unavailable),
         (ResearchUnavailable, unavailable),
+        (ResearchSourceChanged, source_changed),
         (TimeoutError, unavailable),
         (OSError, unavailable),
         (HTTPException, protocol),

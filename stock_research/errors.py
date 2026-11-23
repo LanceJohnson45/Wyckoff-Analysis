@@ -19,3 +19,7 @@ class ResearchInputError(ValueError):
 
 class ResearchUnavailable(RuntimeError):
     """数据质量或来源未就绪，不能冻结新研究输入。"""
+
+
+class ResearchSourceChanged(ResearchUnavailable):
+    """磁盘与已加载执行版本不同，必须重启后创建新研究。"""

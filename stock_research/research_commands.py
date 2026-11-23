@@ -11,6 +11,7 @@ from stock_research.models import Snapshot
 from stock_research.parameters import MartinParameters
 from stock_research.pipeline import run_preview
 from stock_research.run_store import RunStore
+from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 from stock_research.store import close_engine, database_engine
 from stock_research.wyckoff import WyckoffParameters, WyckoffReport, compute_wyckoff, engine_hash
 
@@ -19,6 +20,7 @@ def analyze_command(
     settings: Settings, snapshot_path: Path, as_of: date, *, strategy: str = "martin"
 ) -> dict[str, object]:
     """本地文件和缓存均重读校验，参数摘要不同另生成产物。"""
+    ensure_source_current()
     snapshot = Snapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
     if snapshot.as_of != as_of:
         raise ValueError("指定快照与分析截止日不一致")
@@ -32,6 +34,7 @@ def analyze_command(
     parameters = parameter_model.model_validate_json(parameter_path.read_text(encoding="utf-8"))
     identity = {
         "schema_version": 1,
+        "source_hash": LOADED_SOURCE_IDENTITY,
         "snapshot": snapshot.content_hash,
         "parameters": parameters.model_dump(mode="json"),
     }
@@ -49,6 +52,7 @@ def analyze_command(
     else:
         report = compute(snapshot, parameters)
         write_once(path, report.model_dump_json(indent=2) + "\n")
+    ensure_source_current()
     return {
         "path": str(path.resolve()),
         "content_hash": report.content_hash,

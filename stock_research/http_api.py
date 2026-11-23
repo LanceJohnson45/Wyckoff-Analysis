@@ -23,6 +23,7 @@ from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
 from stock_research.schema import API_REQUESTS, RESEARCH_RUNS, WATCHLIST_DAYS, WATCHLIST_EVENTS, WATCHLIST_ITEMS
 from stock_research.schemas.api import ApiResponse, Code, HealthView, RunPage, RunView
+from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
 RUNTIME_TABLES = (RESEARCH_RUNS, API_REQUESTS, WATCHLIST_ITEMS, WATCHLIST_EVENTS, WATCHLIST_DAYS)
@@ -82,6 +83,7 @@ def register_reads(app: FastAPI) -> None:
 
     @app.get("/readyz", response_model=ApiResponse[HealthView])
     async def ready(request: Request) -> ApiResponse[HealthView]:
+        ensure_source_current()
         async with request.app.state.store.engine.connect() as connection:
             for table in RUNTIME_TABLES:
                 await connection.execute(select(table.c.uuid).limit(0))
