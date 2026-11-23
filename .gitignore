@@ -92,6 +92,7 @@ config/profiles/*private*.yaml
 *.sqlite
 *.sqlite3
 .wyckoff/
+.stock-research/
 .claude/settings.local.json
 .claude/plans/
 
