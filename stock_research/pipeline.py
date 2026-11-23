@@ -247,6 +247,7 @@ async def prepare_preview(
     parent_id: str | None = None,
     force: bool = False,
     request_id: str | None = None,
+    parameter_sources: dict[str, object] | None = None,
 ) -> tuple[str, dict[str, ModelConnection]]:
     """先冻结并保存输入，调用方取得run_id后才能调度执行。"""
     ensure_source_current()
@@ -268,6 +269,7 @@ async def prepare_preview(
         "universe_hash": digest(snapshot.universe.model_dump(mode="json")),
         "classification_hash": digest(snapshot.classifications.model_dump(mode="json")),
         "parameters": {key: value.parameters.model_dump(mode="json") for key, value in analyses.items()},
+        "parameter_sources": parameter_sources or {},
         "algorithms": {"wyckoff": analyses["wyckoff"].engine_hash},
         "model_preferences": model_preferences(settings),
         "preview": True,
@@ -355,10 +357,18 @@ async def run_preview(
     *,
     parent_id: str | None = None,
     force: bool = False,
+    parameter_sources: dict[str, object] | None = None,
 ) -> dict[str, object]:
     """CLI预览等待完整流程，HTTP可在冻结后独立调度同一恢复入口。"""
     run_id, connections = await prepare_preview(
-        engine, settings, snapshot, analyses, target_session, parent_id=parent_id, force=force
+        engine,
+        settings,
+        snapshot,
+        analyses,
+        target_session,
+        parent_id=parent_id,
+        force=force,
+        parameter_sources=parameter_sources,
     )
     return await resume_preview(engine, settings, run_id, connections)
 

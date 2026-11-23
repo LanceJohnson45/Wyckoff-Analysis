@@ -2,6 +2,12 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
+## 当前检查点：参数注册、CAS发布与实际消费
+
+MCP启动脱敏已提交c8057081。新增parameter_profiles/strategy_parameter_activations维护表，显式init-schema后共20表。参数名绑定不可变内容、发布追加且expected_revision冲突409；只读身份禁止写。API/CLI新研究统一解析发布配置或无发布时operator基线，私有物化并冻结完整来源；基线文件随后修改不影响发布值/旧运行。Stock观察同时返回完整原参数、Martin因子定义和Wyckoff原有效配置。
+
+研究/质量183通过，全量Python5974通过（无skip、50旧警告）；最终一次CAS完整性/函数拆分后8项参数回归通过；Ruff/1211文件格式、全范围质量与红线扫描通过，daily dry-run成功。Python LOC137805/+59.9%、TS34945/+87.9%旧基线非阻断警告保留。真实隔离workspace按原基线创建201/发布200/过期409/独立读200，数值未改变；stocks主workspace发布数仍0，无模型/通知。主API可读原f77a7db4冻结参数且与Stock观察相同。参数维护界面/Node写代理尚未接线，未作UI或生产部署验收。
+
 ## 当前检查点：只读MCP启动错误脱敏
 
 源码守卫已提交931fbe6c。用合成的尾随空格token复现MCP启动校验会把原输入写入stderr；现已只返回固定脱敏消息并退出1，原值和traceback不输出，正常stdio工具不变。真实子进程回归及研究/质量175项通过；上一完整Python5965项通过。本次Python变更也实测触发主API版本守卫（ready503、原报告200），零运行后受控重启恢复ready200。未泄露实际凭据、未启动模型或发送通知；浏览器/远端CI/wiki/正式部署仍待验收。

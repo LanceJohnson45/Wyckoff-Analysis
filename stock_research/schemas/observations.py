@@ -2,10 +2,11 @@
 
 from datetime import date
 
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, JsonValue
 
 from stock_research.evidence import Evidence
 from stock_research.schemas.api import ApiModel, CompanyView, ReviewView, SelectionView, Strategy
+from stock_research.schemas.parameters import ParameterValues
 
 
 class HistoryBar(ApiModel):
@@ -23,6 +24,9 @@ class StrategyObservation(ApiModel):
     artifact_id: UUID4
     content_hash: str
     parameter_hash: str
+    parameters: ParameterValues
+    factor_definitions: dict[str, str]
+    effective_config: dict[str, JsonValue] | None
     in_pool: bool
     calculation_available: bool
     facts: tuple[Evidence, ...]

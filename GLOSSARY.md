@@ -494,3 +494,5 @@ flowchart LR
 **固定报告股票上下文**：stocks/observations同时给run_id和report_id，行情/因子取冻结快照，初选/互评取该修订当时视图；仅给run_id则读取当前已提交意见。图表priceOnly只显示OHLCV，图上自动指标不替代冻结策略事实。
 
 **已加载研究版本**：进程加载时固定的递归研究源码及生产engine_hash指纹；磁盘改变后拒绝新研究，不能仅重算磁盘摘要冒充已加载新代码。量化缓存同样按该版本隔离。
+
+**参数注册与发布**：parameter_sets保存不可变值，parameter_profiles绑定策略/版本名，strategy_parameter_activations追加发布修订。expected_revision防并发覆盖；无发布记录时才使用operator文件基线，存储错误不回退。新研究冻结完整参数与来源，旧运行保持原样。

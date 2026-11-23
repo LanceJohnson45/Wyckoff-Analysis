@@ -23,7 +23,7 @@ from workflows.market_funnel_runtime import runtime_config_from_env
 class WyckoffParameters(FrozenModel):
     """生产默认值加显式研究覆盖；不接受未知字段或隐式环境覆盖。"""
 
-    version: str = "baseline-us-v1"
+    version: str = Field(default="baseline-us-v1", min_length=1, max_length=256, pattern=r"^[^\x00]+$")
     algorithm: Literal["production-us-l1-l4-v1"] = "production-us-l1-l4-v1"
     pool_size: int = Field(default=30, ge=1, le=100)
     overrides: dict[str, object] = Field(default_factory=dict)

@@ -76,7 +76,7 @@ def install_error_handlers(app: FastAPI) -> None:
         return error_response(request, 404, Code.NOT_FOUND, "研究对象不存在")
 
     async def conflict(request: Request, _error: ResearchConflict) -> JSONResponse:
-        return error_response(request, 409, Code.CONFLICT, "运行已被领取或当前状态不允许该操作")
+        return error_response(request, 409, Code.CONFLICT, "研究状态或版本冲突，请刷新后重试")
 
     async def invalid(request: Request, _error: RequestValidationError) -> JSONResponse:
         return error_response(request, 422, Code.INVALID, "请求参数不符合研究契约")

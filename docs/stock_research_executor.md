@@ -32,3 +32,5 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 真实v2运行f77a7db4-b830-4310-9463-2e97565b9c17已完成四阶段：Martin五只、Wyckoff零只初选，交叉评议分别零只、五只。独立CLI/HTTP重读、回执及固定输出重新校验一致，绑定源码8f626c72；报告仍标记迟到。旧失败运行保留，不追认成成功。
 
 后续源码保护已覆盖研究包递归文件及生产engine_hash，并固定模块加载版本；代码变更后须重启进程，旧运行仍只读，新分析使用force关联父版本。量化缓存也按源码失效，详见[源码版本保护](stock_research_source_guard.md)。旧检查点的顶层源码摘要保持原语义，不重写历史。
+
+参数版本后台已接通：CLI run与HTTP新建先解析当前发布或operator基线，物化私有不可变文件并将parameter_sources冻结到清单；当前配置改变不重写旧运行。analyze/benchmark仍使用operator指定文件，详情见[参数版本](stock_research_parameters.md)。

@@ -216,6 +216,23 @@ WATCHLIST_DAYS = execution_table(
     UniqueConstraint("workspace", "strategy", "target_session"),
 )
 
+# lint-redline:ignore PS-10 注册名引用已存在的不可变参数产物。
+PARAMETER_PROFILES = execution_table(
+    "parameter_profiles",
+    Column("strategy", String(32), nullable=False),
+    Column("version", String(256), nullable=False),
+    Column("parameter_uuid", String(36), ForeignKey(PARAMETER_SETS.c.uuid), nullable=False),
+    UniqueConstraint("workspace", "strategy", "version"),
+)
+# lint-redline:ignore PS-10 发布历史依赖已注册参数，不更新旧发布记录。
+PARAMETER_ACTIVATIONS = execution_table(
+    "strategy_parameter_activations",
+    Column("strategy", String(32), nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("parameter_uuid", String(36), ForeignKey(PARAMETER_SETS.c.uuid), nullable=False),
+    UniqueConstraint("workspace", "strategy", "revision"),
+)
+
 
 def schema_ddl() -> str:
     """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""

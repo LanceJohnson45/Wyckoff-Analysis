@@ -20,6 +20,11 @@
 | GET /v1/stocks/{symbol}/observations | 必填run_id，可选同run的report_id固定当时意见；原因子、排除、行业和日线绑定快照，limit=1～320 |
 | GET /v1/watchlists | 当前分策略观察状态及数据不足/未复核标记，SQL分页 |
 | GET /v1/watchlists/events | 按strategy/symbol查询当时变化，SQL分页 |
+| GET /v1/strategies | 两策略当前实际参数及operator基线/已发布来源 |
+| GET、POST /v1/parameter-sets | 注册版本SQL分页/不可变注册，创建201 |
+| GET /v1/parameter-sets/{UUID} | 参数产物详情 |
+| POST /v1/strategies/{strategy}/activate-parameters | expected_revision发布，过期409 |
+| GET /v1/research-runs/{UUID}/parameters | 固定运行参数及来源，不用当前发布覆盖 |
 | GET /openapi.json | 当前显式Pydantic输入/输出契约 |
 
 创建请求仅接受market=us、target_session、preview=true及可选force/parent_run_id。必须带16～128字符的Idempotency-Key。相同键只返回原运行，改变请求载荷返回409；force与parent_run_id须同时提供，生成关联父运行的新版本。请求不能设置文件路径、SQL、模型或连接配置。冻结失败返回503，质量报告仍由数据入口物化；它不是已接受的研究运行。此入口不执行行情同步、通知或订单，更新和services调度仍在后续阶段实现。
@@ -34,4 +39,4 @@ SSE游标是run内单调revision，断线后用Last-Event-ID继续。每条repor
 
 RunView现在带companies，名称来自同一冻结快照的当时分类或成分名称，不向当前市场查询改写历史身份。浏览器EventSource以after查询参数初始化游标，重连的Last-Event-ID继续有效。
 
-本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；未建run的数据失败回执、分组整池查询、参数及主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。
+本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN限制GET，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；[参数版本与CAS发布](stock_research_parameters.md)已接后台及API/CLI实际消费，界面待接。未建run的数据失败回执、分组整池查询、主题/自选维护、专用研究聊天、Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。

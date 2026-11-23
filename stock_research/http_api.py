@@ -15,18 +15,35 @@ from stock_research.config import Settings
 from stock_research.http_actions import register_actions
 from stock_research.http_events import register_events
 from stock_research.http_observations import register_observations
+from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
 from stock_research.http_watchlists import register_watchlists
 from stock_research.queries import list_runs, run_view
 from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
-from stock_research.schema import API_REQUESTS, RESEARCH_RUNS, WATCHLIST_DAYS, WATCHLIST_EVENTS, WATCHLIST_ITEMS
+from stock_research.schema import (
+    API_REQUESTS,
+    PARAMETER_ACTIVATIONS,
+    PARAMETER_PROFILES,
+    RESEARCH_RUNS,
+    WATCHLIST_DAYS,
+    WATCHLIST_EVENTS,
+    WATCHLIST_ITEMS,
+)
 from stock_research.schemas.api import ApiResponse, Code, HealthView, RunPage, RunView
 from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
-RUNTIME_TABLES = (RESEARCH_RUNS, API_REQUESTS, WATCHLIST_ITEMS, WATCHLIST_EVENTS, WATCHLIST_DAYS)
+RUNTIME_TABLES = (
+    RESEARCH_RUNS,
+    API_REQUESTS,
+    WATCHLIST_ITEMS,
+    WATCHLIST_EVENTS,
+    WATCHLIST_DAYS,
+    PARAMETER_PROFILES,
+    PARAMETER_ACTIVATIONS,
+)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -42,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 for table in RUNTIME_TABLES:
                     await connection.execute(select(table.c.uuid).limit(0))
             app.state.store = RunStore(engine, config.workspace)
+            app.state.settings = config
             manager = app.state.manager = RunManager(app.state.store, config)
             await manager.restore()
             yield
@@ -67,6 +85,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_reports(app)
     register_observations(app)
     register_watchlists(app)
+    register_parameter_reads(app)
+    register_parameter_actions(app)
     register_events(app)
     register_actions(app)
     return app

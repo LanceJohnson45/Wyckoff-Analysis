@@ -8,6 +8,7 @@ from stock_research.artifacts import write_once
 from stock_research.config import Settings
 from stock_research.identity import digest
 from stock_research.models import Snapshot
+from stock_research.parameter_config import resolve_run_parameters
 from stock_research.parameters import MartinParameters
 from stock_research.pipeline import run_preview
 from stock_research.run_store import RunStore
@@ -74,13 +75,25 @@ async def run_command(
     import asyncio
 
     snapshot = Snapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
-    analyses = {}
-    for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
-        output = await asyncio.to_thread(analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy)
-        analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
     engine = database_engine(settings)
     try:
-        return await run_preview(engine, settings, snapshot, analyses, target_session, parent_id=parent_id, force=force)
+        settings, sources = await resolve_run_parameters(RunStore(engine, settings.workspace), settings)
+        analyses = {}
+        for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
+            output = await asyncio.to_thread(
+                analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy
+            )
+            analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
+        return await run_preview(
+            engine,
+            settings,
+            snapshot,
+            analyses,
+            target_session,
+            parent_id=parent_id,
+            force=force,
+            parameter_sources=sources,
+        )
     finally:
         await close_engine(engine)
 

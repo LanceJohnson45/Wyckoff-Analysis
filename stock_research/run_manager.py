@@ -12,6 +12,7 @@ from stock_research.calendar import session_times
 from stock_research.config import Settings
 from stock_research.errors import ResearchConflict, ResearchInputError, ResearchSourceChanged, ResearchUnavailable
 from stock_research.models import Snapshot
+from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import prepare_preview, resume_preview
 from stock_research.request_store import RequestStore
 from stock_research.research_commands import analyze_command
@@ -35,6 +36,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
         raise ResearchInputError("目标日期不是正式交易日") from None
     try:
         async with asyncio.timeout(120):
+            settings, parameter_sources = await resolve_run_parameters(store, settings)
             output, status = await asyncio.to_thread(snapshot_command, settings, previous, offline=True)
             if status:
                 raise ResearchUnavailable("行情覆盖或基准未通过质量门槛")
@@ -56,6 +58,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 parent_id=str(data.parent_run_id) if data.parent_run_id else None,
                 force=data.force,
                 request_id=request_id,
+                parameter_sources=parameter_sources,
             )
             return run_id
     except (OSError, SQLAlchemyError, TimeoutError, ValueError):

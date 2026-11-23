@@ -35,7 +35,7 @@ def default_rules() -> dict[str, RulePolicy]:
 class MartinParameters(FrozenModel):
     """所有数值改变都形成新参数摘要，拒绝拼写错误与未知条件。"""
 
-    version: str = "baseline-v1"
+    version: str = Field(default="baseline-v1", min_length=1, max_length=256, pattern=r"^[^\x00]+$")
     algorithm: Literal["martin-daily-v1"] = "martin-daily-v1"
     ema_periods: tuple[Period, Period, Period] = (9, 21, 50)
     slope_window: Period = 5
