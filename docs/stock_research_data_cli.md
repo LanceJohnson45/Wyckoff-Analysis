@@ -97,3 +97,5 @@
 本机平台仓库为 `/Users/wxjer/Documents/github/openclaw/dsh-superagent-platform`。旁边的 `/Users/wxjer/Documents/github/openclaw/dsh-superagent-services` 已存在，读取时分支为 `codex/personal-backlog-20261123`，提交为 `d405f961bf69d8c54a9d00c7e786df7f9c10551a`，backup远端匹配计划的services仓库。此记录只证明checkout定位；没有核验部署进程版本，没有修改、重启或注册任何服务。后续接入须遵循该工作区的认领和同步规则。
 
 默认run现先解析[人工输入发布](stock_research_input_maintenance.md)并按摘要物化股票池/分类，再生成快照；显式--snapshot-file保持原版本。单独snapshot --offline仍只读operator路径，不连接PG读取维护配置。
+
+API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。当前单策略失败仍使准备失败，局部继续及持久化补算尚未接通，详见[量化执行边界](stock_research_quant_execution.md)。

@@ -1,5 +1,20 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：可停止的量化worker，局部恢复继续开发
+
+锚点图表已提交b0a331eb。本批先替换API prepare_from_market与CLI run的线程量化为analyze_isolated，正式compute_martin/compute_wyckoff在无身份环境的独立Python worker运行。父端保留控制管道，正常超时/取消回收自建进程组并等候终态；父端异常退出时worker原生读取线程在EOF后以75退出。临时目录0700/输出0600，报告与两帧协议、快照/参数/引擎及结果摘要在父端校验后才原子发布缓存；同输入并发接受校验后的首份缓存，损坏不覆盖。同步analyze命令仍前台执行，共用缓存身份/绑定校验。
+
+这是局部恢复的执行前置，尚不是按策略失败隔离：当前仍先后准备两策略，单策略失败仍使准备失败，不能宣称另一策略初选继续。quant_jobs/quant_attempts尚未创建，数据库仍24表。接续在共同输入冻结后保存独立尝试/成功绑定，resume只补失败，历史报告保留当时绑定；缺计算/失败/空池分开表达，所有查询与名单及Agent须共同更新。具体约束与接续架构见design/stock-research-quant-recovery-2026-11-24.md及stock_research_quant_execution.md。
+
+专项26通过，新补协议/文件限额后worker4项单独通过。最终源码冻结后全量Python6004通过（无skip、50旧警告）；Ruff/1258文件格式、质量、红线93文件、workflow/dependency hygiene及合成配置daily dry-run通过。Python LOC141190/+63.8%、TS35956/+93.4%旧基线提示保留，增长对应进程协议/监督/分派及测试。本批没有Web或API报文字段变更，未重复Web gate；上一锚点提交完整Web gate仍为402/221及两项默认Upstash跳过。第一次全量6003通过后增加限额用例，因此重新全量6004，不把未收集的新用例冒充已全量。
+
+真实原快照32150191在隔离缓存目录完成Martin491/30、Wyckoff490/0的实际worker计算和缓存复用。比较旧f77产物时发现原始JSON有生成时间/摘要、Martin分组成员顺序及Wyckoff引擎标识差异；明确规范化这些元数据后，全部数值、条件、评分和池逐项一致，不称原JSON相同。真实控制EOF退出75且无报告文件/残留PID，未创建新数据库run或模型。测试还实际审计了worker导入文件打开，未见.env/.dsh身份读取；环境白名单不继承PG/API/模型/HOME，临时目录清理验证通过。
+
+已有某次全tests目录红线扫描把test_chat.py的MCP工具名集合误判为SQL动态标识符，实际无SQL；未改无关用例或添豁免，最终扫描生产包及本批新测试/关联source_guard测试通过。没有排除pytest。确认0活动研究/问答后，仅重启本线程8788 API，旧PID84188终态143与端口释放确认；当前PID90285/session74859，日志quant-worker-main-api.log。readyz200，原cf8da076报告、锚点及a45bf9c4已完成问答独立HTTP读回不变。
+
+浏览器仍待正常账号认证，未作控件验收；wiki checkout不存在，远端CI/独立整体审查/正式部署各自未验收。没有Personal/secrets改动或通知。总体goal保持，继续真正的按策略局部恢复，再处理行情更新协调、Personal唯一调度通知及Mac部署。
+
+
 ## 续接检查点：已确认锚点的固定图表投影
 
 主题/自选维护已提交b123dfc0。本批为原Martin锚点增加独立固定报告GET /v1/reports/{report_id}/anchors/{symbol}、ResearchReader.anchor_chart和query_cli anchor-chart。完整目录保留原索引/标量引用，默认最近确认项，每次只返回一条曲线，不放大原股票/问答/MCP工具响应。锚点及确认日必须在冻结行情中且匹配原参数右侧确认间隔，不重新检测结构。完整日线从锚点累计典型价成交量均价、末值与原daily_estimate对拍；确认前不显示，请求末N根不重置累计，零量保持null。

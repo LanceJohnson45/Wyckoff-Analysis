@@ -7,7 +7,6 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
-from stock_research.analysis import MartinReport
 from stock_research.calendar import session_times
 from stock_research.config import Settings
 from stock_research.errors import (
@@ -22,13 +21,12 @@ from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import prepare_preview, resume_preview
 from stock_research.preparations import record_preparation
+from stock_research.quant_execution import analyze_isolated
 from stock_research.request_store import RequestStore
-from stock_research.research_commands import analyze_command
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
 from stock_research.schemas.requests import CreateRun
 from stock_research.source_guard import ensure_source_current
-from stock_research.wyckoff import WyckoffReport
 
 logger = structlog.get_logger(__name__)
 
@@ -55,11 +53,8 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
             snapshot = await asyncio.to_thread(lambda: Snapshot.model_validate_json(path.read_text()))
             await attempt.checkpoint("analysis")
             analyses = {}
-            for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
-                result = await asyncio.to_thread(analyze_command, settings, path, previous, strategy=strategy)
-                analyses[strategy] = await asyncio.to_thread(
-                    lambda model=model, result=result: model.model_validate_json(Path(result["path"]).read_text())
-                )
+            for strategy in ("martin", "wyckoff"):
+                analyses[strategy] = await analyze_isolated(settings, path, snapshot, strategy)
             ensure_source_current()
             await attempt.checkpoint("freeze")
             run_id, _connections = await prepare_preview(

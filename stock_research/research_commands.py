@@ -3,21 +3,22 @@
 from datetime import date
 from pathlib import Path
 
-from stock_research.analysis import MartinReport, compute_martin
+from stock_research.analysis import compute_martin
 from stock_research.artifacts import write_once
 from stock_research.config import Settings
 from stock_research.errors import ResearchQualityError
-from stock_research.identity import digest
 from stock_research.input_configuration import describe_inputs, resolve_run_inputs
 from stock_research.models import Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.parameters import MartinParameters
 from stock_research.pipeline import run_preview
 from stock_research.preparations import record_preparation
+from stock_research.quant_compute import analysis_path, verify_analysis
+from stock_research.quant_execution import analyze_isolated
 from stock_research.run_store import RunStore
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 from stock_research.store import close_engine, database_engine
-from stock_research.wyckoff import WyckoffParameters, WyckoffReport, compute_wyckoff, engine_hash
+from stock_research.wyckoff import WyckoffParameters, compute_wyckoff
 
 
 def analyze_command(
@@ -30,29 +31,15 @@ def analyze_command(
         raise ValueError("指定快照与分析截止日不一致")
     if strategy not in {"martin", "wyckoff"}:
         raise ValueError("未知量化策略")
-    parameter_model, report_model, compute, parameter_path = (
-        (MartinParameters, MartinReport, compute_martin, settings.parameters_path)
+    parameter_model, compute, parameter_path = (
+        (MartinParameters, compute_martin, settings.parameters_path)
         if strategy == "martin"
-        else (WyckoffParameters, WyckoffReport, compute_wyckoff, settings.wyckoff_parameters_path)
+        else (WyckoffParameters, compute_wyckoff, settings.wyckoff_parameters_path)
     )
     parameters = parameter_model.model_validate_json(parameter_path.read_text(encoding="utf-8"))
-    identity = {
-        "schema_version": 1,
-        "source_hash": LOADED_SOURCE_IDENTITY,
-        "snapshot": snapshot.content_hash,
-        "parameters": parameters.model_dump(mode="json"),
-    }
-    if strategy == "wyckoff":
-        identity["engine_hash"] = engine_hash()
-    path = settings.artifacts_path / "analyses" / f"{strategy}-{digest(identity)}.json"
+    path = analysis_path(settings, snapshot, parameters, source_hash=LOADED_SOURCE_IDENTITY)
     if path.exists():
-        report = report_model.model_validate_json(path.read_text(encoding="utf-8"))
-        if (
-            report.snapshot_hash != snapshot.content_hash
-            or report.parameters != parameters
-            or (strategy == "wyckoff" and report.engine_hash != identity["engine_hash"])
-        ):
-            raise ValueError("量化产物的输入或参数与缓存键不一致")
+        report = verify_analysis(path.read_text(encoding="utf-8"), snapshot, parameters)
     else:
         report = compute(snapshot, parameters)
         write_once(path, report.model_dump_json(indent=2) + "\n")
@@ -106,11 +93,8 @@ async def run_command(
                 raise ResearchQualityError("快照未通过研究质量门槛")
             await attempt.checkpoint("analysis")
             analyses = {}
-            for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
-                output = await asyncio.to_thread(
-                    analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy
-                )
-                analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
+            for strategy in ("martin", "wyckoff"):
+                analyses[strategy] = await analyze_isolated(settings, snapshot_path, snapshot, strategy)
             await attempt.checkpoint("freeze")
             return await run_preview(
                 engine,

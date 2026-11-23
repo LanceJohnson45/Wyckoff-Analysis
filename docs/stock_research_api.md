@@ -50,3 +50,5 @@ RunView现在带companies，名称来自同一冻结快照的当时分类或成�
 本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。[个股固定查询与三项外部只读工具](stock_research_queries.md)已实现并实际调用，API_READ_TOKEN仅能GET共享研究数据，不能读取私有问答，独立查询进程不持有PG/模型身份。[持续观察名单](stock_research_watchlists.md)已接终态事务、HTTP/CLI及Agent面板（页面操作待登录）；[参数版本与CAS发布](stock_research_parameters.md)已接后台、API/CLI实际消费和Agent维护界面。[未建run的输入准备回执](stock_research_preparations.md)已接HTTP/CLI与Agent。[固定报告研究查询](stock_research_queries.md)已接HTTP及独立研究MCP；[固定报告研究问答](stock_research_chat.md)已接后台模型循环与Agent界面；[完整股票池浏览](stock_research_universe.md)已接HTTP/绑定工具和Agent；[主题/自选维护](stock_research_input_maintenance.md)已接输入消费与Agent；Personal工具注册/services、Tailscale入口和自然交易日部署仍待完成。
 
 固定报告新增GET /v1/reports/{report_id}/anchors/{symbol}，limit=1～320、index可选；返回原锚点目录和一条确认后曲线。只读身份可读，未知索引422、冻结锚点/行情不一致503，原股票/问答工具不增加曲线负担。详见[个股图表](stock_research_stock_view.md)。
+
+API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。当前单策略失败仍使准备失败，局部继续及持久化补算尚未接通，详见[量化执行边界](stock_research_quant_execution.md)。
