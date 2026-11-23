@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from stock_research.errors import ResearchNotFound
 from stock_research.identity import now
 from stock_research.models import Snapshot
+from stock_research.quant_store import quant_state
 from stock_research.run_store import RunStore, verified_payload
 from stock_research.schema import RESEARCH_REPORTS, RESEARCH_RUNS
 from stock_research.schemas.api import (
@@ -46,6 +47,7 @@ async def run_view(
         preview=manifest["preview"],
         status=body["status"],
         error_code=body["error_code"],
+        quant=tuple(quant_state(manifest, strategy) for strategy in ("martin", "wyckoff")),
         companies=company_views(
             snapshot,
             {

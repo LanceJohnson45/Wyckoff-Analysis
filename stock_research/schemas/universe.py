@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from stock_research.schemas.api import ApiModel, CompanyView, Strategy
+from stock_research.schemas.api import ApiModel, CompanyView, QuantJobView, Strategy
 from stock_research.schemas.report_queries import ReportScope
 
 
@@ -30,7 +30,8 @@ class UniverseStrategy(ApiModel):
     strategy: Strategy
     data_eligible: bool
     calculation_available: bool
-    in_pool: bool
+    in_pool: bool | None
+    quant: QuantJobView | None = None
     selected: bool | None
 
 

@@ -9,6 +9,7 @@ from stock_research.errors import ResearchInputError
 from stock_research.evidence import flatten_facts
 from stock_research.identity import digest
 from stock_research.observations import FrozenResearch, frozen_history, frozen_scope, stock_from_scope
+from stock_research.quant_store import quant_state
 from stock_research.queries import company_views
 from stock_research.run_store import RunStore
 from stock_research.schemas.observations import GroupObservation
@@ -41,11 +42,27 @@ async def market_overview(store: RunStore, report_id: str, limit: int) -> Market
     """市场事实沿原Wyckoff计算；量化池顺序与正式初选分别保留。"""
     scope = await frozen_scope(store, None, report_id)
     facts, benchmarks, strategies = {}, [], []
-    flatten_facts(scope.analyses["wyckoff"][1].metrics["benchmark"], "market/SPY", None, facts)
+    if "wyckoff" in scope.analyses:
+        flatten_facts(scope.analyses["wyckoff"][1].metrics["benchmark"], "market/SPY", None, facts)
     for symbol in ("SPY", "QQQ", "IWM"):
         history, total = frozen_history(scope.snapshot, "benchmark", symbol, limit)
         benchmarks.append(BenchmarkHistory(symbol=symbol, history=history, history_total=total))
-    for strategy, (identifier, analysis) in scope.analyses.items():
+    for strategy in ("martin", "wyckoff"):
+        if strategy not in scope.analyses:
+            strategies.append(
+                QuantitativeScope(
+                    strategy=strategy,
+                    artifact_id=None,
+                    content_hash=None,
+                    parameter_hash=digest(scope.manifest["parameters"][strategy]),
+                    calculated_count=None,
+                    exclusion_record_count=None,
+                    pool=None,
+                    quant=quant_state(scope.manifest, strategy),
+                )
+            )
+            continue
+        identifier, analysis = scope.analyses[strategy]
         # lint-redline:ignore SQL-02 此处set是证券集合，公司映射不构造SQL标识符。
         companies = {item.symbol: item for item in company_views(scope.snapshot, set(analysis.pool))}
         strategies.append(
@@ -79,6 +96,17 @@ async def group_strength(
 ) -> GroupPage:
     """完整校验后绑定原JSON，筛选、NULL排序和分页均由PostgreSQL执行。"""
     scope = await frozen_scope(store, None, report_id)
+    if "martin" not in scope.analyses:
+        state = quant_state(scope.manifest, "martin")
+        return GroupPage(
+            **report_scope(scope).model_dump(),
+            items=None,
+            total=None,
+            page=page,
+            page_size=page_size,
+            quant=state,
+            limitations=("本修订Martin量化尚不可用：" + (state.error_code or state.status),),
+        )
     groups = scope.analyses["martin"][1].groups
     rows = func.json_array_elements(cast(bindparam("groups", value=groups, type_=JSON), JSON)).table_valued(
         column("value", JSON)
@@ -127,7 +155,24 @@ async def strategy_rules(store: RunStore, report_id: str) -> StrategyRules:
     """从原产物投影参数和出处，不读取后来发布配置或当前生产默认值。"""
     scope = await frozen_scope(store, None, report_id)
     values = []
-    for strategy, (identifier, analysis) in scope.analyses.items():
+    for strategy in ("martin", "wyckoff"):
+        if strategy not in scope.analyses:
+            state = quant_state(scope.manifest, strategy)
+            values.append(
+                FrozenRules(
+                    strategy=strategy,
+                    artifact_id=None,
+                    content_hash=None,
+                    parameter_hash=digest(scope.manifest["parameters"][strategy]),
+                    parameters=scope.manifest["parameters"][strategy],
+                    factor_definitions={},
+                    effective_config=None,
+                    quant=state,
+                    limitations=("本修订量化尚不可用：" + (state.error_code or state.status),),
+                )
+            )
+            continue
+        identifier, analysis = scope.analyses[strategy]
         values.append(
             FrozenRules(
                 strategy=strategy,

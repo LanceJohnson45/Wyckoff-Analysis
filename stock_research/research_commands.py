@@ -14,7 +14,6 @@ from stock_research.parameters import MartinParameters
 from stock_research.pipeline import run_preview
 from stock_research.preparations import record_preparation
 from stock_research.quant_compute import analysis_path, verify_analysis
-from stock_research.quant_execution import analyze_isolated
 from stock_research.run_store import RunStore
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 from stock_research.store import close_engine, database_engine
@@ -91,16 +90,12 @@ async def run_command(
             await attempt.checkpoint("snapshot", snapshot.quality)
             if not snapshot.quality.passed:
                 raise ResearchQualityError("快照未通过研究质量门槛")
-            await attempt.checkpoint("analysis")
-            analyses = {}
-            for strategy in ("martin", "wyckoff"):
-                analyses[strategy] = await analyze_isolated(settings, snapshot_path, snapshot, strategy)
             await attempt.checkpoint("freeze")
             return await run_preview(
                 engine,
                 settings,
                 snapshot,
-                analyses,
+                None,
                 target_session,
                 parent_id=parent_id,
                 force=force,

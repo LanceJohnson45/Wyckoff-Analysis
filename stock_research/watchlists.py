@@ -34,12 +34,25 @@ def next_watch_item(
     strategy: str,
     selected: bool,
     selection_available: bool,
-    analysis: MartinReport | WyckoffReport,
+    analysis: MartinReport | WyckoffReport | None,
     run_id: str,
     snapshot: Snapshot,
     target: date,
 ) -> WatchItem:
     """新日结构观察来自原事实；缺模型/数据时保持旧的状态与证据来源。"""
+    if analysis is None:
+        if previous is None:
+            raise ValueError("缺量化不能产生新的观察状态")
+        return WatchItem.model_validate(
+            {
+                **previous.model_dump(),
+                "target_session": target,
+                "checked_run_id": run_id,
+                "not_reviewed": True,
+                "data_insufficient": symbol not in snapshot.quality.eligible[strategy],
+                "reason": "quant_unavailable",
+            }
+        )
     assessment = assess_martin(analysis, symbol) if strategy == "martin" else assess_wyckoff(analysis, symbol)
     health = dict(
         target_session=target,
@@ -151,7 +164,8 @@ async def apply_tracking(
     if any(day is not None and day > target for day in (latest, latest_day)):
         return
     selections = {row["strategy"]: row["payload"]["decision"]["items"] for row in body["selections"]}
-    for strategy, analysis in analyses.items():
+    for strategy in ("martin", "wyckoff"):
+        analysis = analyses.get(strategy)
         await update_strategy(
             connection, workspace, body["run_id"], target, snapshot, strategy, analysis, selections.get(strategy)
         )
@@ -164,7 +178,7 @@ async def update_strategy(
     target: date,
     snapshot: Snapshot,
     strategy: str,
-    analysis: MartinReport | WyckoffReport,
+    analysis: MartinReport | WyckoffReport | None,
     selection: list[dict[str, object]] | None,
 ) -> None:
     """第一份成功初选固定当日来源，强制重分析保留在报告中供对照。"""

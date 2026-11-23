@@ -1,7 +1,8 @@
 import { z } from 'zod'
+import { quantJobSchema } from './quant-contract'
 import { researchDay as day, researchHash as hash, researchId as id, strategySchema } from './contract-values'
 
-const strategy = z.object({ strategy: strategySchema, data_eligible: z.boolean(), calculation_available: z.boolean(), in_pool: z.boolean(), selected: z.boolean().nullable() })
+const strategy = z.object({ strategy: strategySchema, data_eligible: z.boolean(), calculation_available: z.boolean(), in_pool: z.boolean().nullable(), quant: quantJobSchema.nullable().optional(), selected: z.boolean().nullable() })
 export const universeStockSchema = z.object({ company: z.object({ symbol: z.string().regex(/^[A-Z][A-Z0-9.-]{0,31}$/), name: z.string().min(1) }), indices: z.array(z.enum(['sp500', 'nasdaq100', 'manual'])), industry: z.string().nullable(), themes: z.array(z.string()), history_rows: z.number().int().nonnegative(), last_session: day.nullable(), strategies: z.array(strategy).length(2), ref_prefix: z.string() }).superRefine((row, context) => {
   if (new Set(row.strategies.map(item => item.strategy)).size !== 2 || Boolean(row.history_rows) !== (row.last_session !== null)) context.addIssue({ code: z.ZodIssueCode.custom, message: '整池策略或行情状态不一致' })
 })

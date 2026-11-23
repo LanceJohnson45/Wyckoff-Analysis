@@ -1,4 +1,6 @@
 import type { ResearchPoint, ResearchReport, ResearchRun, SelectionItem, ReviewItem, Strategy } from './api'
+import { quantFailureLabel, quantStatusLabels } from './quant-contract'
+import { QuantAttemptHistory } from './quant-history'
 import { statusLabels, strategyLabels } from './state'
 
 const errorLabels: Record<string, string> = {
@@ -9,7 +11,7 @@ const errorLabels: Record<string, string> = {
   previous_executor_stopped: '上次执行中断', stage_execution_failed: '阶段执行失败', transport_error: '执行连接中断',
   cancelled: '已取消', api_shutdown: '服务关闭后待恢复', cleanup_failed: '执行收尾未确认',
 }
-export function failureLabel(code: string): string { return errorLabels[code] || '阶段出现未识别错误' }
+export function failureLabel(code: string): string { return errorLabels[code] || quantFailureLabel(code) || '阶段出现未识别错误' }
 export function nyTime(value: string): string { return new Intl.DateTimeFormat('zh-CN', { timeZone: 'America/New_York', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value)) }
 
 export function ResearchReportView({ report, onDiscuss }: { report: ResearchReport; onDiscuss: () => void }) {
@@ -25,6 +27,7 @@ export function ResearchReportView({ report, onDiscuss }: { report: ResearchRepo
       <button type="button" onClick={onDiscuss} className="mt-4 rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted">带此报告继续讨论</button>
     </header>
     <div className="grid gap-5 xl:grid-cols-2">{(['martin', 'wyckoff'] as const).map((strategy) => <StrategyReport key={strategy} run={run} strategy={strategy} />)}</div>
+    <QuantProgress run={run} />
     <StageProgress run={run} />
     <DataQuality run={run} />
   </section>
@@ -32,10 +35,11 @@ export function ResearchReportView({ report, onDiscuss }: { report: ResearchRepo
 
 function StrategyReport({ run, strategy }: { run: ResearchRun; strategy: Strategy }) {
   const selection = run.selections.find((item) => item.strategy === strategy)
+  const quant = run.quant.find(item => item.strategy === strategy)
   const stage = run.stages.find((item) => item.strategy === strategy && item.kind === 'select')
   return <section className="min-w-0 rounded-2xl border border-border bg-card p-5" aria-label={`${strategyLabels[strategy]}初选`}>
-    <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">{strategyLabels[strategy]}</h3><span className="text-xs text-muted-foreground">{selection ? `${selection.decision.items.length} / 5 只` : stage ? statusLabels[stage.status] : '待执行'}</span></div>
-    {!selection && <p className="text-sm text-muted-foreground">{stage?.error ? failureLabel(stage.error) : '正式初选尚未提交，量化候选不作为初选展示。'}</p>}
+    <div className="mb-4 flex items-center justify-between gap-3"><h3 className="text-sm font-semibold">{strategyLabels[strategy]}</h3><span className="text-xs text-muted-foreground">{selection ? `${selection.decision.items.length} / 5 只` : quant && quant.status !== 'completed' ? `量化${quantStatusLabels[quant.status]}` : stage ? statusLabels[stage.status] : '待执行'}</span></div>
+    {!selection && <p className="text-sm text-muted-foreground">{quant && quant.status !== 'completed' ? `量化${quantStatusLabels[quant.status]}，尚无正式初选${quant.error_code ? `：${failureLabel(quant.error_code)}` : ''}` : stage?.error ? failureLabel(stage.error) : '正式初选尚未提交，量化候选不作为初选展示。'}</p>}
     {selection && selection.decision.items.length === 0 && <div className="rounded-xl bg-muted/50 p-4"><p className="text-sm">本策略保留空初选</p>{selection.decision.empty_reason && <p className="mt-2 text-xs text-muted-foreground">{selection.decision.empty_reason.text}</p>}</div>}
     {selection && <div className="space-y-4">{selection.decision.items.map((item) => {
       const company = run.companies.find((row) => row.symbol === item.symbol)
@@ -91,4 +95,9 @@ function DataQuality({ run }: { run: ResearchRun }) {
     <details className="mt-3 text-xs"><summary className="cursor-pointer text-muted-foreground">排除与缺数 · {run.quality.issues.length} 项</summary><ul className="mt-2 max-h-56 space-y-2 overflow-auto">{run.quality.issues.map((issue, index) => <li key={index}><code>{issue.symbol}</code> · {issue.reason}</li>)}</ul></details>
     <details className="mt-3 text-xs"><summary className="cursor-pointer text-muted-foreground">来源与研究限制</summary><ul className="mt-2 space-y-2 leading-relaxed">{run.quality.limitations.map((text) => <li key={text}>{text}</li>)}</ul></details>
   </section>
+}
+
+function QuantProgress({ run }: { run: ResearchRun }) {
+  if (run.quant.length === 0) return null
+  return <section className="rounded-2xl border border-border bg-card p-5" aria-label="本修订量化回执"><h3 className="text-sm font-semibold">本报告修订的量化状态</h3><p className="mt-2 text-xs text-muted-foreground">成功计算保留；续跑只补未成功策略，补齐后生成新修订。旧修订继续显示当时状态。</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{run.quant.map(row => <div key={row.strategy} className="rounded-lg bg-muted/30 p-3 text-xs"><p>{strategyLabels[row.strategy]} · {quantStatusLabels[row.status]}</p><p className="mt-1 text-muted-foreground">{row.attempt_count === null ? '旧运行未记录独立量化尝试' : `已记录 ${row.attempt_count} 次尝试`}</p>{row.error_code && <p className="mt-2 text-amber-700 dark:text-amber-300">{failureLabel(row.error_code)}</p>}</div>)}</div><QuantAttemptHistory runId={run.run_id} /></section>
 }

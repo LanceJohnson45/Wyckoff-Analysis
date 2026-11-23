@@ -20,10 +20,12 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 身份、存储与接入
 
-显式stock-research init-schema补建chat_turns，研究schema现有24张表；API启动只检查表，不自动迁移。每问保存报告/父链、幂等摘要、模型、源码/提示词/上下文摘要、状态及回执。公开响应不含输入内部字段、回执路径、模型连接或令牌。
+显式stock-research init-schema补建chat_turns，研究schema现有26张表；API启动只检查表，不自动迁移。每问保存报告/父链、幂等摘要、模型、源码/提示词/上下文摘要、状态及回执。公开响应不含输入内部字段、回执路径、模型连接或令牌。
 
 问答仅API_TOKEN的operator身份可读写；共享API_READ_TOKEN连问答GET也返回403。当前是一个operator workspace，正式多用户身份映射属于部署工作。行情工具进程只持独立GET身份，不持PG或operator权限；0600临时身份文件位于本轮私有home，仅路径进入Harness配置，进程收尾删除。模型凭据不传给MCP进程，回执同时脱敏模型和只读身份。
 
 Node开发代理仍仅loopback/同源/固定路由。问答创建正文上限48KiB，其他写入仍8KiB；6000字符限制仍由后端验证。两种研究身份都只在服务端，不进入VITE变量或生产bundle。生产静态构建没有开发代理，不能据此声明Tailscale或多用户部署完成。
 
 真实模型、持久读回及本批验证结果记录在[交接检查点](stock_research_handoff_2026-11-23.md)。正常账号登录后的真实控件、独立wiki、远端CI及正式部署分别验收。
+
+量化恢复接入后，工具沿固定报告返回当时quant状态；未成功计算、null池/分组/计数不能解释为空池、零或否定股票。run_status的后来补齐仅是当前进展，不可写回report_read旧修订；提示词按此更新，原已完成问答保持。当前尝试分页不增加聊天工具或重算权限。

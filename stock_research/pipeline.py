@@ -21,11 +21,12 @@ from stock_research.input_configuration import verify_input_sources
 from stock_research.model_connection import ModelConnection, primary_model
 from stock_research.models import Snapshot
 from stock_research.prompts import prompt_identity
+from stock_research.quant_compute import quant_parameters
 from stock_research.run_store import RunStore
-from stock_research.schema import FACTOR_RESULTS, RESEARCH_RUNS
+from stock_research.schema import RESEARCH_RUNS
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current, source_identity
 from stock_research.store import load_snapshot, save_snapshot
-from stock_research.wyckoff import WyckoffReport
+from stock_research.wyckoff import WyckoffReport, engine_hash
 
 STRATEGIES = ("martin", "wyckoff")
 logger = structlog.get_logger(__name__)
@@ -75,6 +76,35 @@ def program_result(context: EvidenceContext, target: dict[str, object] | None) -
     )
 
 
+async def stage_result(
+    settings: Settings,
+    context: EvidenceContext,
+    connection: ModelConnection | None,
+    target: dict[str, object] | None,
+    runtime_error: str | None,
+) -> StageResult:
+    """程序空池可独立成功；不可用执行器只使需要模型的本阶段失败。"""
+    if not context.symbols:
+        return program_result(context, target)
+    if runtime_error or connection is None:
+        return StageResult(
+            context_hash=context.content_hash,
+            status="failed",
+            decision=None,
+            error=runtime_error or "executor_configuration_failed",
+            receipt_path="",
+        )
+    return await execute_stage(
+        settings.dsh_executable,
+        context,
+        connection,
+        artifacts=settings.artifacts_path,
+        home_root=settings.dsh_home,
+        agents_root=settings.dsh_agents_home,
+        target=target,
+    )
+
+
 async def run_stage(
     store: RunStore,
     settings: Settings,
@@ -85,6 +115,7 @@ async def run_stage(
     connection: ModelConnection | None,
     *,
     target: dict[str, object] | None = None,
+    runtime_error: str | None = None,
 ) -> None:
     """相同stage_key定位成功结果；失败只重试当前阶段一次。"""
     strategy = "martin" if isinstance(analysis, MartinReport) else "wyckoff"
@@ -109,20 +140,7 @@ async def run_stage(
         )
         await store.start_stage(stage_id, context)
         try:
-            if not context.symbols:
-                result = program_result(context, target)
-            else:
-                if connection is None:
-                    raise ValueError("该阶段需要模型连接")
-                result = await execute_stage(
-                    settings.dsh_executable,
-                    context,
-                    connection,
-                    artifacts=settings.artifacts_path,
-                    home_root=settings.dsh_home,
-                    agents_root=settings.dsh_agents_home,
-                    target=target,
-                )
+            result = await stage_result(settings, context, connection, target, runtime_error)
         except asyncio.CancelledError:
             await store.finish_stage(
                 stage_id,
@@ -152,6 +170,7 @@ async def execute_run(
     analyses: dict[str, MartinReport | WyckoffReport],
     run_id: str,
     connections: dict[str, ModelConnection],
+    runtime_error: str | None = None,
 ) -> dict[str, object]:
     """两个初选各自隔离；全部尝试结束并提交后才生成互评上下文。"""
     run = await store.row(RESEARCH_RUNS, run_id)
@@ -169,8 +188,10 @@ async def execute_run(
                         run_id,
                         deadline,
                         connections.get(f"{strategy}.select"),
+                        runtime_error=runtime_error,
                     )
                     for strategy in STRATEGIES
+                    if strategy in analyses
                 ]
             )
             selected = await store.publish(run_id, "running")
@@ -178,7 +199,7 @@ async def execute_run(
             for selection in selected["selections"]:
                 target = {"selection_id": selection["id"], **selection["payload"]}
                 for reviewer in STRATEGIES:
-                    if reviewer != selection["strategy"]:
+                    if reviewer != selection["strategy"] and reviewer in analyses:
                         reviews.append(
                             run_stage(
                                 store,
@@ -189,6 +210,7 @@ async def execute_run(
                                 deadline,
                                 connections.get(f"{reviewer}.review"),
                                 target=target,
+                                runtime_error=runtime_error,
                             )
                         )
             await parallel_stages(reviews)
@@ -205,7 +227,10 @@ async def execute_run(
         stage["status"] == "completed" for stage in result["stages"]
     )
     return await store.publish(
-        run_id, "completed" if success else "partial" if result["selections"] else "failed", track=True
+        run_id,
+        "completed" if success else "partial" if result["selections"] else "failed",
+        None if success else "quant_unavailable" if len(analyses) != 2 else runtime_error,
+        track=True,
     )
 
 
@@ -231,26 +256,44 @@ async def parallel_stages(coroutines: list[Coroutine[Any, Any, None]]) -> None:
 
 def validated_report_deadline(
     snapshot: Snapshot,
-    analyses: dict[str, MartinReport | WyckoffReport],
+    analyses: dict[str, MartinReport | WyckoffReport] | None,
     target_session: date,
     input_sources: dict[str, object] | None,
 ) -> datetime:
     """日历、量化与维护来源必须共同绑定同一份合格快照。"""
     _opening, report_due, previous = session_times(target_session)
-    if snapshot.as_of != previous or set(analyses) != set(STRATEGIES) or not snapshot.quality.passed:
+    if (
+        snapshot.as_of != previous
+        or (analyses is not None and set(analyses) != set(STRATEGIES))
+        or not snapshot.quality.passed
+    ):
         raise ValueError("运行需要前一正式交易日的合格快照和两个策略产物")
-    if any(value.snapshot_hash != snapshot.content_hash for value in analyses.values()):
+    if any(value.snapshot_hash != snapshot.content_hash for value in (analyses or {}).values()):
         raise ValueError("两个策略没有使用同一快照")
     if input_sources:
         verify_input_sources(snapshot, input_sources)
     return report_due
 
 
+def canonical_analyses(
+    analyses: dict[str, MartinReport | WyckoffReport], snapshot: Snapshot
+) -> dict[str, MartinReport | WyckoffReport]:
+    """同内容快照被PG归并时仅新建绑定元数据版本，原产物不修改。"""
+    result = {}
+    for key, value in analyses.items():
+        if value.snapshot_id == snapshot.id:
+            result[key] = value
+        else:
+            body = {**value.model_dump(mode="json", exclude={"content_hash"}), "snapshot_id": snapshot.id}
+            result[key] = type(value).model_validate({**body, "content_hash": digest(body)})
+    return result
+
+
 async def prepare_preview(
     engine: AsyncEngine,
     settings: Settings,
     snapshot: Snapshot,
-    analyses: dict[str, MartinReport | WyckoffReport],
+    analyses: dict[str, MartinReport | WyckoffReport] | None,
     target_session: date,
     *,
     parent_id: str | None = None,
@@ -265,7 +308,11 @@ async def prepare_preview(
     store = RunStore(engine, settings.workspace)
     if force != bool(parent_id):
         raise ValueError("强制重分析须同时指定force和父运行")
-    connections = {}
+    parameters = (
+        {key: value.parameters for key, value in analyses.items()}
+        if analyses is not None
+        else {key: await asyncio.to_thread(quant_parameters, settings, key) for key in STRATEGIES}
+    )
     config = {
         "workspace": settings.workspace,
         "source_hash": LOADED_SOURCE_IDENTITY,
@@ -274,10 +321,10 @@ async def prepare_preview(
         "report_due": report_due.isoformat(),
         "universe_hash": digest(snapshot.universe.model_dump(mode="json")),
         "classification_hash": digest(snapshot.classifications.model_dump(mode="json")),
-        "parameters": {key: value.parameters.model_dump(mode="json") for key, value in analyses.items()},
+        "parameters": {key: value.model_dump(mode="json") for key, value in parameters.items()},
         "parameter_sources": parameter_sources or {},
         "input_sources": input_sources or {},
-        "algorithms": {"wyckoff": analyses["wyckoff"].engine_hash},
+        "algorithms": {"wyckoff": analyses["wyckoff"].engine_hash if analyses else engine_hash()},
         "model_preferences": model_preferences(settings),
         "preview": True,
         "stage_timeout_seconds": settings.stage_timeout_seconds,
@@ -289,30 +336,51 @@ async def prepare_preview(
     run_key = digest({key: value for key, value in config.items() if key != "input_sources"})
     existing = await store.find_run(run_key)
     if existing:
-        run_id = existing["uuid"]
-    else:
-        if any(value.pool for value in analyses.values()):
+        return existing["uuid"], {}
+    return await freeze_new_run(store, settings, snapshot, analyses, config, request_id, parent_id, run_key)
+
+
+async def freeze_new_run(
+    store: RunStore,
+    settings: Settings,
+    snapshot: Snapshot,
+    analyses: dict[str, MartinReport | WyckoffReport] | None,
+    config: dict[str, object],
+    request_id: str | None,
+    parent_id: str | None,
+    run_key: str,
+) -> tuple[str, dict[str, ModelConnection]]:
+    """共同输入与初始任务先保存，计算和模型失败都不丢掉本次运行。"""
+    connections = {}
+    model_error = None
+    if analyses is None or any(value.pool for value in analyses.values()):
+        try:
             connections = await asyncio.to_thread(model_connections, settings)
-            if model_preferences(settings) != config["model_preferences"]:
-                raise ValueError("模型配置在冻结期间发生变化")
-        snapshot = await save_snapshot(engine, settings.workspace, snapshot)
-        factors = await store.artifacts(
-            snapshot.id,
-            {key: value.model_dump(mode="json") for key, value in analyses.items()},
-            config["source_hash"],
-            config["prompt_hash"],
-        )
-        manifest = {
-            **config,
-            "api_request_id": request_id,
-            "snapshot_id": snapshot.id,
-            "snapshot_hash": snapshot.content_hash,
-            "factor_results": factors,
-            "analysis_hashes": {key: value.content_hash for key, value in analyses.items()},
-            "models": {key: value.model_dump(mode="json") for key, value in connections.items()},
-        }
-        ensure_source_current()
-        run_id = await store.create_run(manifest, parent_id=parent_id, run_key=run_key)
+        except (ValueError, OSError):
+            model_error = "executor_configuration_failed"
+        if model_preferences(settings) != config["model_preferences"]:
+            raise ValueError("模型配置在冻结期间发生变化")
+    snapshot = await save_snapshot(store.engine, settings.workspace, snapshot)
+    analyses = canonical_analyses(analyses, snapshot) if analyses is not None else None
+    factors = await store.artifacts(
+        snapshot.id,
+        {key: value.model_dump(mode="json") for key, value in (analyses or {}).items()},
+        config["source_hash"],
+        config["prompt_hash"],
+    )
+    manifest = {
+        **config,
+        "api_request_id": request_id,
+        "native_quant": analyses is None,
+        "model_error": model_error,
+        "snapshot_id": snapshot.id,
+        "snapshot_hash": snapshot.content_hash,
+        "factor_results": factors,
+        "analysis_hashes": {key: value.content_hash for key, value in (analyses or {}).items()},
+        "models": {key: value.model_dump(mode="json") for key, value in connections.items()},
+    }
+    ensure_source_current()
+    run_id = await store.create_run(manifest, parent_id=parent_id, run_key=run_key)
     return run_id, connections
 
 
@@ -337,31 +405,34 @@ async def resume_preview(
         )
         await store.recover_stages(run_id)
         snapshot = await load_snapshot(engine, settings.workspace, manifest["snapshot_id"])
+        if manifest.get("native_quant"):
+            from stock_research.quant_jobs import run_quant_jobs
+
+            await run_quant_jobs(store, settings, run_id, snapshot)
+            current = await store.summary(run_id)
+            manifest = current["manifest"]
+        from stock_research.observations import frozen_analyses
+
         analyses = {
-            key: (MartinReport if key == "martin" else WyckoffReport).model_validate(
-                (await store.row(FACTOR_RESULTS, uuid))["payload"]
-            )
-            for key, uuid in manifest["factor_results"].items()
+            key: value for key, (_identifier, value) in (await frozen_analyses(store, manifest, snapshot)).items()
         }
-        if any(value.pool for value in analyses.values()):
-            if not connections:
-                connections = await asyncio.to_thread(model_connections, settings)
-            if {key: value.model_dump(mode="json") for key, value in connections.items()} != manifest["models"]:
-                raise ValueError("冻结模型连接与当前配置不同，须强制重分析")
+        runtime_error = manifest.get("model_error")
+        if any(value.pool for value in analyses.values()) and not runtime_error:
             try:
+                connections = connections or await asyncio.to_thread(model_connections, settings)
+                if {key: value.model_dump(mode="json") for key, value in connections.items()} != manifest["models"]:
+                    raise ValueError("冻结模型连接与当前配置不同，须强制重分析")
                 await verify_runtime(settings.dsh_executable)
             except (ValueError, OSError):
-                return await store.publish(
-                    run_id, "partial" if current["selections"] else "failed", "executor_unavailable", track=True
-                )
-        return await execute_run(store, settings, snapshot, analyses, run_id, connections)
+                runtime_error = "executor_unavailable"
+        return await execute_run(store, settings, snapshot, analyses, run_id, connections, runtime_error)
 
 
 async def run_preview(
     engine: AsyncEngine,
     settings: Settings,
     snapshot: Snapshot,
-    analyses: dict[str, MartinReport | WyckoffReport],
+    analyses: dict[str, MartinReport | WyckoffReport] | None,
     target_session: date,
     *,
     parent_id: str | None = None,

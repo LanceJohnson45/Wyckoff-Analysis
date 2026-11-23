@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { quantJobSchema, quantAttemptPageSchema } from './quant-contract'
 import { anchorChartSchema } from './anchor-contract'
 import { watchPageSchema, watchEventPageSchema } from './watch-contract'
 import { strategySchema, researchId as id, researchDay as day, researchHash as hash, researchQuality } from './contract-values'
@@ -21,11 +22,12 @@ export const runSchema = z.object({
   run_id: id, market: z.literal('us'), target_session: day, as_of: day,
   snapshot_id: id, snapshot_hash: hash, report_due: stamp, observed_at: stamp, late: z.boolean(), preview: z.boolean(),
   status: statusSchema, error_code: z.string().nullable(), companies: z.array(z.object({ symbol: z.string(), name: z.string().min(1) })),
-  quality: researchQuality,
+  quality: researchQuality, quant: z.array(quantJobSchema).default([]),
   selections: z.array(z.object({ id, strategy: strategySchema, source, decision: z.object({ role: z.literal('select'), strategy: strategySchema, context_hash: hash, items: z.array(selectedItem).max(5), empty_reason: point.nullable() }) })),
   reviews: z.array(z.object({ id, strategy: strategySchema, source, decision: z.object({ role: z.literal('review'), strategy: strategySchema, context_hash: hash, target_selection_id: id, items: z.array(reviewItem).max(5) }) })),
   stages: z.array(z.object({ id, strategy: strategySchema, kind: z.enum(['select', 'review']), status: statusSchema, attempt_count: z.number().int(), target_selection_id: id.nullable(), context_hash: hash.nullable(), error: z.string().nullable(), receipt_available: z.boolean() })),
 }).superRefine((run, context) => {
+  if (run.quant.length > 0 && (run.quant.length !== 2 || new Set(run.quant.map(row => row.strategy)).size !== 2 || (run.status === 'completed' && run.quant.some(row => row.status !== 'completed')))) context.addIssue({ code: z.ZodIssueCode.custom, message: '量化回执策略缺失或与完成状态不一致' })
   const names = new Set(run.companies.map((company) => company.symbol))
   for (const selection of run.selections) {
     if (selection.strategy !== selection.decision.strategy || selection.decision.items.some((item) => !names.has(item.symbol))) context.addIssue({ code: z.ZodIssueCode.custom, message: '初选策略或快照公司身份不一致' })
@@ -56,7 +58,7 @@ export class ResearchApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string) { super(message) }
 }
 
-export function decodeResearchData<T>(raw: unknown, schema: z.ZodType<T>, status = 200): T {
+export function decodeResearchData<T>(raw: unknown, schema: z.ZodType<T, z.ZodTypeDef, unknown>, status = 200): T {
   const parsed = envelope.safeParse(raw)
   if (!parsed.success) throw new ResearchApiError('研究服务响应格式不正确，请重新连接', status, 'invalid_response')
   if (status >= 400 || parsed.data.code !== '0000') {
@@ -67,7 +69,7 @@ export function decodeResearchData<T>(raw: unknown, schema: z.ZodType<T>, status
   return result.data
 }
 
-async function request<T>(path: string, schema: z.ZodType<T>, options: RequestInit = {}, unconfirmed = '研究请求未确认，请刷新运行记录后重试'): Promise<T> {
+async function request<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unknown>, options: RequestInit = {}, unconfirmed = '研究请求未确认，请刷新运行记录后重试'): Promise<T> {
   const controller = new AbortController()
   const abort = () => controller.abort()
   if (options.signal?.aborted) controller.abort()
@@ -218,5 +220,11 @@ export async function readResearchAnchorChart(report: ResearchReport, symbol: st
   if (!/^[A-Z][A-Z0-9.-]{0,31}$/.test(symbol) || (index !== null && (!Number.isInteger(index) || index < 0))) throw new ResearchApiError('锚点查询参数无效', 422, 'invalid_input')
   const value = await request(`/v1/reports/${id.parse(report.report_id)}/anchors/${symbol}?limit=320${index === null ? '' : `&index=${index}`}`, anchorChartSchema, { signal })
   if (value.report_id !== report.report_id || value.run_id !== report.run.run_id || value.snapshot_id !== report.run.snapshot_id || value.snapshot_hash !== report.run.snapshot_hash || value.as_of !== report.run.as_of || value.company.symbol !== symbol || (index !== null && value.selected_index !== index)) throw new ResearchApiError('锚点与当前冻结报告不一致', 502, 'invalid_response')
+  return value
+}
+
+export async function readQuantAttempts(runId: string, page: number, signal?: AbortSignal) {
+  const value = await request(`/v1/research-runs/${id.parse(runId)}/quant-attempts?page=${page}&page_size=10`, quantAttemptPageSchema, { signal })
+  if (value.run_id !== runId || value.page !== page || value.page_size !== 10) throw new ResearchApiError('量化尝试与当前运行不一致', 502, 'invalid_response')
   return value
 }

@@ -6,6 +6,7 @@ from sqlalchemy import JSON, bindparam, cast, column, func, or_, select
 
 from stock_research.analysis import MartinReport
 from stock_research.observations import FrozenResearch, frozen_scope
+from stock_research.quant_store import quant_state
 from stock_research.queries import company_views
 from stock_research.report_queries import report_scope
 from stock_research.run_store import RunStore
@@ -43,11 +44,12 @@ def universe_rows(scope: FrozenResearch) -> tuple[UniverseStock, ...]:
                     UniverseStrategy(
                         strategy=key,
                         data_eligible=symbol in snapshot.quality.eligible[key],
-                        calculation_available=symbol in calculated[key],
-                        in_pool=symbol in analysis.pool,
+                        calculation_available=symbol in calculated.get(key, set()),
+                        in_pool=symbol in scope.analyses[key][1].pool if key in scope.analyses else None,
+                        quant=quant_state(scope.manifest, key),
                         selected=symbol in selected[key] if key in selected else None,
                     )
-                    for key, (_identifier, analysis) in scope.analyses.items()
+                    for key in ("martin", "wyckoff")
                 ),
                 ref_prefix="universe/" + symbol,
             )

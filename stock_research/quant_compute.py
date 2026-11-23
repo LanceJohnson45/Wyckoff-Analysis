@@ -28,7 +28,8 @@ def analysis_path(
 ) -> Path:
     """缓存身份保持原源码/快照/参数及Wyckoff引擎定义。"""
     identity = {
-        "schema_version": 1,
+        "schema_version": 2,
+        "snapshot_id": snapshot.id,
         "source_hash": source_hash,
         "snapshot": snapshot.content_hash,
         "parameters": parameters.model_dump(mode="json"),
@@ -44,7 +45,8 @@ def verify_analysis(raw: str, snapshot: Snapshot, parameters: QuantParameters) -
     model = MartinReport if isinstance(parameters, MartinParameters) else WyckoffReport
     report = model.model_validate_json(raw)
     if (
-        report.snapshot_hash != snapshot.content_hash
+        report.snapshot_id != snapshot.id
+        or report.snapshot_hash != snapshot.content_hash
         or report.parameters != parameters
         or (isinstance(report, WyckoffReport) and report.engine_hash != engine_hash())
     ):

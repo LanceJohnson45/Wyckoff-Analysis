@@ -8,6 +8,7 @@ from stock_research.errors import ResearchIntegrityError, ResearchNotFound
 from stock_research.evidence import flatten_facts
 from stock_research.identity import digest
 from stock_research.models import Snapshot
+from stock_research.quant_store import quant_state
 from stock_research.queries import company_views, run_view
 from stock_research.run_store import RunStore
 from stock_research.schema import FACTOR_RESULTS, RESEARCH_REPORTS
@@ -23,6 +24,11 @@ async def frozen_analyses(
     """逐份校验运行绑定，不能把另一份合法产物拼入本运行。"""
     analyses = {}
     for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
+        if strategy not in manifest["factor_results"]:
+            state = next((row for row in manifest.get("quant", []) if row["strategy"] == strategy), None)
+            if state is None or state["status"] == "completed" or state["artifact_id"] is not None:
+                raise ResearchIntegrityError("冻结报告缺少量化绑定或失败回执")
+            continue
         identifier = manifest["factor_results"][strategy]
         row = await store.row(FACTOR_RESULTS, identifier)
         try:
@@ -76,6 +82,26 @@ def strategy_observation(
     )
 
 
+def unavailable_observation(manifest: dict[str, object], strategy: str) -> StrategyObservation:
+    """无成功产物时只返回冻结参数和明确状态，不制造零因子或空池。"""
+    state = quant_state(manifest, strategy)
+    return StrategyObservation(
+        strategy=strategy,
+        artifact_id=None,
+        content_hash=None,
+        parameter_hash=digest(manifest["parameters"][strategy]),
+        parameters=manifest["parameters"][strategy],
+        factor_definitions={},
+        effective_config=None,
+        in_pool=None,
+        calculation_available=False,
+        quant=state,
+        facts=(),
+        exclusions=(),
+        limitations=("本修订量化尚不可用：" + (state.error_code or state.status),),
+    )
+
+
 async def stock_observation(
     store: RunStore, run_id: str, symbol: str, limit: int, report_id: str | None = None
 ) -> StockObservation:
@@ -119,7 +145,10 @@ def stock_from_scope(scope: FrozenResearch, symbol: str, limit: int) -> StockObs
         as_of=snapshot.as_of,
         company=company_views(snapshot, {symbol})[0],
         observations=tuple(
-            strategy_observation(key, identifier, item, symbol) for key, (identifier, item) in analyses.items()
+            strategy_observation(key, *analyses[key], symbol)
+            if key in analyses
+            else unavailable_observation(scope.manifest, key)
+            for key in ("martin", "wyckoff")
         ),
         history=history,
         history_total=history_total,
@@ -127,7 +156,9 @@ def stock_from_scope(scope: FrozenResearch, symbol: str, limit: int) -> StockObs
             GroupObservation(**group, ref_prefix="group/" + digest(group["name"])[:16])
             for group in analyses["martin"][1].groups
             if symbol in group["members"]
-        ),
+        )
+        if "martin" in analyses
+        else None,
         selections=tuple(item for item in view.selections if symbol in {row.symbol for row in item.decision.items}),
         reviews=tuple(item for item in view.reviews if symbol in {row.symbol for row in item.decision.items}),
         limitations=snapshot.quality.limitations,

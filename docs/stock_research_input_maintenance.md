@@ -26,7 +26,7 @@ API新建与CLI默认run在快照前解析主题、自选和基线，先按摘�
 
 分页page=1～1000000、page_size=1～20，按创建时间/UUID稳定排序。发布按workspace、kind、目标串行CAS，主题还绑定提议基准及operator原始文件摘要；同键异参409。读取校验payload、请求摘要、索引及主题原提议关联。终态发布不覆盖，来源损坏503，不退回默认文件冒充成功。
 
-显式init-schema增加theme_proposals和input_publications，研究schema现有24表。API启动只检查，不自动迁移。人工维护历史、建议与冻结来源仅operator可读写，共享API_READ_TOKEN的相关GET也403。问答八工具不增加确认或维护入口，模型没有operator身份。正式多用户账号托管仍属于部署验收。
+显式init-schema增加theme_proposals和input_publications，研究schema现有26表。API启动只检查，不自动迁移。人工维护历史、建议与冻结来源仅operator可读写，共享API_READ_TOKEN的相关GET也403。问答八工具不增加确认或维护入口，模型没有operator身份。正式多用户账号托管仍属于部署验收。
 
 Node开发代理保持loopback/同源/固定路由；建议创建与自选发布正文上限64KiB，问答创建48KiB，其他写入8KiB。凭据不进入VITE、浏览器持久化或bundle。网络结果未知时锁住新操作，使用原请求/幂等键核对；原发布不会变成自动覆盖。
 

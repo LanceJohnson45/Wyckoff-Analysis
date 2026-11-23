@@ -135,6 +135,24 @@ RESEARCH_RUNS = execution_table(
     Column("parent_run_uuid", String(36), ForeignKey("stock_research.research_runs.uuid"), nullable=True),
     UniqueConstraint("workspace", "run_key"),
 )
+# lint-redline:ignore PS-10 量化任务依赖运行表及不可变产物。
+QUANT_JOBS = execution_table(
+    "quant_jobs",
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    Column("strategy", String(32), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("attempt_count", Integer, nullable=False),
+    Column("factor_uuid", String(36), ForeignKey(FACTOR_RESULTS.c.uuid), nullable=True),
+    UniqueConstraint("workspace", "run_uuid", "strategy"),
+)
+# lint-redline:ignore PS-10 独立量化尝试依赖任务表。
+QUANT_ATTEMPTS = execution_table(
+    "quant_attempts",
+    Column("job_uuid", String(36), ForeignKey(QUANT_JOBS.c.uuid), nullable=False),
+    Column("attempt", Integer, nullable=False),
+    Column("status", String(32), nullable=False),
+    UniqueConstraint("workspace", "job_uuid", "attempt"),
+)
 # lint-redline:ignore PS-10 请求幂等映射依赖运行表，NULL表示尚未完成冻结绑定。
 API_REQUESTS = execution_table(
     "api_requests",

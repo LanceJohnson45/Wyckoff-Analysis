@@ -133,13 +133,36 @@ async def save_snapshot(engine: AsyncEngine, workspace: str, snapshot: Snapshot)
             create_time=snapshot.create_time,
             update_time=now(),
         )
-        await connection.execute(statement.on_conflict_do_nothing(index_elements=["workspace", "content_hash"]))
+        await connection.execute(statement.on_conflict_do_nothing())
         snapshot_id = await connection.scalar(
             select(MARKET_SNAPSHOTS.c.uuid).where(
                 MARKET_SNAPSHOTS.c.workspace == workspace,
                 MARKET_SNAPSHOTS.c.content_hash == snapshot.content_hash,
             )
         )
+        if snapshot_id is None:
+            from stock_research.identity import new_id
+
+            snapshot = snapshot.model_copy(update={"id": new_id()})
+            statement = insert(MARKET_SNAPSHOTS).values(
+                uuid=snapshot.id,
+                workspace=workspace,
+                market="us",
+                as_of=snapshot.as_of,
+                schema_version=SCHEMA_VERSION,
+                universe_uuid=universe_id,
+                classification_uuid=classification_id,
+                content_hash=snapshot.content_hash,
+                payload=snapshot.model_dump(mode="json"),
+                create_time=snapshot.create_time,
+                update_time=now(),
+            )
+            await connection.execute(statement.on_conflict_do_nothing(index_elements=["workspace", "content_hash"]))
+            snapshot_id = await connection.scalar(
+                select(MARKET_SNAPSHOTS.c.uuid).where(
+                    MARKET_SNAPSHOTS.c.workspace == workspace, MARKET_SNAPSHOTS.c.content_hash == snapshot.content_hash
+                )
+            )
     return await load_snapshot(engine, workspace, snapshot_id)
 
 

@@ -55,6 +55,39 @@ async def put_artifact(
     )
 
 
+async def register_analyses(
+    connection: AsyncConnection,
+    workspace: str,
+    snapshot_id: str,
+    analyses: dict[str, dict[str, object]],
+    source_hash: str,
+    prompt_hash: str,
+) -> dict[str, str]:
+    """量化成功与任务终态共用同一事务，不产生半提交的成功绑定。"""
+    result = {}
+    for strategy, payload in analyses.items():
+        strategy_id = await put_artifact(
+            connection,
+            STRATEGY_VERSIONS,
+            workspace,
+            {"strategy": strategy, "source_hash": source_hash, "prompt_hash": prompt_hash},
+        )
+        parameter_id = await put_artifact(
+            connection, PARAMETER_SETS, workspace, {"strategy": strategy, "parameters": payload["parameters"]}
+        )
+        result[strategy] = await put_artifact(
+            connection,
+            FACTOR_RESULTS,
+            workspace,
+            payload,
+            snapshot_uuid=snapshot_id,
+            strategy=strategy,
+            strategy_uuid=strategy_id,
+            parameter_uuid=parameter_id,
+        )
+    return result
+
+
 class RunStore:
     """所有查询保留workspace约束；成功初选和互评只可追加。"""
 
@@ -85,32 +118,8 @@ class RunStore:
         self, snapshot_id: str, analyses: dict[str, dict[str, object]], source_hash: str, prompt_hash: str
     ) -> dict[str, str]:
         """完整参数、策略出处和量化产物在同一事务内注册。"""
-        result = {}
         async with self.engine.begin() as connection:
-            for strategy, payload in analyses.items():
-                strategy_id = await put_artifact(
-                    connection,
-                    STRATEGY_VERSIONS,
-                    self.workspace,
-                    {"strategy": strategy, "source_hash": source_hash, "prompt_hash": prompt_hash},
-                )
-                parameter_id = await put_artifact(
-                    connection,
-                    PARAMETER_SETS,
-                    self.workspace,
-                    {"strategy": strategy, "parameters": payload["parameters"]},
-                )
-                result[strategy] = await put_artifact(
-                    connection,
-                    FACTOR_RESULTS,
-                    self.workspace,
-                    payload,
-                    snapshot_uuid=snapshot_id,
-                    strategy=strategy,
-                    strategy_uuid=strategy_id,
-                    parameter_uuid=parameter_id,
-                )
-        return result
+            return await register_analyses(connection, self.workspace, snapshot_id, analyses, source_hash, prompt_hash)
 
     async def create_run(
         self, manifest: dict[str, object], *, parent_id: str | None = None, run_key: str | None = None
@@ -136,6 +145,20 @@ class RunStore:
                 )
             )
             if created:
+                if manifest.get("native_quant"):
+                    from stock_research.quant_store import seed_jobs
+
+                    quant = await seed_jobs(connection, self.workspace, created, manifest)
+                    body = {
+                        "run_id": created,
+                        "status": "pending",
+                        "error_code": None,
+                        "manifest": {**manifest, "quant": [item.model_dump(mode="json") for item in quant]},
+                        "selections": [],
+                        "reviews": [],
+                        "stages": [],
+                    }
+                    await put_artifact(connection, RESEARCH_REPORTS, self.workspace, body, run_uuid=created, revision=1)
                 return created
             row = (
                 (
@@ -311,7 +334,7 @@ class RunStore:
     async def validate_context(self, stage: dict[str, object], context: EvidenceContext) -> None:
         """从独立存储重建授权上下文，不能仅凭一个自报摘要扩展范围。"""
         run = await self.row(RESEARCH_RUNS, stage["run_uuid"])
-        manifest = run["payload"]
+        manifest = (await self.summary(stage["run_uuid"]))["manifest"]
         if context.snapshot_id != run["snapshot_uuid"] or context.snapshot_hash != manifest["snapshot_hash"]:
             raise ValueError("阶段引用了其他快照")
         artifact = await self.row(FACTOR_RESULTS, manifest["factor_results"][context.strategy])
@@ -495,6 +518,10 @@ class RunStore:
                             ),
                         }
                     )
+        if run["payload"].get("native_quant"):
+            from stock_research.quant_store import projected_manifest
+
+            result["manifest"] = await projected_manifest(self, run)
         return result
 
     async def publish(

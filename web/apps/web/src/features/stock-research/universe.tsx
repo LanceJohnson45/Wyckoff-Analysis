@@ -26,5 +26,5 @@ export function UniverseTable({ data, selected, onSelect }: { data: UniversePage
 }
 
 function UniverseStatus({ value }: { value: UniverseStock['strategies'][number] }) {
-  return <div className="space-y-1 text-[11px]" aria-label={`${strategyLabels[value.strategy]}状态`}><p className={value.data_eligible ? 'text-muted-foreground' : 'text-amber-700 dark:text-amber-300'}>{value.data_eligible ? '数据可用' : '数据不足'}</p><p>{value.calculation_available ? '已计算' : '未计算'} · {value.in_pool ? '量化池内' : '量化池外'}</p><p className="text-muted-foreground">{value.selected === null ? '初选未提交' : value.selected ? '正式初选' : '未正式入选'}</p></div>
+  return <div className="space-y-1 text-[11px]" aria-label={`${strategyLabels[value.strategy]}状态`}><p className={value.data_eligible ? 'text-muted-foreground' : 'text-amber-700 dark:text-amber-300'}>{value.data_eligible ? '数据可用' : '数据不足'}</p><p>{value.calculation_available ? '已计算' : '未计算'} · {value.in_pool === null ? '量化尚不可用' : value.in_pool ? '量化池内' : '量化池外'}</p>{value.quant?.error_code && <p className="text-amber-700 dark:text-amber-300">量化失败，等待补算</p>}<p className="text-muted-foreground">{value.selected === null ? '初选未提交' : value.selected ? '正式初选' : '未正式入选'}</p></div>
 }

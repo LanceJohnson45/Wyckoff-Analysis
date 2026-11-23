@@ -34,6 +34,8 @@ from stock_research.schema import (
     PARAMETER_ACTIVATIONS,
     PARAMETER_PROFILES,
     PREPARATION_ATTEMPTS,
+    QUANT_ATTEMPTS,
+    QUANT_JOBS,
     RESEARCH_RUNS,
     THEME_PROPOSALS,
     WATCHLIST_DAYS,
@@ -45,6 +47,8 @@ from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
 RUNTIME_TABLES = (
+    QUANT_JOBS,
+    QUANT_ATTEMPTS,
     THEME_PROPOSALS,
     INPUT_PUBLICATIONS,
     CHAT_TURNS,

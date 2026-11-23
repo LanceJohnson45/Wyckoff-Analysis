@@ -7,7 +7,7 @@ from pydantic import UUID4, Field, JsonValue, StringConstraints, model_validator
 
 from stock_research.evidence import Evidence
 from stock_research.models import QualityReport
-from stock_research.schemas.api import ApiModel, CompanyView, Strategy
+from stock_research.schemas.api import ApiModel, CompanyView, QuantJobView, Strategy
 from stock_research.schemas.observations import GroupObservation, HistoryBar, StockObservation
 from stock_research.schemas.parameters import ParameterValues
 
@@ -25,12 +25,13 @@ class ReportScope(ApiModel):
 
 class QuantitativeScope(ApiModel):
     strategy: Strategy
-    artifact_id: UUID4
-    content_hash: str
+    artifact_id: UUID4 | None
+    content_hash: str | None
     parameter_hash: str
-    calculated_count: int
-    exclusion_record_count: int
-    pool: tuple[CompanyView, ...]
+    calculated_count: int | None
+    exclusion_record_count: int | None
+    pool: tuple[CompanyView, ...] | None
+    quant: QuantJobView | None = None
 
 
 class BenchmarkHistory(ApiModel):
@@ -48,11 +49,12 @@ class MarketOverview(ReportScope):
 
 
 class GroupPage(ReportScope):
-    items: tuple[GroupObservation, ...]
-    total: int
+    items: tuple[GroupObservation, ...] | None
+    total: int | None
     page: int
     page_size: int
     limitations: tuple[str, ...]
+    quant: QuantJobView | None = None
 
 
 class ComparisonInput(ApiModel):
@@ -72,13 +74,14 @@ class StockComparison(ReportScope):
 
 class FrozenRules(ApiModel):
     strategy: Strategy
-    artifact_id: UUID4
-    content_hash: str
+    artifact_id: UUID4 | None
+    content_hash: str | None
     parameter_hash: str
     parameters: ParameterValues
     factor_definitions: dict[str, str]
     effective_config: dict[str, JsonValue] | None
     limitations: tuple[str, ...]
+    quant: QuantJobView | None = None
 
 
 class StrategyRules(ReportScope):

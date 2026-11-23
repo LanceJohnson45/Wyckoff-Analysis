@@ -21,7 +21,6 @@ from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import prepare_preview, resume_preview
 from stock_research.preparations import record_preparation
-from stock_research.quant_execution import analyze_isolated
 from stock_research.request_store import RequestStore
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
@@ -51,17 +50,13 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 raise ResearchQualityError("行情覆盖或基准未通过质量门槛")
             path = Path(output["path"])
             snapshot = await asyncio.to_thread(lambda: Snapshot.model_validate_json(path.read_text()))
-            await attempt.checkpoint("analysis")
-            analyses = {}
-            for strategy in ("martin", "wyckoff"):
-                analyses[strategy] = await analyze_isolated(settings, path, snapshot, strategy)
             ensure_source_current()
             await attempt.checkpoint("freeze")
             run_id, _connections = await prepare_preview(
                 store.engine,
                 settings,
                 snapshot,
-                analyses,
+                None,
                 data.target_session,
                 parent_id=str(data.parent_run_id) if data.parent_run_id else None,
                 force=data.force,

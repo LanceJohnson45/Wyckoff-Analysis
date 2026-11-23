@@ -11,6 +11,7 @@ from stock_research.query_settings import QuerySettings
 from stock_research.schemas.anchor_chart import AnchorChart
 from stock_research.schemas.api import ApiResponse, Code, ReportView, RunView
 from stock_research.schemas.observations import StockObservation
+from stock_research.schemas.quant_jobs import QuantAttemptPage
 from stock_research.schemas.report_queries import (
     ComparisonInput,
     GroupPage,
@@ -187,4 +188,22 @@ class ResearchReader:
         )
         if value.company.symbol != symbol or (index is not None and value.selected_index != index):
             raise QueryError("锚点响应与指定股票或索引不一致")
+        return value
+
+    async def quant_attempts(self, run_id: UUID, page: int = 1, page_size: int = 10) -> QuantAttemptPage:
+        """本运行当前尝试历史独立分页，不改固定报告当时状态。"""
+        if (
+            isinstance(page, bool)
+            or isinstance(page_size, bool)
+            or not 1 <= page <= 1000000
+            or not 1 <= page_size <= 20
+        ):
+            raise QueryError("量化尝试分页范围无效")
+        value = await self._read(
+            f"/v1/research-runs/{run_id}/quant-attempts",
+            QuantAttemptPage,
+            {"page": str(page), "page_size": str(page_size)},
+        )
+        if value.run_id != run_id or (value.page, value.page_size) != (page, page_size):
+            raise QueryError("量化尝试与指定运行不一致")
         return value

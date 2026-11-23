@@ -1,6 +1,6 @@
 # 双策略研究执行预览
 
-`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；[持续观察名单](stock_research_watchlists.md)已接终态事务及HTTP/CLI，面板及services调度待接。
+`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令先冻结共同输入，再按策略保存独立量化尝试及成功产物；局部失败保留回执、另一策略继续，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；[持续观察名单](stock_research_watchlists.md)已接终态事务及HTTP/CLI，面板及services调度待接。
 
 ```bash
 uv sync --frozen --python 3.12 --extra dev --extra research
@@ -36,3 +36,5 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 参数版本后台已接通：CLI run与HTTP新建先解析当前发布或operator基线，物化私有不可变文件并将parameter_sources冻结到清单；当前配置改变不重写旧运行。analyze/benchmark仍使用operator指定文件，详情见[参数版本](stock_research_parameters.md)。
 
 固定报告问答复用精简Harness、传输监督和脱敏回执，使用独立八工具名单及证据注册表，不扩展选择/评议原有两工具边界。私有GET身份由临时0600文件注入受控MCP并在收尾删除，配置只含路径；问答默认不自动重试provider失败，详见[研究问答](stock_research_chat.md)。
+
+[局部量化恢复](stock_research_quant_execution.md)已接入默认API/CLI run：quant_jobs/quant_attempts同输入冻结后执行，成功与因子同事务提交，重启/显式retry只补未成功任务。旧修订保存原绑定，量化失败不触发程序空池结论；执行配置不可用只使需要模型的阶段失败，成功空池仍可记录。

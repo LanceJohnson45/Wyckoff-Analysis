@@ -58,3 +58,5 @@ API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整�
 [完整冻结股票池](stock_research_universe.md)新增GET universe及ResearchReader.universe，SQL字面搜索/分页，保留缺数与初选未提交。绑定问答的market_overview使用view=universe，默认市场模式与独立研究八工具/Personal三工具保持原契约。
 
 最小ResearchReader新增anchor_chart及query_cli anchor-chart，只读固定报告的原锚点目录和一条显示重建曲线；不改变Personal三工具或独立研究八工具。省略索引选择最近确认项，完整冻结行情累计后按limit截断，不重新识别结构。接口和边界见[个股图表](stock_research_stock_view.md)。
+
+RunView.quant新增固定修订当时的两策略量化状态；缺计算时股票/整池in_pool、分组和计数为null，成功空池才返回实际空集合/零计数。ResearchReader.quant_attempts和query_cli quant-attempts读取当前run独立尝试分页，明确与旧报告状态分开；原三项/八项MCP名单不变。详见[局部量化恢复](stock_research_quant_execution.md)。

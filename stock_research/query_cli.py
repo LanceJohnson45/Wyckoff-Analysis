@@ -29,6 +29,10 @@ def main(argv: list[str] | None = None) -> int:
     anchor.add_argument("--report-id", required=True)
     anchor.add_argument("--limit", type=int, default=320)
     anchor.add_argument("--index", type=int)
+    attempts = commands.add_parser("quant-attempts")
+    attempts.add_argument("--run-id", required=True)
+    attempts.add_argument("--page", type=int, default=1)
+    attempts.add_argument("--page-size", type=int, default=10)
     args = parser.parse_args(argv)
     try:
         reader = ResearchReader(QuerySettings())
@@ -40,7 +44,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         else:
             run_id = TypeAdapter(UUID4).validate_python(args.run_id)
-            if args.command == "run-status":
+            if args.command == "quant-attempts":
+                operation = reader.quant_attempts(run_id, args.page, args.page_size)
+            elif args.command == "run-status":
                 operation = reader.run_status(run_id)
             else:
                 report_id = TypeAdapter(UUID4).validate_python(args.report_id) if args.report_id else None

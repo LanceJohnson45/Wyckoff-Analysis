@@ -32,6 +32,6 @@ export function PreparationItemView({ item, onSelect }: { item: PreparationAttem
     {item.error_code && <p className="text-xs text-amber-700 dark:text-amber-300">{errors[item.error_code]}</p>}
     {item.quality ? <p className="text-xs">快照质量{item.quality.passed ? '通过' : '未通过'} · 覆盖 {(item.quality.coverage * 100).toFixed(2)}% · {item.quality.aligned_count}/{item.quality.universe_count} 只对齐</p> : <p className="text-xs text-muted-foreground">尚无可确认的快照质量数据</p>}
     {item.quality && <details><summary className="cursor-pointer text-[11px] text-muted-foreground">质量问题与限制 · {item.quality.issues.length} 项</summary><div className="mt-2 max-h-48 space-y-1 overflow-auto text-[11px]">{item.quality.issues.map((issue, index) => <p key={`${issue.symbol}:${issue.reason}:${index}`}>{issue.symbol} · {issue.strategy} · {issue.reason}</p>)}{item.quality.limitations.map((text, index) => <p key={index}>{text}</p>)}</div></details>}
-    {item.run_id && <><p className="text-[11px] text-muted-foreground">已冻结输入不代表模型研究已完成。</p><button type="button" className="text-xs text-primary" onClick={() => { if (item.run_id) onSelect(item.run_id) }}>查看对应研究</button></>}
+    {item.run_id && <><p className="text-[11px] text-muted-foreground">已冻结输入不代表量化或模型研究已完成。</p><button type="button" className="text-xs text-primary" onClick={() => { if (item.run_id) onSelect(item.run_id) }}>查看对应研究</button></>}
   </article>
 }

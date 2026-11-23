@@ -4,7 +4,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Generic, Literal, TypeVar
 
-from pydantic import UUID4, AwareDatetime, BaseModel, ConfigDict
+from pydantic import UUID4, AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
 from stock_research.decisions import ReviewDecision, SelectionDecision
 from stock_research.models import QualityReport
@@ -79,6 +79,37 @@ class CompanyView(ApiModel):
     name: str
 
 
+class QuantJobView(ApiModel):
+    id: UUID4 | None
+    strategy: Strategy
+    status: Literal["pending", "running", "completed", "failed", "cancelled"]
+    attempt_count: int | None = Field(ge=0)
+    artifact_id: UUID4 | None
+    analysis_hash: str | None = Field(pattern=r"^[a-f0-9]{64}$")
+    error_code: str | None
+
+    @model_validator(mode="after")
+    def valid_quant_state(self) -> "QuantJobView":
+        if self.status != "completed" and (self.artifact_id is not None or self.analysis_hash is not None):
+            raise ValueError("未成功量化不能携带产物")
+        if (self.status == "completed") != (self.artifact_id is not None and self.analysis_hash is not None):
+            raise ValueError("量化状态与产物不一致")
+        if (self.id is None and (self.status != "completed" or self.attempt_count is not None)) or (
+            self.id is not None and self.attempt_count is None
+        ):
+            raise ValueError("量化尝试来源不一致")
+        if self.id is not None and (
+            (self.status == "pending" and self.attempt_count != 0)
+            or (self.status != "pending" and self.attempt_count < 1)
+        ):
+            raise ValueError("量化状态与尝试计数不一致")
+        if self.status in {"pending", "running", "completed"} and self.error_code is not None:
+            raise ValueError("量化成功或进行状态不能携带失败错误")
+        if self.status in {"failed", "cancelled"} and not self.error_code:
+            raise ValueError("量化失败缺少错误")
+        return self
+
+
 class RunView(ApiModel):
     run_id: UUID4
     market: Literal["us"]
@@ -97,6 +128,7 @@ class RunView(ApiModel):
     selections: tuple[SelectionView, ...]
     reviews: tuple[ReviewView, ...]
     stages: tuple[StageView, ...]
+    quant: tuple[QuantJobView, ...] = ()
 
 
 class RunListItem(ApiModel):

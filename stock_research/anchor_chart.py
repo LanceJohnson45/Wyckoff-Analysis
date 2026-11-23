@@ -56,7 +56,8 @@ def anchor_prices(bars: tuple[Bar, ...], anchor: AnchorDefinition, limit: int) -
 
 def anchor_from_scope(scope: FrozenResearch, symbol: str, limit: int, index: int | None) -> AnchorChart:
     """目录与一条曲线共享固定报告上下文，避免把所有曲线灌入问答工具。"""
-    snapshot, analysis = scope.snapshot, scope.analyses["martin"][1]
+    snapshot = scope.snapshot
+    analysis = scope.analyses["martin"][1] if "martin" in scope.analyses else None
     if symbol not in snapshot.universe.active(snapshot.as_of):
         raise ResearchNotFound("证券不在本次冻结股票池")
     bars = tuple(
@@ -65,7 +66,7 @@ def anchor_from_scope(scope: FrozenResearch, symbol: str, limit: int, index: int
             key=lambda row: row.session_date,
         )
     )
-    anchors = anchor_directory(analysis, symbol, bars)
+    anchors = anchor_directory(analysis, symbol, bars) if analysis else ()
     if index is not None and (isinstance(index, bool) or index < 0 or index >= len(anchors)):
         raise ResearchInputError("所选锚点不属于本次冻结产物")
     selected = (
@@ -81,7 +82,7 @@ def anchor_from_scope(scope: FrozenResearch, symbol: str, limit: int, index: int
         as_of=snapshot.as_of,
         target_session=scope.view.target_session,
         company=company_views(snapshot, {symbol})[0],
-        calculation_available=any(row.symbol == symbol for row in analysis.observations),
+        calculation_available=analysis is not None and any(row.symbol == symbol for row in analysis.observations),
         anchors=anchors,
         selected_index=selected.index if selected else None,
         points=anchor_prices(bars, selected, limit) if selected else (),

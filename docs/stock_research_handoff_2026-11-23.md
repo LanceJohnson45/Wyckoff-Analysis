@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：按策略量化任务与局部补算
+
+worker隔离已提交d8876d7f。本批API/CLI在共同快照、参数及模型偏好冻结后才执行量化；新run、两份pending任务及初始报告同事务创建。新增quant_jobs/quant_attempts，显式init-schema后独立SQL确认26表。每次worker前保存running尝试，成功因子与终态同事务提交；CAS拒绝并发推进及覆盖成功，超时/进程错误最多自动重试一次，失败继续另一策略。显式resume只补未成功量化和缺失模型阶段，使用原参数，成功初选及原run输入payload保持。
+
+缺计算在股票、整池、市场、规则、分组及锚点查询中表达为不可用/null，和成功空池分开；名单保留前一有效状态并标当日未复核。报告修订固定当时量化绑定，后续成功不回填旧报告。HTTP/CLI可分页读取本run实际尝试；历史已完成运行的任务ID和次数未知，recorded=false，不制造历史。Agent既有报告内显示固定状态及可展开的当前尝试历史，无新页面。缓存v2绑定归并后的快照ID及内容摘要，跨workspace复用相同内容不会串快照身份。说明见stock_research_quant_execution.md。
+
+最终源码冻结后全量Python6010通过，无skip、50旧警告；Web406、API221通过及两项默认外部Upstash集成跳过，frozen-lockfile、TS strict、Web/Pages-functions构建通过。Ruff/1263文件格式、函数门禁、红线134文件、workflow/dependency hygiene及合成配置daily dry-run通过。Python LOC141888/+64.6%、TS36066/+94.0%旧基线提示保留；增长对应量化持久状态、恢复、查询与Agent契约，无新函数豁免或测试排除。
+
+隔离真实行情验证run94dd217d-77a2-4cb8-9693-cc6fe97d1d09：Martin实际worker两次超时，Wyckoff实际计算空池及初选成功；仅补Martin后两策略量化成功，Wyckoff产物/初选ID与原输入payload、旧报告5195d5e1均保持。独立数据库和真实前端客户端→Node代理→HTTP读回四条尝试、旧失败和新成功状态，跨站403。刻意缺模型配置且没有调用provider，新报告f07d741d仍为partial/executor_configuration_failed，不称新完整研究通过。主workspace未创建量化任务/尝试或新模型run；原cf8da076报告保存内容和a45bf9c4问答保持，当前API新增legacy只读量化元数据。
+
+仅重启本线程8788 API：旧PID90285终态143/端口释放确认，当前PID3258/session63898，ready200，日志quant-recovery-main-api.log。临时65102 proof API已停止，终态143且端口释放；原Vite客户端实际通路可用。42份生产JS未含已检查的七份研究/模型/PG私有值。证明材料、凭据及日志保留在忽略的.stock-research/bootstrap，不提交。
+
+浏览器仍待正常账号认证，未作控件验收；wiki checkout缺失，远端CI、另一个session的整体独立审查及正式部署仍待完成。无Personal/secrets改动或通知。总体plan.md goal继续，接续行情更新协调、Personal三项只读注册/唯一调度通知、Mac部署及研究评估。
+
 ## 续接检查点：可停止的量化worker，局部恢复继续开发
 
 锚点图表已提交b0a331eb。本批先替换API prepare_from_market与CLI run的线程量化为analyze_isolated，正式compute_martin/compute_wyckoff在无身份环境的独立Python worker运行。父端保留控制管道，正常超时/取消回收自建进程组并等候终态；父端异常退出时worker原生读取线程在EOF后以75退出。临时目录0700/输出0600，报告与两帧协议、快照/参数/引擎及结果摘要在父端校验后才原子发布缓存；同输入并发接受校验后的首份缓存，损坏不覆盖。同步analyze命令仍前台执行，共用缓存身份/绑定校验。

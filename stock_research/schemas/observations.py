@@ -5,7 +5,7 @@ from datetime import date
 from pydantic import UUID4, Field, JsonValue
 
 from stock_research.evidence import Evidence
-from stock_research.schemas.api import ApiModel, CompanyView, ReviewView, SelectionView, Strategy
+from stock_research.schemas.api import ApiModel, CompanyView, QuantJobView, ReviewView, SelectionView, Strategy
 from stock_research.schemas.parameters import ParameterValues
 
 
@@ -21,14 +21,15 @@ class HistoryBar(ApiModel):
 
 class StrategyObservation(ApiModel):
     strategy: Strategy
-    artifact_id: UUID4
-    content_hash: str
+    artifact_id: UUID4 | None
+    content_hash: str | None
     parameter_hash: str
     parameters: ParameterValues
     factor_definitions: dict[str, str]
     effective_config: dict[str, JsonValue] | None
-    in_pool: bool
+    in_pool: bool | None
     calculation_available: bool
+    quant: QuantJobView | None = None
     facts: tuple[Evidence, ...]
     exclusions: tuple[Evidence, ...]
     limitations: tuple[str, ...]
@@ -58,7 +59,7 @@ class StockObservation(ApiModel):
     observations: tuple[StrategyObservation, ...]
     history: tuple[HistoryBar, ...]
     history_total: int
-    groups: tuple[GroupObservation, ...]
+    groups: tuple[GroupObservation, ...] | None
     selections: tuple[SelectionView, ...]
     reviews: tuple[ReviewView, ...]
     limitations: tuple[str, ...]

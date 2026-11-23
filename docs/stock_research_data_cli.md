@@ -98,4 +98,4 @@
 
 默认run现先解析[人工输入发布](stock_research_input_maintenance.md)并按摘要物化股票池/分类，再生成快照；显式--snapshot-file保持原版本。单独snapshot --offline仍只读operator路径，不连接PG读取维护配置。
 
-API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。当前单策略失败仍使准备失败，局部继续及持久化补算尚未接通，详见[量化执行边界](stock_research_quant_execution.md)。
+API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。共同输入先冻结，单策略失败已在run内独立记录并继续另一策略，补算复用成功产物，详见[量化执行边界](stock_research_quant_execution.md)。

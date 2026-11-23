@@ -150,10 +150,11 @@ async def analyze_isolated(
     strategy: str,
     *,
     timeout: float = QUANT_TIMEOUT_SECONDS,
+    parameters: QuantParameters | None = None,
 ) -> QuantReport:
     """实际API与CLI run共用此边界，命中缓存仍重读校验。"""
     ensure_source_current()
-    parameters = await asyncio.to_thread(quant_parameters, settings, strategy)
+    parameters = parameters or await asyncio.to_thread(quant_parameters, settings, strategy)
     path = await asyncio.to_thread(analysis_path, settings, snapshot, parameters)
     if await asyncio.to_thread(path.is_file):
         report = await asyncio.to_thread(

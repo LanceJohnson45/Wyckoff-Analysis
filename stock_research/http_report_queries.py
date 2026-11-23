@@ -6,9 +6,11 @@ from fastapi import APIRouter, Query, Request
 from pydantic import UUID4
 
 from stock_research.anchor_chart import anchor_chart
+from stock_research.quant_queries import quant_attempt_page
 from stock_research.report_queries import compare_stocks, group_strength, market_overview, strategy_rules
 from stock_research.schemas.anchor_chart import AnchorChart
 from stock_research.schemas.api import ApiResponse, Code
+from stock_research.schemas.quant_jobs import QuantAttemptPage
 from stock_research.schemas.report_queries import GroupPage, MarketOverview, StockComparison, StrategyRules, Symbol
 from stock_research.schemas.universe import UniversePage, UniverseQuery
 from stock_research.universe_queries import universe_page
@@ -100,5 +102,21 @@ async def anchors(
         code=Code.OK,
         message="ok",
         data=await anchor_chart(request.app.state.store, str(report_id), symbol, limit, index),
+        correlation_id=request.state.correlation_id,
+    )
+
+
+@router.get("/v1/research-runs/{run_id}/quant-attempts", response_model=ApiResponse[QuantAttemptPage])
+async def quant_attempts(
+    request: Request,
+    run_id: UUID4,
+    page: Annotated[int, Query(ge=1, le=1000000)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=20)] = 10,
+) -> ApiResponse[QuantAttemptPage]:
+    """当前run历史独立分页，不更改旧报告冻结的量化状态。"""
+    return ApiResponse(
+        code=Code.OK,
+        message="ok",
+        data=await quant_attempt_page(request.app.state.store, str(run_id), page, page_size),
         correlation_id=request.state.correlation_id,
     )

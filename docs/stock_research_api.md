@@ -9,7 +9,7 @@
 | 入口 | 已接通行为 |
 |---|---|
 | GET /v1/research-runs | SQL分页，page>=1、page_size=1～100，创建时间及UUID稳定排序 |
-| POST /v1/research-runs | 固定来源冻结快照与两策略量化后返回202，受控后台任务执行模型阶段 |
+| POST /v1/research-runs | 固定共同输入、两份量化任务与首份pending报告后返回202，后台按策略量化并执行模型阶段 |
 | GET /v1/research-runs/{UUID} | 当前状态、质量、数据截止日、报告期限、初选、互评及错误 |
 | GET /v1/research-runs/{UUID}/events | SSE按持久化报告revision续读，max(Last-Event-ID, after)>=0，每连接最多三十秒 |
 | POST /v1/research-runs/{UUID}/retry | 仅补未成功阶段；完整运行须显式重分析 |
@@ -27,7 +27,7 @@
 | GET /v1/research-runs/{UUID}/parameters | 固定运行参数及来源，不用当前发布覆盖 |
 | GET /v1/reports/{UUID}/universe | 全部有效成员/字面搜索/SQL分页，缺数保留；见[整池浏览](stock_research_universe.md) |
 | GET /v1/reports/{UUID}/market、groups、compare、rules | 固定修订市场/分组/比较/规则，只读且不重算历史 |
-| GET /v1/preparations | 独立输入准备回执，可按target_session过滤和SQL分页；ready不等于模型完成 |
+| GET /v1/preparations | 独立输入准备回执，可按target_session过滤和SQL分页；ready不等于量化/模型完成 |
 | POST、GET /v1/chat-turns | operator私有问答创建202、按报告/会话SQL分页，必须固定report_id |
 | GET /v1/chat-turns/{UUID}、POST /v1/chat-turns/{UUID}/cancel | 持久状态/回答及显式取消，不覆盖终态 |
 | GET、POST /v1/theme-proposals、POST /v1/theme-proposals/{id}/confirm | 私有提议与人工CAS确认，完整契约见[输入维护](stock_research_input_maintenance.md) |
@@ -51,4 +51,6 @@ RunView现在带companies，名称来自同一冻结快照的当时分类或成�
 
 固定报告新增GET /v1/reports/{report_id}/anchors/{symbol}，limit=1～320、index可选；返回原锚点目录和一条确认后曲线。只读身份可读，未知索引422、冻结锚点/行情不一致503，原股票/问答工具不增加曲线负担。详见[个股图表](stock_research_stock_view.md)。
 
-API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。当前单策略失败仍使准备失败，局部继续及持久化补算尚未接通，详见[量化执行边界](stock_research_quant_execution.md)。
+API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。共同输入先冻结，单策略量化失败已独立记录，另一策略继续并可只补失败部分，详见[量化执行边界](stock_research_quant_execution.md)。
+
+按策略量化状态见RunView.quant及固定报告；GET /v1/research-runs/{run_id}/quant-attempts提供当前run独立尝试SQL分页（page_size≤20），不改变旧报告当时状态。量化失败不生成空产物，成功计算/初选不重做；缺计算的池、分组和计数可为null，不能解释为零。详见[局部量化恢复](stock_research_quant_execution.md)。
