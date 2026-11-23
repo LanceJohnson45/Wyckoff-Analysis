@@ -1,6 +1,6 @@
 # 独立美股研究数据命令
 
-本页描述 `codex/stock-research` 的数据阶段实现。模型选股、研究 API、定时任务和飞书发送尚未接通。旧行情同步仍在独立来源工作树运行，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
+本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)，模型选股、研究 API、定时任务和飞书发送尚未接通。旧行情同步仍在独立来源工作树运行，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
 
 本机现已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。新 `refresh-versions`、`fetch-benchmarks` 的来源、配置和实测见[公开成分与基准补充](stock_research_public_data.md)。云端QQQ/IWM仍未补写，当前使用显式供应商文件解决研究数据缺口，保留全部出处限制。
 

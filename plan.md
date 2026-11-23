@@ -415,9 +415,9 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli analyze --market us --as-of 2026-11-20 --strategy wyckoff --no-llm | Wyckoff适配与上游结果一致性 |
 | python3.12 -m stock_research.cli run --market us --target-session 2026-11-23 --preview | 完整流程与通知预览，无正式发送 |
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
-| python3.12 -m stock_research.cli benchmark --profile baseline-v1 --cutoff 2026-11-20 | 同口径性能比较 |
+| python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-以上为计划新增的命令与验收目标，当前尚未实现或执行。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin的analyze及ATR/ADR的benchmark已实现并实际运行；Wyckoff的analyze、run和evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 
@@ -461,6 +461,8 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 实现共享因子、两类回调、出处标签、可调参数、得分及合格池CLI。接入AKQuant可比较的因子与benchmark入口。
 
 交付可独立运行的Martin量化观察报告。验收包括早期转强覆盖、旧公式对拍、条件开关与历史截止限制。
+
+2026-11-23实施进度：共享因子、双分支、可调规则及出处、行业事实、截面评分、确定性去重和不可变量化产物已接通CLI。旧模块实际输出保存数值黄金夹具；AKQuant仅对齐ATR/ADR，EMA继续使用参考实现。真实固定快照已扫描491只、生成最多30只复核池，`model_selection`仍为null。当前报告为本地文件，因子/候选数据库表及运行状态机留到后续接入，不声称模型初选或收益有效性。细节见[Martin CLI](docs/stock_research_martin_cli.md)。
 
 ### 阶段三 双策略选股与互评
 

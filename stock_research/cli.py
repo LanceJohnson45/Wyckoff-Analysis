@@ -5,6 +5,7 @@ import asyncio
 import importlib.metadata
 import json
 import sqlite3
+import subprocess
 import sys
 from datetime import date
 from pathlib import Path
@@ -19,11 +20,14 @@ from stock_research.benchmarks import BenchmarkBundle, fetch_benchmarks, merge_b
 from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
+from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
 from stock_research.models import ClassificationVersion, Snapshot, UniverseVersion
+from stock_research.parameters import MartinParameters
 from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
+from stock_research.research_commands import analyze_command
 from stock_research.schema import schema_ddl
 from stock_research.store import (
     close_engine,
@@ -53,6 +57,16 @@ def parser() -> argparse.ArgumentParser:
     refresh.add_argument("--version", required=True)
     refresh.add_argument("--output-dir", type=Path, required=True)
     refresh.add_argument("--allow-current-universe", action="store_true")
+    analyze = commands.add_parser("analyze", help="Martin量化观察，不调用模型、不生成交易指令")
+    analyze.add_argument("--market", choices=["us"], required=True)
+    analyze.add_argument("--as-of", type=date.fromisoformat, required=True)
+    analyze.add_argument("--strategy", choices=["martin"], required=True)
+    analyze.add_argument("--no-llm", action="store_true")
+    analyze.add_argument("--snapshot-file", type=Path)
+    compare = commands.add_parser("benchmark", help="独立进程对拍ATR/ADR和冷/热耗时，不比较未对齐EMA")
+    compare.add_argument("--as-of", type=date.fromisoformat, required=True)
+    compare.add_argument("--profile", required=True)
+    compare.add_argument("--snapshot-file", type=Path, required=True)
     snapshot = commands.add_parser("snapshot")
     snapshot.add_argument("--market", choices=["us"], required=True)
     snapshot.add_argument("--as-of", type=date.fromisoformat, required=True)
@@ -208,6 +222,28 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "benchmark":
+        parameters = MartinParameters.model_validate_json(settings.parameters_path.read_text(encoding="utf-8"))
+        snapshot = Snapshot.model_validate_json(args.snapshot_file.read_text(encoding="utf-8"))
+        if parameters.version != args.profile or snapshot.as_of != args.as_of:
+            raise ValueError("对拍profile或截止日与输入版本不一致")
+        result = benchmark(
+            args.snapshot_file,
+            parameters,
+            settings.artifacts_path / "benchmarks",
+            timeout_seconds=settings.stage_timeout_seconds,
+        )
+        return result, 0 if result["passed"] else 2
+    if args.command == "analyze":
+        if not args.no_llm:
+            raise ValueError("当前仅实现量化观察，须显式传入 --no-llm")
+        path = args.snapshot_file
+        if path is None:
+            result, status = snapshot_command(settings, args.as_of, offline=False)
+            if status:
+                return result, status
+            path = Path(result["path"])
+        return analyze_command(settings, path, args.as_of), 0
     if args.command == "fetch-benchmarks":
         return fetch_benchmarks(args.as_of, settings.history_rows, settings.artifacts_path / "benchmarks"), 0
     if args.command == "refresh-versions":
@@ -268,7 +304,15 @@ def main(argv: list[str] | None = None) -> int:
         result, status = execute(args, Settings())
     except ValidationError:
         result, status = {"error": "版本、行情或配置校验失败；检查必填字段、时区和摘要"}, 1
-    except (OSError, sqlite3.Error, PostgresError, SQLAlchemyError, httpx.HTTPError, TimeoutError) as exc:
+    except (
+        OSError,
+        sqlite3.Error,
+        PostgresError,
+        SQLAlchemyError,
+        httpx.HTTPError,
+        subprocess.TimeoutExpired,
+        TimeoutError,
+    ) as exc:
         result, status = {"error": "文件或数据库不可用，请运行 doctor 并检查数据源配置", "type": type(exc).__name__}, 1
     except ValueError as exc:
         result, status = {"error": str(exc)}, 1

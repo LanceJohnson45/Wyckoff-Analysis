@@ -1,5 +1,6 @@
 """研究数据固定样本与真实临时 PostgreSQL；不访问外部服务。"""
 
+import math
 import shutil
 import socket
 import sqlite3
@@ -97,6 +98,39 @@ def bars() -> tuple[Bar, ...]:
         for kind, symbol in (("stock", "AAPL"), *(("benchmark", name) for name in BENCHMARKS))
         for day in sessions_ending(AS_OF, 320)
     )
+
+
+def trending_sample() -> tuple[Bar, ...]:
+    """固定输入行情，用于旧模块黄金值与新公式对拍，不复制指标计算。"""
+    days = sessions_ending(AS_OF, 120)
+    result = []
+    for index, day in enumerate(days):
+        close = 100 + index * 0.2 + math.sin(index / 5)
+        if index >= 117:
+            close -= (index - 116) * 0.35
+        width = 0.35 if index >= 117 else 1.0
+        result.append(
+            Bar(
+                symbol="AAPL",
+                kind="stock",
+                session_date=day,
+                open=close - 0.1,
+                high=close + width,
+                low=close - width,
+                close=close,
+                volume=6000 if index >= 117 else 10000 + index * 10,
+                source="synthetic-golden",
+                source_revision=STAMP,
+                observed_time=STAMP,
+            )
+        )
+    return tuple(result)
+
+
+@pytest.fixture
+def trending_bars() -> tuple[Bar, ...]:
+    """已固定定义的120日合成行情。"""
+    return trending_sample()
 
 
 @pytest.fixture

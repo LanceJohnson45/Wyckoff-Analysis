@@ -1,0 +1,86 @@
+{
+  "version": "baseline-v1",
+  "algorithm": "martin-daily-v1",
+  "ema_periods": [
+    9,
+    21,
+    50
+  ],
+  "slope_window": 5,
+  "atr_window": 14,
+  "adr_window": 20,
+  "rs_window": 20,
+  "recent_window": 3,
+  "base_window": 10,
+  "pullback_window": 5,
+  "support_atr": 0.75,
+  "extension_atr": 3.0,
+  "contraction_ratio": 0.7,
+  "breakout_window": 60,
+  "breakout_recency": 20,
+  "swing_left": 3,
+  "swing_right": 3,
+  "anchor_window": 60,
+  "pool_size": 30,
+  "min_group_members": 3,
+  "group_coverage_min": 0.8,
+  "weights": {
+    "rs": 0.25,
+    "group": 0.2,
+    "support": 0.2,
+    "integrity": 0.15,
+    "volume": 0.1,
+    "contraction": 0.1
+  },
+  "rules": {
+    "trend": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "本人访谈00:25:59-00:26:30的EMA9/21/50；完整多头组合为工程定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "pullback": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "已有强势回调观察；固定识别窗口为工程定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "support": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "访谈支撑反应；ATR带宽为工程定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "extension": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "旧工作台延伸预警；ATR倍数为工程定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "contraction": {
+      "enabled": true,
+      "action": "bonus",
+      "concept_source": "已有收紧、缩量观察；窗口和比例为工程定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "early_structure": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "早期转强回调为工程研究分支，非已验证统一扫描公式",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    },
+    "first_retest": {
+      "enabled": true,
+      "action": "exclude",
+      "concept_source": "首次回测状态算法为工程研究定义",
+      "formula_source": "工程研究定义，未确认属于Martin统一公式",
+      "parameter_source": "工程默认值，未经参数优化或收益验证"
+    }
+  }
+}
