@@ -246,9 +246,13 @@ class ArmStat:
     @property
     def beats_production(self) -> bool | None:
         """是否显著优于生产表(双侧 5%,且超过往返成本)。"""
-        if self.vs_prod is None or self.vs_prod_t is None:
+        if self.vs_prod is None:
             return None
-        return self.vs_prod_t >= 2.0 and self.vs_prod >= ROUND_TRIP_COST_PCT
+        if self.vs_prod < ROUND_TRIP_COST_PCT:
+            return False
+        if self.vs_prod_t is None:
+            return None
+        return self.vs_prod_t >= 2.0
 
     def as_dict(self) -> dict[str, Any]:
         return {

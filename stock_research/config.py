@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     public_nasdaq100_file: str = "data/nasdaq100_constituents.json"
     public_source_max_age_days: int = Field(default=35, ge=1, le=90)
     parameters_path: Path = Path("config/research/baseline-v1.json")
+    wyckoff_parameters_path: Path = Path("config/research/wyckoff-us-v1.json")
     postgres_host: str = "127.0.0.1"
     postgres_port: int = Field(default=5432, ge=1, le=65535)
     postgres_database: str = "stock_research"

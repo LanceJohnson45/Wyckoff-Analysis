@@ -1,6 +1,7 @@
 """研究数据固定样本与真实临时 PostgreSQL；不访问外部服务。"""
 
 import math
+import os
 import shutil
 import socket
 import sqlite3
@@ -23,6 +24,14 @@ from stock_research.quality import BENCHMARKS, build_snapshot
 AS_OF = date(2026, 11, 20)
 STAMP = datetime(2026, 11, 21, 8, tzinfo=SHANGHAI)
 SOCKET_CONNECT = socket.socket.connect
+
+
+@pytest.fixture(autouse=True)
+def isolated_research_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """其他套件可加载根.env；合成研究输入不能意外使用真实路径或身份。"""
+    for key in tuple(os.environ):
+        if key.startswith(("STOCK_RESEARCH_", "PG_")):
+            monkeypatch.delenv(key)
 
 
 @pytest.fixture

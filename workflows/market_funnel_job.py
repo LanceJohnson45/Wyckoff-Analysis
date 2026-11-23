@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Mapping
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -139,15 +140,27 @@ def _run_layers(
     bench_df: pd.DataFrame | None = None,
     sector_map: dict[str, str] | None = None,
     cfg_overrides: Mapping[str, object] | None = None,
+    *,
+    diagnostics: dict[str, Any] | None = None,
 ) -> tuple[dict[str, list[tuple[str, float]]], dict[str, Any]]:
     funnel_cfg = _funnel_config(cfg, cfg_overrides)
     benchmark_context = _market_regime_context(bench_df, funnel_cfg, is_hk=cfg.spec.key == "hk")
     layer1 = layer1_filter(symbols, name_map, {}, df_map, funnel_cfg)
-    layer2, channel_map, _ = layer2_strength_detailed(layer1, df_map, bench_df, funnel_cfg, rps_universe=symbols)
+    rejections = {} if diagnostics is not None else None
+    layer2, channel_map, pre_ignition = layer2_strength_detailed(
+        layer1, df_map, bench_df, funnel_cfg, rps_universe=symbols, rejections=rejections
+    )
     sector_map = sector_map or {}
     layer3, top_sectors = layer3_sector_resonance(layer2, sector_map, funnel_cfg, base_symbols=layer1, df_map=df_map)
     triggers = layer4_triggers(layer3, df_map, funnel_cfg, channel_map=channel_map)
     trend_watch_rows = detect_leader_radar(layer1, df_map, sector_map, channel_map, funnel_cfg)
+    if diagnostics is not None:
+        diagnostics.update(
+            effective_config=asdict(funnel_cfg),
+            layers={"layer1": layer1, "layer2": layer2, "layer3": layer3},
+            layer2_rejections=rejections,
+            pre_ignition=pre_ignition,
+        )
     metrics = {
         "layer1": len(layer1),
         "layer2": len(layer2),

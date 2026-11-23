@@ -20,7 +20,7 @@
 
 React Web、CLI、MCP 与 GitHub Actions 共同组成当前产品形态；日线行情通过 TickFlow 实时拉取（无 Supabase 行情缓存），Supabase 仅用于用户配置、持仓、形态复盘、市场信号、信号反馈与任务结果。
 
-独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，跨机器续接见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。数据CLI已接通公开成分版本、只读增量同步、一致快照、独立供应商基准及PostgreSQL存取，真实快照已通过配置的数据门槛；公开源和当前池回溯限制见 [来源与实测](docs/stock_research_public_data.md)，操作见 [数据CLI](docs/stock_research_data_cli.md)。[Martin量化CLI](docs/stock_research_martin_cli.md)已提供成熟/早期回调观察及最多30只复核池。Wyckoff生产适配、模型初选与互评、研究API及自动运行尚未实现。
+独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，跨机器续接见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。数据CLI已接通公开成分版本、只读增量同步、一致快照、独立供应商基准及PostgreSQL存取，真实快照已通过配置的数据门槛；公开源和当前池回溯限制见 [来源与实测](docs/stock_research_public_data.md)，操作见 [数据CLI](docs/stock_research_data_cli.md)。[Martin量化CLI](docs/stock_research_martin_cli.md)和[Wyckoff生产漏斗适配](docs/stock_research_wyckoff_cli.md)已提供固定快照量化观察与最多30只复核池。模型初选与互评、研究API及自动运行尚未实现。
 
 TickFlow 全市场快照使用 GET `/v1/quotes` 的 `universes` 标的池参数，先整池获取再本地筛选；历史日K默认每批200只，美股通道在 workflow 层单独压到100只。午间及 14:55 独立研究的取数与失败边界见 [批量行情协议](docs/OPERATOR_PLAYBOOK.md#独立午间研究的批量行情协议) 和 [14:55 首屏快照](docs/OPERATOR_PLAYBOOK.md#1455-独立深跌研究的首屏快照)。
 

@@ -21,6 +21,7 @@ from core.trigger_points_eval import (
     PROD_SOS_SINGLE,
     ROUND_TRIP_COST_PCT,
     TRIGGER_KINDS,
+    ArmStat,
     KindStat,
     PermutationStat,
     PointsReport,
@@ -293,6 +294,27 @@ def test_arm_without_production_has_no_verdict() -> None:
     stat = summarize_arm("prod", 10, _series(-0.8))
     assert stat.vs_prod is None
     assert stat.beats_production is None
+
+
+@pytest.mark.parametrize(
+    "gap,t_value,expected",
+    [
+        (None, None, None),
+        (0.05, None, False),
+        (-0.1, None, False),
+        (0.3, None, None),
+        (0.3, 1.0, False),
+        (0.3, 2.0, True),
+    ],
+)
+def test_arm_cost_failure_is_decisive_without_paired_t(
+    gap: float | None, t_value: float | None, expected: bool | None
+) -> None:
+    """已知差值不足以覆盖成本时无需t值即可否决；超成本仍须显著性证据。"""
+    stat = ArmStat("test", 10, 60, 0.0, 0.0, vs_prod=gap, vs_prod_t=t_value)
+
+    assert stat.beats_production is expected
+    assert stat.as_dict()["beats_production"] is expected
 
 
 # --- 走前挑表 ---

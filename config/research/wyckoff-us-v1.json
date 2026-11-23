@@ -1,0 +1,6 @@
+{
+  "version": "baseline-us-v1",
+  "algorithm": "production-us-l1-l4-v1",
+  "pool_size": 30,
+  "overrides": {}
+}

@@ -2,7 +2,17 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
-## Martin量化观察续接
+## Wyckoff生产路径适配续接
+
+已接通 `analyze --market us --as-of 2026-11-20 --strategy wyckoff --no-llm`，支持原快照重放。直接复用美股生产_run_layers、_candidate_rows及水温限制，不重新实现信号。新增可选层级诊断对原生产返回指标无影响；冻结实际FunnelConfig、覆盖、引擎源码及NumPy/pandas版本。独立参数为 `config/research/wyckoff-us-v1.json`，默认路径已配置，无需新凭证。操作见[Wyckoff CLI](stock_research_wyckoff_cli.md)。
+
+真实固定快照490只参与计算，L1=490、L2=305、L3=47、L4命中=0，SPY水温CRASH，最终空池。上游预点火和趋势观察独立保存，不补名额。快照缺可核验金额，上游辅助评分仍使用close×volume代理；研究禁止非零金额硬门槛，actionable等仅为上游原始诊断，没有执行许可或模型结论。
+
+下一步为dsh执行器、受控只读证据工具、独立初选事务和交叉评议。本机可执行文件已在 `~/tools/e2e/bin/dsh` 找到并实测版本0.2.1-alpha.2；PATH中没有dsh不代表未安装，不能沿用另一机器0.2.2-rc.1接口假设。已读本机headless文档；未运行模型、未复用生产profile会话或修改Personal服务。候选/因子数据库表、API及运行恢复仍待接入，wiki checkout不存在。
+
+本批最终全量Python为5897通过、23跳过（未安装可选mcp extra）、50条既有警告；研究测试125项无skip，相关回归332项通过。显式污染环境下研究/回测130项、工作流套件1015项通过。补修既有ArmStat在缺t值时应先否决低于成本差值的问题；研究及工作流测试隔离各自环境键，保留生产配置读取和基准冲突检查。Ruff、1146文件格式、quality_gate、工作流检查和假值daily dry-run通过；67条依赖与旧LOC基线非阻断警告保留。真实报告已独立重读，与生产入口逐字段一致且缓存复用。未跑Web、远端CI、独立整体审查或部署，不声称可合入/发布。
+
+## Martin量化观察续接（上一批）
 
 已接通 `analyze --market us --as-of 2026-11-20 --strategy martin --no-llm` 和固定快照重放。共享EMA/ATR/ADR、收益、相对强弱、量幅收缩、确认锚点、成熟/早期回调、首/重复回测、行业覆盖、分项得分和分支合并均保存到不可变报告。配置正本为 `config/research/baseline-v1.json`，本机参数路径已指向它。操作和算法边界见[Martin CLI](stock_research_martin_cli.md)。
 

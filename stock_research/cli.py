@@ -57,10 +57,10 @@ def parser() -> argparse.ArgumentParser:
     refresh.add_argument("--version", required=True)
     refresh.add_argument("--output-dir", type=Path, required=True)
     refresh.add_argument("--allow-current-universe", action="store_true")
-    analyze = commands.add_parser("analyze", help="Martin量化观察，不调用模型、不生成交易指令")
+    analyze = commands.add_parser("analyze", help="Martin/Wyckoff量化观察，不调用模型、不生成交易指令")
     analyze.add_argument("--market", choices=["us"], required=True)
     analyze.add_argument("--as-of", type=date.fromisoformat, required=True)
-    analyze.add_argument("--strategy", choices=["martin"], required=True)
+    analyze.add_argument("--strategy", choices=["martin", "wyckoff"], required=True)
     analyze.add_argument("--no-llm", action="store_true")
     analyze.add_argument("--snapshot-file", type=Path)
     compare = commands.add_parser("benchmark", help="独立进程对拍ATR/ADR和冷/热耗时，不比较未对齐EMA")
@@ -243,7 +243,7 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
             if status:
                 return result, status
             path = Path(result["path"])
-        return analyze_command(settings, path, args.as_of), 0
+        return analyze_command(settings, path, args.as_of, strategy=args.strategy), 0
     if args.command == "fetch-benchmarks":
         return fetch_benchmarks(args.as_of, settings.history_rows, settings.artifacts_path / "benchmarks"), 0
     if args.command == "refresh-versions":

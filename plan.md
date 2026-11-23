@@ -40,7 +40,9 @@
 
 首版的信息范围决定了盘前报告以日线观察区、待确认动作和失效参考为主。分钟触发验证、真实成交回测、自动下单、实时盘前事件和新闻筛选属于后续能力，须有对应数据与独立规格。
 
-## 3 已核验的代码基线
+## 3 规划时核验的代码基线
+
+本表保存规划时记录，续接实现与本机实际版本以第16节及交接文档的最新检查点为准。
 
 | 对象 | 已核验状态 | 实施影响 |
 |---|---|---|
@@ -208,7 +210,7 @@ flowchart TB
 
 ### 6.5 Wyckoff基线
 
-从main@22dc8c65的core/wyckoff_engine.py、core/market_funnel_config.py及实际生产调用方复用美股漏斗、结构、量价和诊断逻辑。通过显式传入历史数据与基准的适配器接入同一快照，检查计算路径中的隐式在线取数。
+复用本分支core/wyckoff_engine.py、core/market_funnel_config.py及实际美股调用方workflows/market_funnel_job.py的漏斗、量价和诊断逻辑。实际美股任务的run_funnel_for_ranked通过_run_layers、_candidate_rows和_cap_candidates_for_regime组合L1～L4、排序与水温限制；研究适配使用相同组件，显式传入快照行情和SPY，不调用TickFlow取数或通用候选旁路。
 
 默认配置由funnel_config_for_market('us')产生，保存完整FunnelConfig及其摘要。执行前确认上游配置档的加载优先级；研究覆盖项使用已有apply_funnel_config_overrides，未知字段报错。
 
@@ -417,7 +419,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin的analyze及ATR/ADR的benchmark已实现并实际运行；Wyckoff的analyze、run和evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run和evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 
@@ -467,6 +469,8 @@ doctor、snapshot、Martin的analyze及ATR/ADR的benchmark已实现并实际运�
 ### 阶段三 双策略选股与互评
 
 复用Wyckoff生产美股计算，接入首个dsh执行器，完成独立选股、交叉评议、证据校验、结构化持久化和阶段恢复。新增研究API与预览运行入口。
+
+2026-11-23首批进度：Wyckoff量化入口已复用美股正式层计算、候选排序与水温限制，增加可选逐层诊断，参数、有效配置、源码和数值依赖版本绑定不可变报告。真实快照490只计算完成且空池，保留CRASH水温和数据限制。合成非空Spring与生产run_funnel_for_ranked逐字段对拍；模型执行、初选/互评事务、API及恢复仍未交付。本机DSH已找到 `~/tools/e2e/bin/dsh`，实测0.2.1-alpha.2，后续须按此版本核对隔离配置与受控工具接口。
 
 交付可手动生成的双策略完整报告。验收两套各最多5只、空名单、分歧、重复入选、模型失败及初选不可变。
 
@@ -533,7 +537,7 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 - [ ] 完整股票池及分类有出处、版本与覆盖说明。
 - [ ] 行情更新、快照和异常隔离通过真实入口验证。
 - [ ] 因子定义与数值参数逐项可查看、可调整、可追溯。
-- [ ] Martin两类回调与Wyckoff正式算法均有样本验证。
+- [x] Martin两类回调与Wyckoff正式算法均有样本验证（量化样本对拍，不是收益或执行验收）。
 - [ ] 各策略最多5只，量化池外输出被拒收。
 - [ ] 初选保存后互评，历史版本及不同意见完整可查。
 - [ ] 名单变化、数据不足和失败恢复符合约定。
