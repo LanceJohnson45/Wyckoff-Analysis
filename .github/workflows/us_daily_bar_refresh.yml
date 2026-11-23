@@ -1,8 +1,6 @@
 name: US Daily Bar Refresh
 
 on:
-  schedule:
-    - cron: "55 9 * * 0-4"
   workflow_dispatch:
 
 concurrency:
@@ -14,9 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONUNBUFFERED: "1"
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PG_ENABLED: "1"
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT }}
+      PG_DATABASE: ${{ secrets.PG_DATABASE }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+      PG_DSN: ${{ secrets.PG_DSN }}
       US_REFRESH_TRADING_DAYS: "7"
       US_SP500_BATCH_SIZE: "40"
       US_SP500_SLEEP_SECONDS: "0.5"
@@ -38,18 +41,22 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
+
+      - name: Verify PostgreSQL target
+        run: |
+          uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失')"
 
       - name: Refresh active S&P500 bars
         run: |
-          python -u scripts/us_sp500_maintenance.py refresh --trading-days ${US_REFRESH_TRADING_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
+          set -o pipefail
+          uv run --frozen --no-dev python -u scripts/us_sp500_maintenance.py refresh --trading-days ${US_REFRESH_TRADING_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
             2>&1 | tee us_daily_bar_refresh.log
 
       - name: Upload refresh log

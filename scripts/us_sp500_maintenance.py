@@ -315,6 +315,7 @@ def bootstrap_constituents(
 def refresh_constituents(
     *, trading_days: int, batch_size: int, sleep_seconds: float
 ) -> int:
+    """刷新活跃成分股，任何下载或写入失败都返回非零。"""
     snapshot = get_sp500_constituents(prefer_snapshot=False)
     save_sp500_snapshot(snapshot.symbols, source=snapshot.source)
     end_day = resolve_end_calendar_day_for_market("us")
@@ -327,7 +328,7 @@ def refresh_constituents(
         sleep_seconds=sleep_seconds,
     )
     _log(f"refresh complete stats={json.dumps(stats, ensure_ascii=False)}")
-    return 0 if stats["failed"] < len(snapshot.symbols) else 1
+    return 0 if stats["symbols"] == len(snapshot.symbols) and stats["symbols"] > 0 else 1
 
 
 def prewarm_constituents(
