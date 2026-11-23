@@ -60,7 +60,7 @@ def main() -> None:
     assert len(html.select("img")) == len(re.findall(r"!\[[^\]]*\]\([^)]+\)", source_md))
     assert all(img.get("src", "").startswith("data:image/") for img in html.select("img"))
     assert len([h for h in html.find_all("h2") if re.match(r"第\d+课", h.get_text())]) == 15
-    for node in html.select("video source, .clip-controls a"):
+    for node in html.select("video source, video.study-source-video, .clip-controls a"):
         value = node.get("src") or node.get("href")
         assert not value.startswith(("/", "http:", "https:"))
         assert (ROOT / value).exists(), value

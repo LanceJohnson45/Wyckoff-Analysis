@@ -153,7 +153,10 @@ def build() -> None:
 """
     soup.body.append(script)
     PAGE.write_text(str(soup), encoding="utf-8")
-    assert len(soup.find_all("video")) == len(manifest)
+    assert len(soup.select("video[data-clip]")) == len(manifest)
+    for video in soup.select("video.study-source-video"):
+        assert (ROOT / video["src"]).is_file(), video["src"]
+    assert len(soup.find_all("video")) == len(manifest) + len(soup.select("video.study-source-video"))
 
 
 if __name__ == "__main__":
