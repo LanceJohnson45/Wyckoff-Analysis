@@ -10,6 +10,7 @@ import tempfile
 from collections.abc import Iterator
 from datetime import date, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from sqlalchemy import create_engine, insert
@@ -221,13 +222,17 @@ def postgres_settings() -> Iterator[Settings]:
                 capture_output=True,
                 timeout=10,
             )
-            yield Settings(
-                _env_file=None,
-                postgres_host=directory,
-                postgres_database="stock_research",
-                postgres_user="research_test",
-                postgres_password="",
-            )
+            # Session fixtures先于function级环境隔离执行，不能继承其他套件加载的.env。
+            environment = {key: value for key, value in os.environ.items() if not key.startswith("STOCK_RESEARCH_")}
+            with patch.dict(os.environ, environment, clear=True):
+                settings = Settings(
+                    _env_file=None,
+                    postgres_host=directory,
+                    postgres_database="stock_research",
+                    postgres_user="research_test",
+                    postgres_password="",
+                )
+            yield settings
         finally:
             subprocess.run(
                 [binaries["pg_ctl"], "-D", cluster, "-m", "immediate", "-w", "stop"],

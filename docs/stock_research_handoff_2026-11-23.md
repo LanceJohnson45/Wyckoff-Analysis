@@ -2,6 +2,16 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
+## 执行器与研究账本续接
+
+已接通 `run --preview` 与独立 `read-run`，固定DSH 0.2.1-alpha.2 SDK接口。每次尝试建立独立home、Agent目录、会话和工作目录；实际注册目录精确限制为两个只读MCP证据工具，数值/范围/上下文摘要机械校验。新增九张执行账本表，本机显式补建成功；初选事务提交后互评，成功结果不可覆盖，失败阶段可续跑，运行锁和取消回收已测试。配置已指向本机已有SDK静态模型连接，未复制Personal网关凭据或生产会话。详见[执行预览](stock_research_executor.md)。
+
+真实CLI预览运行 `c642eaad-f9cd-4b99-84c0-2f6e9de2f8cc` 为partial：Wyckoff量化池为空并提交空初选，Martin两次模型请求均遇到供应商流式空闲TIMEOUT，未生成正式初选；Martin对空目标互评完成。独立CLI重连PostgreSQL读回完全一致。此前模型探测曾真实调用证据工具但输出截断，GLM路线另遇配额上限；均未作为正式初选。本批不能声称真实非空初选和交叉评议验收已通过。
+
+研究测试149项通过；全量Python5944通过、无skip、50条既有警告。真实MCP stdio和本机DSH离线握手纳入测试，外部模型调用独立于自动测试。修复session级临时库fixture继承其他套件加载的.env问题，以及旧存储测试对全表计数缺少workspace范围的问题。Ruff、1162文件格式、quality_gate、hygiene、uv lock检查、红线扫描及假值daily dry-run通过；旧LOC和67条依赖警告保留。没有Web改动或远端CI、独立整体审查、wiki同步、服务部署和通知发送。
+
+当前按plan.md继续阶段四：带认证的HTTP查询、固定报告修订与运行管理，然后接持续名单和现有Agent界面；阶段五services与Mac mini自然交易日验收、阶段六后续表现仍未完成。
+
 ## Wyckoff生产路径适配续接
 
 已接通 `analyze --market us --as-of 2026-11-20 --strategy wyckoff --no-llm`，支持原快照重放。直接复用美股生产_run_layers、_candidate_rows及水温限制，不重新实现信号。新增可选层级诊断对原生产返回指标无影响；冻结实际FunnelConfig、覆盖、引擎源码及NumPy/pandas版本。独立参数为 `config/research/wyckoff-us-v1.json`，默认路径已配置，无需新凭证。操作见[Wyckoff CLI](stock_research_wyckoff_cli.md)。

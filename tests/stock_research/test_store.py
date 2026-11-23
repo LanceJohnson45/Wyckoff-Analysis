@@ -10,7 +10,14 @@ from sqlalchemy import func, select, text
 from stock_research.config import Settings
 from stock_research.models import Snapshot
 from stock_research.quality import build_snapshot
-from stock_research.schema import GROUP_MEMBERS, MARKET_SNAPSHOTS, UNIVERSE_MEMBERS, schema_ddl
+from stock_research.schema import (
+    CLASSIFICATION_VERSIONS,
+    GROUP_MEMBERS,
+    MARKET_SNAPSHOTS,
+    UNIVERSE_MEMBERS,
+    UNIVERSES,
+    schema_ddl,
+)
 from stock_research.store import close_engine, database_engine, initialize_schema, load_snapshot, save_snapshot
 
 pytestmark = pytest.mark.usefixtures("local_postgres_socket")
@@ -88,8 +95,20 @@ def test_idempotent_concurrent_snapshot_commits_once(postgres_settings: Settings
                     .select_from(MARKET_SNAPSHOTS)
                     .where(MARKET_SNAPSHOTS.c.workspace == "concurrent")
                 )
-                members = await connection.scalar(select(func.count()).select_from(UNIVERSE_MEMBERS))
-                groups = await connection.scalar(select(func.count()).select_from(GROUP_MEMBERS))
+                members = await connection.scalar(
+                    select(func.count())
+                    .select_from(UNIVERSE_MEMBERS)
+                    .join(UNIVERSES, UNIVERSE_MEMBERS.c.universe_uuid == UNIVERSES.c.uuid)
+                    .where(UNIVERSES.c.workspace == "concurrent")
+                )
+                groups = await connection.scalar(
+                    select(func.count())
+                    .select_from(GROUP_MEMBERS)
+                    .join(
+                        CLASSIFICATION_VERSIONS, GROUP_MEMBERS.c.classification_uuid == CLASSIFICATION_VERSIONS.c.uuid
+                    )
+                    .where(CLASSIFICATION_VERSIONS.c.workspace == "concurrent")
+                )
 
             assert database.endswith("_test")
             assert count == 1

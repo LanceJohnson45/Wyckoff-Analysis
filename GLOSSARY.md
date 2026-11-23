@@ -470,3 +470,7 @@ flowchart LR
 ## 对外 MCP 契约
 
 工具发现与业务执行分离；可握手不代表所有工具免认证。写入默认拒绝，业务错误映射为 `isError`。详见 [PUBLIC_MCP.md](docs/PUBLIC_MCP.md)。
+
+## 独立初选与交叉评议
+
+`strategy_selection_id`只在固定快照的初选事务提交后发布；互评引用该不可变版本，不能覆盖初选。`source=empty_pool/empty_target`是有证据的程序空结果，模型失败另列，不补正式名单。相同配置续跑只补未成功阶段，强制重分析关联父运行。模型数字引用可校验，文字仍为模型意见；见[执行预览](docs/stock_research_executor.md)。

@@ -1,6 +1,6 @@
 # Wyckoff固定快照量化CLI
 
-`analyze --strategy wyckoff --no-llm` 已接通美股生产漏斗的离线计算部分。与Martin使用同一质量通过快照，保存实际L1～L4、原排序及水温限制，默认最多30只进入模型复核池。模型初选、互评、候选数据库表、研究API及自动执行仍待接入。
+`analyze --strategy wyckoff --no-llm` 已接通美股生产漏斗的离线计算部分。与Martin使用同一质量通过快照，保存实际L1～L4、原排序及水温限制，默认最多30只进入模型复核池。[模型初选、互评及运行账本](stock_research_executor.md)已接通预览，研究API及自动执行仍待接入。
 
 ## 运行与配置
 

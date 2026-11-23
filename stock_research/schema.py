@@ -98,6 +98,90 @@ MARKET_SNAPSHOTS = Table(
 Index("idx_market_snapshots_workspace_as_of", MARKET_SNAPSHOTS.c.workspace, MARKET_SNAPSHOTS.c.as_of)
 
 
+def execution_table(name: str, *columns: Column | UniqueConstraint) -> Table:
+    """执行事实统一拥有workspace和完整payload摘要，避免跨租户读取。"""
+    return Table(
+        name,
+        RESEARCH_METADATA,
+        Column("uuid", String(36), primary_key=True),
+        Column("workspace", String(128), nullable=False),
+        Column("content_hash", String(64), nullable=False),
+        Column("payload", JSON, nullable=False),
+        *columns,
+        *audit_columns(),
+    )
+
+
+# lint-redline:ignore PS-10 表对象依赖上方工厂及已有快照表。
+STRATEGY_VERSIONS = execution_table("strategy_versions", UniqueConstraint("workspace", "content_hash"))
+# lint-redline:ignore PS-10 表对象依赖上方工厂。
+PARAMETER_SETS = execution_table("parameter_sets", UniqueConstraint("workspace", "content_hash"))
+# lint-redline:ignore PS-10 因子产物依赖上方版本表。
+FACTOR_RESULTS = execution_table(
+    "factor_results",
+    Column("snapshot_uuid", String(36), ForeignKey(MARKET_SNAPSHOTS.c.uuid), nullable=False),
+    Column("strategy_uuid", String(36), ForeignKey(STRATEGY_VERSIONS.c.uuid), nullable=False),
+    Column("parameter_uuid", String(36), ForeignKey(PARAMETER_SETS.c.uuid), nullable=False),
+    Column("strategy", String(32), nullable=False),
+    UniqueConstraint("workspace", "content_hash"),
+)
+# lint-redline:ignore PS-10 运行表依赖已有快照及自身外键。
+RESEARCH_RUNS = execution_table(
+    "research_runs",
+    Column("snapshot_uuid", String(36), ForeignKey(MARKET_SNAPSHOTS.c.uuid), nullable=False),
+    Column("run_key", String(64), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("error_code", String(64), nullable=True),
+    Column("parent_run_uuid", String(36), ForeignKey("stock_research.research_runs.uuid"), nullable=True),
+    UniqueConstraint("workspace", "run_key"),
+)
+# lint-redline:ignore PS-10 阶段表依赖上方运行表。
+STAGE_RUNS = execution_table(
+    "stage_runs",
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    Column("stage_key", String(64), nullable=False),
+    Column("strategy", String(32), nullable=False),
+    Column("kind", String(32), nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("attempt_count", Integer, nullable=False, default=0),
+    Column("target_selection_uuid", String(36), nullable=True),
+    UniqueConstraint("run_uuid", "stage_key"),
+)
+# lint-redline:ignore PS-10 初选依赖运行和阶段表。
+STRATEGY_SELECTIONS = execution_table(
+    "strategy_selections",
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    Column("stage_uuid", String(36), ForeignKey(STAGE_RUNS.c.uuid), nullable=False, unique=True),
+    Column("strategy", String(32), nullable=False),
+    UniqueConstraint("run_uuid", "strategy"),
+)
+# lint-redline:ignore PS-10 初选条目依赖上方初选表。
+SELECTION_ITEMS = execution_table(
+    "selection_items",
+    Column("selection_uuid", String(36), ForeignKey(STRATEGY_SELECTIONS.c.uuid), nullable=False),
+    Column("symbol", String(32), nullable=False),
+    Column("rank", Integer, nullable=False),
+    UniqueConstraint("selection_uuid", "symbol"),
+)
+# lint-redline:ignore PS-10 互评依赖已提交初选版本，不与阶段形成DDL外键环。
+CROSS_REVIEWS = execution_table(
+    "cross_reviews",
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    Column("stage_uuid", String(36), ForeignKey(STAGE_RUNS.c.uuid), nullable=False, unique=True),
+    Column("reviewer_strategy", String(32), nullable=False),
+    Column("target_selection_uuid", String(36), ForeignKey(STRATEGY_SELECTIONS.c.uuid), nullable=False),
+    UniqueConstraint("run_uuid", "reviewer_strategy", "target_selection_uuid"),
+)
+# lint-redline:ignore PS-10 报告修订依赖上方运行表。
+RESEARCH_REPORTS = execution_table(
+    "research_reports",
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    Column("revision", Integer, nullable=False),
+    UniqueConstraint("workspace", "content_hash"),
+    UniqueConstraint("run_uuid", "revision"),
+)
+
+
 def schema_ddl() -> str:
     """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""
     statements = [CreateSchema("stock_research", if_not_exists=True)]

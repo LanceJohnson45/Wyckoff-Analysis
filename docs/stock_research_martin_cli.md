@@ -1,6 +1,6 @@
 # Martin量化观察CLI
 
-`codex/stock-research` 已接通共享日线因子、成熟趋势回调和早期转强回调。输入必须是质量通过且摘要有效的固定快照；本阶段只生成最多30只的模型复核池，`model_selection` 始终为null。[Wyckoff生产适配](stock_research_wyckoff_cli.md)已接通独立量化入口，模型初选、互评、研究API及自动任务仍待实现。
+`codex/stock-research` 已接通共享日线因子、成熟趋势回调和早期转强回调。输入必须是质量通过且摘要有效的固定快照；本阶段只生成最多30只的模型复核池，`model_selection` 始终为null。[Wyckoff生产适配](stock_research_wyckoff_cli.md)已接通独立量化入口，[独立模型初选与互评预览](stock_research_executor.md)已接通，研究API及自动任务仍待实现。
 
 ## 运行
 

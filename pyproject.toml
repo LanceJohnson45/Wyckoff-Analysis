@@ -54,6 +54,7 @@ research = [
     "structlog==25.5.0",
     "akquant==0.3.93",
     "yfinance==1.7.0",
+    "mcp==1.30.0",
 ]
 
 [project.scripts]

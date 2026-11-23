@@ -17,7 +17,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from stock_research.artifacts import data_lock, write_once
 from stock_research.benchmarks import BenchmarkBundle, fetch_benchmarks, merge_benchmarks
-from stock_research.calendar import latest_complete_session, sessions_ending
+from stock_research.calendar import latest_complete_session, session_times, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.factor_benchmark import benchmark
@@ -27,7 +27,7 @@ from stock_research.models import ClassificationVersion, Snapshot, UniverseVersi
 from stock_research.parameters import MartinParameters
 from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
-from stock_research.research_commands import analyze_command
+from stock_research.research_commands import analyze_command, read_run_command, run_command
 from stock_research.schema import schema_ddl
 from stock_research.store import (
     close_engine,
@@ -47,6 +47,15 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("doctor")
     commands.add_parser("init-schema", help="显式创建独立研究 schema v1；不更新已有表定义")
     commands.add_parser("schema-ddl", help="从Python schema导出可审阅DDL，不连接数据库")
+    run = commands.add_parser("run", help="双策略独立初选及提交后互评，持久化预览不发送通知")
+    run.add_argument("--market", choices=["us"], required=True)
+    run.add_argument("--target-session", type=date.fromisoformat, required=True)
+    run.add_argument("--preview", action="store_true", required=True)
+    run.add_argument("--snapshot-file", type=Path)
+    run.add_argument("--force", action="store_true")
+    run.add_argument("--parent-run")
+    read_run = commands.add_parser("read-run", help="从研究PostgreSQL独立读取已提交结果，不调用模型")
+    read_run.add_argument("--id", required=True)
     sync = commands.add_parser("sync-market", help="从 PG_* 授权行情只读增量同步，不执行云端写入")
     sync.add_argument("--market", choices=["us"], required=True)
     sync.add_argument("--full", action="store_true")
@@ -222,6 +231,20 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "read-run":
+        return asyncio.run(read_run_command(settings, args.id)), 0
+    if args.command == "run":
+        path = args.snapshot_file
+        if path is None:
+            _, _, previous = session_times(args.target_session)
+            result, status = snapshot_command(settings, previous, offline=False)
+            if status:
+                return result, status
+            path = Path(result["path"])
+        result = asyncio.run(
+            run_command(settings, path, args.target_session, parent_id=args.parent_run, force=args.force)
+        )
+        return result, 0 if result["status"] == "completed" else 2
     if args.command == "benchmark":
         parameters = MartinParameters.model_validate_json(settings.parameters_path.read_text(encoding="utf-8"))
         snapshot = Snapshot.model_validate_json(args.snapshot_file.read_text(encoding="utf-8"))

@@ -9,6 +9,9 @@ from stock_research.config import Settings
 from stock_research.identity import digest
 from stock_research.models import Snapshot
 from stock_research.parameters import MartinParameters
+from stock_research.pipeline import run_preview
+from stock_research.run_store import RunStore
+from stock_research.store import close_engine, database_engine
 from stock_research.wyckoff import WyckoffParameters, WyckoffReport, compute_wyckoff, engine_hash
 
 
@@ -58,3 +61,30 @@ def analyze_command(
         "model_selection": None,
         "limitations": report.limitations,
     }
+
+
+async def run_command(
+    settings: Settings, snapshot_path: Path, target_session: date, *, parent_id: str | None = None, force: bool = False
+) -> dict[str, object]:
+    """CLI预览走相同账本与执行器；不发送通知或创建订单。"""
+    import asyncio
+
+    snapshot = Snapshot.model_validate_json(snapshot_path.read_text(encoding="utf-8"))
+    analyses = {}
+    for strategy, model in (("martin", MartinReport), ("wyckoff", WyckoffReport)):
+        output = await asyncio.to_thread(analyze_command, settings, snapshot_path, snapshot.as_of, strategy=strategy)
+        analyses[strategy] = model.model_validate_json(Path(output["path"]).read_text(encoding="utf-8"))
+    engine = database_engine(settings)
+    try:
+        return await run_preview(engine, settings, snapshot, analyses, target_session, parent_id=parent_id, force=force)
+    finally:
+        await close_engine(engine)
+
+
+async def read_run_command(settings: Settings, run_id: str) -> dict[str, object]:
+    """独立读连接查询已提交结果，不启动Harness或读取模型凭据。"""
+    engine = database_engine(settings)
+    try:
+        return await RunStore(engine, settings.workspace).summary(run_id)
+    finally:
+        await close_engine(engine)

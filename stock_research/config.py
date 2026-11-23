@@ -44,14 +44,34 @@ class Settings(BaseSettings):
     dsh_home: Path = Path(".stock-research/dsh")
     dsh_agents_home: Path = Path(".stock-research/agents")
     model: str = ""
+    model_profile_path: Path | None = None
+    model_credentials_path: Path = Path.home() / ".dsh/.credentials.yaml"
+    model_env_path: Path | None = None
+    model_provider: str = ""
+    model_api: Literal["openai-completions", "openai-responses", "anthropic-messages"] = "openai-completions"
+    models_by_role: dict[str, str] = Field(default_factory=dict)
+    model_output_tokens: int = Field(default=8192, ge=512, le=16384)
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
 
-    @field_validator("benchmark_path", mode="before")
+    @field_validator("benchmark_path", "model_profile_path", "model_env_path", mode="before")
     @classmethod
     def empty_benchmark_path(cls, value: object) -> object:
         """空配置表示继续使用云端基准，禁止把空串解释为当前目录。"""
         return None if value == "" else value
+
+    @field_validator(
+        "model_profile_path",
+        "model_env_path",
+        "model_credentials_path",
+        "dsh_executable",
+        "dsh_home",
+        "dsh_agents_home",
+    )
+    @classmethod
+    def expand_operator_home(cls, value: Path | None) -> Path | None:
+        """dotenv不经过交互shell，部署路径中的~需显式展开。"""
+        return value.expanduser() if value is not None else None
 
     def database_url(self, *, test: bool = False) -> URL:
         """由离散配置构造连接；测试库强制增加 _test 后缀。"""
