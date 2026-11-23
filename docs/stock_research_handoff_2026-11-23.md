@@ -2,6 +2,8 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，再接续阶段一。
 
+**Mac mini 缺少行情 SQLite 时，先读[行情数据接入说明](stock_research_data_bootstrap_2026-11-23.md)**：包含原机文件位置、来源工作树准备、首次/增量同步、两个路径配置的对应关系，以及 Personal services 已知远端和待核实的本地路径。
+
 ## 两个分支
 
 - `codex/stock-research`：新研究应用的开发分支，基线严格为上游 `22dc8c653f66486ae408e1ebfafdbfd2da43ba3c`。包含 plan.md、因子出处核对、研究依赖和基础模块。
