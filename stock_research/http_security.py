@@ -58,7 +58,7 @@ def install_security(app: FastAPI, settings: Settings) -> None:
                 response = error_response(request, 401, Code.UNAUTHENTICATED, "需要研究API身份")
                 response.headers["WWW-Authenticate"] = "Bearer"
                 return response
-            if not operator and request.method != "GET":
+            if not operator and (request.method != "GET" or request.url.path.startswith("/v1/chat-turns")):
                 return error_response(request, 403, Code.FORBIDDEN, "此研究身份仅允许查询")
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"

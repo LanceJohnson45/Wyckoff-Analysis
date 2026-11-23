@@ -21,7 +21,14 @@ def reject_json_constant(value: str) -> None:
 class DshTransport:
     """单阶段拥有一个Harness进程和一个SDK会话。"""
 
-    def __init__(self, process: asyncio.subprocess.Process, session_id: str, *, budget: int = 20) -> None:
+    def __init__(
+        self,
+        process: asyncio.subprocess.Process,
+        session_id: str,
+        *,
+        budget: int = 20,
+        allowed_tools: tuple[str, ...] = ALLOWED_TOOLS,
+    ) -> None:
         self.process = process
         self.session_id = session_id
         self.events: list[dict[str, object]] = []
@@ -32,11 +39,19 @@ class DshTransport:
         self.bytes_read = 0
         self.tool_calls = 0
         self.budget = budget
+        self.allowed_tools = allowed_tools
         self.stderr_task = asyncio.create_task(self.read_stderr())
 
     @classmethod
     async def start(
-        cls, executable: Path, root: Path, environment: dict[str, str], session_id: str, *, budget: int = 20
+        cls,
+        executable: Path,
+        root: Path,
+        environment: dict[str, str],
+        session_id: str,
+        *,
+        budget: int = 20,
+        allowed_tools: tuple[str, ...] = ALLOWED_TOOLS,
     ) -> "DshTransport":
         """argv不经shell，独立进程组便于取消时回收MCP后代。"""
         process = await asyncio.create_subprocess_exec(
@@ -51,7 +66,7 @@ class DshTransport:
             start_new_session=True,
             limit=2 * 1024 * 1024,
         )
-        return cls(process, session_id, budget=budget)
+        return cls(process, session_id, budget=budget, allowed_tools=allowed_tools)
 
     async def read_stderr(self) -> None:
         """诊断也限额，不能让未消费的stderr堵住模型进程。"""
@@ -104,7 +119,11 @@ class DshTransport:
         if event.get("type") == "tool/call":
             self.tool_calls += 1
             data = event.get("data")
-            if not isinstance(data, dict) or data.get("name") not in ALLOWED_TOOLS or self.tool_calls > self.budget:
+            if (
+                not isinstance(data, dict)
+                or data.get("name") not in self.allowed_tools
+                or self.tool_calls > self.budget
+            ):
                 raise DshProtocolError("Harness工具调用越界或超限")
 
     def kill_group(self, signum: int) -> None:

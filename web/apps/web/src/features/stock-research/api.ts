@@ -4,6 +4,7 @@ import { strategySchema, researchId as id, researchDay as day, researchHash as h
 import { stockObservationSchema } from './stock-contract'
 import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strategyParametersSchema, type ParameterValues } from './parameter-contract'
 import { preparationPageSchema } from './preparation-contract'
+import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -144,5 +145,26 @@ export async function publishParameterVersion(strategy: Strategy, parameterId: s
 export async function readPreparations(target: string, page: number, signal?: AbortSignal) {
   const result = await request(`/v1/preparations?target_session=${day.parse(target)}&page=${page}&page_size=10`, preparationPageSchema, { signal })
   if (result.items.some(item => item.target_session !== target)) throw new ResearchApiError('准备回执日期与当前查询不一致，请重新连接', 503, 'invalid_response')
+  return result
+}
+
+export async function readChatTurns(reportId: string, page: number, conversationId?: string, signal?: AbortSignal) {
+  const result = await request(`/v1/chat-turns?report_id=${id.parse(reportId)}&page=${page}&page_size=10${conversationId ? `&conversation_id=${id.parse(conversationId)}` : ''}`, chatPageSchema, { signal })
+  if (result.items.some(turn => turn.report_id !== reportId || (conversationId && turn.conversation_id !== conversationId))) throw new ResearchApiError('问答历史与当前报告或会话不一致', 503, 'invalid_response')
+  return result
+}
+export async function readChatTurn(turnId: string, reportId: string, signal?: AbortSignal) {
+  const result = await request(`/v1/chat-turns/${id.parse(turnId)}`, chatTurnSchema, { signal })
+  if (result.id !== turnId || result.report_id !== reportId) throw new ResearchApiError('问答响应与当前报告不一致', 503, 'invalid_response')
+  return result
+}
+export async function createChatTurn(body: CreateChatTurn, key: string) {
+  const result = await request('/v1/chat-turns', chatTurnSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '问答提交结果未确认，请确认原提交后再发送新问题')
+  if (result.report_id !== body.report_id || result.question !== body.question.trim() || result.parent_turn_id !== (body.parent_turn_id || null)) throw new ResearchApiError('问答提交响应不一致，请确认原提交', 503, 'invalid_response')
+  return result
+}
+export async function cancelChatTurn(turnId: string, reportId: string) {
+  const result = await request(`/v1/chat-turns/${id.parse(turnId)}/cancel`, chatTurnSchema, { method: 'POST' }, '取消结果未确认，请刷新问答状态')
+  if (result.id !== turnId || result.report_id !== reportId) throw new ResearchApiError('取消响应与当前问答不一致', 503, 'invalid_response')
   return result
 }

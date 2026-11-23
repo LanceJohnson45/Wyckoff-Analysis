@@ -34,3 +34,5 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 后续源码保护已覆盖研究包递归文件及生产engine_hash，并固定模块加载版本；代码变更后须重启进程，旧运行仍只读，新分析使用force关联父版本。量化缓存也按源码失效，详见[源码版本保护](stock_research_source_guard.md)。旧检查点的顶层源码摘要保持原语义，不重写历史。
 
 参数版本后台已接通：CLI run与HTTP新建先解析当前发布或operator基线，物化私有不可变文件并将parameter_sources冻结到清单；当前配置改变不重写旧运行。analyze/benchmark仍使用operator指定文件，详情见[参数版本](stock_research_parameters.md)。
+
+固定报告问答复用精简Harness、传输监督和脱敏回执，使用独立八工具名单及证据注册表，不扩展选择/评议原有两工具边界。私有GET身份由临时0600文件注入受控MCP并在收尾删除，配置只含路径；问答默认不自动重试provider失败，详见[研究问答](stock_research_chat.md)。

@@ -501,4 +501,6 @@ flowchart LR
 
 **输入准备回执**：run建立前的独立持久化尝试，记录参数/快照/量化/冻结阶段和真实质量。unconfirmed保持未知，ready仅确认输入已固定并关联run；failed/cancelled不清空历史报告或名单。API及CLI默认/指定快照入口共用，详情见[准备回执](docs/stock_research_preparations.md)。
 
-**固定报告研究查询**：以report_id限定市场、行业/主题强度、股票比较和规则。分组有效分母/NULL沿原产物，SQL分页不重新计算得分；比较共享同一快照。研究八项MCP与Personal原三项入口分离，尚不等于研究聊天模型已注册。
+**固定报告研究查询**：以report_id限定市场、行业/主题强度、股票比较和规则。分组有效分母/NULL沿原产物，SQL分页不重新计算得分；比较共享同一快照。独立研究八项MCP与Personal原三项入口分离；固定报告问答另使用范围绑定的八项规范工具。
+
+**固定报告研究问答**：chat_turns以报告与父问答固定会话；父锚点CAS和Idempotency-Key防并发续接及重复提交。后台隔离模型通过本轮只读工具取得引用，claims逐值校验，终态不覆盖；仅operator可读写，API_READ_TOKEN不能读取私人问答。详见[研究问答](docs/stock_research_chat.md)。

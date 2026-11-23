@@ -4,7 +4,7 @@ import asyncio
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 from stock_research.artifacts import write_once
 from stock_research.decisions import ReviewDecision, SelectionDecision, validate_decision
@@ -28,10 +28,10 @@ class StageResult(FrozenModel):
     receipt_path: str
 
 
-def verify_boundary(path: Path, *, calls: int = 0) -> dict[str, object]:
+def verify_boundary(path: Path, *, calls: int = 0, allowed_tools: tuple[str, ...] = ALLOWED_TOOLS) -> dict[str, object]:
     """真实注册目录必须完全匹配，调用数与SDK事件流相互校验。"""
     data = json.loads(path.read_text())
-    if data.get("valid") is not True or data.get("names") != sorted(ALLOWED_TOOLS) or data.get("calls") != calls:
+    if data.get("valid") is not True or data.get("names") != sorted(allowed_tools) or data.get("calls") != calls:
         raise DshProtocolError("Harness实际工具目录或调用回执不符合研究边界")
     return data
 
@@ -82,21 +82,29 @@ async def invoke_model(
     raise AssertionError("不可达的结构修正状态")
 
 
+class ReceiptContext(Protocol):
+    """回执只依赖上下文摘要，选择与对话不互相借用业务角色。"""
+
+    content_hash: str
+
+
 def write_receipt(
     path: Path,
-    context: EvidenceContext,
+    context: ReceiptContext,
     connection: ModelConnection,
     transport: DshTransport | None,
     *,
     status: str,
     error: str | None,
     started: datetime,
+    prompt_hash: str | None = None,
+    additional_secrets: tuple[str, ...] = (),
 ) -> None:
     """原始事件、请求、用量和错误留档，凭据字面值永不写入产物。"""
     body = {
         "context_hash": context.content_hash,
         "model": connection.model_dump(mode="json"),
-        "prompt_hash": prompt_identity(),
+        "prompt_hash": prompt_hash or prompt_identity(),
         "started": started.isoformat(),
         "finished": now().isoformat(),
         "status": status,
@@ -107,6 +115,8 @@ def write_receipt(
         "stderr": bytes(transport.stderr).decode(errors="replace") if transport else "",
     }
     sanitized = redact(body, connection.api_key.get_secret_value())
+    for secret in additional_secrets:
+        sanitized = redact(sanitized, secret)
     write_once(path, json.dumps({**sanitized, "content_hash": digest(sanitized)}, ensure_ascii=False, indent=2) + "\n")
 
 

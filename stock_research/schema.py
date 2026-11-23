@@ -246,6 +246,26 @@ PARAMETER_ACTIVATIONS = execution_table(
     Column("parameter_uuid", String(36), ForeignKey(PARAMETER_SETS.c.uuid), nullable=False),
     UniqueConstraint("workspace", "strategy", "revision"),
 )
+# lint-redline:ignore PS-10 问答引用固定报告，根/父问答使用表内外键；根的parent为空。
+CHAT_TURNS = execution_table(
+    "chat_turns",
+    Column("report_uuid", String(36), ForeignKey(RESEARCH_REPORTS.c.uuid), nullable=False),
+    Column("conversation_uuid", String(36), ForeignKey("stock_research.chat_turns.uuid"), nullable=False),
+    Column("parent_uuid", String(36), ForeignKey("stock_research.chat_turns.uuid"), nullable=True),
+    Column("revision", Integer, nullable=False),
+    Column("status", String(32), nullable=False),
+    Column("key_hash", String(64), nullable=False),
+    Column("request_hash", String(64), nullable=False),
+    UniqueConstraint("workspace", "key_hash"),
+    UniqueConstraint("workspace", "parent_uuid"),
+    UniqueConstraint("conversation_uuid", "revision"),
+)
+Index(
+    "idx_chat_turns_workspace_report_created",
+    CHAT_TURNS.c.workspace,
+    CHAT_TURNS.c.report_uuid,
+    CHAT_TURNS.c.create_time,
+)
 
 
 def schema_ddl() -> str:

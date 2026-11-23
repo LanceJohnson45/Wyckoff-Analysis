@@ -11,8 +11,10 @@ from pydantic import UUID4
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from stock_research.chat_manager import ChatManager
 from stock_research.config import Settings
 from stock_research.http_actions import register_actions
+from stock_research.http_chat import router as chat_router
 from stock_research.http_events import register_events
 from stock_research.http_observations import register_observations
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
@@ -26,6 +28,7 @@ from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
 from stock_research.schema import (
     API_REQUESTS,
+    CHAT_TURNS,
     PARAMETER_ACTIVATIONS,
     PARAMETER_PROFILES,
     PREPARATION_ATTEMPTS,
@@ -39,6 +42,7 @@ from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
 RUNTIME_TABLES = (
+    CHAT_TURNS,
     RESEARCH_RUNS,
     API_REQUESTS,
     WATCHLIST_ITEMS,
@@ -57,7 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = database_engine(config)
-        manager = None
+        manager = chat = None
         try:
             async with engine.connect() as connection:
                 for table in RUNTIME_TABLES:
@@ -65,12 +69,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             app.state.store = RunStore(engine, config.workspace)
             app.state.settings = config
             manager = app.state.manager = RunManager(app.state.store, config)
+            # 执行锁会占用PG连接，共享容量才能为模型的只读证据查询留下连接。
+            chat = app.state.chat = ChatManager(
+                app.state.store, config, admission=manager.admission, peer_tasks=manager.tasks
+            )
+            manager.peer_tasks = chat.tasks
             await manager.restore()
+            await chat.restore()
             yield
         finally:
             try:
-                if manager:
-                    await asyncio.wait_for(manager.close(), 25)
+                outcomes = await asyncio.wait_for(
+                    asyncio.gather(*(owner.close() for owner in (chat, manager) if owner), return_exceptions=True), 25
+                )
+                if any(isinstance(outcome, BaseException) for outcome in outcomes):
+                    structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
             except (TimeoutError, SQLAlchemyError, OSError):
                 structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
             finally:
@@ -88,6 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_reads(app)
     register_reports(app)
     app.include_router(report_query_router)
+    app.include_router(chat_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)

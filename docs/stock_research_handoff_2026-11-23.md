@@ -1,5 +1,18 @@
 # 股票研究开发交接（2026-11-23）
 
+
+## 续接检查点：固定报告研究问答
+
+上一批固定报告查询已提交06eab5d1。本批新增chat_turns（显式init-schema后22表），POST创建/GET历史及单问/显式取消与Agent内问答接线。每问固定report_id，幂等键复用原记录，父问答CAS只允许一个后继；历史从PG重建最多六问/24000字符。私有问答仅operator可读写，API_READ_TOKEN连GET也拒绝。研究运行与问答共享两席容量，防止持有执行锁后耗尽证据查询连接；满员重放原请求仍可读。
+
+独立DSH复用可信主模型与原监督边界，固定八项规范工具，没有报告/URL/SQL/文件参数。工具实际成功返回的facts进入本轮注册表，结构化观点ref及数值claims逐值检查；一次JSON修正包含具体错误且共享deadline/调用预算。180秒、20次调用；当前问答不自动重试provider失败，不能据此声明plan的一次失败重试已覆盖问答。最小GET身份写入本轮home的0600临时文件，配置只含路径，收尾删除；DSH会清理凭据形状的环境变量，不能靠隐式继承TOKEN。模型凭据不交给MCP，回执同时脱敏两种身份。另以独立临时上下文目录实际stdio调用八工具，6658项事实且原执行注册表未改；API正常重启后，前端仍读回同一completed记录及两条失败历史。
+
+真实主模型auto/deepseek-v4.1-flash的问答a45bf9c4-88ef-4c64-a258-89b84139e031已completed，固定原cf8da076报告修订3。report_read/run_status/market_overview实际三次成功，注册4335项事实，20条claims独立重新验证，并从新PG连接和实际前端客户端读回；相同键返回原UUID，READ身份403，原报告不变，Harness及MCP进程回收、临时身份删除。另有两条failed保留：第一条工具启动被TOKEN清理阻断，第二条输出/修正未过契约；修正后新建记录成功，失败不算成功或被删掉。关闭后的tool-manifest会随工具卸载变空/invalid，执行期间目录由初始化及回答前校验，不应把关闭后文件当作仍运行目录。
+
+最终冻结源码后完整Python5991通过（无skip、50旧警告），问答/运行管理/执行器22通过；完整Web gate为frozen-lockfile、TS strict、Web390、API221/默认两项外部Upstash跳过、Web/Pages-functions构建。Ruff/格式、质量、红线、workflow/dependency hygiene及daily dry-run通过；dry-run明确注入合成模型/API配置，不调用生产或通知。42份生产JS不含研究operator/只读/模型凭据。Python LOC139531/+61.9%、TS35459/+90.7%旧基线警告保留，本批增长对应问答存储/执行/工具/前端。正常登录后的真实按钮和图表仍未验收；Mac锁屏、IAB仍在/login。wiki checkout不存在，远端CI、整体独立审查及正式部署未验收。
+
+接续完整股票池枚举/搜索、主题及自选维护实际消费、已确认锚点叠加、行情更新协调/局部量化降级、Personal唯一调度通知和Mac部署。保持总体goal继续，不把本批问答交付视为plan完成。不修改已有Personal工作树、不发送通知、不发布主workspace参数。
+
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
 ## 当前检查点：固定报告市场/分组/比较/规则查询

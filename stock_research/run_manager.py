@@ -80,12 +80,20 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
 class RunManager:
     """一个API实例最多拥有两个任务，进程间最终执行权由数据库锁约束。"""
 
-    def __init__(self, store: RunStore, settings: Settings) -> None:
+    def __init__(
+        self,
+        store: RunStore,
+        settings: Settings,
+        *,
+        admission: asyncio.Lock | None = None,
+        peer_tasks: dict[str, asyncio.Task[None]] | None = None,
+    ) -> None:
         self.store, self.settings = store, settings
         self.requests = RequestStore(store)
         self.tasks: dict[str, asyncio.Task[None]] = {}
         self.closing = False
-        self.admission = asyncio.Lock()
+        self.admission = admission or asyncio.Lock()
+        self.peer_tasks = peer_tasks if peer_tasks is not None else {}
 
     async def submit(self, key: str, data: CreateRun) -> str:
         """相同key重放原运行；更换载荷冲突，冻结和绑定中断均可恢复。"""
@@ -102,7 +110,7 @@ class RunManager:
         async with self.requests.claim(key, data.model_dump(mode="json")) as request:
             run_id = await self.requests.frozen_run(request)
             if run_id is None:
-                if len(self.tasks) >= 2:
+                if len(self.tasks) + len(self.peer_tasks) >= 2:
                     raise ResearchConflict("研究运行容量已满")
                 run_id = await prepare_from_market(self.store, self.settings, data, request["uuid"])
             if request["run_uuid"] is None:
@@ -117,7 +125,7 @@ class RunManager:
         if run_id in self.tasks:
             return
         ensure_source_current()
-        if self.closing or len(self.tasks) >= 2:
+        if self.closing or len(self.tasks) + len(self.peer_tasks) >= 2:
             raise ResearchConflict("研究任务正在关闭或容量已满")
         task = asyncio.create_task(self.run(run_id))
         self.tasks[run_id] = task
@@ -153,12 +161,15 @@ class RunManager:
     async def retry(self, run_id: str) -> None:
         """仅补未成功阶段；已完成运行必须通过force新建版本。"""
         ensure_source_current()
-        row = await self.store.row(RESEARCH_RUNS, run_id)
-        if row["status"] == "completed" or run_id in self.tasks:
-            raise ResearchConflict("当前运行不能重试")
-        async with self.store.execution_lock(run_id):
-            await self.store.recover_stages(run_id)
-        self.start(run_id)
+        async with self.admission:
+            if self.closing or len(self.tasks) + len(self.peer_tasks) >= 2:
+                raise ResearchConflict("研究任务正在关闭或容量已满")
+            row = await self.store.row(RESEARCH_RUNS, run_id)
+            if row["status"] == "completed" or run_id in self.tasks:
+                raise ResearchConflict("当前运行不能重试")
+            async with self.store.execution_lock(run_id):
+                await self.store.recover_stages(run_id)
+            self.start(run_id)
 
     async def restore(self) -> None:
         """只恢复API创建的未结束任务，不接管CLI独立运行。"""

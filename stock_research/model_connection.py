@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 import yaml
 from pydantic import Field, SecretStr, field_validator
 
+from stock_research.config import Settings
 from stock_research.models import FrozenModel
 
 MODEL_ENV_SCRIPT = """set -e
@@ -48,6 +49,23 @@ class ModelConnection(FrozenModel):
         ):
             raise ValueError("模型地址须为无凭据、查询串或fragment的HTTP(S)地址")
         return value.rstrip("/")
+
+
+def primary_model(settings: Settings) -> ModelConnection:
+    """选择operator的单一可信连接，选股与交互共享相同来源及输出上限。"""
+    if bool(settings.model_env_path) == bool(settings.model_profile_path):
+        raise ValueError("须选择一个可信模型配置来源")
+    connection = (
+        load_profile_connection(
+            settings.model_profile_path,
+            settings.model_credentials_path,
+            provider=settings.model_provider,
+            model=settings.model,
+        )
+        if settings.model_profile_path
+        else load_model_connection(settings.model_env_path, model=settings.model, api=settings.model_api)
+    )
+    return connection.model_copy(update={"output_tokens": settings.model_output_tokens})
 
 
 def load_model_connection(path: Path, *, model: str = "", api: str = "openai-completions") -> ModelConnection:

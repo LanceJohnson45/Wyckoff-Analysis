@@ -4,9 +4,10 @@ import { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations)$`)
-const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters)$`)
+const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?)$`)
+const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters|chat-turns(?:/${UUID}/cancel)?)$`)
 const MAX_BODY_BYTES = 8192
+const CHAT_BODY_BYTES = 49152
 
 function fail(res: ServerResponse, status: 403 | 404 | 413 | 503, message: string): void {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
@@ -28,26 +29,26 @@ export function allowedResearchRoute(method: string | undefined, pathname: strin
   return method === 'GET' ? READ_PATH.test(pathname) : method === 'POST' && WRITE_PATH.test(pathname)
 }
 
-async function requestBody(req: IncomingMessage): Promise<ArrayBuffer | undefined> {
+async function requestBody(req: IncomingMessage, maximum: number): Promise<ArrayBuffer | undefined> {
   if (req.method !== 'POST') return undefined
   const chunks: Buffer[] = []
   let bytes = 0
   for await (const chunk of req) {
     const part = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
     bytes += part.byteLength
-    if (bytes > MAX_BODY_BYTES) throw new RangeError('body limit')
+    if (bytes > maximum) throw new RangeError('body limit')
     chunks.push(part)
   }
   return Uint8Array.from(Buffer.concat(chunks)).buffer
 }
 
-async function forward(req: IncomingMessage, res: ServerResponse, target: URL, token: string): Promise<void> {
+async function forward(req: IncomingMessage, res: ServerResponse, target: URL, token: string, maximum: number): Promise<void> {
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
   for (const key of ['content-type', 'idempotency-key', 'last-event-id']) {
     const value = req.headers[key]
     if (typeof value === 'string') headers[key] = value
   }
-  const body = await requestBody(req)
+  const body = await requestBody(req, maximum)
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 135_000)
   const cleanup = () => { clearTimeout(timer); controller.abort() }
@@ -92,8 +93,9 @@ export function stockResearchProxy(environment: Record<string, string>): Plugin 
         const route = new URL(req.url || '/', 'http://127.0.0.1')
         const allowed = allowedResearchRoute(req.method, route.pathname)
         if (!allowed) { fail(res, 404, '研究入口不存在'); return }
-        if (Number(req.headers['content-length']) > MAX_BODY_BYTES) { fail(res, 413, '研究请求过大'); req.resume(); return }
-        try { await forward(req, res, new URL(route.pathname + route.search, `http://127.0.0.1:${port}`), token) }
+        const maximum = route.pathname === '/v1/chat-turns' && req.method === 'POST' ? CHAT_BODY_BYTES : MAX_BODY_BYTES
+        if (Number(req.headers['content-length']) > maximum) { fail(res, 413, '研究请求过大'); req.resume(); return }
+        try { await forward(req, res, new URL(route.pathname + route.search, `http://127.0.0.1:${port}`), token, maximum) }
         catch { if (!res.headersSent) fail(res, 413, '研究请求过大') }
       })
     },

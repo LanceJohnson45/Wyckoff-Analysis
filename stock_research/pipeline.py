@@ -17,7 +17,7 @@ from stock_research.decisions import ResearchPoint, ReviewDecision, SelectionDec
 from stock_research.evidence import EvidenceContext, build_context
 from stock_research.executor import StageResult, execute_stage, verify_runtime
 from stock_research.identity import digest, new_id, now
-from stock_research.model_connection import ModelConnection, load_model_connection, load_profile_connection
+from stock_research.model_connection import ModelConnection, primary_model
 from stock_research.models import Snapshot
 from stock_research.prompts import prompt_identity
 from stock_research.run_store import RunStore
@@ -34,18 +34,9 @@ def model_connections(settings: Settings) -> dict[str, ModelConnection]:
     """连接在执行前冻结，每个策略/角色可独立选已注册模型。"""
     # lint-redline:ignore SQL-02 固定策略/角色配置键，无SQL标识符或外部输入。
     keys = {f"{strategy}.{role}" for strategy in STRATEGIES for role in ("select", "review")}
-    if settings.models_by_role.keys() - keys or bool(settings.model_env_path) == bool(settings.model_profile_path):
+    if settings.models_by_role.keys() - keys:
         raise ValueError("须选择一个可信模型配置来源，角色映射不能包含未知键")
-    connection = (
-        load_profile_connection(
-            settings.model_profile_path,
-            settings.model_credentials_path,
-            provider=settings.model_provider,
-            model=settings.model,
-        )
-        if settings.model_profile_path
-        else load_model_connection(settings.model_env_path, model=settings.model, api=settings.model_api)
-    )
+    connection = primary_model(settings)
     result = {}
     for key in sorted(keys):
         model = settings.models_by_role.get(key, connection.model)

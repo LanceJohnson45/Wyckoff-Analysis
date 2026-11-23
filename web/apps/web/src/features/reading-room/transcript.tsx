@@ -150,7 +150,7 @@ function ReadingRoomMainContent({
   onResumeRun: () => void
   onClearRunCheckpoint: () => void
 }) {
-  if (activeTab === 'research') return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">正在打开策略研究…</p>}><StockResearchPanel onDiscuss={onStart} /></Suspense>
+  if (activeTab === 'research') return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">正在打开策略研究…</p>}><StockResearchPanel /></Suspense>
   if (activeTab === 'desk') {
     return (
       <div className="mx-auto w-full max-w-5xl px-2 py-1 animate-fade-in-up">
