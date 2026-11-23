@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -150,3 +151,18 @@ def test_actual_query_mcp_exports_only_three_read_tools(tmp_path: Path) -> None:
             assert not (await session.list_resources()).resources
 
     asyncio.run(scenario())
+
+
+def test_invalid_mcp_configuration_never_logs_token_input(tmp_path: Path) -> None:
+    invalid = "synthetic-query-token-must-not-be-logged "
+    result = subprocess.run(
+        [sys.executable, "-m", "stock_research.query_mcp"],
+        cwd=tmp_path,
+        env={"PATH": os.environ.get("PATH", ""), "STOCK_RESEARCH_QUERY_TOKEN": invalid},
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    assert result.returncode == 1 and not result.stdout
+    assert "只读研究配置无效" in result.stderr
+    assert invalid.strip() not in result.stderr and "Traceback" not in result.stderr

@@ -23,7 +23,7 @@ API进程可配置 `STOCK_RESEARCH_API_READ_TOKEN`，至少32字符且必须与o
 .venv/bin/python -m stock_research.query_mcp
 ```
 
-CLI成功输出白名单JSON，失败退出1且stderr不输出HTTP身份或驱动详情。MCP使用stdio并只注册三项带readOnlyHint的工具：stock_research_latest_report、stock_research_stock、stock_research_run_status；不提供执行、shell、文件资源或通用HTTP。客户端固定loopback，禁环境代理与重定向，单次20秒、响应最多2MB。
+CLI成功输出白名单JSON，失败退出1且stderr不输出HTTP身份或驱动详情。MCP启动时专用配置无效或文件不可用，也只输出固定脱敏错误并退出1，不打印Pydantic异常、配置原值或traceback。MCP使用stdio并只注册三项带readOnlyHint的工具：stock_research_latest_report、stock_research_stock、stock_research_run_status；不提供执行、shell、文件资源或通用HTTP。客户端固定loopback，禁环境代理与重定向，单次20秒、响应最多2MB。
 
 最新报告可为partial或late，应先固定其run再追问股票。模型须区分量化合格池、正式初选、交叉意见及数据缺失，引用返回的snapshot和ref；这些工具不提供交易许可。
 

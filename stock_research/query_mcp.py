@@ -6,7 +6,7 @@ from typing import Annotated
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
-from pydantic import UUID4, Field
+from pydantic import UUID4, Field, ValidationError
 
 from stock_research.query_client import QueryError, ResearchReader
 from stock_research.query_settings import QuerySettings
@@ -53,7 +53,11 @@ def create_server(reader: ResearchReader) -> FastMCP:
 
 def main() -> None:
     """启动仅加载专用查询配置，stdio stdout保留给协议。"""
-    create_server(ResearchReader(QuerySettings())).run(transport="stdio")
+    try:
+        settings = QuerySettings()
+    except (ValidationError, OSError):
+        raise SystemExit("只读研究配置无效，请检查专用授权文件及服务端口；不输出配置原值") from None
+    create_server(ResearchReader(settings)).run(transport="stdio")
 
 
 if __name__ == "__main__":
