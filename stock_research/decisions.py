@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from stock_research.evidence import EvidenceContext
+from stock_research.identity import canonical_json
 from stock_research.models import FrozenModel, normalize_symbol
 
 
@@ -69,7 +70,9 @@ class ReviewItem(FrozenModel):
     objections: tuple[ResearchPoint, ...] = Field(max_length=4)
     confirmation_conditions: tuple[ResearchPoint, ...] = Field(max_length=4)
     claims: tuple[EvidenceClaim, ...] = Field(min_length=1, max_length=12)
-    data_limitations: tuple[str, ...]
+    data_limitations: tuple[str, ...] = Field(
+        description="只能逐字选取固定输入limitations中的条目；没有适用条目时填空数组"
+    )
     _normalize = field_validator("symbol")(normalize_symbol)
 
 
@@ -106,12 +109,10 @@ def validate_item(context: EvidenceContext, item: SelectionItem | ReviewItem) ->
     substantive = False
     for claim in item.claims:
         fact = context.resolve(claim.ref)
-        if (
-            claim.ref not in references
-            or fact.symbol not in {None, item.symbol}
-            or not same_value(claim.value, fact.value)
-        ):
-            raise ValueError("声明数值与固定证据或观点引用不一致")
+        if fact.symbol not in {None, item.symbol}:
+            raise ValueError(f"claim引用了其他股票的事实：{claim.ref}")
+        if not same_value(claim.value, fact.value):
+            raise ValueError(f"声明数值与固定证据不一致：{claim.ref}，应为{canonical_json(fact.value)}")
         substantive |= fact.symbol == item.symbol and isinstance(fact.value, (float, bool))
     if not substantive:
         raise ValueError("缺少该股自身的数值或条件证据")
@@ -131,8 +132,12 @@ def validate_decision(
     if isinstance(decision, ReviewDecision):
         if decision.target_selection_id != target_selection_id or set(symbols) != set(context.symbols):
             raise ValueError("互评引用了错误初选版本或遗漏目标")
-        if any(not set(item.data_limitations) <= set(context.limitations) for item in decision.items):
-            raise ValueError("互评包含未注册的数据限制")
+        for item in decision.items:
+            if not set(item.data_limitations) <= set(context.limitations):
+                raise ValueError("data_limitations只能逐字选取固定limitations，或填空数组；不能补写摘要")
+            available = context.facts.get(f"{context.strategy}/{item.symbol}/calculation_available")
+            if available is not None and available.value is False and item.stance != "insufficient_evidence":
+                raise ValueError(f"{item.symbol}缺少本策略计算，stance须为insufficient_evidence")
     elif decision.empty_reason is not None:
         for ref in decision.empty_reason.evidence_refs:
             context.resolve(ref)

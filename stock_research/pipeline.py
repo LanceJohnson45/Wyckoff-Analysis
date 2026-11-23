@@ -2,12 +2,12 @@
 
 import asyncio
 import hashlib
-import logging
 from collections.abc import Coroutine
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+import structlog
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -27,7 +27,7 @@ from stock_research.store import load_snapshot, save_snapshot
 from stock_research.wyckoff import WyckoffReport
 
 STRATEGIES = ("martin", "wyckoff")
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 def source_identity() -> str:
@@ -216,7 +216,7 @@ async def execute_run(
             run_id, "partial" if (await store.summary(run_id))["selections"] else "failed", "run_deadline_exceeded"
         )
     except (ValueError, SQLAlchemyError, OSError):
-        logger.exception("研究阶段执行失败", extra={"run_id": run_id})
+        logger.exception("研究阶段执行失败", run_id=run_id)
         await store.recover_stages(run_id, "stage_execution_failed")
         return await store.publish(
             run_id, "partial" if (await store.summary(run_id))["selections"] else "failed", "stage_execution_failed"

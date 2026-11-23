@@ -478,3 +478,5 @@ flowchart LR
 ## 研究运行与报告修订
 
 研究API的202表示冻结输入已落库并受理；completed/partial/failed/cancelled描述研究本身，通知状态另行实现。报告UUID与run内revision绑定固定视图，SSE以revision断点续读。late根据该修订实际创建时间与开盘前一小时期限比较。接口只读/动作及待实现范围见[研究API](docs/stock_research_api.md)。
+
+结构化claim的ref独立指向固定事实，值必须匹配；纯文字观点分别携带有效引用，二者无需重复列举同一ref。互评的数据限制只取本次注册条目；budget耗尽与数值不一致有独立错误。旧失败记录保留，不能用新版验证器追认。

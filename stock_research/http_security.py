@@ -19,14 +19,14 @@ from stock_research.errors import (
     ResearchUnavailable,
 )
 from stock_research.identity import new_id
-from stock_research.schemas.api import ApiResponse, Code, HealthView
+from stock_research.schemas.api import ApiResponse, Code
 
 logger = structlog.get_logger(__name__)
 
 
 def error_response(request: Request, status: int, code: Code, message: str) -> JSONResponse:
     """错误不反射入参、驱动信息、文件路径或凭据。"""
-    body = ApiResponse[HealthView](code=code, message=message, data=None, correlation_id=request.state.correlation_id)
+    body = ApiResponse[None](code=code, message=message, data=None, correlation_id=request.state.correlation_id)
     return JSONResponse(status_code=status, content=body.model_dump(mode="json"), headers={"Cache-Control": "no-store"})
 
 

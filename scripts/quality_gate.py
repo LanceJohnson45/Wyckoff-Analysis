@@ -28,12 +28,25 @@ FUNC_LIMIT_BY_PREFIX = (
     ("web/apps/", 90),
     ("scripts/", 100),
     ("cli/", 100),
+    ("stock_research/cli.py", 100),
 )
 LOC_GROWTH_WARN_PCT = 5
 STALE_WHITELIST_WARN_COUNT = 10
 REPORT_DETAIL_LIMIT = 12
 
-PY_DIRS = ["agents", "app", "cli", "core", "integrations", "pages", "scripts", "tools", "utils", "workflows"]
+PY_DIRS = [
+    "agents",
+    "app",
+    "cli",
+    "core",
+    "integrations",
+    "pages",
+    "scripts",
+    "stock_research",
+    "tools",
+    "utils",
+    "workflows",
+]
 TS_DIRS = ["web/apps/web/src", "web/apps/api/src", "web/packages/shared/src"]
 
 

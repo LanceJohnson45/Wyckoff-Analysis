@@ -2,6 +2,12 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
+## 模型引用契约与质量门禁修正
+
+真实互评失败复核发现ACGL/MRSH价格数值完全正确，拒收原因为claim未在纯文字字段重复列同一ref。v2移除重复要求，保留各观点有效引用、每股自身claim、范围及逐值一致；错误数值返回具体ref和固定值。互评限制列表在prompt schema按本次注册内容枚举，缺本策略计算须insufficient_evidence；修正显示剩余预算，SDK监督采用本阶段实际预算，耗尽独立记tool_budget_exceeded。旧失败记录不追认，需force新运行。API错误报文同时进入OpenAPI。真实新版完整互评尚待验证。
+
+另发现quality_gate的PY_DIRS原先未纳入stock_research，已补扫描全包及CLI层100行规则，其他函数70行；拆分DSH插件配置和协议错误分类后新范围检查通过，无新豁免。新增临时研究包长函数的CI入口回归，证明会被拦截。先前门禁通过的声明仅对应旧扫描范围。研究测试158项及质量门禁5项通过；最终全量Python5954通过、无skip、50条旧警告。Ruff、1177文件格式、新范围quality_gate、hygiene、红线扫描和假值daily dry-run通过；研究包纳入后Python LOC为136309，旧基线增长58.1%属非阻断审查提示，67条依赖警告保留。新版真实完整互评仍待验证，无远端CI或部署声明。
+
 ## 研究API与运行管理续接
 
 已接通仅loopback的 `serve`、独立Bearer身份、Host/Origin检查、显式响应、SQL分页、固定报告修订、SSE游标、HTTP启动/重试/取消及有限后台任务。新增api_requests持久化幂等键摘要，冻结与绑定中断可恢复；启动只恢复API创建的未结束任务，CLI运行独立。执行版本变化要求force新建，报告明确late。独立API身份已写入本机0600的.env，未暴露凭据。详见[API预览](stock_research_api.md)。

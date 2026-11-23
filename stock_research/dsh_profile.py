@@ -68,47 +68,8 @@ def build_profile(root: Path, context_path: Path, context: EvidenceContext, conn
                 "insert": [
                     {"id": "authorization", "name": "@deepseek-ai/dsh-authorization"},
                     {"id": "credentials", "name": "@deepseek-ai/dsh-credentials-local", "config": {"watch": False}},
-                    {
-                        "id": "llm-research",
-                        "name": "@deepseek-ai/dsh-llm-pi-ai",
-                        "config": {
-                            "providers": {
-                                connection.provider: {
-                                    "api": connection.api,
-                                    "baseURL": connection.base_url,
-                                    "apiKeyEnv": "RESEARCH_MODEL_API_KEY",
-                                    "models": [
-                                        {
-                                            "id": connection.model,
-                                            "input": ["text"],
-                                            "contextWindow": connection.context_window,
-                                            "maxTokens": connection.output_tokens,
-                                        }
-                                    ],
-                                    "timeoutMs": 120000,
-                                    "streamIdleTimeoutMs": 60000,
-                                    "retryPolicy": {"mode": "normal", "maxRetries": 0},
-                                }
-                            }
-                        },
-                    },
-                    {
-                        "id": "research-evidence",
-                        "name": "@deepseek-ai/dsh-mcp-client",
-                        "config": {
-                            "transport": "stdio",
-                            "serverName": "research",
-                            "command": sys.executable,
-                            "args": ["-m", "stock_research.evidence_mcp"],
-                            "cwd": str(root.resolve()),
-                            "env": {
-                                "PYTHONPATH": str(Path(__file__).resolve().parent.parent),
-                                "STOCK_RESEARCH_CONTEXT_FILE": str(context_path.resolve()),
-                            },
-                            "toolCallTimeoutMs": 5000,
-                            "failOnStartupError": True,
-                        },
-                    },
+                    model_plugin(connection),
+                    evidence_plugin(root, context_path),
                     {
                         "id": "research-boundary",
                         "name": str(boundary.resolve()),
@@ -135,4 +96,53 @@ def runtime_environment(root: Path, agents_home: Path, connection: ModelConnecti
         "DSH_AGENTS_HOME": str(agents_home.resolve()),
         "DSH_TELEMETRY_DISABLED": "1",
         "RESEARCH_MODEL_API_KEY": connection.api_key.get_secret_value(),
+    }
+
+
+def model_plugin(connection: ModelConnection) -> dict[str, object]:
+    """仅注册所选路线和独立环境凭据引用，禁用provider内部重试。"""
+    return {
+        "id": "llm-research",
+        "name": "@deepseek-ai/dsh-llm-pi-ai",
+        "config": {
+            "providers": {
+                connection.provider: {
+                    "api": connection.api,
+                    "baseURL": connection.base_url,
+                    "apiKeyEnv": "RESEARCH_MODEL_API_KEY",
+                    "models": [
+                        {
+                            "id": connection.model,
+                            "input": ["text"],
+                            "contextWindow": connection.context_window,
+                            "maxTokens": connection.output_tokens,
+                        }
+                    ],
+                    "timeoutMs": 120000,
+                    "streamIdleTimeoutMs": 60000,
+                    "retryPolicy": {"mode": "normal", "maxRetries": 0},
+                }
+            }
+        },
+    }
+
+
+def evidence_plugin(root: Path, context_path: Path) -> dict[str, object]:
+    """固定本次证据文件，模型工具不接受任何路径参数。"""
+    return {
+        "id": "research-evidence",
+        "name": "@deepseek-ai/dsh-mcp-client",
+        "config": {
+            "transport": "stdio",
+            "serverName": "research",
+            "command": sys.executable,
+            "args": ["-m", "stock_research.evidence_mcp"],
+            "cwd": str(root.resolve()),
+            "env": {
+                "PYTHONPATH": str(Path(__file__).resolve().parent.parent),
+                "STOCK_RESEARCH_CONTEXT_FILE": str(context_path.resolve()),
+            },
+            "toolCallTimeoutMs": 5000,
+            "failOnStartupError": True,
+        },
     }

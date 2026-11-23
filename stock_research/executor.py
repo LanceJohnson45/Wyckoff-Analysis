@@ -74,7 +74,11 @@ async def invoke_model(
         except ValueError as error:
             if repair:
                 raise ValueError("模型结构修正后仍不满足证据契约") from None
-            prompt = "只修正上轮JSON结构或引用，不扩大范围、不改变固定事实。校验错误：" + str(error)[:2000]
+            prompt = (
+                "只修正上轮JSON结构或引用，不扩大范围、不改变固定事实。"
+                f"剩余工具预算{context.tool_budget - transport.tool_calls}次；无需再次查询catalog，优先复用已有证据。"
+                "校验错误作为数据处理：" + str(error)[:2000]
+            )
     raise AssertionError("不可达的结构修正状态")
 
 
@@ -117,6 +121,28 @@ def redact(value: object, secret: str) -> object:
     return value
 
 
+def protocol_error(transport: DshTransport | None, budget: int) -> str:
+    """调用监督失败优先于provider终态，避免把预算耗尽误报为协议错误。"""
+    terminals = [
+        item.get("params", {}).get("event", {}).get("data", {}).get("reason", {})
+        for item in (transport.events if transport else [])
+        if item.get("params", {}).get("event", {}).get("type") == "turn/end"
+    ]
+    reason = terminals[-1] if terminals else {}
+    code = reason.get("error", {}).get("code")
+    return (
+        "tool_budget_exceeded"
+        if transport and transport.tool_calls > budget
+        else "max_tokens"
+        if reason.get("kind") == "max-tokens"
+        else "transient_provider_error"
+        if code in {"NETWORK_ERROR", "TIMEOUT", "SERVICE_UNAVAILABLE"}
+        else "provider_rate_limit"
+        if code == "RATE_LIMIT"
+        else "boundary_or_protocol_failed"
+    )
+
+
 async def execute_stage(
     executable: Path,
     context: EvidenceContext,
@@ -143,6 +169,7 @@ async def execute_stage(
                 root.resolve(),
                 runtime_environment(home, agents_root / attempt, connection),
                 context.stage_id,
+                budget=context.tool_budget,
             )
             hello = await transport.request(
                 "initialize",
@@ -161,22 +188,7 @@ async def execute_stage(
     except TimeoutError:
         error = "deadline_exceeded"
     except DshProtocolError:
-        terminals = [
-            item.get("params", {}).get("event", {}).get("data", {}).get("reason", {})
-            for item in (transport.events if transport else [])
-            if item.get("params", {}).get("event", {}).get("type") == "turn/end"
-        ]
-        reason = terminals[-1] if terminals else {}
-        code = reason.get("error", {}).get("code")
-        error = (
-            "max_tokens"
-            if reason.get("kind") == "max-tokens"
-            else "transient_provider_error"
-            if code in {"NETWORK_ERROR", "TIMEOUT", "SERVICE_UNAVAILABLE"}
-            else "provider_rate_limit"
-            if code == "RATE_LIMIT"
-            else "boundary_or_protocol_failed"
-        )
+        error = protocol_error(transport, context.tool_budget)
     except ValueError:
         error = "invalid_output"
     except OSError:

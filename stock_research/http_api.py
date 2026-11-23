@@ -49,7 +49,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             finally:
                 await close_engine(engine)
 
-    app = FastAPI(title="Stock Research", version="1", lifespan=lifespan, docs_url=None, redoc_url=None)
+    app = FastAPI(
+        title="Stock Research",
+        version="1",
+        lifespan=lifespan,
+        docs_url=None,
+        redoc_url=None,
+        responses={status: {"model": ApiResponse[None]} for status in (401, 403, 404, 409, 422, 500, 503)},
+    )
     install_security(app, config)
     register_reads(app)
     register_events(app)

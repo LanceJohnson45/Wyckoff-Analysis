@@ -12,7 +12,7 @@ from mcp.client.stdio import stdio_client
 
 from stock_research.dsh_profile import ALLOWED_TOOLS, build_profile, runtime_environment
 from stock_research.dsh_transport import DshProtocolError, DshTransport
-from stock_research.executor import final_text, verify_boundary, verify_runtime, write_receipt
+from stock_research.executor import final_text, protocol_error, verify_boundary, verify_runtime, write_receipt
 from stock_research.identity import digest, now
 from stock_research.model_connection import ModelConnection, load_model_connection, load_profile_connection
 from tests.stock_research.test_evidence import make_context
@@ -175,5 +175,32 @@ def test_installed_dsh_offline_handshake_has_exact_tool_boundary(tmp_path: Path)
                 assert verify_boundary(manifest)["names"] == sorted(ALLOWED_TOOLS)
         finally:
             await transport.close()
+
+    asyncio.run(scenario())
+
+
+def test_transport_enforces_stage_budget_below_global_maximum(tmp_path: Path) -> None:
+    """自定义阶段预算也由SDK事件监督，不能仅靠工具返回预算错误。"""
+    frame = {
+        "jsonrpc": "2.0",
+        "method": "session/event",
+        "params": {"sessionId": "fixture", "event": {"type": "tool/call", "data": {"name": ALLOWED_TOOLS[0]}}},
+    }
+    executable = tmp_path / "controlled-budget-harness"
+    executable.write_text(
+        f"#!{sys.executable}\nimport sys,time\nsys.stdin.readline()\nprint({json.dumps(json.dumps(frame))},flush=True)\nprint({json.dumps(json.dumps(frame))},flush=True)\ntime.sleep(60)\n"
+    )
+    executable.chmod(0o700)
+
+    async def scenario() -> None:
+        transport = await DshTransport.start(executable, tmp_path, {"PATH": os.environ["PATH"]}, "fixture", budget=1)
+        try:
+            with pytest.raises(DshProtocolError, match="超限"):
+                await transport.request("initialize")
+            assert transport.tool_calls == 2
+            assert protocol_error(transport, 1) == "tool_budget_exceeded"
+        finally:
+            await transport.close()
+        assert transport.process.returncode is not None
 
     asyncio.run(scenario())

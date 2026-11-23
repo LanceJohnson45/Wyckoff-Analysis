@@ -143,3 +143,28 @@ def test_review_requires_every_target_and_immutable_selection_id() -> None:
     body["items"] = []
     with pytest.raises(ValueError, match="遗漏"):
         validate_decision(context, json.dumps(body), target_selection_id="committed-id")
+
+
+def test_verified_claim_can_cite_its_own_ref_without_duplicate_prose_reference() -> None:
+    """结构化claim自身已有引用，正确数值不需要在纯文字段重复列举。"""
+    import json
+
+    context = make_context()
+    body = decision_body(context)
+    body["items"][0]["rationale"]["evidence_refs"] = ["martin/AAPL/qualified"]
+    assert validate_decision(context, json.dumps(body)).items[0].claims[0].value == 11
+    body["items"][0]["claims"][0]["value"] = 12
+    with pytest.raises(ValueError, match="martin/AAPL/factors/close，应为11.0"):
+        validate_decision(context, json.dumps(body))
+
+
+def test_review_prompt_schema_enumerates_only_registered_limitations() -> None:
+    import json
+
+    from stock_research.prompts import stage_prompt
+
+    context = make_context(role="review", pool=[])
+    packet = json.loads(stage_prompt(context, {"selection_id": "fixture"}).split("固定阶段输入：\n", 1)[1])
+    assert packet["schema"]["$defs"]["ReviewItem"]["properties"]["data_limitations"]["items"]["enum"] == list(
+        context.limitations
+    )

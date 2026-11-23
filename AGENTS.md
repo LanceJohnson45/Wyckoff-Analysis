@@ -31,6 +31,7 @@ pnpm --filter @wyckoff/api test
 ## Hard Rules (CI enforced, will block merge)
 
 1. **Pass quality gate** — `.venv/bin/python scripts/quality_gate.py --ci` must pass function-length hard limits. LOC growth warnings are review signals, not automatic failures.
+   The scan includes `stock_research/`; its CLI orchestration keeps the 100-line CLI limit and other research functions use the 70-line default.
    Do not track `.sql` files. Maintain schema definitions in Python and export reviewable DDL through a command; the quality gate checks tracked files.
 
 2. **Pass ruff check** — All Python code must pass `ruff check .` with the project config in `pyproject.toml`.
