@@ -37,6 +37,7 @@ def test_normal_cli_offline_snapshot_reloads_in_new_process(configured: Settings
     """【正常值】快照CLI落盘后，新解释器走读取命令校验同一摘要。"""
     env = {
         **os.environ,
+        "STOCK_RESEARCH_BENCHMARK_PATH": "",
         **{
             f"STOCK_RESEARCH_{key.upper()}": str(getattr(configured, key))
             for key in (

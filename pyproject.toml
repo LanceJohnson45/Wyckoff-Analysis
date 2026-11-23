@@ -43,10 +43,17 @@ wbt = ["wbt>=0.1.6"]
 browser = ["playwright>=1.49"]
 dev = ["pytest>=7.0", "ruff==0.16.2", "pre-commit>=3.7.0"]
 research = [
-    "pydantic-settings==2.12.0", "sqlalchemy[asyncio]==2.0.44", "asyncpg==0.30.0",
-    "aiosqlite==0.21.0", "aiofiles==25.1.0", "exchange-calendars==4.13.3",
-    "fastapi==0.165.0", "uvicorn==0.38.0", "structlog==25.5.0",
+    "pydantic-settings==2.12.0",
+    "sqlalchemy[asyncio]==2.0.44",
+    "asyncpg==0.30.0",
+    "aiosqlite==0.21.0",
+    "aiofiles==25.1.0",
+    "exchange-calendars==4.13.3",
+    "fastapi==0.165.0",
+    "uvicorn==0.38.0",
+    "structlog==25.5.0",
     "akquant==0.3.93",
+    "yfinance==1.7.0",
 ]
 
 [project.scripts]

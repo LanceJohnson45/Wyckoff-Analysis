@@ -3,9 +3,11 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
+
+PUBLIC_GITHUB_API = "https://api.github.com"
 
 
 class Settings(BaseSettings):
@@ -17,6 +19,13 @@ class Settings(BaseSettings):
     artifacts_path: Path = Path(".stock-research")
     universe_path: Path = Path("config/research/universe.json")
     classification_path: Path = Path("config/research/classifications.json")
+    benchmark_path: Path | None = None
+    benchmark_price_tolerance: float = Field(default=0.001, gt=0, le=0.01)
+    public_sp500_repository: str = "datasets/s-and-p-500-companies"
+    public_sp500_file: str = "data/constituents.csv"
+    public_nasdaq100_repository: str = "Gary-Strauss/NASDAQ100_Constituents"
+    public_nasdaq100_file: str = "data/nasdaq100_constituents.json"
+    public_source_max_age_days: int = Field(default=35, ge=1, le=90)
     parameters_path: Path = Path("config/research/baseline-v1.json")
     postgres_host: str = "127.0.0.1"
     postgres_port: int = Field(default=5432, ge=1, le=65535)
@@ -36,6 +45,12 @@ class Settings(BaseSettings):
     model: str = ""
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
+
+    @field_validator("benchmark_path", mode="before")
+    @classmethod
+    def empty_benchmark_path(cls, value: object) -> object:
+        """空配置表示继续使用云端基准，禁止把空串解释为当前目录。"""
+        return None if value == "" else value
 
     def database_url(self, *, test: bool = False) -> URL:
         """由离散配置构造连接；测试库强制增加 _test 后缀。"""

@@ -9,16 +9,20 @@ import sys
 from datetime import date
 from pathlib import Path
 
+import httpx
 from asyncpg import PostgresError
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from stock_research.artifacts import data_lock, write_once
+from stock_research.benchmarks import BenchmarkBundle, fetch_benchmarks, merge_benchmarks
 from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
+from stock_research.identity import digest
 from stock_research.market_sync import sync_market
 from stock_research.models import ClassificationVersion, Snapshot, UniverseVersion
+from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
 from stock_research.schema import schema_ddl
 from stock_research.store import (
@@ -42,6 +46,13 @@ def parser() -> argparse.ArgumentParser:
     sync = commands.add_parser("sync-market", help="从 PG_* 授权行情只读增量同步，不执行云端写入")
     sync.add_argument("--market", choices=["us"], required=True)
     sync.add_argument("--full", action="store_true")
+    benchmarks = commands.add_parser("fetch-benchmarks", help="显式获取带供应商出处的三基准补充文件")
+    benchmarks.add_argument("--as-of", type=date.fromisoformat, required=True)
+    refresh = commands.add_parser("refresh-versions", help="固定公开聚合源提交，不把当前清单冒充严格历史成员")
+    refresh.add_argument("--as-of", type=date.fromisoformat, required=True)
+    refresh.add_argument("--version", required=True)
+    refresh.add_argument("--output-dir", type=Path, required=True)
+    refresh.add_argument("--allow-current-universe", action="store_true")
     snapshot = commands.add_parser("snapshot")
     snapshot.add_argument("--market", choices=["us"], required=True)
     snapshot.add_argument("--as-of", type=date.fromisoformat, required=True)
@@ -84,6 +95,15 @@ def snapshot_command(settings: Settings, as_of: date, *, offline: bool) -> tuple
         )
         start = sessions_ending(as_of, settings.history_rows)[0]
         identity, bars, issues = read_market(settings.local_market_path, start, as_of)
+        extra_limitations = ()
+        if settings.benchmark_path is not None:
+            bundle = BenchmarkBundle.model_validate_json(settings.benchmark_path.read_text(encoding="utf-8"))
+            bars = merge_benchmarks(bars, bundle, as_of, settings.history_rows, settings.benchmark_price_tolerance)
+            identity = "composite:" + digest({"market": identity, "benchmarks": bundle.content_hash})
+            issues = tuple(issue for issue in issues if issue.kind == "stock")
+            extra_limitations = bundle.limitations + (
+                f"基准对拍规则v1:SPY重叠>=100根,OHLC相对容忍={settings.benchmark_price_tolerance},成交量相对容忍=0.01",
+            )
         snapshot = build_snapshot(
             universe,
             classifications,
@@ -93,6 +113,7 @@ def snapshot_command(settings: Settings, as_of: date, *, offline: bool) -> tuple
             coverage_min=settings.coverage_min,
             history_rows=settings.history_rows,
             source_issues=issues,
+            extra_limitations=extra_limitations,
         )
         path = settings.artifacts_path / "snapshots" / f"{snapshot.content_hash}.json"
         if path.exists():
@@ -155,13 +176,30 @@ def doctor(settings: Settings) -> tuple[dict[str, object], int]:
         checks["local_market"] = bool(bars) and not issues
     except (OSError, ValueError, sqlite3.Error, SQLAlchemyError):
         checks["local_market"] = False
+    checks["benchmark_supplement"] = True
+    if settings.benchmark_path is not None:
+        try:
+            bundle = BenchmarkBundle.model_validate_json(settings.benchmark_path.read_text(encoding="utf-8"))
+            checks["benchmark_supplement"] = (
+                bundle.as_of == complete_session and bundle.history_rows == settings.history_rows
+            )
+        except (OSError, ValueError):
+            checks["benchmark_supplement"] = False
     try:
         checks["database"] = asyncio.run(database_command(settings, "doctor"))
     except (OSError, PostgresError, SQLAlchemyError, TimeoutError):
         checks["database"] = False
     ready = all(
         checks[name] is True
-        for name in ("python", "calendar", "universe", "classifications", "local_market", "database")
+        for name in (
+            "python",
+            "calendar",
+            "universe",
+            "classifications",
+            "local_market",
+            "database",
+            "benchmark_supplement",
+        )
     )
     return {"ready": ready, "checks": checks, "api": "not_implemented", "scheduler": "not_connected"}, 0 if ready else 2
 
@@ -170,6 +208,14 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "fetch-benchmarks":
+        return fetch_benchmarks(args.as_of, settings.history_rows, settings.artifacts_path / "benchmarks"), 0
+    if args.command == "refresh-versions":
+        if not args.allow_current_universe:
+            raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")
+        if args.as_of > latest_complete_session():
+            raise ValueError("研究截止日尚未完成收盘")
+        return refresh_versions(settings, args.version, args.as_of, args.output_dir), 0
     if args.command == "snapshot":
         return snapshot_command(settings, args.as_of, offline=args.offline)
     if args.command == "sync-market":
@@ -222,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
         result, status = execute(args, Settings())
     except ValidationError:
         result, status = {"error": "版本、行情或配置校验失败；检查必填字段、时区和摘要"}, 1
-    except (OSError, sqlite3.Error, PostgresError, SQLAlchemyError, TimeoutError) as exc:
+    except (OSError, sqlite3.Error, PostgresError, SQLAlchemyError, httpx.HTTPError, TimeoutError) as exc:
         result, status = {"error": "文件或数据库不可用，请运行 doctor 并检查数据源配置", "type": type(exc).__name__}, 1
     except ValueError as exc:
         result, status = {"error": str(exc)}, 1

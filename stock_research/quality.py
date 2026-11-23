@@ -21,6 +21,7 @@ def build_snapshot(
     coverage_min: float = 0.95,
     history_rows: int = 320,
     source_issues: tuple[QualityIssue, ...] = (),
+    extra_limitations: tuple[str, ...] = (),
 ) -> Snapshot:
     """冻结共同窗口、质量策略和版本全文；同日股票与基准按 kind 分开。"""
     if not 0 < coverage_min <= 1 or history_rows < max(HISTORY_REQUIREMENTS.values()):
@@ -45,7 +46,7 @@ def build_snapshot(
             (b for b in selected if (b.kind, b.symbol) not in invalid), key=lambda b: (b.kind, b.symbol, b.session_date)
         )
     )
-    quality = assess_quality(universe, classifications, clean, as_of, sessions, coverage_min, issues)
+    quality = assess_quality(universe, classifications, clean, as_of, sessions, coverage_min, issues, extra_limitations)
     content = dict(
         as_of=as_of.isoformat(),
         universe=universe.model_dump(mode="json"),
@@ -65,6 +66,7 @@ def assess_quality(
     sessions: list[date],
     threshold: float,
     issues: list[QualityIssue],
+    extra_limitations: tuple[str, ...] = (),
 ) -> QualityReport:
     """覆盖仅扣除有证据停牌；历史不足按策略排除，分类缺失不伪造。"""
     active = universe.active(as_of)
@@ -106,7 +108,7 @@ def assess_quality(
             issues.append(QualityIssue(symbol=symbol, kind="benchmark", reason="incomplete_benchmark_history"))
     denominator = len(active) - len(suspended)
     coverage = aligned / denominator if denominator else 0.0
-    limitations = set(universe.limitations + classifications.limitations)
+    limitations = set(universe.limitations + classifications.limitations + extra_limitations)
     if any(m.obtained_time.date() > as_of for m in universe.members):
         limitations.add("成分取得时间晚于截止日；当前版本回溯可能含存活偏差，非严格历史时点股票池")
     if any(r.obtained_time.date() > as_of for r in classifications.records):
