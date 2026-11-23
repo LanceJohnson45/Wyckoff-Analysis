@@ -8,7 +8,7 @@ import { evidenceValue } from './stock'
 
 export interface ChatSeed { report: ResearchReport; text: string; sequence: number }
 const labels = { pending: '已受理', running: '正在读取证据与回答', completed: '回答已保存', failed: '本次回答未完成', cancelled: '本次问答已取消' }
-const errors: Record<string, string> = { deadline_exceeded: '本次问答超过时间预算', invalid_output: '回答未通过结构或证据核验', provider_rate_limit: '模型服务限流', transient_provider_error: '模型服务暂不可用', execution_interrupted: '执行已中断，未自动重复模型请求', execution_version_changed: '执行版本已变化，请新建问题', chat_execution_failed: '本次问答执行失败，请核对研究服务配置', tool_budget_exceeded: '本轮证据调用预算已用完', boundary_or_protocol_failed: '执行器边界或协议校验未通过', cleanup_failed: '执行器收尾未确认', cancelled: '问答已取消', api_shutdown: '研究服务关闭时取消了问答', transport_error: '研究执行器暂不可用' }
+const errors: Record<string, string> = { deadline_exceeded: '本次问答超过时间预算', invalid_output: '回答未通过结构或证据核验', provider_rate_limit: '模型服务限流', transient_provider_error: '模型服务暂不可用', execution_interrupted: '执行已中断，未自动重复模型请求', execution_version_changed: '执行版本已变化，请新建问题', chat_execution_failed: '本次问答执行失败，请核对研究服务配置', tool_budget_exceeded: '本轮证据调用预算已用完', boundary_or_protocol_failed: '执行器边界或协议校验未通过', cleanup_failed: '执行器收尾未确认', cancelled: '问答已取消', api_shutdown: '研究服务关闭时取消了问答', transport_error: '研究执行器暂不可用', executor_unavailable: '研究执行器不可用，请核对本机安装与权限' }
 const button = 'rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40'
 
 export function ResearchChat({ report, currentReport, seed, bindReport, consumeSeed }: { report: ResearchReport; currentReport: ResearchReport; seed?: ChatSeed; bindReport: (report: ResearchReport) => void; consumeSeed: () => void }) {
@@ -51,6 +51,7 @@ export function ChatTurnView({ turn, onContinue, disabled }: { turn: ChatTurn; o
     <p className="whitespace-pre-wrap break-words text-sm font-medium">{turn.question}</p><p className="text-[11px] text-muted-foreground">会话第 {turn.revision} 问 · {nyTime(turn.create_time)} 纽约 · {labels[turn.status]}{turn.model ? ` · ${turn.model}` : ''}</p>
     {turn.answer && <ChatAnswerView answer={turn.answer} />}
     {turn.error_code && <p className="text-xs text-amber-700 dark:text-amber-300">{errors[turn.error_code] || '本次执行未确认有效回答，请查看保存状态'}</p>}
+    {turn.attempts.length > 0 ? <details className="text-xs"><summary className="cursor-pointer text-muted-foreground">执行尝试 {turn.attempts.length} / 2 · 已确认工具请求 {turn.tool_calls} 次</summary><ol className="mt-2 space-y-2">{turn.attempts.map(attempt => <li key={attempt.number} className="rounded-lg bg-muted/40 p-3"><p>第 {attempt.number} 次 · {labels[attempt.status]} · {attempt.tool_calls === null ? '调用次数待确认' : `工具请求 ${attempt.tool_calls} / ${attempt.tool_budget} 次`}</p>{attempt.error_code && <p className="mt-1">{errors[attempt.error_code] || '本次尝试未完成'}</p>}<p className="mt-1 text-muted-foreground">{nyTime(attempt.started_time)}{attempt.receipt_available ? ' · 回执已保存' : ''}</p></li>)}</ol></details> : <p className="text-[11px] text-muted-foreground">未记录逐次执行明细</p>}
     {turn.status === 'completed' && <p className="text-[11px] text-muted-foreground">本轮引用与数值已核验 · 工具调用 {turn.tool_calls} 次 · 回执已保存</p>}
     <button type="button" className={button} disabled={disabled} onClick={onContinue}>{chatIsActive(turn) ? '查看此会话进度' : '继续此会话'}</button>
   </article>

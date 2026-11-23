@@ -11,8 +11,8 @@ from stock_research.chat_runtime import chat_prompt_identity, execute_chat
 from stock_research.chat_store import ChatStore
 from stock_research.config import Settings
 from stock_research.errors import ResearchConflict, ResearchSourceChanged, ResearchUnavailable
-from stock_research.identity import SHANGHAI, digest
-from stock_research.model_connection import primary_model
+from stock_research.identity import SHANGHAI, digest, now
+from stock_research.model_connection import ModelConnection, primary_model
 from stock_research.observations import frozen_scope
 from stock_research.run_store import RunStore
 from stock_research.schema import CHAT_TURNS
@@ -113,8 +113,7 @@ class ChatManager:
                 async with asyncio.timeout(self.settings.stage_timeout_seconds):
                     connection = await asyncio.to_thread(primary_model, self.settings)
                     await self.chats.transition(identifier, "running", model=connection.model)
-                    result = await execute_chat(self.settings, await self.context(turn), connection)
-                    await self.chats.transition(identifier, result.status, result=result)
+                    await self.execute(turn, connection)
         except ResearchConflict:
             return
         except asyncio.CancelledError:
@@ -129,6 +128,31 @@ class ChatManager:
                 "failed",
                 "execution_version_changed" if isinstance(error, ResearchSourceChanged) else "chat_execution_failed",
             )
+
+    async def execute(self, turn: ChatTurnView, connection: ModelConnection) -> None:
+        """同一拥有者最多重试一次；期限、历史、模型和总调用预算均不重置。"""
+        identifier, context = str(turn.id), await self.context(turn)
+        for attempt in range(2):
+            if now() >= context.deadline:
+                await self.finish_error(identifier, "failed", "deadline_exceeded")
+                return
+            await self.chats.start_attempt(identifier, context)
+            result = await execute_chat(self.settings, context, connection)
+            current = await self.chats.finish_attempt(identifier, result)
+            if current.status == "completed":
+                return
+            if (
+                result.status != "failed"
+                or result.error_code not in {"transient_provider_error", "transport_error"}
+                or attempt
+                or current.tool_calls >= 20
+                or now() >= context.deadline
+            ):
+                await self.chats.transition(identifier, result.status, result=result)
+                return
+            body = context.model_dump(mode="json", exclude={"content_hash"})
+            body["tool_budget"] = 20 - current.tool_calls
+            context = ChatContext(**body, content_hash=digest(body))
 
     async def finish_error(self, identifier: str, status: str, error: str) -> None:
         """失败也等待持久化；无法确认时只记录固定运维错误，不声称已完成。"""

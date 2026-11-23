@@ -482,7 +482,7 @@ doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并�
 
 交付可由用户日常查看与询问的独立工作台。验收真实入口、证据定位、旧报告复查和失败展示。
 
-续接进度：[固定报告研究问答](docs/stock_research_chat.md)已接后台隔离DSH八工具、逐值证据校验、PG幂等/父链、HTTP与Agent问答历史。只读身份拒绝私有问答，问答与选股共用两席容量；当前不自动重试provider失败。[完整股票池浏览](docs/stock_research_universe.md)已接搜索/分页和逐策略状态，缺数成员保留。[主题确认与人工自选](docs/stock_research_input_maintenance.md)已接持久化、日期生效、API/CLI实际消费和Agent维护。已确认锚点叠加已接固定报告HTTP/CLI和Agent个股图表，沿原日期/参数验证且不重算结构；浏览器控件仍待正常登录，API/CLI run已接独立量化worker、按策略任务/尝试、局部继续与只补失败，Agent显示固定量化状态及独立尝试历史；行情协调与部署继续实施。
+续接进度：[固定报告研究问答](docs/stock_research_chat.md)已接后台隔离DSH八工具、逐值证据校验、PG幂等/父链、HTTP与Agent问答历史。只读身份拒绝私有问答，问答与选股共用两席容量；临时provider/传输错误在原截止与工具总预算内至多重试一次，逐次状态和回执保留；未知执行、限流、结构/预算/清理失败不自动重试。[完整股票池浏览](docs/stock_research_universe.md)已接搜索/分页和逐策略状态，缺数成员保留。[主题确认与人工自选](docs/stock_research_input_maintenance.md)已接持久化、日期生效、API/CLI实际消费和Agent维护。已确认锚点叠加已接固定报告HTTP/CLI和Agent个股图表，沿原日期/参数验证且不重算结构；浏览器控件仍待正常登录，API/CLI run已接独立量化worker、按策略任务/尝试、局部继续与只补失败，Agent显示固定量化状态及独立尝试历史；行情协调与部署继续实施。
 
 ### 阶段五 Mac mini自动运行
 

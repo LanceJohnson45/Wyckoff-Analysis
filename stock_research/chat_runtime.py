@@ -13,7 +13,7 @@ from stock_research.config import Settings
 from stock_research.dsh_profile import build_profile, runtime_environment
 from stock_research.dsh_transport import DshProtocolError, DshTransport
 from stock_research.executor import final_text, protocol_error, verify_boundary, verify_runtime, write_receipt
-from stock_research.identity import digest, now
+from stock_research.identity import digest, new_id, now
 from stock_research.model_connection import ModelConnection
 from stock_research.schemas.chat import ChatAnswer, ChatContext, ChatResult
 from stock_research.source_guard import ensure_source_current
@@ -76,8 +76,11 @@ async def invoke_chat(transport: DshTransport, context: ChatContext, manifest: P
         )
         await transport.request("session/wait", {"sessionId": str(context.stage_id)})
         text = final_text(transport.events, start)
-        verify_boundary(manifest, calls=transport.tool_calls, allowed_tools=CHAT_TOOLS)
-        evidence = await asyncio.to_thread(lambda: ChatEvidence.model_validate_json(registry.read_text()))
+        verify_chat_boundary(manifest, calls=transport.tool_calls)
+        try:
+            evidence = await asyncio.to_thread(lambda: ChatEvidence.model_validate_json(registry.read_text()))
+        except OSError:
+            raise DshProtocolError("问答证据注册表不可读取") from None
         if not 1 <= evidence.calls <= transport.tool_calls:
             raise DshProtocolError("问答工具回执与SDK调用不一致")
         try:
@@ -110,13 +113,22 @@ class ChatFiles:
     identity: Path
 
 
+def verify_chat_boundary(path: Path, *, calls: int = 0) -> None:
+    """本地边界文件缺失不是provider网络故障，不能据此重复模型请求。"""
+    try:
+        verify_boundary(path, calls=calls, allowed_tools=CHAT_TOOLS)
+    except OSError:
+        raise DshProtocolError("问答工具目录不可读取") from None
+
+
 def prepare_chat_files(settings: Settings, context: ChatContext, connection: ModelConnection, token: str) -> ChatFiles:
     """问答输入、配置和回执均限定在本次私有目录，不复用其他会话home。"""
-    root = settings.artifacts_path / "chat-executions" / str(context.stage_id)
+    execution_id = new_id()
+    root = settings.artifacts_path / "chat-executions" / str(context.stage_id) / execution_id
     root.mkdir(parents=True, mode=0o700)
     path = root / "context.json"
     write_once(path, context.model_dump_json(indent=2) + "\n")
-    home = settings.dsh_home / "chat" / str(context.stage_id)
+    home = settings.dsh_home / "chat" / str(context.stage_id) / execution_id
     identity = home / "query-identity.json"
     manifest = build_profile(
         home,
@@ -144,7 +156,7 @@ async def initialize_chat(transport: DshTransport, files: ChatFiles, connection:
     )
     if hello.get("serverInfo", {}).get("name") != "deepseek-harness-sdk-runtime":
         raise DshProtocolError("问答Harness握手身份无效")
-    verify_boundary(files.manifest, allowed_tools=CHAT_TOOLS)
+    verify_chat_boundary(files.manifest)
 
 
 async def execute_chat(settings: Settings, context: ChatContext, connection: ModelConnection) -> ChatResult:
@@ -160,7 +172,7 @@ async def execute_chat(settings: Settings, context: ChatContext, connection: Mod
         async with asyncio.timeout(max(0, (context.deadline - started).total_seconds())):
             await verify_runtime(settings.dsh_executable)
             environment = runtime_environment(
-                files.home, settings.dsh_agents_home / "chat" / str(context.stage_id), connection
+                files.home, settings.dsh_agents_home / "chat" / str(context.stage_id) / files.root.name, connection
             )
             transport = await DshTransport.start(
                 settings.dsh_executable,
@@ -179,6 +191,8 @@ async def execute_chat(settings: Settings, context: ChatContext, connection: Mod
         error = protocol_error(transport, context.tool_budget)
     except ValueError:
         error = "invalid_output"
+    except (FileNotFoundError, PermissionError):
+        error = "executor_unavailable"
     except OSError:
         error = "transport_error"
     except asyncio.CancelledError:

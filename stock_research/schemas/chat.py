@@ -69,7 +69,7 @@ class ChatResult(FrozenModel):
     status: Literal["completed", "failed", "cancelled"]
     answer: ChatAnswer | None
     error_code: str | None
-    tool_calls: int
+    tool_calls: int = Field(ge=0)
     context_hash: str
     receipt_path: str
 
@@ -84,6 +84,34 @@ class ChatResult(FrozenModel):
 
 
 ChatStatus = Literal["pending", "running", "completed", "failed", "cancelled"]
+
+
+class ChatAttemptView(ApiModel):
+    number: int = Field(ge=1, le=2)
+    status: Literal["running", "completed", "failed", "cancelled"]
+    error_code: str | None
+    tool_calls: int | None = Field(ge=0)
+    tool_budget: int = Field(ge=1, le=20)
+    context_hash: str = Field(pattern=r"^[0-9a-f]{64}$")
+    deadline: AwareDatetime
+    started_time: AwareDatetime
+    finished_time: AwareDatetime | None
+    receipt_available: bool
+
+    @model_validator(mode="after")
+    def consistent_attempt(self) -> "ChatAttemptView":
+        """未收尾不是失败，已失败不能抹去原因；重试必须用剩余预算。"""
+        if (self.status == "running") != (self.finished_time is None):
+            raise ValueError("问答尝试终态时间不一致")
+        if (self.status in {"failed", "cancelled"}) != bool(self.error_code):
+            raise ValueError("问答尝试错误不一致")
+        if self.finished_time and self.finished_time < self.started_time:
+            raise ValueError("问答尝试时间倒退")
+        if self.status == "completed" and (
+            not self.receipt_available or self.tool_calls is None or self.tool_calls > self.tool_budget
+        ):
+            raise ValueError("问答尝试完成缺少有效回执")
+        return self
 
 
 class ChatTurnView(ApiModel):
@@ -101,6 +129,7 @@ class ChatTurnView(ApiModel):
     source_hash: str
     prompt_hash: str
     tool_calls: int = Field(ge=0)
+    attempts: tuple[ChatAttemptView, ...] = Field(default=(), max_length=2)
     receipt_available: bool
     create_time: AwareDatetime
     update_time: AwareDatetime
@@ -123,7 +152,33 @@ class ChatTurnView(ApiModel):
             or self.answer.context_hash != self.context_hash
         ):
             raise ValueError("问答完成缺少执行回执")
+        if self.attempts:
+            self.verify_attempts()
         return self
+
+    def verify_attempts(self) -> None:
+        """旧问答未记录尝试；新记录逐次核对累计调用及共同期限。"""
+        if self.status == "pending":
+            raise ValueError("未开始问答不能已有执行尝试")
+        spent = 0
+        for number, attempt in enumerate(self.attempts, 1):
+            if attempt.number != number or attempt.tool_budget != 20 - spent:
+                raise ValueError("问答尝试顺序或预算不一致")
+            if attempt.deadline != self.attempts[0].deadline:
+                raise ValueError("问答重试改变截止时间")
+            if number < len(self.attempts) and (
+                attempt.status != "failed"
+                or attempt.tool_calls is None
+                or attempt.error_code not in {"transient_provider_error", "transport_error"}
+            ):
+                raise ValueError("问答错误不允许重试")
+            spent += attempt.tool_calls or 0
+        if self.tool_calls != spent or (self.status != "running" and self.attempts[-1].status == "running"):
+            raise ValueError("问答状态或累计调用不一致")
+        if self.status == "completed" and (
+            self.attempts[-1].status != "completed" or self.context_hash != self.attempts[-1].context_hash
+        ):
+            raise ValueError("问答答案未绑定最后一次尝试")
 
 
 class ChatTurnPage(ApiModel):

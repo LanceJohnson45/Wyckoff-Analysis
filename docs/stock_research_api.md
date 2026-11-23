@@ -54,3 +54,5 @@ RunView现在带companies，名称来自同一冻结快照的当时分类或成�
 API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。共同输入先冻结，单策略量化失败已独立记录，另一策略继续并可只补失败部分，详见[量化执行边界](stock_research_quant_execution.md)。
 
 按策略量化状态见RunView.quant及固定报告；GET /v1/research-runs/{run_id}/quant-attempts提供当前run独立尝试SQL分页（page_size≤20），不改变旧报告当时状态。量化失败不生成空产物，成功计算/初选不重做；缺计算的池、分组和计数可为null，不能解释为零。详见[局部量化恢复](stock_research_quant_execution.md)。
+
+私有问答响应新增attempts（历史默认为空）：最多两次，包含状态、错误码、工具请求数（null表示未确认）、余额、上下文摘要、固定截止、起止时间及回执标记。顶层tool_calls累计已确认请求数。仅明确临时provider/传输错误且预算剩余时自动重试一次，同键POST不另起尝试；不新增重试/覆盖端点。私有路径不出HTTP，详见[问答重试边界](stock_research_chat.md)。

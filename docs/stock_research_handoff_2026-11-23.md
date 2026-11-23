@@ -1,5 +1,21 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：私有问答有界重试与逐次回执
+
+量化局部恢复已提交dbceb196。本批同一问答只对明确transient_provider_error/transport_error自动重试一次，共用原创建时间计算的deadline、固定报告/父链、模型连接及20次工具请求总预算。每次先在chat_turns JSON中追加running，失败回执和已确认计数先保存，下一次只用余额；每次独立产物、DSH home/agents home、注册表及0600身份文件，收尾删除身份。没有新表、迁移或配置键，仍26表。
+
+成功尝试与已核验答案同事务提交，随后取消拥有者仍保持completed；幂等POST只读原终态。限流、结构/证据、预算、期限、边界/清理错误和取消不重试；本地清单/证据文件不可读属于边界失败，执行器缺失/无执行权限记executor_unavailable，不能冒充provider网络错误。重启不重放未知请求。公开attempts最多两项，不含私有回执路径；未知计数为null，顶层为各次已确认请求数之和，超过预算且被拒绝的请求仍计入请求计数。历史attempts为空表示未记录，不能补造旧次数。Agent原问答条目展开状态、失败与计数，无新页面。
+
+隔离原生PG/ASGI及真实stdio子进程的合成Harness验证失败后成功、两次失败、分类拒绝重试、剩余预算、原期限、模型连接只解析一次、取消/重启、并发摘要CAS、跨workspace及独立读回。成功提交后立即注入拥有者取消，已完成回答仍可读。模型与事实为明确合成数据，没有调用真实provider。独立实际客户端→Node代理→HTTP→PG及组件SSR读回两次状态/四次请求（余额20→17），跨站与共享只读身份403，私有路径不出响应；这不替代正常登录后的浏览器控件验收。合成联调问答仅在quant-proof工作区，主workspace没有新问答或研究，原存储行及内容摘要保持。
+
+最终源码冻结后全量Python6029通过（无skip、50旧警告），新增专项19通过；Web409、API221通过及两项默认外部Upstash集成跳过，frozen-lockfile、TS strict、Web及Pages-functions构建通过。Ruff/1265文件格式、全范围函数门禁、红线136文件、workflow/dependency hygiene和合成daily dry-run通过。Python LOC142045/+64.8%、TS36116/+94.2%旧基线提示保留；没有新函数豁免、pytest排除或锁文件变化。42份生产JS检查七份实际私有值均未发现。
+
+确认主workspace零活动研究/问答后，仅重启本线程8788 API，旧PID14911终态143/端口释放确认；当前PID17003/session47455，ready200，日志chat-retry-main-api.log。原cf8da076报告、a45bf9c4完成问答及所有主工作区存储行/摘要独立读回保持，新增历史attempts空数组只读元数据。临时65102 API（PID16457）已终态143并确认端口释放；原Vite客户端读取旧报告/问答通过。最终合成联调问答55adec2b-9805-4d5d-9518-3f6d3ee7fa3a仅在隔离工作区，真实provider调用为零。凭据/回执/日志/客户端验证均保存在忽略目录.stock-research/bootstrap，不提交。
+
+行情协调只读调查确认：来源dc5fec0e的scripts/us_sp500_maintenance.py依赖旧core.stock_cache、yfinance及旧交易日历，旧market_data_sync.py未持新研究协作锁；us_daily_bar_refresh/us_sp500_bootstrap在来源工作流，主研究基线没有这些运行时。不能把新同步锁说成已覆盖旧更新/Actions，也不能直接复制一个脚本就执行云端写入。后续须一并迁移已登记入口、固定目标日和指数并集/独立基准范围，校验全部写入方参与锁，先在隔离PG验证，再交付部署；当前源工作树未修改。
+
+继续plan.md全局目标：旧行情更新协调、正式/PIT来源及云端缺口、Personal三工具注册/唯一workflow/通知、Mac部署和研究评估。Personal仓库只读核对，原有未提交改动保留，尚未认领或改动其文件。浏览器仍待正常账号认证，wiki checkout缺失，远端CI、另一个session整体审查及正式部署未验收。
+
 ## 续接检查点：按策略量化任务与局部补算
 
 worker隔离已提交d8876d7f。本批API/CLI在共同快照、参数及模型偏好冻结后才执行量化；新run、两份pending任务及初始报告同事务创建。新增quant_jobs/quant_attempts，显式init-schema后独立SQL确认26表。每次worker前保存running尝试，成功因子与终态同事务提交；CAS拒绝并发推进及覆盖成功，超时/进程错误最多自动重试一次，失败继续另一策略。显式resume只补未成功量化和缺失模型阶段，使用原参数，成功初选及原run输入payload保持。
