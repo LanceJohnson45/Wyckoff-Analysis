@@ -42,6 +42,7 @@ interface KlineChartProps {
   tradingRange?: { support: number; resistance: number }
   stage?: string
   showIndicators?: boolean
+  priceOnly?: boolean
   /** 模型给的威科夫作图计划:阶段、事件、推演。给了就画长周期均线、底色、预测线。 */
   chartPlan?: WyckoffChartPlan | null
   onBarClick?: (date: string) => void
@@ -72,20 +73,20 @@ interface ChartRefs {
 
 type ChartTheme = ReturnType<typeof readChartTheme>
 
-export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tradingRange, stage, showIndicators = false, chartPlan, onBarClick }: KlineChartProps) {
+export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tradingRange, stage, showIndicators = false, priceOnly = false, chartPlan, onBarClick }: KlineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRefs = useRef<ChartRefs | null>(null)
   const themeRef = useRef(readChartTheme())
-  const structure = useMemo(() => buildStructureSnapshot(data, tradingRange, stage), [data, tradingRange, stage])
+  const structure = useMemo(() => priceOnly ? null : buildStructureSnapshot(data, tradingRange, stage), [data, tradingRange, stage, priceOnly])
   const [indicators, setIndicators] = useState({ boll: false, rsi: false, macd: false })
   const planMarkers = useMemo(() => (chartPlan ? toPlanMarkers(chartPlan) : undefined), [chartPlan])
   const planNotes = useMemo(() => (chartPlan ? formatChartPlanNotes(chartPlan) : []), [chartPlan])
 
   useChartInit(containerRef, chartRefs, themeRef, height)
-  useChartData(chartRefs, themeRef, data, planMarkers ?? wyckoffMarkers, newsMarkers, tradingRange)
+  useChartData(chartRefs, themeRef, data, planMarkers ?? wyckoffMarkers, newsMarkers, tradingRange, priceOnly)
   useChartSelection(chartRefs, onBarClick)
-  useBollingerOverlay(chartRefs, data, indicators.boll)
-  useChartPlanOverlay(chartRefs, data, chartPlan)
+  useBollingerOverlay(chartRefs, data, !priceOnly && indicators.boll)
+  useChartPlanOverlay(chartRefs, data, priceOnly ? null : chartPlan)
 
   const closes = useMemo(() => data.map((d) => d.close), [data])
   const dates = useMemo(() => data.map((d) => d.date), [data])
@@ -98,11 +99,11 @@ export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tr
         className={`w-full overflow-hidden rounded-lg border border-border bg-background ${onBarClick ? 'cursor-crosshair' : ''}`}
         style={{ height }}
       />
-      {showIndicators && <IndicatorBar indicators={indicators} setIndicators={setIndicators} />}
-      {indicators.rsi && <RSISubChart closes={closes} dates={dates} />}
-      {indicators.macd && <MACDSubChart closes={closes} dates={dates} />}
-      <ChartLegend boll={indicators.boll} wyckoffMarkers={!!wyckoffMarkers || !!planMarkers} newsMarkers={!!newsMarkers?.length} chartPlan={!!chartPlan} />
-      {planNotes.length > 0 && <ChartPlanNotes notes={planNotes} />}
+      {!priceOnly && showIndicators && <IndicatorBar indicators={indicators} setIndicators={setIndicators} />}
+      {!priceOnly && indicators.rsi && <RSISubChart closes={closes} dates={dates} />}
+      {!priceOnly && indicators.macd && <MACDSubChart closes={closes} dates={dates} />}
+      {!priceOnly && <ChartLegend boll={indicators.boll} wyckoffMarkers={!!wyckoffMarkers || !!planMarkers} newsMarkers={!!newsMarkers?.length} chartPlan={!!chartPlan} />}
+      {!priceOnly && planNotes.length > 0 && <ChartPlanNotes notes={planNotes} />}
     </div>
   )
 }
@@ -176,6 +177,7 @@ function useChartData(
   wyckoffMarkers: WyckoffMarkerInput[] | undefined,
   newsMarkers: NewsMarkerInput[] | undefined,
   tradingRange: { support: number; resistance: number } | undefined,
+  priceOnly: boolean,
 ) {
   useEffect(() => {
     const refs = chartRefs.current
@@ -186,19 +188,35 @@ function useChartData(
       time: d.date as Time, value: d.volume, color: d.close >= d.open ? `${theme.up}4d` : `${theme.down}4d`,
     }))
     refs.candle.setData(candles)
-    refs.ma5.setData(movingAverage(data, 5))
-    refs.ma20.setData(movingAverage(data, 20))
-    refs.ma50.setData(movingAverage(data, 50))
+    const overlays = resolveChartOverlays(data, priceOnly, wyckoffMarkers, newsMarkers, tradingRange)
+    for (const series of [refs.ma5, refs.ma20, refs.ma50, refs.ma200]) series.applyOptions({ visible: !priceOnly })
+    refs.ma5.setData(overlays.ma5)
+    refs.ma20.setData(overlays.ma20)
+    refs.ma50.setData(overlays.ma50)
     // 不足 200 根时 movingAverage 返回空数组,线自动不画 —— 不用半截数据凑一条。
-    refs.ma200.setData(movingAverage(data, 200))
+    refs.ma200.setData(overlays.ma200)
     refs.volume.setData(volumes)
-    const markers = [...(wyckoffMarkers ? toSeriesMarkers(wyckoffMarkers) : buildMarkers(data)), ...toNewsMarkers(newsMarkers)]
+    const markers = overlays.markers
     if (refs.markers) refs.markers.setMarkers(markers)
     else refs.markers = createSeriesMarkers(refs.candle, markers)
     refs.candle.priceLines().forEach((line) => refs.candle.removePriceLine(line))
-    addPriceLines(refs.candle, tradingRange ?? buildPriceLevels(data), theme)
+    if (overlays.levels) addPriceLines(refs.candle, overlays.levels, theme)
     refs.chart.timeScale().fitContent()
-  }, [chartRefs, themeRef, data, wyckoffMarkers, newsMarkers, tradingRange])
+  }, [chartRefs, themeRef, data, wyckoffMarkers, newsMarkers, tradingRange, priceOnly])
+}
+
+export function resolveChartOverlays(
+  data: KlineRow[], priceOnly: boolean, wyckoffMarkers?: WyckoffMarkerInput[],
+  newsMarkers?: NewsMarkerInput[], tradingRange?: { support: number; resistance: number },
+) {
+  return {
+    ma5: priceOnly ? [] : movingAverage(data, 5),
+    ma20: priceOnly ? [] : movingAverage(data, 20),
+    ma50: priceOnly ? [] : movingAverage(data, 50),
+    ma200: priceOnly ? [] : movingAverage(data, 200),
+    markers: priceOnly ? [] : [...(wyckoffMarkers ? toSeriesMarkers(wyckoffMarkers) : buildMarkers(data)), ...toNewsMarkers(newsMarkers)],
+    levels: priceOnly ? null : tradingRange ?? buildPriceLevels(data),
+  }
 }
 
 function useBollingerOverlay(chartRefs: React.MutableRefObject<ChartRefs | null>, data: KlineRow[], active: boolean) {

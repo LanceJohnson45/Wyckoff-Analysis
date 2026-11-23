@@ -19,10 +19,13 @@ def register_observations(app: FastAPI) -> None:
         symbol: Annotated[str, Path(pattern=r"^[A-Z][A-Z0-9.-]{0,31}$")],
         run_id: UUID4,
         limit: Annotated[int, Query(ge=1, le=320)] = 60,
+        report_id: UUID4 | None = None,
     ) -> ApiResponse[StockObservation]:
         return ApiResponse(
             code=Code.OK,
             message="ok",
-            data=await stock_observation(request.app.state.store, str(run_id), symbol, limit),
+            data=await stock_observation(
+                request.app.state.store, str(run_id), symbol, limit, str(report_id) if report_id else None
+            ),
             correlation_id=request.state.correlation_id,
         )

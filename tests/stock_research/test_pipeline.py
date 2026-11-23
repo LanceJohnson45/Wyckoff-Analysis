@@ -129,6 +129,25 @@ def test_partial_run_resumes_failed_stage_without_replacing_selection(
             assert len(recovered["selections"]) == len(recovered["reviews"]) == 2
             assert (await watch_page(watch_store, 1, 100)).items[0].state == "new"
             assert (await event_page(watch_store, 1, 100)).total == 1
+            from sqlalchemy import select
+
+            from stock_research.observations import stock_observation
+            from stock_research.schema import RESEARCH_REPORTS
+
+            async with engine.connect() as connection:
+                early_id = await connection.scalar(
+                    select(RESEARCH_REPORTS.c.uuid)
+                    .where(
+                        RESEARCH_REPORTS.c.workspace == settings.workspace,
+                        RESEARCH_REPORTS.c.run_uuid == recovered["run_id"],
+                    )
+                    .order_by(RESEARCH_REPORTS.c.revision)
+                    .limit(1)
+                )
+            historical = await stock_observation(watch_store, recovered["run_id"], "AAPL", 5, early_id)
+            current = await stock_observation(watch_store, recovered["run_id"], "AAPL", 5)
+            assert not historical.selections and not historical.reviews
+            assert len(current.selections) == len(current.reviews) == 1
             assert seen == [("martin", "select"), ("martin", "select"), ("wyckoff", "review")]
             stages = {(stage["strategy"], stage["kind"]): stage for stage in recovered["stages"]}
             assert stages["martin", "select"]["attempt_count"] == 2

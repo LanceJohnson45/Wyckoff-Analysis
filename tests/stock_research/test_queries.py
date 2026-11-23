@@ -63,6 +63,7 @@ def test_frozen_stock_read_client_and_readonly_identity(
                 assert str(run_id) == run["run_id"]
                 assert (await reader.run_status(run_id)).status == "completed"
                 stock = await reader.stock("AAPL", run_id, 5)
+                assert stock.report_id is None
                 assert stock.company.name == "Apple"
                 assert stock.snapshot_hash == snapshot.content_hash
                 assert len(stock.history) == 5 < stock.history_total
@@ -83,6 +84,10 @@ def test_frozen_stock_read_client_and_readonly_identity(
                 for method in ("PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"):
                     assert (await client.request(method, "/v1/research-runs", headers=headers)).status_code == 403
                 base = f"/v1/stocks/AAPL/observations?run_id={run_id}"
+                fixed = await client.get(base + f"&report_id={report.report_id}", headers=headers)
+                assert fixed.json()["data"]["report_id"] == str(report.report_id)
+                mismatched = base.replace(str(run_id), new_id()) + f"&report_id={report.report_id}"
+                assert (await client.get(mismatched, headers=headers)).status_code == 404
                 assert (await client.get(base + "&limit=321", headers=headers)).status_code == 422
                 assert (await client.get(base.replace("AAPL", "ZZZZ"), headers=headers)).status_code == 404
                 assert (await client.get(base.replace("AAPL", "aapl"), headers=headers)).status_code == 422

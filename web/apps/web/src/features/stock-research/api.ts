@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { watchPageSchema, watchEventPageSchema } from './watch-contract'
 import { strategySchema, researchId as id, researchDay as day, researchHash as hash } from './contract-values'
+import { stockObservationSchema } from './stock-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -109,4 +110,11 @@ export function readResearchWatchlist(page: number, strategy?: Strategy, signal?
 }
 export function readResearchWatchEvents(page: number, strategy?: Strategy, signal?: AbortSignal) {
   return request(`/v1/watchlists/events?page=${page}&page_size=10${strategy ? `&strategy=${strategySchema.parse(strategy)}` : ''}`, watchEventPageSchema, { signal })
+}
+
+export async function readResearchStock(report: ResearchReport, symbol: string, signal?: AbortSignal) {
+  if (!/^[A-Z][A-Z0-9.-]{0,31}$/.test(symbol)) throw new ResearchApiError('请输入大写美股代码', 422, 'research.invalid_input')
+  const stock = await request(`/v1/stocks/${encodeURIComponent(symbol)}/observations?run_id=${report.run.run_id}&report_id=${report.report_id}&limit=320`, stockObservationSchema, { signal })
+  if (stock.run_id !== report.run.run_id || stock.report_id !== report.report_id || stock.snapshot_hash !== report.run.snapshot_hash || stock.snapshot_id !== report.run.snapshot_id || stock.as_of !== report.run.as_of || stock.company.symbol !== symbol) throw new ResearchApiError('个股响应与当前固定报告不一致，请重新连接', 503, 'invalid_response')
+  return stock
 }

@@ -46,6 +46,7 @@ class GroupObservation(ApiModel):
 
 class StockObservation(ApiModel):
     run_id: UUID4
+    report_id: UUID4 | None
     snapshot_id: UUID4
     snapshot_hash: str
     as_of: date

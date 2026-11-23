@@ -1,6 +1,6 @@
 # 固定股票查询与外部只读工具
 
-`GET /v1/stocks/{symbol}/observations?run_id={UUID}&limit=60` 查询指定运行的股票事实。run_id必填，symbol为大写规范代码（类别股使用连字符），历史范围1～320。代码必须属于该运行冻结的股票池，不能借此读取任意证券或刷新行情。
+`GET /v1/stocks/{symbol}/observations?run_id={UUID}&limit=60` 查询指定运行的股票事实。run_id必填，可选report_id固定该修订当时的初选/互评，跨run或workspace的报告拒绝；未指定则读取当前run已提交意见。响应回显report_id或null。symbol为大写规范代码（类别股使用连字符），历史范围1～320。代码必须属于该运行冻结的股票池，不能借此读取任意证券或刷新行情。
 
 响应保留公司名、snapshot_id/hash、实际截止日、两策略产物与参数摘要、是否计算/进入量化池、原标量引用、量化排除、行业与已确认主题事实、截止日日线、已提交初选及交叉意见。未入选不等于无计算，缺计算不补零。history_total指该快照内可用记录数，返回最近limit根。初选与评议对象保留原完整名单及ID；它们不是已按个股裁剪的新初选。行业得分与成员范围继续沿原量化产物。
 
@@ -19,6 +19,7 @@ API进程可配置 `STOCK_RESEARCH_API_READ_TOKEN`，至少32字符且必须与o
 .venv/bin/python -m stock_research.query_cli latest-report --target-session 2026-11-23
 .venv/bin/python -m stock_research.query_cli run-status --run-id "$RUN_ID"
 .venv/bin/python -m stock_research.query_cli stock --symbol ACGL --run-id "$RUN_ID" --limit 60
+.venv/bin/python -m stock_research.query_cli stock --symbol ACGL --run-id "$RUN_ID" --report-id "$REPORT_ID" --limit 60
 .venv/bin/python -m stock_research.query_mcp
 ```
 

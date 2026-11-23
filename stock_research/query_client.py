@@ -62,12 +62,16 @@ class ResearchReader:
         """业务UUID限定运行，不接收URL或文件路径。"""
         return await self._read(f"/v1/research-runs/{run_id}", RunView, {})
 
-    async def stock(self, symbol: str, run_id: UUID, limit: int = 60) -> StockObservation:
+    async def stock(
+        self, symbol: str, run_id: UUID, limit: int = 60, report_id: UUID | None = None
+    ) -> StockObservation:
         """只查给定运行的股票事实，不缺数补零或联网刷新。"""
         import re
 
         if not re.fullmatch(r"[A-Z][A-Z0-9.-]{0,31}", symbol) or isinstance(limit, bool) or not 1 <= limit <= 320:
             raise QueryError("股票代码或历史范围无效")
         return await self._read(
-            f"/v1/stocks/{symbol}/observations", StockObservation, {"run_id": str(run_id), "limit": str(limit)}
+            f"/v1/stocks/{symbol}/observations",
+            StockObservation,
+            {"run_id": str(run_id), "limit": str(limit), **({"report_id": str(report_id)} if report_id else {})},
         )

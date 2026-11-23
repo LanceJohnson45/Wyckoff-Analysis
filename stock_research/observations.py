@@ -7,7 +7,7 @@ from stock_research.identity import digest
 from stock_research.models import Snapshot
 from stock_research.queries import company_views, run_view
 from stock_research.run_store import RunStore
-from stock_research.schema import FACTOR_RESULTS
+from stock_research.schema import FACTOR_RESULTS, RESEARCH_REPORTS
 from stock_research.schemas.api import Strategy
 from stock_research.schemas.observations import GroupObservation, StockObservation, StrategyObservation
 from stock_research.store import load_snapshot
@@ -70,9 +70,13 @@ def strategy_observation(
     )
 
 
-async def stock_observation(store: RunStore, run_id: str, symbol: str, limit: int) -> StockObservation:
+async def stock_observation(
+    store: RunStore, run_id: str, symbol: str, limit: int, report_id: str | None = None
+) -> StockObservation:
     """股票身份限于该运行的股票池，历史始终截断到冻结截止日。"""
-    body = await store.summary(run_id)
+    body = (await store.row(RESEARCH_REPORTS, report_id))["payload"] if report_id else await store.summary(run_id)
+    if body["run_id"] != run_id:
+        raise ResearchNotFound("报告不属于指定运行")
     manifest = body["manifest"]
     snapshot = await load_snapshot(store.engine, store.workspace, manifest["snapshot_id"])
     if symbol not in snapshot.universe.active(snapshot.as_of):
@@ -82,6 +86,7 @@ async def stock_observation(store: RunStore, run_id: str, symbol: str, limit: in
     history = [bar for bar in snapshot.bars if bar.kind == "stock" and bar.symbol == symbol]
     return StockObservation(
         run_id=run_id,
+        report_id=report_id,
         snapshot_id=snapshot.id,
         snapshot_hash=snapshot.content_hash,
         as_of=snapshot.as_of,

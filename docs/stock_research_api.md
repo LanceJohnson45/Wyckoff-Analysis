@@ -17,7 +17,7 @@
 | GET /v1/reports/latest | 可按target_session或run_id过滤，返回最近创建运行的最新固定修订 |
 | GET /v1/research-runs/{UUID}/reports | SQL分页的固定修订列表，page_size最多100 |
 | GET /v1/reports/{UUID} | 原修订初选与互评；不会用当前运行状态重写历史 |
-| GET /v1/stocks/{symbol}/observations | 必填run_id，查询冻结股票池内的原因子、排除、行业、日线及初选/互评；limit=1～320 |
+| GET /v1/stocks/{symbol}/observations | 必填run_id，可选同run的report_id固定当时意见；原因子、排除、行业和日线绑定快照，limit=1～320 |
 | GET /v1/watchlists | 当前分策略观察状态及数据不足/未复核标记，SQL分页 |
 | GET /v1/watchlists/events | 按strategy/symbol查询当时变化，SQL分页 |
 | GET /openapi.json | 当前显式Pydantic输入/输出契约 |

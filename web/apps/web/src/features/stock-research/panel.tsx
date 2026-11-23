@@ -2,6 +2,7 @@ import { useStockResearch, isRunning } from './state'
 import { ResearchHistory } from './history'
 import { ResearchReportView } from './report'
 import { ResearchWatchlists } from './watch'
+import { ResearchStockPanel } from './stock'
 
 export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: string) => void }) {
   const state = useStockResearch()
@@ -19,7 +20,7 @@ export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: st
       {state.report.isPending && <p role="status" className="rounded-2xl border border-border p-8 text-sm text-muted-foreground">正在读取固定研究报告…</p>}
       {state.report.error && <div role="alert" className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6"><h3 className="text-sm font-semibold">研究连接暂不可用</h3><p className="mt-2 text-sm text-muted-foreground">{state.report.error.message}</p><button type="button" onClick={state.refresh} className="mt-4 rounded-lg border border-border px-3 py-2 text-xs">重新连接</button></div>}
       {!state.report.isPending && !state.report.error && !report && <p role="status" className="rounded-2xl border border-border p-8 text-sm text-muted-foreground">{state.active ? '研究已受理，正在固定输入并准备首份报告…' : '暂无研究报告。可选择目标交易日运行预览。'}</p>}
-      {report && <ResearchReportView report={report} onDiscuss={discuss} />}
+      {report && <div className="space-y-5"><ResearchReportView report={report} onDiscuss={discuss} /><ResearchStockPanel key={report.report_id} report={report} onDiscuss={onDiscuss} /></div>}
     </section></div>
     <ResearchWatchlists />
   </div>

@@ -22,6 +22,7 @@ def main(argv: list[str] | None = None) -> int:
     stock = commands.add_parser("stock")
     stock.add_argument("--symbol", required=True)
     stock.add_argument("--run-id", required=True)
+    stock.add_argument("--report-id")
     stock.add_argument("--limit", type=int, default=60)
     args = parser.parse_args(argv)
     try:
@@ -30,11 +31,11 @@ def main(argv: list[str] | None = None) -> int:
             operation = reader.latest_report(args.target_session)
         else:
             run_id = TypeAdapter(UUID4).validate_python(args.run_id)
-            operation = (
-                reader.run_status(run_id)
-                if args.command == "run-status"
-                else reader.stock(args.symbol, run_id, args.limit)
-            )
+            if args.command == "run-status":
+                operation = reader.run_status(run_id)
+            else:
+                report_id = TypeAdapter(UUID4).validate_python(args.report_id) if args.report_id else None
+                operation = reader.stock(args.symbol, run_id, args.limit, report_id)
         print(asyncio.run(operation).model_dump_json(indent=2))
         return 0
     except ValidationError:

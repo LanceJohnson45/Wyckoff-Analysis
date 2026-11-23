@@ -28,3 +28,5 @@
 CI测试现在安装research extra并显式准备initdb/pg_ctl/createdb，研究存储测试使用隔离的原生PostgreSQL；quality gate覆盖stock_research全包及web服务端代理目录，无新增长度豁免。
 
 名单接线已通过真实代理与前端契约解码（5条当前观察）、状态/缺数/未复核SSR显示及转义检查；全量Web375、API221通过（外部Upstash两项默认跳过），完整Web gate再次通过。研究与只读两种身份均未出现在生产bundle。登录后的筛选/翻页/讨论与其他控件操作继续待验收。
+
+[个股事实视图](stock_research_stock_view.md)已在报告内接入固定快照日线、两策略因子与排除、行业/主题和证据讨论；查询携带report_id，旧修订不读入后来意见。图表使用纯行情模式，实际画布和控件操作仍待登录验收。

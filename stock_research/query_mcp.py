@@ -32,10 +32,11 @@ def create_server(reader: ResearchReader) -> FastMCP:
         symbol: Annotated[str, Field(pattern=r"^[A-Z][A-Z0-9.-]{0,31}$")],
         run_id: UUID4,
         limit: Annotated[int, Field(ge=1, le=320)] = 60,
+        report_id: UUID4 | None = None,
     ) -> StockObservation:
-        """按已知run查整池股票事实、量化排除、初选和对方意见；行情只到该运行截止日，缺事实明确保留。"""
+        """按run查整池股票事实及意见；追问固定报告同时传report_id，避免读入后来观点。行情只到该运行截止日。"""
         try:
-            return await reader.stock(symbol, run_id, limit)
+            return await reader.stock(symbol, run_id, limit, report_id)
         except QueryError as error:
             raise ToolError(str(error)) from None
 
