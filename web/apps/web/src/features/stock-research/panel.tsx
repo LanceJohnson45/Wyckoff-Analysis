@@ -3,6 +3,7 @@ import { ResearchHistory } from './history'
 import { ResearchReportView } from './report'
 import { ResearchWatchlists } from './watch'
 import { ResearchStockPanel } from './stock'
+import { ResearchParameters } from './parameters'
 
 export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: string) => void }) {
   const state = useStockResearch()
@@ -23,6 +24,7 @@ export default function StockResearchPanel({ onDiscuss }: { onDiscuss: (text: st
       {report && <div className="space-y-5"><ResearchReportView report={report} onDiscuss={discuss} /><ResearchStockPanel key={report.report_id} report={report} onDiscuss={onDiscuss} /></div>}
     </section></div>
     <ResearchWatchlists />
+    <ResearchParameters runId={report?.run.run_id} />
   </div>
 }
 

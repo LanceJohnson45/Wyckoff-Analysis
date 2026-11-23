@@ -2,6 +2,12 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，以下顶部为最新进度，下方旧检查点仅作历史记录。
 
+## 当前检查点：Agent参数维护界面
+
+后台参数版本已提交d4327e40。现有Agent研究视图新增当前配置/报告冻结参数、完整JSON草稿、登记版本SQL分页及显式发布。载入不发布，刷新/折叠保留草稿；发布按当前revision，成功/失败后先显式读回，409不自动换修订重试。代理新增固定参数GET/登记POST/两策略发布POST，无新增页面或前端研究凭据。
+
+完整Web gate通过：frozen-lockfile、TS strict、Web383、API221/外部Upstash默认两项跳过、Web及Pages-functions构建；Ruff/1211文件格式、函数门禁及daily dry-run通过。真实前端客户端经独立Node代理在隔离workspace登记/发布并由只读身份独立读回，旧修订409，跨站与只读写入403。主workspace参数仍operator基线/修订0，原cf8da076报告ID/修订3/摘要及冻结参数不变；未启动模型或发送通知。浏览器仍待既有账号认证，实际控件未验收；独立wiki不存在、远端CI及正式部署未验收，主题/自选、查询聊天与Personal继续开发。
+
 ## 当前检查点：参数注册、CAS发布与实际消费
 
 MCP启动脱敏已提交c8057081。新增parameter_profiles/strategy_parameter_activations维护表，显式init-schema后共20表。参数名绑定不可变内容、发布追加且expected_revision冲突409；只读身份禁止写。API/CLI新研究统一解析发布配置或无发布时operator基线，私有物化并冻结完整来源；基线文件随后修改不影响发布值/旧运行。Stock观察同时返回完整原参数、Martin因子定义和Wyckoff原有效配置。

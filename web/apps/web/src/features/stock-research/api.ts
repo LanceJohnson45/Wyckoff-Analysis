@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { watchPageSchema, watchEventPageSchema } from './watch-contract'
 import { strategySchema, researchId as id, researchDay as day, researchHash as hash } from './contract-values'
 import { stockObservationSchema } from './stock-contract'
+import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strategyParametersSchema, type ParameterValues } from './parameter-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -61,12 +62,12 @@ export function decodeResearchData<T>(raw: unknown, schema: z.ZodType<T>, status
   return result.data
 }
 
-async function request<T>(path: string, schema: z.ZodType<T>, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, schema: z.ZodType<T>, options: RequestInit = {}, unconfirmed = '研究请求未确认，请刷新运行记录后重试'): Promise<T> {
   const controller = new AbortController()
   const abort = () => controller.abort()
   if (options.signal?.aborted) controller.abort()
   options.signal?.addEventListener('abort', abort, { once: true })
-  const timer = setTimeout(abort, options.method === 'POST' ? 130_000 : 20_000)
+  const timer = setTimeout(abort, options.method === 'POST' && path.startsWith('/v1/research-runs') ? 130_000 : 20_000)
   try {
     const response = await fetch(RESEARCH_BASE + path, { ...options, signal: controller.signal, cache: 'no-store' })
     let raw: unknown
@@ -75,7 +76,7 @@ async function request<T>(path: string, schema: z.ZodType<T>, options: RequestIn
     return decodeResearchData(raw, schema, response.status)
   } catch (error) {
     if (error instanceof ResearchApiError) throw error
-    throw new ResearchApiError('研究请求未确认，请刷新运行记录后重试', 0, 'connection_unconfirmed')
+    throw new ResearchApiError(unconfirmed, 0, 'connection_unconfirmed')
   } finally {
     clearTimeout(timer)
     options.signal?.removeEventListener('abort', abort)
@@ -117,4 +118,24 @@ export async function readResearchStock(report: ResearchReport, symbol: string, 
   const stock = await request(`/v1/stocks/${encodeURIComponent(symbol)}/observations?run_id=${report.run.run_id}&report_id=${report.report_id}&limit=320`, stockObservationSchema, { signal })
   if (stock.run_id !== report.run.run_id || stock.report_id !== report.report_id || stock.snapshot_hash !== report.run.snapshot_hash || stock.snapshot_id !== report.run.snapshot_id || stock.as_of !== report.run.as_of || stock.company.symbol !== symbol) throw new ResearchApiError('个股响应与当前固定报告不一致，请重新连接', 503, 'invalid_response')
   return stock
+}
+
+export function readCurrentParameters(signal?: AbortSignal) {
+  return request('/v1/strategies', strategyParametersSchema, { signal })
+}
+export function readFrozenParameters(runId: string, signal?: AbortSignal) {
+  return request(`/v1/research-runs/${id.parse(runId)}/parameters`, strategyParametersSchema, { signal })
+}
+export function readParameterVersions(strategy: Strategy, page: number, signal?: AbortSignal) {
+  return request(`/v1/parameter-sets?strategy=${strategySchema.parse(strategy)}&page=${page}&page_size=10`, parameterPageSchema, { signal })
+}
+export async function registerParameterVersion(strategy: Strategy, parameters: ParameterValues) {
+  const saved = await request('/v1/parameter-sets', parameterSetSchema, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strategy, parameters }) }, '参数登记结果未确认，请刷新版本列表后重试')
+  if (saved.strategy !== strategy || saved.parameters.version !== parameters.version) throw new ResearchApiError('参数登记响应不一致，请读取版本列表核对', 503, 'invalid_response')
+  return saved
+}
+export async function publishParameterVersion(strategy: Strategy, parameterId: string, revision: number) {
+  const saved = await request(`/v1/strategies/${strategySchema.parse(strategy)}/activate-parameters`, strategyParameterSchema, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ parameter_set_id: id.parse(parameterId), expected_revision: revision }) }, '参数发布结果未确认，请刷新当前参数后再操作')
+  if (saved.strategy !== strategy || saved.parameter_set_id !== parameterId || saved.revision !== revision + 1 || saved.source !== 'published') throw new ResearchApiError('参数发布响应不一致，请读取当前配置核对', 503, 'invalid_response')
+  return saved
 }
