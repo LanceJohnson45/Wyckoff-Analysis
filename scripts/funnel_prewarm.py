@@ -490,6 +490,13 @@ def _prefetch_one(
             coverage = {"required_dates": [d for d in effective_expected_dates if gap_start <= d <= gap_end]} if listing_date or cached_dates else {}
             fetch_started = time.monotonic()
             frame = fetch_stock_hist(symbol=symbol, start=gap_start, end=gap_end, adjust="qfq", market=market, **coverage)
+            if market == "us" and (frame.attrs.get("split_dates") or frame.attrs.get("source") == "tickflow_free"):
+                # 拆股会重算历史前复权价；只追加一天会混入新旧价格尺度。
+                refresh_start = window.end_trade_date - timedelta(days=550)
+                frame = fetch_stock_hist(symbol=symbol, start=refresh_start, end=window.end_trade_date,
+                                         adjust="qfq", market=market, required_dates=effective_expected_dates)
+                gap_start, gap_end = refresh_start, window.end_trade_date
+                _log(f"prewarm adjustment refresh market=us symbol={symbol} start={refresh_start} end={gap_end}")
             _log(f"prewarm fetched market={market} symbol={symbol} source={frame.attrs.get('source', 'unknown')} start={gap_start} end={gap_end} rows={len(frame.index)} elapsed_seconds={time.monotonic() - fetch_started:.3f}")
             if not known_listing_date and frame.attrs.get("listing_date"):
                 listing_date = date.fromisoformat(frame.attrs["listing_date"])

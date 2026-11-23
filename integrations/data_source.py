@@ -692,6 +692,8 @@ def _fetch_stock_yfinance(
         end=fetch_end_ts.strftime("%Y-%m-%d"),
         interval="1d",
         auto_adjust=True,
+        actions=True,
+        threads=False,
         progress=False,
     )
     if df is None or df.empty:
@@ -721,6 +723,9 @@ def _fetch_stock_yfinance(
             "Volume": "成交量",
         }
     )
+    if "Stock Splits" in work.columns:
+        splits = pd.to_numeric(work["Stock Splits"], errors="coerce").fillna(0)
+        work.attrs["split_dates"] = pd.to_datetime(work.loc[splits.ne(0), "日期"]).dt.strftime("%Y-%m-%d").tolist()
     required = ["日期", "开盘", "最高", "最低", "收盘", "成交量"]
     for col in required:
         if col not in work.columns:
@@ -1141,17 +1146,18 @@ def fetch_stock_hist(
             "yes",
             "on",
         }
-        try:
-            yf_frame = fetch("yfinance", _fetch_stock_yfinance, symbol, start_s, end_s)
-            if not _has_valid_ohlc(yf_frame):
-                raise RuntimeError("yfinance returned no valid OHLC rows")
-            return checked(yf_frame, "yfinance")
-        except BeforeListingRange:
-            raise
-        except Exception as e:
-            _debug_source_fail(f"yfinance({market_norm})", e)
-            failed_sources.append("yfinance")
-            failed_details.append(f"yfinance={_compact_error(e)}")
+        for _ in range(2 if market_norm == "us" else 1):
+            try:
+                yf_frame = fetch("yfinance", _fetch_stock_yfinance, symbol, start_s, end_s)
+                if not _has_valid_ohlc(yf_frame):
+                    raise RuntimeError("yfinance returned no valid OHLC rows")
+                return checked(yf_frame, "yfinance")
+            except BeforeListingRange:
+                raise
+            except Exception as e:
+                _debug_source_fail(f"yfinance({market_norm})", e)
+                failed_sources.append("yfinance")
+                failed_details.append(f"yfinance={_compact_error(e)}")
 
         if disable_tickflow:
             failed_sources.append("tickflow(disabled)")
@@ -1179,12 +1185,20 @@ def fetch_stock_hist(
                 failed_sources.append("tickflow")
                 failed_details.append(f"tickflow={_compact_error(e)}")
 
+        if market_norm == "us" and not disable_tickflow:
+            try:
+                from integrations.us_tickflow_free import fetch_us_tickflow_free
+
+                return checked(fetch("tickflow_free", fetch_us_tickflow_free, symbol, start_s, end_s), "tickflow_free")
+            except Exception as e:
+                failed_details.append(f"tickflow_free={type(e).__name__}")
+
         detail_suffix = (
             f" 失败详情：{'；'.join(failed_details[:4])}。" if failed_details else ""
         )
         raise RuntimeError(
             f"{market_norm.upper()} stock fetch failed [symbol:{symbol}, range:{start_s}..{end_s}]："
-            f"已按顺序尝试 yfinance→tickflow，均无可用 K 线数据。{detail_suffix}"
+            f"已尝试 Yahoo、TickFlow 及可用的免费备用源，均无可用 K 线数据。{detail_suffix}"
         )
 
     failed_sources: list[str] = []
