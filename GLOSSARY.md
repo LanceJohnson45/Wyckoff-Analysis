@@ -4,7 +4,7 @@
 
 ### 独立股票研究快照（开发中）
 
-`stock_research` 的快照将美国交易日期 `session_date` 与带 Asia/Shanghai 时区的操作时间分开，绑定完整股票池、分类、源修订、质量清单和摘要。数据CLI已接通只读一致备份、文件物化与独立PostgreSQL提交/重读；`persisted`区分两种保存方式。质量通过还须满足日期覆盖、基准和策略历史要求；快照不等于策略研究报告。授权数据与正式成员仍待本机接入，策略调用尚未实现。命令与限制见 [数据CLI](docs/stock_research_data_cli.md)。
+`stock_research` 的快照将美国交易日期 `session_date` 与带 Asia/Shanghai 时区的操作时间分开，绑定完整股票池、分类、源修订、质量清单和摘要。数据CLI已接通云端只读增量同步、一致备份、文件物化与独立PostgreSQL提交/重读；`persisted`区分两种保存方式。本机行情及研究库已接通，正式成员和必要基准仍待补齐。质量通过须满足日期覆盖、基准和策略历史要求；快照不等于策略研究报告，策略调用尚未实现。命令与限制见 [数据CLI](docs/stock_research_data_cli.md)。
 
 ### 午间独立研究扫描
 

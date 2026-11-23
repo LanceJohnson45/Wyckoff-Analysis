@@ -35,7 +35,8 @@ def database_engine(settings: Settings, *, test: bool = False) -> AsyncEngine:
 async def initialize_schema(engine: AsyncEngine) -> None:
     """显式初始化数据阶段 v1，不在读取或保存时隐式修改 schema。"""
     async with engine.begin() as connection:
-        await connection.execute(CreateSchema("stock_research", if_not_exists=True))
+        if await connection.scalar(select(func.to_regnamespace("stock_research"))) is None:
+            await connection.execute(CreateSchema("stock_research", if_not_exists=True))
         await connection.run_sync(RESEARCH_METADATA.create_all)
 
 

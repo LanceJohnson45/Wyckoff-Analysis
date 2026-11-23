@@ -2,6 +2,20 @@
 
 用户决定转到 Mac mini 继续开发，此处保存开发检查点，不表示 plan.md 六个阶段已交付。下一位执行者先读根目录 AGENTS.md、plan.md 和因子出处核对，再接续阶段一。
 
+## 本机运行配置与同步续接
+
+本节更新晚于下方“Mac mini续接检查点”，配置不再阻塞当前数据开发。
+
+- 本机已新建独立 `stock_research` 数据库及同名登录角色，角色无superuser/createdb/createrole，研究库内public不可创建对象，仅研究schema可创建。随机密码仅写入根目录0600的 `.env`；没有复用云端行情密码或修改云端权限。实际 `init-schema` 成功，修正已有schema在受限账号下不应再次尝试CREATE SCHEMA的问题。
+- 真实旧缓存诊断快照已提交本机研究库，164782根日线经独立新连接重读、摘要匹配，质量仍为false；没有把缺基准的结果改成合格。
+- 新增 `stock-research sync-market --market us [--full]`，直接使用研究根目录的离散 `PG_*`。云端事务可重复读且只读，新范围 `research:us:all:benchmarks-v1` 包含三个独立基准；不复用旧SPY-only水位。来源身份保持旧代码JSON编码约定。新入口真实初次同步195132行/98批、1条隔离，第二次增量750行/1批、新拒收0但仍有1条未解决隔离，退出码均2。
+- 新入口本机文件锁与快照协作，云端事务锁约束使用同一入口的跨机器同步。旧Actions和来源脚本未参与，不能声称全体系更新互斥。中断保留已提交批次但不推进水位，重跑可补齐。
+- 上一提交保留的SQL文件在被Git跟踪后触发门禁，已删除，改为Python schema定义加 `schema-ddl` 导出；导出DDL在隔离PostgreSQL执行验证。根AGENTS已补充与实际质量脚本一致的无SQL文件约束。
+
+仍缺正式当前成分及分类更新、QQQ/IWM源数据补齐、WBD源异常修复和旧更新入口的协调。这些是开发待办，不需要用户继续填写当前行情/研究库凭据。模型、通知和API鉴权到对应阶段再核对，不声称当前已可运行双策略研究。最新命令见[数据CLI](stock_research_data_cli.md)。
+
+本批研究测试63项通过、无skip，包括受限schema账号初始化、只读源写入拒绝、三个基准与同名股票区分、历史修订增量、隔离修复、源身份不符、协作锁冲突、缺修订时间以及取消后重跑。Ruff、1125个Python文件格式、完整quality_gate、工作流和红线扫描通过；LOC旧基线警告和68条依赖非阻断警告保留。CI同款假值daily dry-run退出0，不代表真实模型或通知就绪。未运行全量pytest、Web检查和远端CI；独立wiki checkout仍不存在，未声称已同步。
+
 ## Mac mini 续接检查点
 
 已快进接收 `cd52ed4f`，新增数据阶段CLI和真实PostgreSQL集成测试。命令、schema与限制见[数据CLI](stock_research_data_cli.md)。以下旧章节保留为 `01050f95` 时的交接记录，以本节为最新状态。
@@ -15,7 +29,7 @@
 
 本轮验证：研究测试52项通过，无skip，包含临时原生PostgreSQL建表DDL、事务提交、独立重读、连接池重建、并发幂等、版本冲突回滚、历史修订和CLI子进程。Ruff、全仓格式检查、函数长度、工作流检查通过；quality_gate仍有旧LOC基线增长警告，依赖检查有68条非阻断警告（包括仅脚本入口修改导致的manifest/lock mtime提示），`uv lock --check`通过。生产daily dry-run初次发现旧虚拟环境MiniRacer命名空间残留，按现有锁重新安装mini-racer后恢复导入；再用CI规定的假值配置执行dry-run退出0，未调用行情、模型或发送通知。实际生产LLM配置仍有缺项，假值检查不代表真实模型就绪。
 
-阶段一尚未总体验收：正式成分来源更新、行业资料刷新、QQQ/IWM云端补齐、更新端跨机器协调、独立研究状态库授权连接及其生产迁移仍缺。当前doctor显示行情可读，但正式universe/classifications未安装、研究数据库未就绪。后续Martin/Wyckoff策略、AKQuant对拍、dsh、React、服务注册及调度均未交付。未跑全量pytest、前端检查、远端CI或独立整体审查，不能声称可合入或可发布。
+阶段一尚未总体验收：正式成分来源更新、行业资料刷新、QQQ/IWM云端补齐及旧更新入口参与协调仍缺。研究数据库已在后续接通，见顶部续接记录；当前doctor的行情/数据库检查通过，正式universe/classifications未安装。后续Martin/Wyckoff策略、AKQuant对拍、dsh、React、服务注册及调度均未交付。未跑全量pytest、前端检查、远端CI或独立整体审查，不能声称可合入或可发布。
 
 **Mac mini 缺少行情 SQLite 时，先读[行情数据接入说明](stock_research_data_bootstrap_2026-11-23.md)**：包含原机文件位置、来源工作树准备、首次/增量同步、两个路径配置的对应关系，以及 Personal services 已知远端和待核实的本地路径。
 

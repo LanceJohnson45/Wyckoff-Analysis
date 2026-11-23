@@ -20,7 +20,7 @@
 
 React Web、CLI、MCP 与 GitHub Actions 共同组成当前产品形态；日线行情通过 TickFlow 实时拉取（无 Supabase 行情缓存），Supabase 仅用于用户配置、持仓、形态复盘、市场信号、信号反馈与任务结果。
 
-独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，跨机器续接见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。数据 CLI 已接通版本构建、只读一致快照、质量门槛与独立 PostgreSQL 存取，操作见 [数据CLI](docs/stock_research_data_cli.md)。本机授权连接、正式股票池和必要基准仍待接入；研究 API、双策略选股与自动运行尚未实现。
+独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，跨机器续接见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。数据 CLI 已接通版本构建、只读一致快照、质量门槛、独立 PostgreSQL 存取及云端只读增量同步，操作见 [数据CLI](docs/stock_research_data_cli.md)。本机行情和研究存储已接通；正式股票池与必要基准数据仍待补齐，研究 API、双策略选股与自动运行尚未实现。
 
 TickFlow 全市场快照使用 GET `/v1/quotes` 的 `universes` 标的池参数，先整池获取再本地筛选；历史日K默认每批200只，美股通道在 workflow 层单独压到100只。午间及 14:55 独立研究的取数与失败边界见 [批量行情协议](docs/OPERATOR_PLAYBOOK.md#独立午间研究的批量行情协议) 和 [14:55 首屏快照](docs/OPERATOR_PLAYBOOK.md#1455-独立深跌研究的首屏快照)。
 

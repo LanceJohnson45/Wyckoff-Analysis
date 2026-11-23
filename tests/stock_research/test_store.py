@@ -3,15 +3,14 @@
 import asyncio
 import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 
 from stock_research.config import Settings
 from stock_research.models import Snapshot
 from stock_research.quality import build_snapshot
-from stock_research.schema import GROUP_MEMBERS, MARKET_SNAPSHOTS, UNIVERSE_MEMBERS
+from stock_research.schema import GROUP_MEMBERS, MARKET_SNAPSHOTS, UNIVERSE_MEMBERS, schema_ddl
 from stock_research.store import close_engine, database_engine, initialize_schema, load_snapshot, save_snapshot
 
 pytestmark = pytest.mark.usefixtures("local_postgres_socket")
@@ -35,9 +34,8 @@ def test_normal_maintained_ddl_applies_to_postgres(postgres_settings: Settings) 
             postgres_settings.database_url(test=True).database,
             "--set",
             "ON_ERROR_STOP=on",
-            "-f",
-            str(Path("docs/migrations/stock_research_v1.sql").resolve()),
         ],
+        input=schema_ddl(),
         capture_output=True,
         text=True,
         timeout=20,
@@ -45,6 +43,34 @@ def test_normal_maintained_ddl_applies_to_postgres(postgres_settings: Settings) 
 
     assert result.returncode == 0, result.stderr
     assert "COMMIT" in result.stdout
+
+
+def test_normal_initialize_existing_schema_without_database_create(postgres_settings: Settings) -> None:
+    """【正常值】仅有schema权限的账号不需要数据库CREATE权限即可初始化。"""
+
+    async def scenario() -> None:
+        admin = database_engine(postgres_settings, test=True)
+        restricted = database_engine(
+            postgres_settings.model_copy(update={"postgres_user": "limited_research"}), test=True
+        )
+        try:
+            await initialize_schema(admin)
+            async with admin.begin() as connection:
+                await connection.execute(text("CREATE ROLE limited_research LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE"))
+                await connection.execute(text("GRANT USAGE, CREATE ON SCHEMA stock_research TO limited_research"))
+
+            await initialize_schema(restricted)
+            async with restricted.connect() as connection:
+                can_create = await connection.scalar(
+                    select(func.has_database_privilege(func.current_user(), func.current_database(), "CREATE"))
+                )
+
+            assert not can_create
+        finally:
+            await close_engine(restricted)
+            await close_engine(admin)
+
+    asyncio.run(scenario())
 
 
 def test_idempotent_concurrent_snapshot_commits_once(postgres_settings: Settings, snapshot: Snapshot) -> None:

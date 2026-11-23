@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from stock_research.calendar import latest_complete_session, session_times, sessions_ending
-from stock_research.config import Settings
+from stock_research.config import MarketSourceSettings, Settings
 from stock_research.identity import SHANGHAI, digest
 from stock_research.models import Bar, UniverseMember, UniverseVersion, normalize_symbol
 
@@ -86,7 +86,7 @@ def test_thanksgiving_is_not_a_research_session() -> None:
 
 def test_test_database_is_separate_and_time_is_aware() -> None:
     settings = Settings(_env_file=None)
-    assert settings.database_url(test=True).database == "wyckoff_test"
+    assert settings.database_url(test=True).database == "stock_research_test"
     assert settings.database_url().drivername == "postgresql+asyncpg"
     assert datetime.now(SHANGHAI).utcoffset().total_seconds() == 28800
 
@@ -110,3 +110,27 @@ def test_normal_latest_complete_session_uses_actual_close(at: str, expected: dat
     actual = latest_complete_session(datetime.fromisoformat(at))
 
     assert actual == expected
+
+
+def test_validation_cloud_dsn_cannot_override_discrete_keys() -> None:
+    """【参数校验】旧DSN与新离散配置同时存在时拒绝，不静默选择凭据。"""
+    settings = MarketSourceSettings(
+        _env_file=None,
+        enabled=True,
+        host="example.invalid",
+        database="market",
+        user="reader",
+        password="synthetic",
+        dsn="synthetic-legacy-dsn",
+    )
+
+    with pytest.raises(ValueError, match="PG_DSN"):
+        settings.database_url()
+
+
+def test_validation_disabled_source_never_uses_research_identity() -> None:
+    """【参数校验】缺少行情配置时拒绝，不回退到研究库或本机账号。"""
+    settings = MarketSourceSettings(_env_file=None, enabled=False)
+
+    with pytest.raises(ValueError, match="行情连接缺少"):
+        settings.database_url()

@@ -15,10 +15,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from stock_research.artifacts import data_lock, write_once
 from stock_research.calendar import latest_complete_session, sessions_ending
-from stock_research.config import Settings
+from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
+from stock_research.market_sync import sync_market
 from stock_research.models import ClassificationVersion, Snapshot, UniverseVersion
 from stock_research.quality import build_snapshot
+from stock_research.schema import schema_ddl
 from stock_research.store import (
     close_engine,
     database_engine,
@@ -36,6 +38,10 @@ def parser() -> argparse.ArgumentParser:
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
     commands.add_parser("init-schema", help="显式创建独立研究 schema v1；不更新已有表定义")
+    commands.add_parser("schema-ddl", help="从Python schema导出可审阅DDL，不连接数据库")
+    sync = commands.add_parser("sync-market", help="从 PG_* 授权行情只读增量同步，不执行云端写入")
+    sync.add_argument("--market", choices=["us"], required=True)
+    sync.add_argument("--full", action="store_true")
     snapshot = commands.add_parser("snapshot")
     snapshot.add_argument("--market", choices=["us"], required=True)
     snapshot.add_argument("--as-of", type=date.fromisoformat, required=True)
@@ -166,6 +172,10 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return doctor(settings)
     if args.command == "snapshot":
         return snapshot_command(settings, args.as_of, offline=args.offline)
+    if args.command == "sync-market":
+        with data_lock(settings.artifacts_path / "locks", "us", latest_complete_session().isoformat()):
+            result = asyncio.run(sync_market(MarketSourceSettings(), settings.local_market_path, full=args.full))
+        return result, 2 if result["issues"] or result["rejected"] else 0
     if args.command == "import-version":
         destination = settings.universe_path if args.kind == "universe" else settings.classification_path
         version = import_version(args.kind, args.input, destination)
@@ -205,6 +215,9 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
 def main(argv: list[str] | None = None) -> int:
     """JSON 输出和稳定退出码：0 通过，2 数据未就绪，1 命令错误。"""
     args = parser().parse_args(argv)
+    if args.command == "schema-ddl":
+        print(schema_ddl(), end="")
+        return 0
     try:
         result, status = execute(args, Settings())
     except ValidationError:

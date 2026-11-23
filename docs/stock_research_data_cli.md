@@ -9,9 +9,9 @@
 | 文件 | 待填写内容 |
 |---|---|
 | `/Users/wxjer/Documents/github/Wyckoff-Analysis-source/.env` | 已从用户更新的研究根目录 `.env` 选择性同步 `PG_*` 行情键并成功读取；不包含其他应用密钥 |
-| `/Users/wxjer/Documents/github/Wyckoff-Analysis/.env` | 独立研究状态库的 `STOCK_RESEARCH_POSTGRES_*`，包括已授权的 schema 角色 |
+| `/Users/wxjer/Documents/github/Wyckoff-Analysis/.env` | 已配置本机独立 `stock_research` 数据库和同名角色；随机密码仅保存在此文件 |
 
-行情 `.env` 中 `PG_DSN` 留空时使用离散配置。两份文件已分别以 `LOCAL_MARKET_DB_PATH` 和 `STOCK_RESEARCH_LOCAL_MARKET_PATH` 指向 `/Users/wxjer/Documents/github/Wyckoff-Analysis/data/local_market.sqlite3`。行情账号和研究状态账号职责不同，不能互换。模板没有填入真实凭证，也没有创建数据库角色。
+行情 `.env` 中 `PG_DSN` 留空时使用离散配置。两份文件已分别以 `LOCAL_MARKET_DB_PATH` 和 `STOCK_RESEARCH_LOCAL_MARKET_PATH` 指向 `/Users/wxjer/Documents/github/Wyckoff-Analysis/data/local_market.sqlite3`。行情账号和研究状态账号职责不同，不能互换。本机研究角色无superuser/createdb/createrole，研究数据库内仅研究schema可创建对象，public不可创建。权限已用该账号实际查询，不表示已审计本机其他数据库的默认公共授权。
 
 源工作树已在 `dc5fec0e` 建立并同步其独立 Python 3.12 依赖。已实际完成首次复制；后续在来源工作树执行：
 
@@ -21,9 +21,17 @@
 .venv/bin/python scripts/sync_local_market.py --market us
 ```
 
-这只复制云端已有数据。旧同步器自动带入的 benchmark 只有 SPY；QQQ/IWM 的云端独立基准键、补齐入口与同步映射仍待核验，不能用 `US:QQQ` 个股记录充当 benchmark。
+这只复制云端已有数据。旧同步器自动带入的benchmark只有SPY。新研究分支已提供独立入口，可直接在研究根目录执行：
 
-本机首次同步结果为195132行、520只股票、1只SPY基准，最新日期2026-11-20。WBD在2026-10-05的1根异常日线已隔离，同步返回2。只读云端检查未发现 `INDEX:US:QQQ/IWM` 或 `US:QQQ/IWM` 数据，须补齐源数据后再完善同步。研究状态库账号尚未配置，不会自动将行情账号用于研究DDL。
+```bash
+.venv/bin/stock-research sync-market --market us
+# 显式忽略新范围水位重读
+.venv/bin/stock-research sync-market --market us --full
+```
+
+新入口复用根目录 `PG_*`，拒绝非空 `PG_DSN`，连接和源事务均为只读；不执行云端补拉或写入。查询含 `INDEX:US:SPY/QQQ/IWM` 三个独立基准键，同名 `US:QQQ` 保留stock身份。新范围 `research:us:all:benchmarks-v1` 不沿用旧SPY-only水位，初次使用会完整复制已有历史。后续按更新时间并重叠一天，包含历史修订；每批原子提交，全部读取成功并退出源事务后才推进水位，取消可重跑。不同云端身份不能混写已有文件，身份摘要算法保留来源工作树的JSON编码约定。
+
+本机首次同步结果为195132行、520只股票、1只SPY基准，最新日期2026-11-20。WBD在2026-10-05的1根异常日线已隔离，同步返回2。只读云端检查未发现 `INDEX:US:QQQ/IWM` 或 `US:QQQ/IWM` 数据，须继续实现源数据补齐。新同步器已经在同一文件运行，未解除异常隔离；研究库已初始化，真实数据快照提交和独立重读已完成。
 
 ## 股票池与分类版本
 
@@ -55,6 +63,8 @@
 
 ```bash
 .venv/bin/stock-research doctor
+# 审阅DDL（仅打印，不访问数据库）
+.venv/bin/stock-research schema-ddl
 # 不连接研究状态库的显式离线物化
 .venv/bin/stock-research snapshot --market us --as-of 2026-11-20 --offline
 # 在授权的研究库显式初始化，再提交并独立重读
@@ -70,11 +80,11 @@
 
 质量门槛为：当日股票日期覆盖至少95%，只有绑定当日证据的停牌才从分母扣除；空分母失败。缺行业、异常OHLCV、日期重复、非交易日日线或源隔离记录排除该股票，具体原因保留。Martin需要连续100个交易日，Wyckoff需要连续320个交易日；缺一根不能以更早的K线凑数。SPY、QQQ、IWM在各自 `kind=benchmark` 下必须覆盖整个读取窗口，任一缺失则整体失败。主题缺失不阻断行业研究。
 
-进程锁只约束同运行目录、同市场日期且使用本协议的进程；旧来源同步脚本、Actions和其他机器尚未参与该锁。跨机器更新锁与自动补齐仍未交付。一致备份保证分析读到固定版本，不能替代更新端的任务协调。
+进程锁约束同运行目录、同市场日期的新同步和快照命令。新同步另在云端持有事务级advisory lock，同来源使用新入口的跨机器任务互斥，源事务结束或取消自动释放。旧来源脚本和Actions尚未参与协议，不声称它们已受锁保护；整个更新体系的协调仍待接入。一致备份保证分析读到固定版本，不能替代更新端的任务协调。
 
 ## 研究 PostgreSQL schema
 
-数据阶段维护[DDL v1](migrations/stock_research_v1.sql)，与 `stock_research/schema.py` 一起演进。仅创建 `stock_research` 下的 universes、universe_members、classification_versions、group_members、market_snapshots，保存UUID4、来源全文、有效日期及操作时间。当前采用完整快照JSON保存行情和质量，后续查询性能有需求时再建立额外索引。初始化不自动授予账号权限，不修改行情源或 Personal schema；以后表结构变更须新增受维护迁移，`create_all` 不能升级已有列。
+数据阶段以 `stock_research/schema.py` 为DDL正本，通过 `schema-ddl` 导出，不在Git保存SQL副本。导出文本供具有建schema权限的维护身份审阅/执行；已有schema的应用身份可用 `init-schema` 初始化表，不需要数据库CREATE权限。仅创建 `stock_research` 下的universes、universe_members、classification_versions、group_members、market_snapshots，保存UUID4、来源全文、有效日期及操作时间。当前采用完整快照JSON保存行情和质量，后续查询性能有需求时再建立额外索引。CLI初始化不自动授予账号权限，不修改行情源或Personal schema；以后表结构变更须维护Python迁移定义，`create_all` 不能升级已有列。
 
 每次保存将版本、成员与快照放在同一事务；workspace/version和workspace/content_hash唯一约束处理并发重试。同名不同内容版本使事务回滚。读取校验 workspace；连接及关闭都有超时。当前CLI是本机受信进程入口，API鉴权和最小权限角色仍属于后续接入。
 

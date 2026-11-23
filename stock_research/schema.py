@@ -15,6 +15,8 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import CreateIndex, CreateSchema, CreateTable
 
 SCHEMA_VERSION = 1
 RESEARCH_METADATA = MetaData(schema="stock_research")
@@ -94,3 +96,18 @@ MARKET_SNAPSHOTS = Table(
     UniqueConstraint("workspace", "content_hash"),
 )
 Index("idx_market_snapshots_workspace_as_of", MARKET_SNAPSHOTS.c.workspace, MARKET_SNAPSHOTS.c.as_of)
+
+
+def schema_ddl() -> str:
+    """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""
+    statements = [CreateSchema("stock_research", if_not_exists=True)]
+    statements.extend(CreateTable(table, if_not_exists=True) for table in RESEARCH_METADATA.sorted_tables)
+    statements.extend(
+        CreateIndex(index, if_not_exists=True)
+        for table in RESEARCH_METADATA.sorted_tables
+        for index in sorted(table.indexes, key=lambda value: value.name)
+    )
+    content = "\n\n".join(
+        str(statement.compile(dialect=postgresql.dialect())).strip() + ";" for statement in statements
+    )
+    return "BEGIN;\nSET LOCAL TIME ZONE 'Asia/Shanghai';\n" + content + "\nCOMMIT;\n"

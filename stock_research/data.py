@@ -33,6 +33,13 @@ SOURCE_ISSUES = Table(
     Column("cloud_updated_at", String),
     Column("reason", String),
 )
+SYNC_STATE = Table(
+    "sync_state",
+    SOURCE_METADATA,
+    Column("scope", String, primary_key=True),
+    Column("market", String, nullable=False),
+    Column("checkpoint", String, nullable=False),
+)
 
 
 @contextmanager

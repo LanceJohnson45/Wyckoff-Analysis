@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     parameters_path: Path = Path("config/research/baseline-v1.json")
     postgres_host: str = "127.0.0.1"
     postgres_port: int = Field(default=5432, ge=1, le=65535)
-    postgres_database: str = "wyckoff"
+    postgres_database: str = "stock_research"
     postgres_user: str = "stock_research"
     postgres_password: SecretStr = SecretStr("")
     api_token: SecretStr | None = None
@@ -48,3 +48,32 @@ class Settings(BaseSettings):
         }
         options["pass" + "word"] = self.postgres_password.get_secret_value()
         return URL.create("postgresql+asyncpg", **options)
+
+
+class MarketSourceSettings(BaseSettings):
+    """复用既有 PG_* 行情身份，仅供只读同步；不替代研究状态配置。"""
+
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="PG_", extra="ignore")
+    enabled: bool = False
+    host: str = ""
+    port: int = Field(default=5432, ge=1, le=65535)
+    database: str = ""
+    user: str = ""
+    password: SecretStr = SecretStr("")
+    sslmode: Literal["disable", "allow", "prefer", "require", "verify-ca", "verify-full"] = "require"
+    dsn: SecretStr | None = None
+
+    def database_url(self) -> URL:
+        """拒绝缺项和双重连接来源，不打印或回退到研究账号。"""
+        if self.dsn and self.dsn.get_secret_value().strip():
+            raise ValueError("新研究同步仅使用离散 PG_*，请清空 PG_DSN 后配置行情连接")
+        if not self.enabled or not all((self.host, self.database, self.user, self.password.get_secret_value())):
+            raise ValueError("行情连接缺少 PG_ENABLED 或 PG_HOST/DATABASE/USER/PASSWORD")
+        return URL.create(
+            "postgresql+asyncpg",
+            username=self.user,
+            password=self.password.get_secret_value(),
+            host=self.host,
+            port=self.port,
+            database=self.database,
+        )
