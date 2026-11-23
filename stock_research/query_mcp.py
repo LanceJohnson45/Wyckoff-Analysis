@@ -1,5 +1,6 @@
 """Personal等外部交互入口的三项只读股票工具，不持有PG或模型身份。"""
 
+from collections.abc import Callable
 from datetime import date
 from typing import Annotated
 
@@ -51,13 +52,13 @@ def create_server(reader: ResearchReader) -> FastMCP:
     return server
 
 
-def main() -> None:
+def main(factory: Callable[[ResearchReader], FastMCP] = create_server) -> None:
     """启动仅加载专用查询配置，stdio stdout保留给协议。"""
     try:
         settings = QuerySettings()
     except (ValidationError, OSError):
         raise SystemExit("只读研究配置无效，请检查专用授权文件及服务端口；不输出配置原值") from None
-    create_server(ResearchReader(settings)).run(transport="stdio")
+    factory(ResearchReader(settings)).run(transport="stdio")
 
 
 if __name__ == "__main__":

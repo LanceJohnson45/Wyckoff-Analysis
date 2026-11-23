@@ -1,7 +1,7 @@
 """外部入口的最小只读客户端，不读取研究数据库或模型配置。"""
 
 from datetime import date
-from typing import TypeVar
+from typing import Literal, TypeVar
 from uuid import UUID
 
 import httpx
@@ -10,8 +10,17 @@ from pydantic import BaseModel, ValidationError
 from stock_research.query_settings import QuerySettings
 from stock_research.schemas.api import ApiResponse, Code, ReportView, RunView
 from stock_research.schemas.observations import StockObservation
+from stock_research.schemas.report_queries import (
+    ComparisonInput,
+    GroupPage,
+    MarketOverview,
+    ReportScope,
+    StockComparison,
+    StrategyRules,
+)
 
 Result = TypeVar("Result", bound=BaseModel)
+ScopedResult = TypeVar("ScopedResult", bound=ReportScope)
 MAX_RESPONSE_BYTES = 2_000_000
 
 
@@ -25,7 +34,7 @@ class ResearchReader:
     def __init__(self, settings: QuerySettings, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
         self.settings, self.transport = settings, transport
 
-    async def _read(self, path: str, model: type[Result], params: dict[str, str]) -> Result:
+    async def _read(self, path: str, model: type[Result], params: dict[str, str | list[str]]) -> Result:
         try:
             async with httpx.AsyncClient(
                 base_url=self.settings.endpoint,
@@ -75,3 +84,70 @@ class ResearchReader:
             StockObservation,
             {"run_id": str(run_id), "limit": str(limit), **({"report_id": str(report_id)} if report_id else {})},
         )
+
+    async def report(self, report_id: UUID) -> ReportView:
+        """重读明确修订，避免用latest替代讨论中的固定报告。"""
+        value = await self._read(f"/v1/reports/{report_id}", ReportView, {})
+        if value.report_id != report_id:
+            raise QueryError("响应与指定固定报告不一致")
+        return value
+
+    async def _scoped(
+        self, report_id: UUID, resource: str, model: type[ScopedResult], params: dict[str, str | list[str]]
+    ) -> ScopedResult:
+        result = await self._read(f"/v1/reports/{report_id}/{resource}", model, params)
+        if result.report_id != report_id:
+            raise QueryError("研究响应与指定报告不一致")
+        return result
+
+    async def market_overview(self, report_id: UUID, limit: int = 60) -> MarketOverview:
+        """三基准和市场事实均属于指定修订，不联网或重算。"""
+        if isinstance(limit, bool) or not 1 <= limit <= 320:
+            raise QueryError("市场历史范围无效")
+        return await self._scoped(report_id, "market", MarketOverview, {"limit": str(limit)})
+
+    async def group_strength(
+        self,
+        report_id: UUID,
+        page: int = 1,
+        page_size: int = 20,
+        kind: Literal["industry", "theme"] | None = None,
+        name: str | None = None,
+    ) -> GroupPage:
+        """按原分组得分降序及组名排序，NULL最后，分页不改变有效分母。"""
+        if (
+            isinstance(page, bool)
+            or isinstance(page_size, bool)
+            or page < 1
+            or not 1 <= page_size <= 100
+            or kind not in {None, "industry", "theme"}
+            or (name is not None and not 1 <= len(name) <= 512)
+        ):
+            raise QueryError("分组分页或过滤参数无效")
+        return await self._scoped(
+            report_id,
+            "groups",
+            GroupPage,
+            {
+                "page": str(page),
+                "page_size": str(page_size),
+                **({"kind": kind} if kind else {}),
+                **({"name": name} if name is not None else {}),
+            },
+        )
+
+    async def compare_stocks(self, report_id: UUID, symbols: tuple[str, ...], limit: int = 20) -> StockComparison:
+        """比较2～8只同报告股票，保持请求顺序和原事实，不生成合并得分。"""
+        try:
+            requested = ComparisonInput(symbols=symbols)
+        except ValueError:
+            raise QueryError("比较须包含2～8个不同的大写规范代码") from None
+        if isinstance(limit, bool) or not 1 <= limit <= 60:
+            raise QueryError("比较历史范围无效")
+        return await self._scoped(
+            report_id, "compare", StockComparison, {"symbols": list(requested.symbols), "limit": str(limit)}
+        )
+
+    async def strategy_rules(self, report_id: UUID) -> StrategyRules:
+        """读取冻结规则的来源、参数与有效配置，不读取当前发布。"""
+        return await self._scoped(report_id, "rules", StrategyRules, {})

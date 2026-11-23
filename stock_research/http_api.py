@@ -17,6 +17,7 @@ from stock_research.http_events import register_events
 from stock_research.http_observations import register_observations
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
 from stock_research.http_preparations import register_preparations
+from stock_research.http_report_queries import router as report_query_router
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
 from stock_research.http_watchlists import register_watchlists
@@ -86,6 +87,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_security(app, config)
     register_reads(app)
     register_reports(app)
+    app.include_router(report_query_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)

@@ -73,6 +73,11 @@ describe('本机研究代理策略', () => {
   })
   it('固定路由与方法，不提供任意地址或文件读取', () => {
     expect(allowedResearchRoute('GET', '/v1/reports/latest')).toBe(true)
+    for (const resource of ['market', 'groups', 'compare', 'rules']) {
+      expect(allowedResearchRoute('GET', `/v1/reports/${REPORT}/${resource}`)).toBe(true)
+      expect(allowedResearchRoute('POST', `/v1/reports/${REPORT}/${resource}`)).toBe(false)
+    }
+    expect(allowedResearchRoute('GET', '/v1/reports/latest/market')).toBe(false)
     expect(allowedResearchRoute('GET', `/v1/research-runs/${RUN}/events`)).toBe(true)
     expect(allowedResearchRoute('GET', '/v1/watchlists/events')).toBe(true)
     expect(allowedResearchRoute('GET', '/v1/stocks/ACGL/observations')).toBe(true)
