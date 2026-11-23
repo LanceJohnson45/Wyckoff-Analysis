@@ -20,7 +20,7 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 身份、存储与接入
 
-显式stock-research init-schema补建chat_turns，研究schema现有22张表；API启动只检查表，不自动迁移。每问保存报告/父链、幂等摘要、模型、源码/提示词/上下文摘要、状态及回执。公开响应不含输入内部字段、回执路径、模型连接或令牌。
+显式stock-research init-schema补建chat_turns，研究schema现有24张表；API启动只检查表，不自动迁移。每问保存报告/父链、幂等摘要、模型、源码/提示词/上下文摘要、状态及回执。公开响应不含输入内部字段、回执路径、模型连接或令牌。
 
 问答仅API_TOKEN的operator身份可读写；共享API_READ_TOKEN连问答GET也返回403。当前是一个operator workspace，正式多用户身份映射属于部署工作。行情工具进程只持独立GET身份，不持PG或operator权限；0600临时身份文件位于本轮私有home，仅路径进入Harness配置，进程收尾删除。模型凭据不传给MCP进程，回执同时脱敏模型和只读身份。
 

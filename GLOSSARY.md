@@ -506,3 +506,5 @@ flowchart LR
 **固定报告研究问答**：chat_turns以报告与父问答固定会话；父锚点CAS和Idempotency-Key防并发续接及重复提交。后台隔离模型通过本轮只读工具取得引用，claims逐值校验，终态不覆盖；仅operator可读写，API_READ_TOKEN不能读取私人问答。详见[研究问答](docs/stock_research_chat.md)。
 
 **冻结整池与策略子集**：universe_total为截止日有效指数/自选并集去重总数，total为本次字面搜索命中数；缺行情/分类成员保留。逐策略data_eligible、calculation_available、in_pool、selected分别表示数据可用、已计算、量化池与正式初选，selected=null表示该修订尚无初选。详见[整池浏览](docs/stock_research_universe.md)。
+
+**主题提议与人工输入发布**：theme_proposals记录pending建议及基准，确认才向input_publications追加修订；manual发布只维护人工成员关系。生效日不早于确认时纽约日期，快照按as_of选择已生效最高修订，来源标签不使同版API/CLI重复选股。来源与版本摘要固定保存，后来配置不改旧报告。详见[人工输入维护](docs/stock_research_input_maintenance.md)。

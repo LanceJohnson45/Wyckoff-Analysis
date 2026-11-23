@@ -38,3 +38,5 @@ CI测试现在安装research extra并显式准备initdb/pg_ctl/createdb，研究
 参数面板接线后完整Web gate通过：Web383、API221/外部Upstash默认两项跳过、TS strict、frozen-lockfile、Web及Pages-functions构建；实际客户端经独立Node代理在隔离workspace登记/发布/独立读回通过，旧修订409、跨站及只读写入403，主workspace当前及旧报告冻结参数不变。以上不替代尚待正常登录的控件验收。
 
 个股事实区增加[整池浏览](stock_research_universe.md)：搜索原代码/公司名、SQL分页、逐策略数据/计算/量化池/初选标记，点击公司接原个股查询。上方固定报告变化时重建整池状态；加载、空命中和连接失败分别显示。
+
+「[分组与自选维护](stock_research_input_maintenance.md)」在既有视图中展开：主题完整成员差异复核/人工确认、自选读取修订后显式发布、历史分页与未知原操作核对。原报告冻结来源另行展示；维护动作不会立即改写上方历史报告。

@@ -31,7 +31,7 @@ CLI `stock-research run` 与HTTP新建研究均在首次量化前统一解析两
 
 ## 存储与验证
 
-显式 `stock-research init-schema`补建parameter_profiles和strategy_parameter_activations，研究schema现有22张表（含输入准备回执及私有问答）。启动API不会自动迁移。发布事务取数据库锁、验证参数/注册记录/当前修订摘要后追加，参数物化文件权限0600，路径不进入公开响应。
+显式 `stock-research init-schema`补建parameter_profiles和strategy_parameter_activations，研究schema现有24张表（含输入准备/私有问答/人工输入维护）。启动API不会自动迁移。发布事务取数据库锁、验证参数/注册记录/当前修订摘要后追加，参数物化文件权限0600，路径不进入公开响应。
 
 原生PG与ASGI验证重复/冲突、并发CAS、跨workspace/策略、只读身份、SQL分页、损坏记录失败及API/CLI真实消费；基线文件随后改变不会影响已发布配置或旧运行。研究/质量聚焦183项通过。真实隔离workspace使用原基线完成创建201、发布200、旧修订409、独立读取200，数值与原基线完全相同；stocks主workspace发布数仍0，没有改动实际策略参数、启动模型或发送通知。
 

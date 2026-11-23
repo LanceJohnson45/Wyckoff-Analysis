@@ -4,10 +4,11 @@ import { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules|universe))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?)$`)
-const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters|chat-turns(?:/${UUID}/cancel)?)$`)
+const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules|universe))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters|inputs))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?|theme-proposals(?:/${UUID})?|input-publications|universe-overrides(?:/[A-Z][A-Z0-9.-]{0,31})?)$`)
+const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters|chat-turns(?:/${UUID}/cancel)?|theme-proposals(?:/${UUID}/confirm)?|universe-overrides)$`)
 const MAX_BODY_BYTES = 8192
 const CHAT_BODY_BYTES = 49152
+const INPUT_BODY_BYTES = 65536
 
 function fail(res: ServerResponse, status: 403 | 404 | 413 | 503, message: string): void {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
@@ -93,7 +94,7 @@ export function stockResearchProxy(environment: Record<string, string>): Plugin 
         const route = new URL(req.url || '/', 'http://127.0.0.1')
         const allowed = allowedResearchRoute(req.method, route.pathname)
         if (!allowed) { fail(res, 404, '研究入口不存在'); return }
-        const maximum = route.pathname === '/v1/chat-turns' && req.method === 'POST' ? CHAT_BODY_BYTES : MAX_BODY_BYTES
+        const maximum = req.method !== 'POST' ? MAX_BODY_BYTES : route.pathname === '/v1/chat-turns' ? CHAT_BODY_BYTES : ['/v1/theme-proposals', '/v1/universe-overrides'].includes(route.pathname) ? INPUT_BODY_BYTES : MAX_BODY_BYTES
         if (Number(req.headers['content-length']) > maximum) { fail(res, 413, '研究请求过大'); req.resume(); return }
         try { await forward(req, res, new URL(route.pathname + route.search, `http://127.0.0.1:${port}`), token, maximum) }
         catch { if (!res.headersSent) fail(res, 413, '研究请求过大') }

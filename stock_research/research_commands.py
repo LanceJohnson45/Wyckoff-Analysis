@@ -8,6 +8,7 @@ from stock_research.artifacts import write_once
 from stock_research.config import Settings
 from stock_research.errors import ResearchQualityError
 from stock_research.identity import digest
+from stock_research.input_configuration import describe_inputs, resolve_run_inputs
 from stock_research.models import Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.parameters import MartinParameters
@@ -87,12 +88,19 @@ async def run_command(
         async with record_preparation(RunStore(engine, settings.workspace), target_session, "cli") as attempt:
             settings, sources = await resolve_run_parameters(RunStore(engine, settings.workspace), settings)
             await attempt.checkpoint("snapshot")
+            input_sources = None
             if snapshot_path is None:
                 from stock_research.cli import snapshot_command
 
+                settings, input_sources = await resolve_run_inputs(
+                    RunStore(engine, settings.workspace), settings, attempt.state.as_of
+                )
                 output, _ = await asyncio.to_thread(snapshot_command, settings, attempt.state.as_of, offline=True)
                 snapshot_path = Path(output["path"])
             snapshot = Snapshot.model_validate_json(await asyncio.to_thread(snapshot_path.read_text, encoding="utf-8"))
+            input_sources = input_sources or describe_inputs(
+                snapshot.universe, snapshot.classifications, snapshot.as_of, source="frozen_snapshot"
+            )
             await attempt.checkpoint("snapshot", snapshot.quality)
             if not snapshot.quality.passed:
                 raise ResearchQualityError("快照未通过研究质量门槛")
@@ -113,6 +121,7 @@ async def run_command(
                 parent_id=parent_id,
                 force=force,
                 parameter_sources=sources,
+                input_sources=input_sources.model_dump(mode="json"),
                 on_prepared=attempt.ready,
             )
     finally:

@@ -1,5 +1,20 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：主题确认与人工自选冻结输入
+
+上一批整池浏览已提交f31895b6。本批增加theme_proposals与input_publications，显式init-schema后24表；主题提议pending不生效，人工确认按主题基准/当前修订CAS，完整成员定义可清空。manual按代码add/remove追加、先读当前最高修订，不移除指数关系，行业只补缺。来源、理由、确认时间、生效日、请求及摘要保留；未知提交复用原请求/幂等键核对，旧修订不自动覆盖。私有历史及冻结来源仅operator可读，共享只读身份403。
+
+生效日不能早于确认时的纽约日期。API创建与CLI默认run按snapshot.as_of在一条MVCC查询中选择已生效最高修订，按内容摘要物化股票池/分类后进入原生产快照与量化路径，来源摘要绑定实际快照。显式snapshot-file保持原文件；单独snapshot --offline继续只读版本文件。旧截止日不消费后来发布，旧报告不补造历史；人工输入仍标非严格PIT。首次全量暴露来源标签导致同输入API/CLI重复run，已排除该标签参与run_key，原回归测试保留并重新完整通过，实际版本摘要仍参与身份。
+
+原生隔离PG测试实际覆盖并发CAS、异参幂等冲突、跨workspace、缺分类/行情、manual移除保留指数、未来定义排除、来源损坏拒收、SQL分页、API/CLI同UUID及生产FACTOR_RESULTS中已确认主题；只有确认时钟为固定合成交易日受控。真实隔离workspace经前端客户端→Node代理→HTTP→PG完成EngineeringProof/GILD提议及确认、自选发布，3000中文字理由、旧修订409、只读/跨站403、超64KiB 413均验证。独立进程SELECT及临时API重启后读回相同发布；真实旧as_of未消费新发布，生效日只验证派生版本解析，没有运行新真实量化或模型。
+
+最终源码冻结后全量Python5997通过（无skip、50旧警告），完整Web gate为frozen-lockfile、TS strict、Web397、API221/两项默认外部Upstash跳过、Web/Pages-functions构建。Ruff/1247文件格式、全范围质量、红线118文件、workflow/dependency hygiene与合成配置daily dry-run通过。Python LOC140691/+63.2%、TS35796/+92.5%旧基线警告保留，新增功能对应人工输入存储、解析、API/CLI及现有Agent接线。42份生产JS不含operator/只读/模型身份，凭据和实测日志只在忽略目录。
+
+主API仅重启本线程拥有的8788服务并确认旧进程退出/端口释放，新版ready200；原cf8da076修订3报告及a45bf9c4完成问答保持，stocks提议/维护发布均0。临时隔离proof API已停止并确认释放端口。现有Vite客户端实际读取原报告冻结来源及空维护历史通过。IAB原tab1已成为错误dataURL，另建browser2/tab2正常/login并handoff，真实按钮仍待正常账号认证，不能把客户端测试视为控件验收。
+
+本批说明见stock_research_input_maintenance.md。wiki checkout不存在，远端CI、独立整体审查及正式部署未验收；无Personal仓库/secrets修改、通知或主workspace参数发布。继续已确认锚点叠加、行情更新协调/局部量化降级、Personal唯一调度与通知及Mac部署，保持plan.md总体goal。
+
+
 
 ## 续接检查点：完整冻结股票池搜索与分页
 

@@ -16,6 +16,7 @@ from stock_research.config import Settings
 from stock_research.http_actions import register_actions
 from stock_research.http_chat import router as chat_router
 from stock_research.http_events import register_events
+from stock_research.http_inputs import router as input_router
 from stock_research.http_observations import register_observations
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
 from stock_research.http_preparations import register_preparations
@@ -29,10 +30,12 @@ from stock_research.run_store import RunStore
 from stock_research.schema import (
     API_REQUESTS,
     CHAT_TURNS,
+    INPUT_PUBLICATIONS,
     PARAMETER_ACTIVATIONS,
     PARAMETER_PROFILES,
     PREPARATION_ATTEMPTS,
     RESEARCH_RUNS,
+    THEME_PROPOSALS,
     WATCHLIST_DAYS,
     WATCHLIST_EVENTS,
     WATCHLIST_ITEMS,
@@ -42,6 +45,8 @@ from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
 RUNTIME_TABLES = (
+    THEME_PROPOSALS,
+    INPUT_PUBLICATIONS,
     CHAT_TURNS,
     RESEARCH_RUNS,
     API_REQUESTS,
@@ -102,6 +107,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_reports(app)
     app.include_router(report_query_router)
     app.include_router(chat_router)
+    app.include_router(input_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)

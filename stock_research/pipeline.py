@@ -17,6 +17,7 @@ from stock_research.decisions import ResearchPoint, ReviewDecision, SelectionDec
 from stock_research.evidence import EvidenceContext, build_context
 from stock_research.executor import StageResult, execute_stage, verify_runtime
 from stock_research.identity import digest, new_id, now
+from stock_research.input_configuration import verify_input_sources
 from stock_research.model_connection import ModelConnection, primary_model
 from stock_research.models import Snapshot
 from stock_research.prompts import prompt_identity
@@ -228,6 +229,23 @@ async def parallel_stages(coroutines: list[Coroutine[Any, Any, None]]) -> None:
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
+def validated_report_deadline(
+    snapshot: Snapshot,
+    analyses: dict[str, MartinReport | WyckoffReport],
+    target_session: date,
+    input_sources: dict[str, object] | None,
+) -> datetime:
+    """日历、量化与维护来源必须共同绑定同一份合格快照。"""
+    _opening, report_due, previous = session_times(target_session)
+    if snapshot.as_of != previous or set(analyses) != set(STRATEGIES) or not snapshot.quality.passed:
+        raise ValueError("运行需要前一正式交易日的合格快照和两个策略产物")
+    if any(value.snapshot_hash != snapshot.content_hash for value in analyses.values()):
+        raise ValueError("两个策略没有使用同一快照")
+    if input_sources:
+        verify_input_sources(snapshot, input_sources)
+    return report_due
+
+
 async def prepare_preview(
     engine: AsyncEngine,
     settings: Settings,
@@ -239,14 +257,11 @@ async def prepare_preview(
     force: bool = False,
     request_id: str | None = None,
     parameter_sources: dict[str, object] | None = None,
+    input_sources: dict[str, object] | None = None,
 ) -> tuple[str, dict[str, ModelConnection]]:
     """先冻结并保存输入，调用方取得run_id后才能调度执行。"""
     ensure_source_current()
-    _opening, report_due, previous = session_times(target_session)
-    if snapshot.as_of != previous or set(analyses) != set(STRATEGIES) or not snapshot.quality.passed:
-        raise ValueError("运行需要前一正式交易日的合格快照和两个策略产物")
-    if any(value.snapshot_hash != snapshot.content_hash for value in analyses.values()):
-        raise ValueError("两个策略没有使用同一快照")
+    report_due = validated_report_deadline(snapshot, analyses, target_session, input_sources)
     store = RunStore(engine, settings.workspace)
     if force != bool(parent_id):
         raise ValueError("强制重分析须同时指定force和父运行")
@@ -261,6 +276,7 @@ async def prepare_preview(
         "classification_hash": digest(snapshot.classifications.model_dump(mode="json")),
         "parameters": {key: value.parameters.model_dump(mode="json") for key, value in analyses.items()},
         "parameter_sources": parameter_sources or {},
+        "input_sources": input_sources or {},
         "algorithms": {"wyckoff": analyses["wyckoff"].engine_hash},
         "model_preferences": model_preferences(settings),
         "preview": True,
@@ -269,7 +285,9 @@ async def prepare_preview(
         "parent_id": parent_id,
         "manual_nonce": (request_id or new_id()) if force else None,
     }
-    existing = await store.find_run(digest(config))
+    # 输入版本摘要已入幂等键；入口来源只描述首次冻结，不应让同版API/CLI重复选股。
+    run_key = digest({key: value for key, value in config.items() if key != "input_sources"})
+    existing = await store.find_run(run_key)
     if existing:
         run_id = existing["uuid"]
     else:
@@ -294,7 +312,7 @@ async def prepare_preview(
             "models": {key: value.model_dump(mode="json") for key, value in connections.items()},
         }
         ensure_source_current()
-        run_id = await store.create_run(manifest, parent_id=parent_id, run_key=digest(config))
+        run_id = await store.create_run(manifest, parent_id=parent_id, run_key=run_key)
     return run_id, connections
 
 
@@ -349,6 +367,7 @@ async def run_preview(
     parent_id: str | None = None,
     force: bool = False,
     parameter_sources: dict[str, object] | None = None,
+    input_sources: dict[str, object] | None = None,
     on_prepared: Callable[[str], Awaitable[None]] | None = None,
 ) -> dict[str, object]:
     """CLI预览等待完整流程，HTTP可在冻结后独立调度同一恢复入口。"""
@@ -361,6 +380,7 @@ async def run_preview(
         parent_id=parent_id,
         force=force,
         parameter_sources=parameter_sources,
+        input_sources=input_sources,
     )
     if on_prepared is not None:
         await on_prepared(run_id)

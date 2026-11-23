@@ -8,6 +8,7 @@ import { ResearchParameters } from './parameters'
 import { ResearchPreparations } from './preparations'
 import { ResearchChat, type ChatSeed } from './chat'
 import type { ResearchReport } from './api'
+import { ResearchInputMaintenance } from './inputs'
 
 export default function StockResearchPanel() {
   const state = useStockResearch()
@@ -36,6 +37,7 @@ export default function StockResearchPanel() {
     </section></div>
     <ResearchWatchlists />
     <ResearchParameters runId={report?.run.run_id} />
+    <ResearchInputMaintenance runId={report?.run.run_id} />
   </div>
 }
 

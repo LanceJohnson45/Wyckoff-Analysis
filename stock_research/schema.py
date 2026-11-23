@@ -267,6 +267,29 @@ Index(
     CHAT_TURNS.c.create_time,
 )
 
+# lint-redline:ignore PS-10 维护事实复用上方受维护表工厂，提议保持不可变。
+THEME_PROPOSALS = execution_table(
+    "theme_proposals",
+    Column("name", String(512), nullable=False),
+    Column("key_hash", String(64), nullable=False),
+    Column("request_hash", String(64), nullable=False),
+    UniqueConstraint("workspace", "key_hash"),
+)
+# lint-redline:ignore PS-10 人工发布追加修订，依赖提议外键；历史行不原地改写。
+INPUT_PUBLICATIONS = execution_table(
+    "input_publications",
+    Column("kind", String(32), nullable=False),
+    Column("target", String(512), nullable=False),
+    Column("revision", Integer, nullable=False),
+    Column("effective_date", Date, nullable=False),
+    Column("proposal_uuid", String(36), ForeignKey(THEME_PROPOSALS.c.uuid), nullable=True),
+    Column("key_hash", String(64), nullable=False),
+    Column("request_hash", String(64), nullable=False),
+    UniqueConstraint("workspace", "kind", "target", "revision"),
+    UniqueConstraint("workspace", "proposal_uuid"),
+    UniqueConstraint("workspace", "key_hash"),
+)
+
 
 def schema_ddl() -> str:
     """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""

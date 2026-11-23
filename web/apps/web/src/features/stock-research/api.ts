@@ -6,6 +6,7 @@ import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strat
 import { preparationPageSchema } from './preparation-contract'
 import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
 import { universePageSchema } from './universe-contract'
+import { themeProposalPageSchema, themeProposalSchema, inputPublicationPageSchema, inputPublicationSchema, manualHeadSchema, frozenInputsSchema, canonicalResearchSymbol, type ThemeDefinition, type ConfirmTheme, type CreateManualOverride } from './input-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
 const stamp = z.string().datetime({ offset: true })
@@ -173,5 +174,41 @@ export async function createChatTurn(body: CreateChatTurn, key: string) {
 export async function cancelChatTurn(turnId: string, reportId: string) {
   const result = await request(`/v1/chat-turns/${id.parse(turnId)}/cancel`, chatTurnSchema, { method: 'POST' }, '取消结果未确认，请刷新问答状态')
   if (result.id !== turnId || result.report_id !== reportId) throw new ResearchApiError('取消响应与当前问答不一致', 503, 'invalid_response')
+  return result
+}
+
+export function readThemeProposals(page: number, signal?: AbortSignal) {
+  return request(`/v1/theme-proposals?page=${page}&page_size=5`, themeProposalPageSchema, { signal })
+}
+export async function readThemeProposal(identifier: string) {
+  const result = await request(`/v1/theme-proposals/${id.parse(identifier)}`, themeProposalSchema)
+  if (result.id !== identifier) throw new ResearchApiError('提议响应与当前对象不一致', 503, 'invalid_response')
+  return result
+}
+export async function proposeTheme(body: ThemeDefinition, key: string) {
+  const result = await request('/v1/theme-proposals', themeProposalSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '提议提交未确认，请使用原提交核对')
+  if (result.definition.name !== body.name.trim() || result.definition.members.join(',') !== [...body.members].sort().join(',')) throw new ResearchApiError('提议响应与原成员不一致，请核对原提交', 503, 'invalid_response')
+  return result
+}
+export async function confirmTheme(identifier: string, body: ConfirmTheme) {
+  const result = await request(`/v1/theme-proposals/${id.parse(identifier)}/confirm`, inputPublicationSchema, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, '主题确认结果未知，请核对原确认')
+  if (result.proposal_id !== identifier || result.revision !== body.expected_revision + 1 || result.effective_date !== body.effective_date) throw new ResearchApiError('主题确认响应不一致，请核对原确认', 503, 'invalid_response')
+  return result
+}
+export function readManualHistory(page: number, signal?: AbortSignal) { return request(`/v1/universe-overrides?page=${page}&page_size=5`, inputPublicationPageSchema, { signal }) }
+export async function readManualHead(symbol: string) {
+  const requested = canonicalResearchSymbol(symbol)
+  const result = await request(`/v1/universe-overrides/${encodeURIComponent(requested)}`, manualHeadSchema)
+  if (result.symbol !== requested) throw new ResearchApiError('自选响应与当前代码不一致', 503, 'invalid_response')
+  return result
+}
+export async function publishManual(body: CreateManualOverride, key: string) {
+  const result = await request('/v1/universe-overrides', inputPublicationSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '自选发布结果未知，请核对原提交')
+  if (result.kind !== 'manual' || result.target !== body.symbol || result.revision !== body.expected_revision + 1 || result.effective_date !== body.effective_date) throw new ResearchApiError('自选发布响应不一致，请核对原提交', 503, 'invalid_response')
+  return result
+}
+export async function readFrozenInputs(runId: string, signal?: AbortSignal) {
+  const result = await request(`/v1/research-runs/${id.parse(runId)}/inputs`, frozenInputsSchema, { signal })
+  if (result.run_id !== runId) throw new ResearchApiError('输入来源不属于当前运行', 503, 'invalid_response')
   return result
 }

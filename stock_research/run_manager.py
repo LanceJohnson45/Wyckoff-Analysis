@@ -17,6 +17,7 @@ from stock_research.errors import (
     ResearchSourceChanged,
     ResearchUnavailable,
 )
+from stock_research.input_configuration import resolve_run_inputs
 from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import prepare_preview, resume_preview
@@ -45,6 +46,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
         async with record_preparation(store, data.target_session, "api", request_id) as attempt, asyncio.timeout(120):
             settings, parameter_sources = await resolve_run_parameters(store, settings)
             await attempt.checkpoint("snapshot")
+            settings, input_sources = await resolve_run_inputs(store, settings, previous)
             output, status = await asyncio.to_thread(snapshot_command, settings, previous, offline=True)
             await attempt.checkpoint("snapshot", QualityReport.model_validate(output["quality"]))
             if status:
@@ -70,6 +72,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 force=data.force,
                 request_id=request_id,
                 parameter_sources=parameter_sources,
+                input_sources=input_sources.model_dump(mode="json"),
             )
             await attempt.ready(run_id)
             return run_id

@@ -30,6 +30,6 @@ WatchItem同时返回target_session/checked_run_id（最近检查）、state_ses
 
 原生PostgreSQL验证了重复及并发去重、日来源不被其他run覆盖、跨日模型失败保留/恢复、事务回滚、连接重建与workspace隔离；Martin状态测试由真实计算路径生成，Wyckoff由正式Spring和CRASH输入验证。聚焦研究及质量测试171项通过，全量Python5962项通过，无skip、50条旧警告；Ruff、格式、函数/LOC门禁、红线扫描及daily dry-run通过。
 
-本机真实完整运行f77a7db4-b830-4310-9463-2e97565b9c17显式接入后，独立进程和只读HTTP读回5条new及5条事件；重复接入仍为5条，原报告ID、revision和content_hash不变。当时schema为18表，现有22表。
+本机真实完整运行f77a7db4-b830-4310-9463-2e97565b9c17显式接入后，独立进程和只读HTTP读回5条new及5条事件；重复接入仍为5条，原报告ID、revision和content_hash不变。当时schema为18表，现有24表。
 
 持续名单已接到现有Agent研究面板，真实代理及前端解码已验证，浏览器操作待登录；Personal工具注册仍未完成。全局质量失败而尚未形成run时，当前名单保留，[独立输入准备回执](stock_research_preparations.md)已覆盖HTTP/CLI在run前的失败；行情同步协调、单策略量化局部降级和Personal通知仍未构成完整自动运行失败链路。人工日来源切换、跟踪规则参数发布及自然交易日验证也未交付。没有正式通知、订单、收益结论、远端CI或部署验收。
