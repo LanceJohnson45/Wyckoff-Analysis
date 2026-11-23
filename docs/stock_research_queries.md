@@ -10,7 +10,7 @@
 
 API进程可配置 `STOCK_RESEARCH_API_READ_TOKEN`，至少32字符且必须与operator的API_TOKEN不同。未配置时不会生成默认只读身份。只读身份仅允许共享研究数据GET，私有chat-turns/人工维护历史/冻结输入来源的GET及所有写入方法403，不能启动、续跑、取消运行或改变配置；既有Host/Origin校验仍有效。身份只保存在受保护的operator配置，不进入URL或研究正文。
 
-外部客户端使用自己的 `.stock-research/query.env`（见config/research/query.env.example，权限0600），包含QUERY_HOST=127.0.0.1、QUERY_PORT与QUERY_TOKEN。该token值与API的READ_TOKEN匹配；客户端不加载根.env、不持有PG、模型或Personal网关配置。也可由operator通过同名环境变量注入。默认不读取 ~/.dsh/secrets，不自动注册到Personal部署。
+外部客户端使用自己的 `.stock-research/query.env`（见config/research/query.env.example，权限0600），包含QUERY_HOST=127.0.0.1、QUERY_PORT与QUERY_TOKEN。该token值与API的READ_TOKEN匹配；客户端不加载根.env、不持有PG、模型或Personal网关配置。也可由operator通过同名环境变量注入。默认不读取 ~/.dsh/secrets；接入通过显式[Personal配置命令](stock_research_personal.md)，查询进程本身不修改宿主配置。
 
 从研究仓库运行：
 
@@ -31,7 +31,7 @@ CLI成功输出白名单JSON，失败退出1且stderr不输出HTTP身份或驱�
 
 API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整运行f77a7db4-b830-4310-9463-2e97565b9c17通过新进程读回，三项MCP工具各调用一次，股票历史60根及两策略事实与同一快照匹配。临时原生PG测试覆盖原数值、截止日、池外/跨workspace、绑定损坏及全部写方法拒绝；不调用外网或模型。
 
-现有Agent面板仍通过固定报告上下文讨论，尚未把三项工具注册到其模型循环；Personal也未注册这些工具、计划或通知。后续按其六处能力清单接入并独立验收，不能以stdio握手代替生产注册。实际页面操作仍待现有账号登录。
+现有Agent面板的固定报告问答使用绑定八工具，与外部三工具分离。Personal已注册独立三项只读查询，见[Personal接入](stock_research_personal.md)；定时workflow及通知仍须按六处能力清单接入并独立验收，查询接通不创建调度。实际页面操作仍待现有账号登录。
 
 ## 研究专用固定报告查询
 
@@ -51,7 +51,7 @@ API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整�
 
 研究入口使用 `.venv/bin/python -m stock_research.research_mcp`，与Personal原query_mcp入口分开。它复用同一专用只读配置，在原三项工具外增加stock_research_report_read、stock_research_market_overview、stock_research_group_strength、stock_research_compare_stocks、stock_research_strategy_rules，共八项，全部readOnlyHint，不增加写操作、通用HTTP或文件能力。HTTP客户端逐字段验证并核对报告ID，继续禁代理/重定向、单次20秒和2MB上限。
 
-原生PG/ASGI验证了原产物逐字段对拍、NULL排序、SQL分页、特殊组名、同快照比较、当前参数发布不改旧规则、跨workspace/池外拒绝和损坏绑定503；真实stdio握手验证研究八项及原Personal三项仍分离。实际调用与最终门禁见交接检查点。固定报告问答另以绑定八工具接入独立模型循环，见[研究问答](stock_research_chat.md)；整池浏览另见[股票池查询](stock_research_universe.md)，Personal部署注册仍需接续，不能以查询端点或stdio握手代替生产接线。
+原生PG/ASGI验证了原产物逐字段对拍、NULL排序、SQL分页、特殊组名、同快照比较、当前参数发布不改旧规则、跨workspace/池外拒绝和损坏绑定503；真实stdio握手验证研究八项及原Personal三项仍分离。实际调用与最终门禁见交接检查点。固定报告问答另以绑定八工具接入独立模型循环，见[研究问答](stock_research_chat.md)；整池浏览另见[股票池查询](stock_research_universe.md)，Personal三工具已由显式配置命令接入本机DSH预设，并经运行宿主读取和真实工具执行链验收；正式部署及界面控件仍另验，不能以只读接通代替调度通知。
 
 本批实际验证：全量Python5983（无skip、50旧警告）、查询/HTTP/源码12通过；Web386、API221/两项默认Upstash跳过及完整Web gate通过。真实report cf8da076修订3的八工具各调用一次，126个原分组、两股比较、三基准5根及规则一致；另验证8股各60根，JSON约371KB，未超过2MB客户端上限。代理读200/跨站403，原报告不变。浏览器和聊天模型循环未据此声明完成，wiki不存在且远端CI/部署未验收。
 

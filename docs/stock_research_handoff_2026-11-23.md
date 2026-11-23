@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：Personal三项只读查询已加载（2026-11-24）
+
+私有问答有界重试已提交a4f1408a。本批personal-mcp命令先预览，只在提供原摘要后追加唯一Personal预设的stocks MCP；保留自定义JS标签和其余原文，不重新序列化整份运行配置。合作式文件锁、两次写前字节核对、0600备份和原子替换；精确撤回只删除本次插件，保留后来其他修改，撤回不依赖原源码或身份文件。默认预览不写入，命令不构造服务器Settings。查询子进程env -i只载既有query.env，不继承PG、模型或Personal身份；安装结果runtime_verified=false，不将写文件当成宿主已加载。详见stock_research_personal.md。
+
+原生DSH 0.2.1-alpha.2隔离宿主实际挂载Personal预设，保留原11项并增加三项，合计14项；经agent工具执行链实读Personal能力、固定报告、GILD观点与对应run，四项一致，模型轮数0。报告仍为cf8da076-2f58-42de-93fa-ae2fa6de65cd/run f77a7db4-b830-4310-9463-2e97565b9c17，实际行情日2026-11-20，不冒称当日新研究。拥有者退出后独立ps确认PID26776及其进程组均不存在。
+
+运行profile仅新增本次节点，写前零活动守卫及0600备份完成。正常认证的运行DSH Remote独立读回Personal预设无broken、新插件与仓库片段一致；剔除该节点后其他Personal插件摘要前后一致。共享宿主PID8802未重启；原会话持旧预设修订，新Personal会话取得新工具。OpenCode仍只读8项，不自动继承。撤回预览得到原profile摘要、原备份摘要一致；没有实际撤回已启用接入、没有模型或通知。备份位于~/.dsh/backups/stock-research-personal-20261124，私有验证材料位于忽略的.stock-research/bootstrap/personal-mcp-*。
+
+源码冻结后全量Python6040通过、无skip、50旧警告；新专项11通过。Ruff/最终1269文件格式、完整质量门禁、红线98文件、workflow/dependency hygiene及合成daily dry-run通过。Python LOC142285/+65.1%、TS36116/+94.2%旧基线警告保留，无新函数豁免、测试排除或依赖变化；本批无Web源码变更，沿用a4f1408a的Web409/API221及两项默认外部Upstash跳过完整Web检查。services独立工作树全量491通过、3项原Docker条件跳过；首次从错误cwd启动测试曾有3个网关导入错误，纠正为实际services工作目录后全量通过，未排除用例。bin/check-sync.sh通过，五份Personal文档及NOW三份镜像字节一致。
+
+仅重启本线程8788 API，旧PID17003终态143、端口释放已确认；当前PID25392/session78765，日志personal-mcp-main-api.log。ready200，独立连接/HTTP确认主workspace零活动研究/问答、全部原行和摘要保持，原完整报告及a45bf9c4问答可读，跨workspace404、只读身份读取私有问答403。26表未变；未创建研究/问答或修改个人事实、持仓、提醒与计划。
+
+services本批在独立codex/stock-research-personal工作树交付operator-config片段及Personal文档，基线d405f961；原checkout的hourly-report-review.md删除及platform/social/mail既有dirty保留。正式launchd运行包/TCC路径、Tailscale身份入口、浏览器正常登录控件、唯一stock-research-premarket工作流/六处注册/定时/通知回执、行情旧更新协调和数据缺口、PIT及效果评估仍待接续。独立wiki checkout缺失，远端CI与另一个session整体审查尚未通过，不声称可合入或全plan完成。
+
 ## 续接检查点：私有问答有界重试与逐次回执
 
 量化局部恢复已提交dbceb196。本批同一问答只对明确transient_provider_error/transport_error自动重试一次，共用原创建时间计算的deadline、固定报告/父链、模型连接及20次工具请求总预算。每次先在chat_turns JSON中追加running，失败回执和已确认计数先保存，下一次只用余额；每次独立产物、DSH home/agents home、注册表及0600身份文件，收尾删除身份。没有新表、迁移或配置键，仍26表。

@@ -503,6 +503,8 @@ flowchart LR
 
 **固定报告研究查询**：以report_id限定市场、行业/主题强度、股票比较和规则。分组有效分母/NULL沿原产物，SQL分页不重新计算得分；比较共享同一快照。独立研究八项MCP与Personal原三项入口分离；固定报告问答另使用范围绑定的八项规范工具。
 
+**Personal股票研究MCP**：独立stocks命名空间提供最新报告、固定股票观点与当前运行状态三项只读查询；不扩展personal_quotes持仓范围，不提供交易或写入。DSH新Personal会话已接，已有会话保留原修订；OpenCode不自动继承。预览/精确安装及撤回见[Personal接入](docs/stock_research_personal.md)。
+
 **固定报告研究问答**：chat_turns以报告与父问答固定会话；父锚点CAS和Idempotency-Key防并发续接及重复提交。后台隔离模型通过本轮只读工具取得引用，claims逐值校验，终态不覆盖；临时provider/传输错误至多重试一次，原期限与工具总预算保持，attempts保留逐次状态及回执标记，未知请求数为null；仅operator可读写，API_READ_TOKEN不能读取私人问答。详见[研究问答](docs/stock_research_chat.md)。
 
 **冻结整池与策略子集**：universe_total为截止日有效指数/自选并集去重总数，total为本次字面搜索命中数；缺行情/分类成员保留。逐策略data_eligible、calculation_available、in_pool、selected分别表示数据可用、已计算、量化池与正式初选，selected=null表示该修订尚无初选。详见[整池浏览](docs/stock_research_universe.md)。

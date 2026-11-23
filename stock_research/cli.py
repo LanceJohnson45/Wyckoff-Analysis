@@ -26,6 +26,7 @@ from stock_research.identity import digest
 from stock_research.market_sync import sync_market
 from stock_research.models import ClassificationVersion, Snapshot, UniverseVersion
 from stock_research.parameters import MartinParameters
+from stock_research.personal_integration import configure_personal
 from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
 from stock_research.research_commands import analyze_command, read_run_command, run_command, track_run_command
@@ -49,6 +50,14 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("serve", help="启动仅监听loopback的独立研究API，须配置独立Bearer身份")
     commands.add_parser("init-schema", help="显式创建独立研究 schema v1；不更新已有表定义")
     commands.add_parser("schema-ddl", help="从Python schema导出可审阅DDL，不连接数据库")
+    personal = commands.add_parser("personal-mcp", help="预览或精确追加Personal预设的三项只读股票工具")
+    personal.add_argument("--profile", type=Path, default=Path.home() / ".dsh/profiles/superagent/cordis.patch.yml")
+    personal.add_argument("--workspace", type=Path, default=Path.cwd())
+    personal.add_argument("--python", type=Path)
+    personal.add_argument("--apply", action="store_true")
+    personal.add_argument("--remove", action="store_true", help="只撤回本次股票MCP，保留其他Personal配置")
+    personal.add_argument("--expected-profile-hash")
+    personal.add_argument("--backup-dir", type=Path)
     run = commands.add_parser("run", help="双策略独立初选及提交后互评，持久化预览不发送通知")
     run.add_argument("--market", choices=["us"], required=True)
     run.add_argument("--target-session", type=date.fromisoformat, required=True)
@@ -335,7 +344,21 @@ def main(argv: list[str] | None = None) -> int:
         print(schema_ddl(), end="")
         return 0
     try:
-        result, status = execute(args, Settings())
+        if args.command == "personal-mcp":
+            result, status = (
+                configure_personal(
+                    args.profile,
+                    args.workspace,
+                    python=args.python,
+                    apply=args.apply,
+                    remove=args.remove,
+                    expected_hash=args.expected_profile_hash,
+                    backup_dir=args.backup_dir,
+                ),
+                0,
+            )
+        else:
+            result, status = execute(args, Settings())
     except ValidationError:
         result, status = {"error": "版本、行情或配置校验失败；检查必填字段、时区和摘要"}, 1
     except ResearchSourceChanged as error:
