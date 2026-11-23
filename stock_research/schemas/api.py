@@ -74,6 +74,11 @@ class ReviewView(ApiModel):
     source: Literal["model", "empty_pool", "empty_target"]
 
 
+class CompanyView(ApiModel):
+    symbol: str
+    name: str
+
+
 class RunView(ApiModel):
     run_id: UUID4
     market: Literal["us"]
@@ -88,6 +93,7 @@ class RunView(ApiModel):
     preview: bool
     status: RunStatus
     error_code: str | None
+    companies: tuple[CompanyView, ...]
     selections: tuple[SelectionView, ...]
     reviews: tuple[ReviewView, ...]
     stages: tuple[StageView, ...]
@@ -123,3 +129,17 @@ class ReportView(ApiModel):
     create_time: AwareDatetime
     content_hash: str
     run: RunView
+
+
+class ReportListItem(ApiModel):
+    report_id: UUID4
+    revision: int
+    create_time: AwareDatetime
+    status: RunStatus
+
+
+class ReportPage(ApiModel):
+    items: tuple[ReportListItem, ...]
+    total: int
+    page: int
+    page_size: int

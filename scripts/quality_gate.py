@@ -25,6 +25,7 @@ FUNC_LIMIT_BY_PREFIX = (
     ("web/packages/shared/src/", 70),
     ("web/apps/web/src/routes/", 120),
     ("web/apps/web/src/components/", 90),
+    ("web/apps/web/server/", 70),
     ("web/apps/", 90),
     ("scripts/", 100),
     ("cli/", 100),
@@ -47,7 +48,7 @@ PY_DIRS = [
     "utils",
     "workflows",
 ]
-TS_DIRS = ["web/apps/web/src", "web/apps/api/src", "web/packages/shared/src"]
+TS_DIRS = ["web/apps/web/src", "web/apps/web/server", "web/apps/api/src", "web/packages/shared/src"]
 
 
 # -- function scanning --

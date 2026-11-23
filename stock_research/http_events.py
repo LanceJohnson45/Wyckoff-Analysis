@@ -5,7 +5,7 @@ from collections.abc import AsyncIterator
 from time import monotonic
 from typing import Annotated
 
-from fastapi import FastAPI, Header, Request
+from fastapi import FastAPI, Header, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 from sqlalchemy import select
@@ -57,11 +57,14 @@ def register_events(app: FastAPI) -> None:
 
     @app.get("/v1/research-runs/{run_id}/events", response_class=StreamingResponse)
     async def events(
-        request: Request, run_id: UUID4, last_event_id: Annotated[int, Header(alias="Last-Event-ID", ge=0)] = 0
+        request: Request,
+        run_id: UUID4,
+        last_event_id: Annotated[int, Header(alias="Last-Event-ID", ge=0)] = 0,
+        after: Annotated[int, Query(ge=0)] = 0,
     ) -> StreamingResponse:
         await request.app.state.store.row(RESEARCH_RUNS, str(run_id))
         return StreamingResponse(
-            report_events(request, str(run_id), last_event_id),
+            report_events(request, str(run_id), max(after, last_event_id)),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
         )

@@ -3,7 +3,6 @@
 import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from datetime import date
 from typing import Annotated
 
 import structlog
@@ -15,12 +14,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from stock_research.config import Settings
 from stock_research.http_actions import register_actions
 from stock_research.http_events import register_events
+from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
-from stock_research.queries import latest_report_id, list_runs, report_view, run_view
+from stock_research.queries import list_runs, run_view
 from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
 from stock_research.schema import API_REQUESTS, RESEARCH_RUNS
-from stock_research.schemas.api import ApiResponse, Code, HealthView, ReportView, RunPage, RunView
+from stock_research.schemas.api import ApiResponse, Code, HealthView, RunPage, RunView
 from stock_research.store import close_engine, database_engine
 
 
@@ -59,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     install_security(app, config)
     register_reads(app)
+    register_reports(app)
     register_events(app)
     register_actions(app)
     return app
@@ -100,24 +101,5 @@ def register_reads(app: FastAPI) -> None:
             code=Code.OK,
             message="ok",
             data=await run_view(store, await store.summary(str(run_id))),
-            correlation_id=request.state.correlation_id,
-        )
-
-    @app.get("/v1/reports/latest", response_model=ApiResponse[ReportView])
-    async def latest(request: Request, target_session: date | None = None) -> ApiResponse[ReportView]:
-        store = request.app.state.store
-        return ApiResponse(
-            code=Code.OK,
-            message="ok",
-            data=await report_view(store, await latest_report_id(store, target_session)),
-            correlation_id=request.state.correlation_id,
-        )
-
-    @app.get("/v1/reports/{report_id}", response_model=ApiResponse[ReportView])
-    async def report(request: Request, report_id: UUID4) -> ApiResponse[ReportView]:
-        return ApiResponse(
-            code=Code.OK,
-            message="ok",
-            data=await report_view(request.app.state.store, str(report_id)),
             correlation_id=request.state.correlation_id,
         )

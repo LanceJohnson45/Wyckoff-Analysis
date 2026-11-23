@@ -6,9 +6,18 @@ from sqlalchemy import func, select
 
 from stock_research.errors import ResearchNotFound
 from stock_research.identity import now
+from stock_research.models import Snapshot
 from stock_research.run_store import RunStore, verified_payload
 from stock_research.schema import RESEARCH_REPORTS, RESEARCH_RUNS
-from stock_research.schemas.api import ReportView, RunListItem, RunPage, RunView
+from stock_research.schemas.api import (
+    CompanyView,
+    ReportListItem,
+    ReportPage,
+    ReportView,
+    RunListItem,
+    RunPage,
+    RunView,
+)
 from stock_research.store import load_snapshot
 
 
@@ -31,6 +40,7 @@ async def run_view(store: RunStore, body: dict[str, object], *, observed_at: dat
         preview=manifest["preview"],
         status=body["status"],
         error_code=body["error_code"],
+        companies=company_views(snapshot, body),
         selections=[
             dict(
                 id=item["id"],
@@ -111,7 +121,7 @@ async def report_view(store: RunStore, report_id: str) -> ReportView:
     )
 
 
-async def latest_report_id(store: RunStore, target_session: date | None = None) -> str:
+async def latest_report_id(store: RunStore, target_session: date | None = None, run_id: str | None = None) -> str:
     """最新指最近创建的报告，可包含明确的partial/failed状态。"""
     predicate = [
         RESEARCH_REPORTS.c.workspace == store.workspace,
@@ -121,6 +131,9 @@ async def latest_report_id(store: RunStore, target_session: date | None = None) 
     ]
     if target_session is not None:
         predicate.append(RESEARCH_RUNS.c.payload["target_session"].as_string() == target_session.isoformat())
+    if run_id is not None:
+        await store.row(RESEARCH_RUNS, run_id)
+        predicate.append(RESEARCH_RUNS.c.uuid == run_id)
     async with store.engine.connect() as connection:
         result = await connection.scalar(
             select(RESEARCH_REPORTS.c.uuid)
@@ -134,3 +147,56 @@ async def latest_report_id(store: RunStore, target_session: date | None = None) 
     if result is None:
         raise ResearchNotFound("研究报告不存在或不属于当前workspace")
     return result
+
+
+def company_views(snapshot: Snapshot, body: dict[str, object]) -> tuple[CompanyView, ...]:
+    """名称来自同一快照，避免用当前市场搜索结果改写历史公司身份。"""
+    symbols = {
+        item["symbol"]
+        for row in (*body["selections"], *body["reviews"])
+        for item in row["payload"]["decision"]["items"]
+    }
+    classified = {
+        item.symbol: item.company_name
+        for item in snapshot.classifications.records
+        if item.effective_date <= snapshot.as_of
+    }
+    members = snapshot.universe.active(snapshot.as_of)
+    return tuple(
+        CompanyView(symbol=symbol, name=classified[symbol] if symbol in classified else members[symbol][0].name)
+        for symbol in sorted(symbols)
+    )
+
+
+async def list_reports(store: RunStore, run_id: str, page: int, page_size: int) -> ReportPage:
+    """修订列表也在数据库分页，不把全部历史报告传给前端再切片。"""
+    await store.row(RESEARCH_RUNS, run_id)
+    predicate = (
+        RESEARCH_REPORTS.c.workspace == store.workspace,
+        RESEARCH_REPORTS.c.run_uuid == run_id,
+        RESEARCH_REPORTS.c.is_deleted.is_(False),
+    )
+    async with store.engine.connect() as connection:
+        total = await connection.scalar(select(func.count()).select_from(RESEARCH_REPORTS).where(*predicate))
+        rows = (
+            (
+                await connection.execute(
+                    select(RESEARCH_REPORTS)
+                    .where(*predicate)
+                    .order_by(RESEARCH_REPORTS.c.revision.desc())
+                    .limit(page_size)
+                    .offset((page - 1) * page_size)
+                )
+            )
+            .mappings()
+            .all()
+        )
+    items = []
+    for row in rows:
+        body = verified_payload(dict(row))
+        items.append(
+            ReportListItem(
+                report_id=row["uuid"], revision=row["revision"], create_time=row["create_time"], status=body["status"]
+            )
+        )
+    return ReportPage(items=items, total=total, page=page, page_size=page_size)

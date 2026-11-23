@@ -117,9 +117,20 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,mcp]" coverage
+          pip install -e ".[dev,mcp,research]" coverage
+      - name: Prepare isolated PostgreSQL test tools
+        run: |
+          for directory in /usr/lib/postgresql/*/bin; do
+            if [ -x "$directory/initdb" ] && [ -x "$directory/pg_ctl" ] && [ -x "$directory/createdb" ]; then
+              echo "$directory" >> "$GITHUB_PATH"
+              exit 0
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y postgresql-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
       - name: Py compile all modules
-        run: python -m py_compile $(find agents cli core integrations scripts tools utils -name "*.py")
+        run: python -m py_compile $(find agents cli core integrations scripts stock_research tools utils -name "*.py")
       - name: Run tests with coverage
         run: |
           python -m coverage erase

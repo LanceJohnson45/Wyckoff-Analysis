@@ -223,7 +223,7 @@ function readActiveTab(): ReadingRoomTab {
   if (typeof window === 'undefined') return 'desk'
   try {
     const value = window.sessionStorage.getItem(ACTIVE_TAB_SESSION_KEY)
-    return value === 'chat' || value === 'watchlist' || value === 'desk' ? value : 'desk'
+    return value === 'chat' || value === 'watchlist' || value === 'desk' || value === 'research' ? value : 'desk'
   } catch {
     return 'desk'
   }

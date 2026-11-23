@@ -1,0 +1,26 @@
+# Agent内的策略研究
+
+在现有 `/chat` 读盘室选择「策略研究」。此视图使用研究API保存的固定报告，分别展示Martin与Wyckoff初选、对方意见、确认条件和引用。最多五只不是配额；空初选保留原因。实际行情日期、目标美国交易日、迟到、数据质量和阶段错误分别显示。
+
+侧栏可选择历史运行及报告修订。固定修订保持当时状态，返回实时状态才能查看后续进展。「运行该日预览」按目标交易日生成研究；「重新分析本报告」创建关联原运行的新版本；部分失败时只续跑未成功阶段，原成功初选不覆盖。动作未确认时保留幂等键，先查运行记录，不反复创建新分析。
+
+「带此报告继续讨论」把当前固定报告交给既有Agent。当前尚未注册完整研究查询工具，后续行情、个股和分组追问不能假定Agent已自动取得新证据。面板结论不产生BUY、订单或交易许可。
+
+## 本机开发接入
+
+1. 按[研究API](stock_research_api.md)配置并启动 `.venv/bin/stock-research serve`，默认127.0.0.1:8788。本机 `.env` 中的独立研究身份仅供服务端读取。
+2. 根 `.env` 显式设 `STOCK_RESEARCH_WEB_PROXY_ENABLED=true`。Vite读取该键和API_HOST/API_PORT/API_TOKEN；只允许loopback绑定、固定研究路由及同源请求，默认关闭。不要把研究身份写成VITE变量。
+3. 在 `web/apps/web/.env.local` 配置既有登录所需的公开Supabase URL与anon key，使用现有账号登录。研究连接不替代账号登录；不要复制service_role、密码或会话。
+4. 从 `web/` 安装锁定依赖并运行 `pnpm --filter @wyckoff/web dev --host 127.0.0.1`，访问本机/chat。默认端口5173。
+
+这是一条本机开发代理；生产静态构建没有这条Node代理，不能将其视为已部署的Tailscale入口。正式访问身份与同源托管在部署阶段单独处理。
+
+若Apple Silicon上的全局pnpm包装器误选x64可选依赖，使用原生Node运行锁定包管理器，从web执行 `CI=true npm exec --yes --package=pnpm@10.33.2 -- pnpm install --frozen-lockfile`，后续pnpm命令用同样前缀；不向manifest加入平台专用依赖，不改锁文件绕过错误。
+
+## 已验证范围
+
+真实四阶段报告已通过本机API→Node代理→前端契约解码，并拒绝跨站Origin。Web372项、API221项通过（默认不启用的外部Upstash集成两项跳过），TypeScript、生产Web与Pages-functions构建通过；Python5955项通过。构建产物未包含研究令牌。
+
+实际浏览器目前停在既有登录页，等待现有账号完成认证；真实控件交互与讨论操作仍待验收，SSR显示测试不替代浏览器操作。未执行远端CI、公开部署或正式通知；独立wiki checkout不可用，尚未同步。
+
+CI测试现在安装research extra并显式准备initdb/pg_ctl/createdb，研究存储测试使用隔离的原生PostgreSQL；quality gate覆盖stock_research全包及web服务端代理目录，无新增长度豁免。

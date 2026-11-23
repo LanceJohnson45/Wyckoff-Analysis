@@ -1,6 +1,6 @@
 # 多策略股票研究系统实施计划
 
-日期为2026-11-23。当前交付为设计与实施计划，系统开发、数据库变更、Mac mini部署及定时任务注册均待实施。用户已确认首版方向，本文将工程默认值作为可审阅的研究基线。
+日期为2026-11-23。本文保存已确认的实施计划；数据、量化、执行账本、完整真实互评及本机API已实现，Agent面板已接线且页面操作待登录验证。持续名单、专用研究工具、配置维护、Mac mini部署及定时任务仍待实施，以第16节及交接文档检查点为准。用户已确认首版方向，本文将工程默认值作为可审阅的研究基线。
 
 ## 1 目标与成功标准
 
@@ -419,7 +419,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run和evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读；evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 
@@ -436,7 +436,7 @@ doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并�
 | config/research/ | baseline-v1参数与分组版本定义 |
 | docs/migrations/ | 新schema增量DDL及回滚说明 |
 | tests/stock_research/ | 计算、契约、策略、恢复与集成验证 |
-| web/apps/web/src/ | 复用图表，新增本地研究页面及API客户端 |
+| web/apps/web/src/ | 复用图表，在既有Agent内增加研究子视图及API客户端 |
 | integrations/local_market_store.py及相关同步模块 | 有选择迁移当前分支的数据逻辑 |
 | scripts/与部署配置 | 本地检查、服务启动、健康检查和安装入口 |
 | services actions/与已有运行/投递模块 | 固定任务入口、报告通知及运行产物适配 |
@@ -539,7 +539,7 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 - [ ] 因子定义与数值参数逐项可查看、可调整、可追溯。
 - [x] Martin两类回调与Wyckoff正式算法均有样本验证（量化样本对拍，不是收益或执行验收）。
 - [x] 各策略最多5只，量化池外输出被拒收（结构及范围验证，非收益或交易许可）。
-- [ ] 初选保存后互评，历史版本及不同意见完整可查。
+- [x] 初选保存后互评，历史版本及不同意见完整可查（真实四阶段预览与HTTP/CLI独立重读；页面操作另验）。
 - [ ] 名单变化、数据不足和失败恢复符合约定。
 - [ ] 工作台与聊天入口都有生产调用链和真实操作验证。
 - [ ] services任务、报告通知和Personal查询接线完成。

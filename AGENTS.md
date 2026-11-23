@@ -32,6 +32,7 @@ pnpm --filter @wyckoff/api test
 
 1. **Pass quality gate** — `.venv/bin/python scripts/quality_gate.py --ci` must pass function-length hard limits. LOC growth warnings are review signals, not automatic failures.
    The scan includes `stock_research/`; its CLI orchestration keeps the 100-line CLI limit and other research functions use the 70-line default.
+   The local web connection code in `web/apps/web/server/` uses the 70-line integration limit.
    Do not track `.sql` files. Maintain schema definitions in Python and export reviewable DDL through a command; the quality gate checks tracked files.
 
 2. **Pass ruff check** — All Python code must pass `ruff check .` with the project config in `pyproject.toml`.
@@ -144,6 +145,7 @@ the error direction favored acting. So:
 - Do not claim a change is ready to merge from local checks alone. Required CI jobs must be successful; `queued`, `in_progress`, `skipped`, and `continue-on-error` coverage are not a green merge gate.
 - Run the full web gate for web changes from `web/`: `CI=true pnpm install --frozen-lockfile`, TypeScript check, both package test suites, and the Pages-functions build. Do not use an interactive dependency repair as validation.
 - The CI runner installs Ruff independently. Keep the local toolchain compatible, but when local and CI results differ, resolve against the CI version and record the successful CI run before merging.
+- Python CI installs the research extra and exposes native PostgreSQL test binaries; research state tests use their own temporary Unix-socket cluster, never a shared or production database.
 - For workflow, schedule, environment-variable, prompt, or operational-contract changes, update the affected documentation and the independent `wiki_repo_new/` checkout in the same delivery.
 
 ## Architecture Constraints

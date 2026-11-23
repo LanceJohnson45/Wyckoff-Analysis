@@ -1,5 +1,6 @@
 import { normalizeGeminiStream } from '../../packages/shared/src/gemini-sse-normalize'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
+import { stockResearchProxy } from './server/stock-research-proxy'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import fs from 'node:fs/promises'
@@ -171,8 +172,8 @@ function newsEventsPlugin(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), llmProxyPlugin(), marketDataPlugin(), appVersionPlugin(), newsEventsPlugin()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), tailwindcss(), llmProxyPlugin(), marketDataPlugin(), appVersionPlugin(), newsEventsPlugin(), stockResearchProxy(loadEnv(mode, path.dirname(REPO_DATA_DIR), 'STOCK_RESEARCH_'))],
   define: {
     __APP_VERSION__: JSON.stringify(BUILD_VERSION),
   },
@@ -184,4 +185,4 @@ export default defineConfig({
   server: {
     port: 5173,
   },
-})
+}))

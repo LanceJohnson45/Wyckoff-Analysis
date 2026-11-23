@@ -1,6 +1,6 @@
 # 双策略研究执行预览
 
-`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；持续观察名单、Agent工作台及services调度仍待接通。
+`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；持续观察名单及services调度仍待接通。
 
 ```bash
 uv sync --frozen --python 3.12 --extra dev --extra research
@@ -28,3 +28,5 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 模型输出契约v2允许结构化claim用自身ref独立引用事实，纯文字观点仍各自需要有效引用；正确价格不必在文字字段重复列引用。错误数值明确返回ref及固定值供唯一一次修正；互评data_limitations的schema动态枚举本次注册限制，缺本策略计算时只能标insufficient_evidence。修正轮次复用现有证据并显示剩余查询预算；工具预算耗尽明确记tool_budget_exceeded，不自动重试。旧失败结果不追认，版本变化使用force关联父运行。API OpenAPI同时声明统一的空data错误报文。
 
 质量门禁扫描已扩展至stock_research全包：默认函数硬上限70行，CLI编排100行；执行流程和DSH插件配置已拆分，无新增豁免。先前门禁通过仅覆盖当时已登记目录，不能当作研究包已经接受函数长度扫描的证据。
+
+真实v2运行f77a7db4-b830-4310-9463-2e97565b9c17已完成四阶段：Martin五只、Wyckoff零只初选，交叉评议分别零只、五只。独立CLI/HTTP重读、回执及固定输出重新校验一致，绑定源码8f626c72；报告仍标记迟到。旧失败运行保留，不追认成成功。

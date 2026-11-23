@@ -70,6 +70,15 @@ def test_authenticated_http_reads_saved_reports_and_fixed_revisions(
                 assert body["data"]["report_id"] == latest
                 assert body["data"]["run"]["status"] == "partial"
                 assert body["data"]["run"]["quality"]["passed"] is True
+                revisions = (
+                    await client.get(f"/v1/research-runs/{result['run_id']}/reports?page_size=1", headers=headers)
+                ).json()["data"]
+                assert revisions["items"][0]["report_id"] == latest
+                assert revisions["total"] >= 2
+                filtered = (await client.get(f"/v1/reports/latest?run_id={result['run_id']}", headers=headers)).json()[
+                    "data"
+                ]
+                assert filtered["report_id"] == latest
                 fixed = (await client.get(f"/v1/reports/{first_report}", headers=headers)).json()["data"]
                 assert fixed["run"]["status"] == "completed"
                 assert len(fixed["run"]["selections"]) == len(fixed["run"]["reviews"]) == 2
@@ -105,6 +114,10 @@ def test_authenticated_http_reads_saved_reports_and_fixed_revisions(
                     headers={**headers, "Last-Event-ID": str(body["data"]["revision"])},
                 )
                 assert "event: report" not in empty.text
+                query_cursor = await client.get(
+                    f"/v1/research-runs/{result['run_id']}/events?after={body['data']['revision']}", headers=headers
+                )
+                assert "event: report" not in query_cursor.text
             foreign = create_app(settings.model_copy(update={"workspace": "foreign"}))
             async with (
                 foreign.router.lifespan_context(foreign),
@@ -119,3 +132,22 @@ def test_authenticated_http_reads_saved_reports_and_fixed_revisions(
             await close_engine(engine)
 
     asyncio.run(scenario())
+
+
+def test_company_identity_comes_from_cutoff_snapshot(snapshot: Snapshot) -> None:
+    """名称按固定快照选择，未来生效分类不能改写当时公司名。"""
+    from datetime import date
+
+    from stock_research.quality import build_snapshot
+    from stock_research.queries import company_views
+
+    body = {"selections": [{"payload": {"decision": {"items": [{"symbol": "AAPL"}]}}}], "reviews": []}
+    assert company_views(snapshot, body)[0].name == "Apple"
+    future = snapshot.classifications.records[0].model_copy(
+        update={"company_name": "Future Company", "effective_date": date(2026, 11, 24)}
+    )
+    classifications = snapshot.classifications.model_copy(update={"records": (future,)})
+    changed = build_snapshot(
+        snapshot.universe, classifications, snapshot.bars, snapshot.source_identity, snapshot.as_of
+    )
+    assert company_views(changed, body)[0].name == "Apple"

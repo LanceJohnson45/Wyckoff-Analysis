@@ -12,6 +12,7 @@ def test_function_line_limits_are_layer_specific() -> None:
     assert function_line_limit("stock_research/pipeline.py") == DEFAULT_FUNC_LIMIT
     assert function_line_limit("web/apps/web/src/routes/chat.tsx") == 120
     assert function_line_limit("web/apps/web/src/components/market-bar.tsx") == 90
+    assert function_line_limit("web/apps/web/server/stock-research-proxy.ts") == DEFAULT_FUNC_LIMIT
     assert function_line_limit("web/packages/shared/src/chat-tools.ts") == DEFAULT_FUNC_LIMIT
 
 

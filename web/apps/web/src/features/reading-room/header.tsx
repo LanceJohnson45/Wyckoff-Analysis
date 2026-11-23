@@ -1,4 +1,4 @@
-import { Compass, MessageSquareText, Pin, type LucideIcon } from 'lucide-react'
+import { Compass, FlaskConical, MessageSquareText, Pin, type LucideIcon } from 'lucide-react'
 import { usePreferences } from '@/lib/preferences'
 import type { ChatConfig, ReadingRoomTab } from './types'
 
@@ -22,9 +22,9 @@ export function ChatHeader({
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-border px-6 py-3">
       <div className="flex min-w-0 items-center gap-3">
         <h1 className="text-lg font-semibold">{t('chat.title')}</h1>
-        {config.model && <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200">{config.model}</span>}
+        {activeTab !== 'research' && config.model && <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-200">{config.model}</span>}
         {config.agentLane && <span title="会员 Agent 服务模式" className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">Agent</span>}
-        {!config.configured && hasUser && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">{config.error ? t('chat.configErrorBadge') : t('chat.noApiKey')}</span>}
+        {activeTab !== 'research' && !config.configured && hasUser && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">{config.error ? t('chat.configErrorBadge') : t('chat.noApiKey')}</span>}
       </div>
       <ReadingRoomTabs activeTab={activeTab} messageCount={messageCount} watchCount={watchCount} onChange={onTabChange} />
     </div>
@@ -46,6 +46,7 @@ function ReadingRoomTabs({
     { key: 'desk', label: '快捷入口', Icon: Compass },
     { key: 'chat', label: '对话', count: messageCount, Icon: MessageSquareText },
     { key: 'watchlist', label: '观察篮', count: watchCount, Icon: Pin },
+    { key: 'research', label: '策略研究', Icon: FlaskConical },
   ]
   return (
     <div className="flex w-full max-w-md shrink-0 segmented-track" role="tablist" aria-label="读盘室子视图">

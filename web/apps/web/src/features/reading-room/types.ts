@@ -43,7 +43,7 @@ export interface QueuedMessage {
   text: string
 }
 
-export type ReadingRoomTab = 'desk' | 'chat' | 'watchlist'
+export type ReadingRoomTab = 'desk' | 'chat' | 'watchlist' | 'research'
 
 export interface ModelRunStatus {
   kind: 'model'

@@ -1,4 +1,4 @@
-import { type FormEvent, type RefObject } from 'react'
+import { lazy, Suspense, type FormEvent, type RefObject } from 'react'
 import { AlertTriangle, LoaderCircle, MessageSquareText, RotateCcw, X } from 'lucide-react'
 import type { UIMessage } from 'ai'
 import { ChatComposer, ThinkingBubble } from './composer'
@@ -12,6 +12,8 @@ import { messageText } from './messages'
 import { formatLlmUsageLine } from '@wyckoff/shared'
 import type { ChatRunStatus, LlmUsageMetrics, MarketWatchSnapshot, PinStockInput, QueuedMessage, ReadingRoomTab, RunCheckpoint, RunRecord, WatchItem } from './types'
 import { WatchlistPanelView } from './watchlist'
+
+const StockResearchPanel = lazy(() => import('../stock-research/panel'))
 
 interface ChatMessagesProps {
   chat: ReadingRoomChat
@@ -148,6 +150,7 @@ function ReadingRoomMainContent({
   onResumeRun: () => void
   onClearRunCheckpoint: () => void
 }) {
+  if (activeTab === 'research') return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">正在打开策略研究…</p>}><StockResearchPanel onDiscuss={onStart} /></Suspense>
   if (activeTab === 'desk') {
     return (
       <div className="mx-auto w-full max-w-5xl px-2 py-1 animate-fade-in-up">

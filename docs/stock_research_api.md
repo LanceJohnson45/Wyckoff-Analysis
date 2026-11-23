@@ -11,10 +11,11 @@
 | GET /v1/research-runs | SQL分页，page>=1、page_size=1～100，创建时间及UUID稳定排序 |
 | POST /v1/research-runs | 固定来源冻结快照与两策略量化后返回202，受控后台任务执行模型阶段 |
 | GET /v1/research-runs/{UUID} | 当前状态、质量、数据截止日、报告期限、初选、互评及错误 |
-| GET /v1/research-runs/{UUID}/events | SSE按持久化报告revision续读，Last-Event-ID>=0，每连接最多三十秒 |
+| GET /v1/research-runs/{UUID}/events | SSE按持久化报告revision续读，max(Last-Event-ID, after)>=0，每连接最多三十秒 |
 | POST /v1/research-runs/{UUID}/retry | 仅补未成功阶段；完整运行须显式重分析 |
 | POST /v1/research-runs/{UUID}/cancel | 取消API拥有的任务，等候收尾再保存cancelled，不接管其他执行者 |
-| GET /v1/reports/latest | 可按target_session过滤，返回最近创建运行的最新固定修订 |
+| GET /v1/reports/latest | 可按target_session或run_id过滤，返回最近创建运行的最新固定修订 |
+| GET /v1/research-runs/{UUID}/reports | SQL分页的固定修订列表，page_size最多100 |
 | GET /v1/reports/{UUID} | 原修订初选与互评；不会用当前运行状态重写历史 |
 | GET /openapi.json | 当前显式Pydantic输入/输出契约 |
 
@@ -26,4 +27,6 @@ API请求映射保存在新增api_requests表：只保存请求键摘要、业�
 
 SSE游标是run内单调revision，断线后用Last-Event-ID继续。每条report事件包含与固定报告GET相同的类型；无新修订时心跳，运行结束或连接时限到达后关闭。需要继续观察时使用同一游标重连。当前没有通知事件或投递成功声明。
 
-当前仍未完成持续观察名单、个股/分组查询工具、参数及主题/自选维护、研究聊天、现有Agent界面接入、Personal services、Tailscale入口和自然交易日部署。API可读回本机真实partial预览，不代表非空模型初选、完整UI或生产调度验收。
+RunView现在带companies，名称来自同一冻结快照的当时分类或成分名称，不向当前市场查询改写历史身份。浏览器EventSource以after查询参数初始化游标，重连的Last-Event-ID继续有效。
+
+本机真实完整四阶段运行已能通过HTTP和独立CLI读回；[Agent研究面板](stock_research_agent_panel.md)已接线，登录后页面操作仍待验证。持续观察名单、个股/分组查询工具、参数及主题/自选维护、专用研究聊天、Personal services、Tailscale入口和自然交易日部署仍待完成。
