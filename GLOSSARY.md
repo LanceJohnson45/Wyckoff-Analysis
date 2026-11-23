@@ -508,3 +508,5 @@ flowchart LR
 **冻结整池与策略子集**：universe_total为截止日有效指数/自选并集去重总数，total为本次字面搜索命中数；缺行情/分类成员保留。逐策略data_eligible、calculation_available、in_pool、selected分别表示数据可用、已计算、量化池与正式初选，selected=null表示该修订尚无初选。详见[整池浏览](docs/stock_research_universe.md)。
 
 **主题提议与人工输入发布**：theme_proposals记录pending建议及基准，确认才向input_publications追加修订；manual发布只维护人工成员关系。生效日不早于确认时纽约日期，快照按as_of选择已生效最高修订，来源标签不使同版API/CLI重复选股。来源与版本摘要固定保存，后来配置不改旧报告。详见[人工输入维护](docs/stock_research_input_maintenance.md)。
+
+**冻结锚点曲线**：从Martin原产物已确认锚点与完整冻结日线重建的日线累计典型价成交量均价。曲线从确认日显示，请求窗口不重置累计，末值核对原估算；辅助显示、硬过滤关闭。详见[个股图表](docs/stock_research_stock_view.md)。

@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
+import { ResearchAnchorChartView } from './anchor-chart'
 import { useQuery } from '@tanstack/react-query'
 import type { KlineRow } from '@wyckoff/shared'
 import { readResearchStock, type ResearchReport } from './api'
@@ -34,14 +35,14 @@ export function ResearchStockPanel({ report, onDiscuss }: { report: ResearchRepo
     {!symbol && <p className="text-xs text-muted-foreground">输入本次股票池内的代码以读取快照。</p>}
     {symbol && query.isPending && <p role="status" className="text-xs text-muted-foreground">正在读取固定股票事实…</p>}
     {query.error && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">{query.error.message}<button type="button" onClick={() => { void query.refetch() }} className="ml-3 underline">重试个股查询</button></p>}
-    {query.data && <><StockFactsView stock={query.data} /><button type="button" onClick={discuss} className="rounded-lg border border-border px-3 py-2 text-xs">带此股票证据继续讨论</button></>}
+    {query.data && <><StockFactsView stock={query.data} chart={<ResearchAnchorChartView key={`${report.report_id}:${symbol}`} report={report} symbol={symbol} data={researchKlines(query.data)} />} /><button type="button" onClick={discuss} className="rounded-lg border border-border px-3 py-2 text-xs">带此股票证据继续讨论</button></>}
   </section>
 }
 
-export function StockFactsView({ stock }: { stock: StockObservation }) {
+export function StockFactsView({ stock, chart }: { stock: StockObservation; chart?: ReactNode }) {
   return <div className="space-y-4"><header><h4 className="text-base font-semibold">{stock.company.name} <code className="ml-2 text-xs text-muted-foreground">{stock.company.symbol}</code></h4><p className="mt-2 text-xs text-muted-foreground">截止 {stock.as_of} · 显示 {stock.history.length} / {stock.history_total} 根同口径日线</p></header>
-    {stock.history.length > 0 ? <Suspense fallback={<p role="status" className="text-xs text-muted-foreground">正在加载行情图…</p>}><PriceChart data={researchKlines(stock)} priceOnly height={340} /></Suspense> : <p className="text-xs text-amber-700 dark:text-amber-300">该股票没有本次可用日线，不绘制行情图。</p>}
-    <p className="text-[11px] text-muted-foreground">图表只展示快照价格与成交量。均线、支撑和锚点的策略依据以下方冻结事实为准；日线不能证明盘中触发或成交。</p>
+    {stock.history.length > 0 ? chart ?? <Suspense fallback={<p role="status" className="text-xs text-muted-foreground">正在加载行情图…</p>}><PriceChart data={researchKlines(stock)} priceOnly height={340} /></Suspense> : <p className="text-xs text-amber-700 dark:text-amber-300">该股票没有本次可用日线，不绘制行情图。</p>}
+    <p className="text-[11px] text-muted-foreground">均线、支撑和锚点的策略依据以下方冻结事实为准；图上叠加只作日线辅助证据。</p>
     <div className="grid gap-4 xl:grid-cols-2">{stock.observations.map(observation => <section key={observation.strategy} className="min-w-0 rounded-xl border border-border p-4"><h5 className="text-sm font-medium">{strategyLabels[observation.strategy]} · {observation.in_pool ? '量化池内' : '未进入量化池'}</h5>{!observation.calculation_available && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">本次缺少有效量化计算，不能推断为零因子或模型否定。</p>}<div className="mt-3 grid grid-cols-2 gap-2">{observation.facts.filter(fact => fact.ref.includes('/factors/') && Object.hasOwn(factorLabels, fact.ref.split('/').at(-1) || '')).map(fact => <div key={fact.ref} className="rounded-lg bg-muted/40 p-2 text-xs"><p className="text-muted-foreground">{factorLabels[fact.ref.split('/').at(-1)!]}</p><p className="mt-1 font-medium tabular-nums" title={String(fact.value)}>{evidenceValue(fact.value)}</p></div>)}</div><FactList title="全部固定因子、条件与锚点" facts={observation.facts} /><FactList title="量化排除证据" facts={observation.exclusions} /><details className="mt-3 break-all text-[11px] text-muted-foreground"><summary className="cursor-pointer">参数与产物版本、数据限制</summary><p className="mt-2">参数摘要 {observation.parameter_hash}</p><p className="mt-1">产物摘要 {observation.content_hash}</p>{observation.limitations.map(text => <p key={text} className="mt-2">{text}</p>)}</details></section>)}</div>
     {stock.groups.length > 0 && <details className="text-xs"><summary className="cursor-pointer">行业与已确认主题 · {stock.groups.length} 组</summary><div className="mt-3 space-y-2">{stock.groups.map(group => <div key={group.name} className="rounded-lg bg-muted/40 p-3"><p>{group.name} · 有效 {group.valid_members.length} / {group.members.length} · 覆盖 {(group.coverage * 100).toFixed(1)}%</p><p className="mt-1 text-muted-foreground">{group.usable ? `组得分 ${evidenceValue(group.score)}` : '成员或覆盖不足，不形成分组得分'}</p><code className="mt-1 block break-all text-[10px]">{group.ref_prefix}</code></div>)}</div></details>}
   </div>

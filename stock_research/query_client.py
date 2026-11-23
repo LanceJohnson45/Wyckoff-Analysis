@@ -5,9 +5,10 @@ from typing import Literal, TypeVar
 from uuid import UUID
 
 import httpx
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from stock_research.query_settings import QuerySettings
+from stock_research.schemas.anchor_chart import AnchorChart
 from stock_research.schemas.api import ApiResponse, Code, ReportView, RunView
 from stock_research.schemas.observations import StockObservation
 from stock_research.schemas.report_queries import (
@@ -17,6 +18,7 @@ from stock_research.schemas.report_queries import (
     ReportScope,
     StockComparison,
     StrategyRules,
+    Symbol,
 )
 from stock_research.schemas.universe import UniversePage, UniverseQuery
 
@@ -162,3 +164,27 @@ class ResearchReader:
     async def strategy_rules(self, report_id: UUID) -> StrategyRules:
         """读取冻结规则的来源、参数与有效配置，不读取当前发布。"""
         return await self._scoped(report_id, "rules", StrategyRules, {})
+
+    async def anchor_chart(
+        self, report_id: UUID, symbol: str, limit: int = 320, index: int | None = None
+    ) -> AnchorChart:
+        """仅取一个原锚点曲线，不提供任意路径或结构重算入口。"""
+        try:
+            TypeAdapter(Symbol).validate_python(symbol)
+        except ValueError:
+            raise QueryError("锚点股票代码无效") from None
+        if (
+            isinstance(limit, bool)
+            or not 1 <= limit <= 320
+            or (index is not None and (isinstance(index, bool) or index < 0))
+        ):
+            raise QueryError("锚点范围或索引无效")
+        value = await self._scoped(
+            report_id,
+            f"anchors/{symbol}",
+            AnchorChart,
+            {"limit": str(limit), **({"index": str(index)} if index is not None else {})},
+        )
+        if value.company.symbol != symbol or (index is not None and value.selected_index != index):
+            raise QueryError("锚点响应与指定股票或索引不一致")
+        return value

@@ -1,5 +1,18 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：已确认锚点的固定图表投影
+
+主题/自选维护已提交b123dfc0。本批为原Martin锚点增加独立固定报告GET /v1/reports/{report_id}/anchors/{symbol}、ResearchReader.anchor_chart和query_cli anchor-chart。完整目录保留原索引/标量引用，默认最近确认项，每次只返回一条曲线，不放大原股票/问答/MCP工具响应。锚点及确认日必须在冻结行情中且匹配原参数右侧确认间隔，不重新检测结构。完整日线从锚点累计典型价成交量均价、末值与原daily_estimate对拍；确认前不显示，请求末N根不重置累计，零量保持null。
+
+Agent个股图表已接目录选择、显示开关、单条估算曲线与确认点，原锚点/确认日期分别显示；priceOnly仍关闭自动均线、结构与支撑推断，显式evidenceLines独立接入，切换/销毁清理。合成测试驱动生产compute_martin对拍保存结果，原生PG→ASGI→最小客户端覆盖固定报告、范围和读身份；渲染器实际setData/确认标记/清理验证。实际画布和选择按钮仍待正常账号认证，此处没有宣称浏览器验收。
+
+真实原cf8da076修订3的GILD/ACGL/MRSH各有16/15/15项原锚点，选择索引0分别读回56/53/48个确认后点，截止值与原估算一致；两根窗口与完整曲线尾部一致。独立PG、只读HTTP、CLI及前端客户端→实际Vite代理逐项通过，原标量引用仍可查，跨站403/外报告404；原报告及a45bf9c4完成问答不变。默认最近确认项为两根曲线，和手选早期锚点区分；未创建新模型/量化运行、通知或维护发布，stocks建议/发布仍0。
+
+冻结源码后全量Python6000通过（无skip、50旧警告），专项9通过；完整Web gate为frozen-lockfile、TS strict、Web402、API221/两项默认外部Upstash跳过、Web/Pages-functions构建。Ruff/1251文件格式、全范围质量、红线125文件、workflow/dependency hygiene与合成配置daily dry-run通过；42份生产JS无研究operator/只读及本机模型凭据。Python LOC140877/+63.4%、TS35956/+93.4%旧基线警告保留，本批增长对应显示投影/契约/客户端与图表。
+
+确认0活动研究/问答后，仅重启本线程8788 API，旧PID78095终态143及端口释放确认，当前PID84188/session3233、readyz200；服务保存于忽略的anchor-main-api.log。本机Vite沿用原服务，实际客户端通路可用。浏览器仍按上一检查点browser2/tab2在正常login待handoff结束；wiki checkout不存在，远端CI、整体独立审查及正式部署未验收。说明见stock_research_stock_view.md；继续行情更新协调/局部量化降级、Personal唯一调度通知及Mac部署，保持plan.md总体goal，不修改其他Personal工作树或secrets。
+
+
 ## 续接检查点：主题确认与人工自选冻结输入
 
 上一批整池浏览已提交f31895b6。本批增加theme_proposals与input_publications，显式init-schema后24表；主题提议pending不生效，人工确认按主题基准/当前修订CAS，完整成员定义可清空。manual按代码add/remove追加、先读当前最高修订，不移除指数关系，行业只补缺。来源、理由、确认时间、生效日、请求及摘要保留；未知提交复用原请求/幂等键核对，旧修订不自动覆盖。私有历史及冻结来源仅operator可读，共享只读身份403。

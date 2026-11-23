@@ -4,7 +4,7 @@ import { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
 
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules|universe))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters|inputs))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?|theme-proposals(?:/${UUID})?|input-publications|universe-overrides(?:/[A-Z][A-Z0-9.-]{0,31})?)$`)
+const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules|universe|anchors/[A-Z][A-Z0-9.-]{0,31}))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters|inputs))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?|theme-proposals(?:/${UUID})?|input-publications|universe-overrides(?:/[A-Z][A-Z0-9.-]{0,31})?)$`)
 const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters|chat-turns(?:/${UUID}/cancel)?|theme-proposals(?:/${UUID}/confirm)?|universe-overrides)$`)
 const MAX_BODY_BYTES = 8192
 const CHAT_BODY_BYTES = 49152

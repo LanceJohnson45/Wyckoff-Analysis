@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { anchorChartSchema } from './anchor-contract'
 import { watchPageSchema, watchEventPageSchema } from './watch-contract'
 import { strategySchema, researchId as id, researchDay as day, researchHash as hash, researchQuality } from './contract-values'
 import { stockObservationSchema } from './stock-contract'
@@ -211,4 +212,11 @@ export async function readFrozenInputs(runId: string, signal?: AbortSignal) {
   const result = await request(`/v1/research-runs/${id.parse(runId)}/inputs`, frozenInputsSchema, { signal })
   if (result.run_id !== runId) throw new ResearchApiError('输入来源不属于当前运行', 503, 'invalid_response')
   return result
+}
+
+export async function readResearchAnchorChart(report: ResearchReport, symbol: string, index: number | null, signal?: AbortSignal) {
+  if (!/^[A-Z][A-Z0-9.-]{0,31}$/.test(symbol) || (index !== null && (!Number.isInteger(index) || index < 0))) throw new ResearchApiError('锚点查询参数无效', 422, 'invalid_input')
+  const value = await request(`/v1/reports/${id.parse(report.report_id)}/anchors/${symbol}?limit=320${index === null ? '' : `&index=${index}`}`, anchorChartSchema, { signal })
+  if (value.report_id !== report.report_id || value.run_id !== report.run.run_id || value.snapshot_id !== report.run.snapshot_id || value.snapshot_hash !== report.run.snapshot_hash || value.as_of !== report.run.as_of || value.company.symbol !== symbol || (index !== null && value.selected_index !== index)) throw new ResearchApiError('锚点与当前冻结报告不一致', 502, 'invalid_response')
+  return value
 }

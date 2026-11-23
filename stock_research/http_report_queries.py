@@ -5,7 +5,9 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Query, Request
 from pydantic import UUID4
 
+from stock_research.anchor_chart import anchor_chart
 from stock_research.report_queries import compare_stocks, group_strength, market_overview, strategy_rules
+from stock_research.schemas.anchor_chart import AnchorChart
 from stock_research.schemas.api import ApiResponse, Code
 from stock_research.schemas.report_queries import GroupPage, MarketOverview, StockComparison, StrategyRules, Symbol
 from stock_research.schemas.universe import UniversePage, UniverseQuery
@@ -81,5 +83,22 @@ async def rules(request: Request, report_id: UUID4) -> ApiResponse[StrategyRules
         code=Code.OK,
         message="ok",
         data=await strategy_rules(request.app.state.store, str(report_id)),
+        correlation_id=request.state.correlation_id,
+    )
+
+
+@router.get("/v1/reports/{report_id}/anchors/{symbol}", response_model=ApiResponse[AnchorChart])
+async def anchors(
+    request: Request,
+    report_id: UUID4,
+    symbol: Symbol,
+    limit: Annotated[int, Query(ge=1, le=320)] = 320,
+    index: Annotated[int | None, Query(ge=0)] = None,
+) -> ApiResponse[AnchorChart]:
+    """目录沿原产物索引，单条显示曲线从确认日起始，不增加模型工具。"""
+    return ApiResponse(
+        code=Code.OK,
+        message="ok",
+        data=await anchor_chart(request.app.state.store, str(report_id), symbol, limit, index),
         correlation_id=request.state.correlation_id,
     )

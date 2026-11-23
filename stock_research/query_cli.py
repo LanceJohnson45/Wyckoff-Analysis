@@ -24,11 +24,20 @@ def main(argv: list[str] | None = None) -> int:
     stock.add_argument("--run-id", required=True)
     stock.add_argument("--report-id")
     stock.add_argument("--limit", type=int, default=60)
+    anchor = commands.add_parser("anchor-chart")
+    anchor.add_argument("--symbol", required=True)
+    anchor.add_argument("--report-id", required=True)
+    anchor.add_argument("--limit", type=int, default=320)
+    anchor.add_argument("--index", type=int)
     args = parser.parse_args(argv)
     try:
         reader = ResearchReader(QuerySettings())
         if args.command == "latest-report":
             operation = reader.latest_report(args.target_session)
+        elif args.command == "anchor-chart":
+            operation = reader.anchor_chart(
+                TypeAdapter(UUID4).validate_python(args.report_id), args.symbol, args.limit, args.index
+            )
         else:
             run_id = TypeAdapter(UUID4).validate_python(args.run_id)
             if args.command == "run-status":

@@ -56,3 +56,5 @@ API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整�
 本批实际验证：全量Python5983（无skip、50旧警告）、查询/HTTP/源码12通过；Web386、API221/两项默认Upstash跳过及完整Web gate通过。真实report cf8da076修订3的八工具各调用一次，126个原分组、两股比较、三基准5根及规则一致；另验证8股各60根，JSON约371KB，未超过2MB客户端上限。代理读200/跨站403，原报告不变。浏览器和聊天模型循环未据此声明完成，wiki不存在且远端CI/部署未验收。
 
 [完整冻结股票池](stock_research_universe.md)新增GET universe及ResearchReader.universe，SQL字面搜索/分页，保留缺数与初选未提交。绑定问答的market_overview使用view=universe，默认市场模式与独立研究八工具/Personal三工具保持原契约。
+
+最小ResearchReader新增anchor_chart及query_cli anchor-chart，只读固定报告的原锚点目录和一条显示重建曲线；不改变Personal三工具或独立研究八工具。省略索引选择最近确认项，完整冻结行情累计后按limit截断，不重新识别结构。接口和边界见[个股图表](stock_research_stock_view.md)。

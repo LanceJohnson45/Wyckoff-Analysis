@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { useEvidenceLines, type EvidenceChartLine } from './kline-evidence-overlay'
 import { watchChartResize } from '@/lib/chart-resize'
 import { formatSignedPercent } from '@/lib/format'
 import { avg, rsi as calcRSI, macd as calcMACD, bollinger as calcBollinger } from '@/lib/math'
@@ -43,6 +44,7 @@ interface KlineChartProps {
   stage?: string
   showIndicators?: boolean
   priceOnly?: boolean
+  evidenceLines?: EvidenceChartLine[]
   /** 模型给的威科夫作图计划:阶段、事件、推演。给了就画长周期均线、底色、预测线。 */
   chartPlan?: WyckoffChartPlan | null
   onBarClick?: (date: string) => void
@@ -73,7 +75,7 @@ interface ChartRefs {
 
 type ChartTheme = ReturnType<typeof readChartTheme>
 
-export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tradingRange, stage, showIndicators = false, priceOnly = false, chartPlan, onBarClick }: KlineChartProps) {
+export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tradingRange, stage, showIndicators = false, priceOnly = false, evidenceLines, chartPlan, onBarClick }: KlineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRefs = useRef<ChartRefs | null>(null)
   const themeRef = useRef(readChartTheme())
@@ -85,6 +87,7 @@ export function KlineChart({ data, height = 400, wyckoffMarkers, newsMarkers, tr
   useChartInit(containerRef, chartRefs, themeRef, height)
   useChartData(chartRefs, themeRef, data, planMarkers ?? wyckoffMarkers, newsMarkers, tradingRange, priceOnly)
   useChartSelection(chartRefs, onBarClick)
+  useEvidenceLines(chartRefs, evidenceLines, height)
   useBollingerOverlay(chartRefs, data, !priceOnly && indicators.boll)
   useChartPlanOverlay(chartRefs, data, priceOnly ? null : chartPlan)
 
