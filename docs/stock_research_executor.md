@@ -1,6 +1,6 @@
 # 双策略研究执行预览
 
-`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；持续观察名单及services调度仍待接通。
+`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；[持续观察名单](stock_research_watchlists.md)已接终态事务及HTTP/CLI，面板及services调度待接。
 
 ```bash
 uv sync --frozen --python 3.12 --extra dev --extra research

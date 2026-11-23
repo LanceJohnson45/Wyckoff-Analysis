@@ -150,6 +150,22 @@ def snapshot(universe: UniverseVersion, classifications: ClassificationVersion, 
 
 
 @pytest.fixture
+def spring_snapshot(snapshot: Snapshot) -> Snapshot:
+    """独立合成输入：320日横盘后下探并收复，不能用于真实策略收益结论。"""
+    bars = []
+    stock = [bar for bar in snapshot.bars if bar.kind == "stock"]
+    for index, bar in enumerate(stock):
+        values = dict(open=10.0, high=10.1, low=9.9, close=10.0, volume=1000.0)
+        if index == len(stock) - 2:
+            values.update(open=10.1, high=10.2, low=9.7, close=10.05)
+        if index == len(stock) - 1:
+            values.update(open=9.9, high=10.6, low=9.6, close=10.5, volume=2000.0)
+        bars.append(bar.model_copy(update=values))
+    bars.extend(bar for bar in snapshot.bars if bar.kind == "benchmark")
+    return build_snapshot(snapshot.universe, snapshot.classifications, tuple(bars), "synthetic-spring", snapshot.as_of)
+
+
+@pytest.fixture
 def market_path(tmp_path: Path, bars: tuple[Bar, ...]) -> Path:
     """只为生产 SQLite 行情源造真实文件；研究状态仍使用 PostgreSQL。"""
     path = tmp_path / "source.sqlite3"

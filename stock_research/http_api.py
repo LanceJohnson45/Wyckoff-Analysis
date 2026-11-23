@@ -17,12 +17,15 @@ from stock_research.http_events import register_events
 from stock_research.http_observations import register_observations
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
+from stock_research.http_watchlists import register_watchlists
 from stock_research.queries import list_runs, run_view
 from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
-from stock_research.schema import API_REQUESTS, RESEARCH_RUNS
+from stock_research.schema import API_REQUESTS, RESEARCH_RUNS, WATCHLIST_DAYS, WATCHLIST_EVENTS, WATCHLIST_ITEMS
 from stock_research.schemas.api import ApiResponse, Code, HealthView, RunPage, RunView
 from stock_research.store import close_engine, database_engine
+
+RUNTIME_TABLES = (RESEARCH_RUNS, API_REQUESTS, WATCHLIST_ITEMS, WATCHLIST_EVENTS, WATCHLIST_DAYS)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -35,7 +38,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         manager = None
         try:
             async with engine.connect() as connection:
-                for table in (RESEARCH_RUNS, API_REQUESTS):
+                for table in RUNTIME_TABLES:
                     await connection.execute(select(table.c.uuid).limit(0))
             app.state.store = RunStore(engine, config.workspace)
             manager = app.state.manager = RunManager(app.state.store, config)
@@ -62,6 +65,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_reads(app)
     register_reports(app)
     register_observations(app)
+    register_watchlists(app)
     register_events(app)
     register_actions(app)
     return app
@@ -79,7 +83,7 @@ def register_reads(app: FastAPI) -> None:
     @app.get("/readyz", response_model=ApiResponse[HealthView])
     async def ready(request: Request) -> ApiResponse[HealthView]:
         async with request.app.state.store.engine.connect() as connection:
-            for table in (RESEARCH_RUNS, API_REQUESTS):
+            for table in RUNTIME_TABLES:
                 await connection.execute(select(table.c.uuid).limit(0))
         return ApiResponse(
             code=Code.OK, message="ok", data=HealthView(status="ready"), correlation_id=request.state.correlation_id

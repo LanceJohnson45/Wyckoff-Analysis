@@ -88,3 +88,20 @@ async def read_run_command(settings: Settings, run_id: str) -> dict[str, object]
         return await RunStore(engine, settings.workspace).summary(run_id)
     finally:
         await close_engine(engine)
+
+
+async def track_run_command(settings: Settings, run_id: str) -> dict[str, object]:
+    """显式接入已有终态运行；采用当日来源与日期顺序规则，不执行模型。"""
+    from stock_research.watch_queries import watch_page
+
+    engine = database_engine(settings)
+    try:
+        store = RunStore(engine, settings.workspace)
+        body = await store.summary(run_id)
+        if body["status"] in {"pending", "running"}:
+            raise ValueError("研究尚未结束，请等待原执行者完成")
+        await store.publish(run_id, body["status"], body["error_code"], track=True)
+        page = await watch_page(store, 1, 100)
+        return {"processed_run_id": run_id, "watchlists": page.model_dump(mode="json")}
+    finally:
+        await close_engine(engine)

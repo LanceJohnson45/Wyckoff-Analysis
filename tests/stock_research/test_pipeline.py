@@ -116,12 +116,19 @@ def test_partial_run_resumes_failed_stage_without_replacing_selection(
             partial = await run_preview(engine, settings, valid, analyses, target)
             assert partial["status"] == "partial"
             assert len(partial["selections"]) == 1
+            from stock_research.run_store import RunStore
+            from stock_research.watch_queries import event_page, watch_page
+
+            watch_store = RunStore(engine, settings.workspace)
+            assert (await watch_page(watch_store, 1, 100)).total == 0
             original = partial["selections"][0]
             recovered = await run_preview(engine, settings, valid, analyses, target)
             assert recovered["run_id"] == partial["run_id"]
             assert recovered["status"] == "completed"
             assert original in recovered["selections"]
             assert len(recovered["selections"]) == len(recovered["reviews"]) == 2
+            assert (await watch_page(watch_store, 1, 100)).items[0].state == "new"
+            assert (await event_page(watch_store, 1, 100)).total == 1
             assert seen == [("martin", "select"), ("martin", "select"), ("wyckoff", "review")]
             stages = {(stage["strategy"], stage["kind"]): stage for stage in recovered["stages"]}
             assert stages["martin", "select"]["attempt_count"] == 2

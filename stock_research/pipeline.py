@@ -211,24 +211,28 @@ async def execute_run(
                         )
             await parallel_stages(reviews)
     except TimeoutError:
-        await store.recover_stages(run_id, "run_deadline_exceeded")
-        return await store.publish(
-            run_id, "partial" if (await store.summary(run_id))["selections"] else "failed", "run_deadline_exceeded"
-        )
+        return await failed_run(store, run_id, "run_deadline_exceeded")
     except (ValueError, SQLAlchemyError, OSError):
         logger.exception("研究阶段执行失败", run_id=run_id)
-        await store.recover_stages(run_id, "stage_execution_failed")
-        return await store.publish(
-            run_id, "partial" if (await store.summary(run_id))["selections"] else "failed", "stage_execution_failed"
-        )
+        return await failed_run(store, run_id, "stage_execution_failed")
     except asyncio.CancelledError:
-        await store.publish(run_id, "cancelled")
+        await store.publish(run_id, "cancelled", track=True)
         raise
     result = await store.summary(run_id)
     success = len(result["selections"]) == len(STRATEGIES) and all(
         stage["status"] == "completed" for stage in result["stages"]
     )
-    return await store.publish(run_id, "completed" if success else "partial" if result["selections"] else "failed")
+    return await store.publish(
+        run_id, "completed" if success else "partial" if result["selections"] else "failed", track=True
+    )
+
+
+async def failed_run(store: RunStore, run_id: str, error: str) -> dict[str, object]:
+    """失败收尾统一回收阶段并保留已成功初选及观察状态。"""
+    await store.recover_stages(run_id, error)
+    return await store.publish(
+        run_id, "partial" if (await store.summary(run_id))["selections"] else "failed", error, track=True
+    )
 
 
 async def parallel_stages(coroutines: list[Coroutine[Any, Any, None]]) -> None:
@@ -322,7 +326,7 @@ async def resume_preview(
         manifest = current["manifest"]
         if manifest["source_hash"] != source_identity() or manifest["prompt_hash"] != prompt_identity():
             return await store.publish(
-                run_id, "partial" if current["selections"] else "failed", "execution_version_changed"
+                run_id, "partial" if current["selections"] else "failed", "execution_version_changed", track=True
             )
         settings = settings.model_copy(
             update={key: manifest[key] for key in ("stage_timeout_seconds", "run_timeout_seconds")}
@@ -344,7 +348,7 @@ async def resume_preview(
                 await verify_runtime(settings.dsh_executable)
             except (ValueError, OSError):
                 return await store.publish(
-                    run_id, "partial" if current["selections"] else "failed", "executor_unavailable"
+                    run_id, "partial" if current["selections"] else "failed", "executor_unavailable", track=True
                 )
         return await execute_run(store, settings, snapshot, analyses, run_id, connections)
 

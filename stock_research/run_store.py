@@ -493,19 +493,31 @@ class RunStore:
                     )
         return result
 
-    async def publish(self, run_id: str, status: str, error_code: str | None = None) -> dict[str, object]:
+    async def publish(
+        self, run_id: str, status: str, error_code: str | None = None, *, track: bool = False
+    ) -> dict[str, object]:
         """报告修订只追加，内容相同的补读不创建重复版本。"""
         if status not in {"pending", "running", "completed", "partial", "failed", "cancelled"}:
             raise ValueError("未知研究运行状态")
-        await self.row(RESEARCH_RUNS, run_id)
+        body = {**await self.summary(run_id), "status": status, "error_code": error_code}
+        inputs = None
+        if track:
+            from stock_research.watchlists import apply_tracking, tracking_inputs
+
+            inputs = await tracking_inputs(self, body)
         async with self.engine.begin() as connection:
+            await connection.execute(
+                select(RESEARCH_RUNS.c.uuid)
+                .where(RESEARCH_RUNS.c.uuid == run_id, RESEARCH_RUNS.c.workspace == self.workspace)
+                .with_for_update()
+            )
+            if inputs:
+                await apply_tracking(connection, self.workspace, body, *inputs)
             await connection.execute(
                 update(RESEARCH_RUNS)
                 .where(RESEARCH_RUNS.c.uuid == run_id, RESEARCH_RUNS.c.workspace == self.workspace)
                 .values(status=status, error_code=error_code)
             )
-        body = await self.summary(run_id)
-        async with self.engine.begin() as connection:
             revision = await connection.scalar(
                 select(func.coalesce(func.max(RESEARCH_REPORTS.c.revision), 0) + 1).where(
                     RESEARCH_REPORTS.c.run_uuid == run_id, RESEARCH_REPORTS.c.workspace == self.workspace

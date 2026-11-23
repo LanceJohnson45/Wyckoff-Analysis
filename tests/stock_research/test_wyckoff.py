@@ -19,22 +19,6 @@ from workflows.market_funnel_job import run_funnel_for_ranked
 from workflows.market_funnel_runtime import runtime_config_from_env
 
 
-@pytest.fixture
-def spring_snapshot(snapshot: Snapshot) -> Snapshot:
-    """独立合成输入：320日横盘后下探并收复，不能用于真实策略收益结论。"""
-    bars = []
-    stock = [bar for bar in snapshot.bars if bar.kind == "stock"]
-    for index, bar in enumerate(stock):
-        values = dict(open=10.0, high=10.1, low=9.9, close=10.0, volume=1000.0)
-        if index == len(stock) - 2:
-            values.update(open=10.1, high=10.2, low=9.7, close=10.05)
-        if index == len(stock) - 1:
-            values.update(open=9.9, high=10.6, low=9.6, close=10.5, volume=2000.0)
-        bars.append(bar.model_copy(update=values))
-    bars.extend(bar for bar in snapshot.bars if bar.kind == "benchmark")
-    return build_snapshot(snapshot.universe, snapshot.classifications, tuple(bars), "synthetic-spring", snapshot.as_of)
-
-
 def test_normal_wyckoff_matches_actual_market_production_entry(spring_snapshot: Snapshot) -> None:
     """【正常值】实跑生产入口逐字段对照候选和指标，不用手写信号代理。"""
     symbols, frames, benchmark, names, sectors = production_inputs(spring_snapshot)

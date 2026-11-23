@@ -117,7 +117,10 @@ class RunManager:
                     if body["status"] != "completed":
                         await self.store.recover_stages(run_id, "executor_configuration_failed")
                         await self.store.publish(
-                            run_id, "partial" if body["selections"] else "failed", "executor_configuration_failed"
+                            run_id,
+                            "partial" if body["selections"] else "failed",
+                            "executor_configuration_failed",
+                            track=True,
                         )
             except (OSError, SQLAlchemyError, ResearchConflict):
                 logger.error("研究失败状态未能持久化", run_id=run_id)
@@ -168,7 +171,7 @@ class RunManager:
             if current["status"] in {"completed", "partial", "failed"}:
                 raise ResearchConflict("运行已在取消前结束")
             await self.store.recover_stages(run_id, "cancelled")
-            await self.store.publish(run_id, "cancelled")
+            await self.store.publish(run_id, "cancelled", track=True)
 
     async def close(self) -> None:
         """先停止接单，再取消并收尾任务，最后由应用关闭数据库。"""
@@ -184,4 +187,4 @@ class RunManager:
                     current = await self.store.row(RESEARCH_RUNS, run_id)
                     if current["status"] in {"pending", "running"}:
                         await self.store.recover_stages(run_id, "api_shutdown")
-                        await self.store.publish(run_id, "cancelled", "api_shutdown")
+                        await self.store.publish(run_id, "cancelled", "api_shutdown", track=True)

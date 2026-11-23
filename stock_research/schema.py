@@ -189,6 +189,33 @@ RESEARCH_REPORTS = execution_table(
     UniqueConstraint("run_uuid", "revision"),
 )
 
+# lint-redline:ignore PS-10 名单依赖执行账本表和审计列工厂。
+WATCHLIST_ITEMS = execution_table(
+    "watchlist_items",
+    Column("strategy", String(32), nullable=False),
+    Column("symbol", String(32), nullable=False),
+    Column("target_session", Date, nullable=False),
+    UniqueConstraint("workspace", "strategy", "symbol"),
+)
+# lint-redline:ignore PS-10 事件依赖执行账本表和审计列工厂。
+WATCHLIST_EVENTS = execution_table(
+    "watchlist_events",
+    Column("strategy", String(32), nullable=False),
+    Column("symbol", String(32), nullable=False),
+    Column("target_session", Date, nullable=False),
+    Column("event_kind", String(64), nullable=False),
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    UniqueConstraint("workspace", "strategy", "symbol", "target_session", "event_kind"),
+)
+# lint-redline:ignore PS-10 当日来源依赖执行账本表和审计列工厂。
+WATCHLIST_DAYS = execution_table(
+    "watchlist_days",
+    Column("strategy", String(32), nullable=False),
+    Column("target_session", Date, nullable=False),
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=False),
+    UniqueConstraint("workspace", "strategy", "target_session"),
+)
+
 
 def schema_ddl() -> str:
     """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""

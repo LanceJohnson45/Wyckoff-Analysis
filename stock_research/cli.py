@@ -27,7 +27,7 @@ from stock_research.models import ClassificationVersion, Snapshot, UniverseVersi
 from stock_research.parameters import MartinParameters
 from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
-from stock_research.research_commands import analyze_command, read_run_command, run_command
+from stock_research.research_commands import analyze_command, read_run_command, run_command, track_run_command
 from stock_research.schema import schema_ddl
 from stock_research.store import (
     close_engine,
@@ -57,6 +57,8 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--parent-run")
     read_run = commands.add_parser("read-run", help="从研究PostgreSQL独立读取已提交结果，不调用模型")
     read_run.add_argument("--id", required=True)
+    track_run = commands.add_parser("track-run", help="显式将已有终态研究接入观察名单，不运行模型")
+    track_run.add_argument("--id", required=True)
     sync = commands.add_parser("sync-market", help="从 PG_* 授权行情只读增量同步，不执行云端写入")
     sync.add_argument("--market", choices=["us"], required=True)
     sync.add_argument("--full", action="store_true")
@@ -246,6 +248,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return {"stopped": True}, 0
     if args.command == "read-run":
         return asyncio.run(read_run_command(settings, args.id)), 0
+    if args.command == "track-run":
+        return asyncio.run(track_run_command(settings, args.id)), 0
     if args.command == "run":
         path = args.snapshot_file
         if path is None:

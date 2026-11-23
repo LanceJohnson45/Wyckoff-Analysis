@@ -486,3 +486,5 @@ flowchart LR
 **研究只读身份**：API_READ_TOKEN与运行操作身份独立，仅允许GET。外部查询进程只加载专用QUERY配置，可读固定报告、运行和股票事实；MCP可调用不代表已在Personal或Agent注册。
 
 **固定股票观察**：由run_id限定当时快照和两策略量化产物，原因子ref、排除、分组与截止日日线可以回溯。未计算、未进入量化池、未正式入选和对方质疑是不同状态。
+
+**持续研究状态（watch-v1）**：new/waiting/near/invalid按已冻结策略事实投影；data_insufficient与not_reviewed独立附加，失败保留最后有效state_session/state_run_id证据。同一日第一份成功初选固定为名单来源，force报告供对照，不自动重写；不等于BUY。
