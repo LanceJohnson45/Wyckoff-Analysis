@@ -1,0 +1,50 @@
+"""可被其他Agent调用的只读HTTP命令，不加载研究数据库设置。"""
+
+import argparse
+import asyncio
+import sys
+from datetime import date
+
+from pydantic import UUID4, TypeAdapter, ValidationError
+
+from stock_research.query_client import QueryError, ResearchReader
+from stock_research.query_settings import QuerySettings
+
+
+def main(argv: list[str] | None = None) -> int:
+    """JSON输出与退出码；身份来自专用配置，不能由命令参数泄漏。"""
+    parser = argparse.ArgumentParser(prog="python -m stock_research.query_cli")
+    commands = parser.add_subparsers(dest="command", required=True)
+    latest = commands.add_parser("latest-report")
+    latest.add_argument("--target-session", type=date.fromisoformat)
+    status = commands.add_parser("run-status")
+    status.add_argument("--run-id", required=True)
+    stock = commands.add_parser("stock")
+    stock.add_argument("--symbol", required=True)
+    stock.add_argument("--run-id", required=True)
+    stock.add_argument("--limit", type=int, default=60)
+    args = parser.parse_args(argv)
+    try:
+        reader = ResearchReader(QuerySettings())
+        if args.command == "latest-report":
+            operation = reader.latest_report(args.target_session)
+        else:
+            run_id = TypeAdapter(UUID4).validate_python(args.run_id)
+            operation = (
+                reader.run_status(run_id)
+                if args.command == "run-status"
+                else reader.stock(args.symbol, run_id, args.limit)
+            )
+        print(asyncio.run(operation).model_dump_json(indent=2))
+        return 0
+    except ValidationError:
+        print('{"error":"只读身份或查询参数无效，请检查专用查询配置"}', file=sys.stderr)
+    except QueryError as error:
+        import json
+
+        print(json.dumps({"error": str(error)}, ensure_ascii=False), file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

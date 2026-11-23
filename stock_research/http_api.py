@@ -14,6 +14,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from stock_research.config import Settings
 from stock_research.http_actions import register_actions
 from stock_research.http_events import register_events
+from stock_research.http_observations import register_observations
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
 from stock_research.queries import list_runs, run_view
@@ -60,6 +61,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_security(app, config)
     register_reads(app)
     register_reports(app)
+    register_observations(app)
     register_events(app)
     register_actions(app)
     return app

@@ -35,6 +35,9 @@ def install_security(app: FastAPI, settings: Settings) -> None:
     token = settings.api_token.get_secret_value() if settings.api_token else ""
     if len(token) < 32 or token != token.strip():
         raise ValueError("研究API须配置至少32字符的独立STOCK_RESEARCH_API_TOKEN")
+    read_token = settings.api_read_token.get_secret_value() if settings.api_read_token else ""
+    if read_token and (len(read_token) < 32 or read_token != read_token.strip() or read_token == token):
+        raise ValueError("研究只读身份须独立且至少32字符")
 
     @app.middleware("http")
     async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
@@ -46,10 +49,16 @@ def install_security(app: FastAPI, settings: Settings) -> None:
             return error_response(request, 403, Code.FORBIDDEN, "浏览器来源未授权")
         if request.url.path not in {"/healthz", "/readyz"}:
             authorization = request.headers.get("authorization", "")
-            if not secrets.compare_digest(authorization.encode(), f"Bearer {token}".encode()):
+            operator = secrets.compare_digest(authorization.encode(), f"Bearer {token}".encode())
+            reader = bool(read_token) and secrets.compare_digest(
+                authorization.encode(), f"Bearer {read_token}".encode()
+            )
+            if not operator and not reader:
                 response = error_response(request, 401, Code.UNAUTHENTICATED, "需要研究API身份")
                 response.headers["WWW-Authenticate"] = "Bearer"
                 return response
+            if not operator and request.method != "GET":
+                return error_response(request, 403, Code.FORBIDDEN, "此研究身份仅允许查询")
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"

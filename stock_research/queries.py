@@ -21,10 +21,16 @@ from stock_research.schemas.api import (
 from stock_research.store import load_snapshot
 
 
-async def run_view(store: RunStore, body: dict[str, object], *, observed_at: datetime | None = None) -> RunView:
+async def run_view(
+    store: RunStore,
+    body: dict[str, object],
+    *,
+    observed_at: datetime | None = None,
+    snapshot: Snapshot | None = None,
+) -> RunView:
     """从冻结清单构造业务视图，不向客户端转发内部文件或模型连接。"""
     manifest = body["manifest"]
-    snapshot = await load_snapshot(store.engine, store.workspace, manifest["snapshot_id"])
+    snapshot = snapshot or await load_snapshot(store.engine, store.workspace, manifest["snapshot_id"])
     observed_at = observed_at or now()
     return RunView(
         run_id=body["run_id"],
@@ -40,7 +46,14 @@ async def run_view(store: RunStore, body: dict[str, object], *, observed_at: dat
         preview=manifest["preview"],
         status=body["status"],
         error_code=body["error_code"],
-        companies=company_views(snapshot, body),
+        companies=company_views(
+            snapshot,
+            {
+                item["symbol"]
+                for row in (*body["selections"], *body["reviews"])
+                for item in row["payload"]["decision"]["items"]
+            },
+        ),
         selections=[
             dict(
                 id=item["id"],
@@ -149,13 +162,8 @@ async def latest_report_id(store: RunStore, target_session: date | None = None, 
     return result
 
 
-def company_views(snapshot: Snapshot, body: dict[str, object]) -> tuple[CompanyView, ...]:
+def company_views(snapshot: Snapshot, symbols: set[str]) -> tuple[CompanyView, ...]:
     """名称来自同一快照，避免用当前市场搜索结果改写历史公司身份。"""
-    symbols = {
-        item["symbol"]
-        for row in (*body["selections"], *body["reviews"])
-        for item in row["payload"]["decision"]["items"]
-    }
     classified = {
         item.symbol: item.company_name
         for item in snapshot.classifications.records

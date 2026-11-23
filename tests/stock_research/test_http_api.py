@@ -141,8 +141,7 @@ def test_company_identity_comes_from_cutoff_snapshot(snapshot: Snapshot) -> None
     from stock_research.quality import build_snapshot
     from stock_research.queries import company_views
 
-    body = {"selections": [{"payload": {"decision": {"items": [{"symbol": "AAPL"}]}}}], "reviews": []}
-    assert company_views(snapshot, body)[0].name == "Apple"
+    assert company_views(snapshot, {"AAPL"})[0].name == "Apple"
     future = snapshot.classifications.records[0].model_copy(
         update={"company_name": "Future Company", "effective_date": date(2026, 11, 24)}
     )
@@ -150,4 +149,4 @@ def test_company_identity_comes_from_cutoff_snapshot(snapshot: Snapshot) -> None
     changed = build_snapshot(
         snapshot.universe, classifications, snapshot.bars, snapshot.source_identity, snapshot.as_of
     )
-    assert company_views(changed, body)[0].name == "Apple"
+    assert company_views(changed, {"AAPL"})[0].name == "Apple"
