@@ -1,6 +1,6 @@
 # 双策略研究执行预览
 
-`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。研究API、持续观察名单、Agent工作台及services调度仍待接通。
+`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令计算并冻结Martin与Wyckoff产物，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；持续观察名单、Agent工作台及services调度仍待接通。
 
 ```bash
 uv sync --frozen --python 3.12 --extra dev --extra research
@@ -17,7 +17,7 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 
 初选上下文只含自身量化池、策略事实及共享历史；互评只含已提交目标名单、本评议策略的事实和共享历史。每股理由、风险、确认条件必须引用固定证据；数值进入claims并逐值核验。验证最多五只、池内去重、context摘要、当前股票引用和不可变target_selection_id。一次JSON结构修正仍失败则终止；这些检查不能证明自由文本推理正确，文字立场仍是模型意见。
 
-运行幂等键包含workspace、目标交易日、代码/生产算法/提示词、参数、股票池与分类版本、模型配置和预算。相同配置续跑读取首次冻结快照，不用后来修订行情替换已成功初选。`--force --parent-run <uuid>` 显式创建新运行。PostgreSQL运行锁保证同一运行只有一个执行者；成功阶段不可覆盖，遗留running阶段在持锁恢复时标记失败，续跑仅补未成功阶段。网络/超时等暂时错误最多再试一次，配额、输出截断、越权或结构错误不自动重试。每次尝试使用新目录；取消和输出超限均回收独立进程组。
+运行幂等键包含workspace、目标交易日、代码/生产算法/提示词、参数、股票池与分类版本、模型配置和预算。相同配置续跑读取首次冻结快照，不用后来修订行情替换已成功初选；代码或提示词版本变化记录execution_version_changed，须force创建新版本。`--force --parent-run <uuid>` 显式创建新运行。PostgreSQL运行锁保证同一运行只有一个执行者；成功阶段不可覆盖，遗留running阶段在持锁恢复时标记失败，续跑仅补未成功阶段。网络/超时等暂时错误最多再试一次，配额、输出截断、越权或结构错误不自动重试。每次尝试使用新目录；取消和输出超限均回收独立进程组。
 
 新增账本表为strategy_versions、parameter_sets、factor_results、research_runs、stage_runs、strategy_selections、selection_items、cross_reviews、research_reports。`init-schema` 在已有schema上只补建不存在的表，原五张数据表与快照schema_version=1不变；不能用它修改已有列。DDL正本仍为Python schema，不提交一次性SQL。research_reports按revision追加，初选与评议另表保存并校验payload摘要。
 

@@ -474,3 +474,7 @@ flowchart LR
 ## 独立初选与交叉评议
 
 `strategy_selection_id`只在固定快照的初选事务提交后发布；互评引用该不可变版本，不能覆盖初选。`source=empty_pool/empty_target`是有证据的程序空结果，模型失败另列，不补正式名单。相同配置续跑只补未成功阶段，强制重分析关联父运行。模型数字引用可校验，文字仍为模型意见；见[执行预览](docs/stock_research_executor.md)。
+
+## 研究运行与报告修订
+
+研究API的202表示冻结输入已落库并受理；completed/partial/failed/cancelled描述研究本身，通知状态另行实现。报告UUID与run内revision绑定固定视图，SSE以revision断点续读。late根据该修订实际创建时间与开盘前一小时期限比较。接口只读/动作及待实现范围见[研究API](docs/stock_research_api.md)。

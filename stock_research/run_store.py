@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 
 from stock_research.analysis import MartinReport
 from stock_research.decisions import ReviewDecision, SelectionDecision, validate_decision
+from stock_research.errors import ResearchConflict, ResearchIntegrityError, ResearchNotFound
 from stock_research.evidence import EvidenceContext, build_context
 from stock_research.executor import StageResult
 from stock_research.identity import digest, new_id
@@ -31,7 +32,7 @@ from stock_research.wyckoff import WyckoffReport
 def verified_payload(row: dict[str, object]) -> dict[str, object]:
     """查询和恢复均校验payload，不信任单独的状态或文件存在性。"""
     if digest(row["payload"]) != row["content_hash"]:
-        raise ValueError("研究账本payload摘要不匹配")
+        raise ResearchIntegrityError("研究账本payload摘要不匹配")
     return row["payload"]
 
 
@@ -74,7 +75,7 @@ class RunStore:
                 .one_or_none()
             )
         if row is None:
-            raise ValueError("研究对象不存在或不属于当前workspace")
+            raise ResearchNotFound("研究对象不存在或不属于当前workspace")
         result = dict(row)
         verified_payload(result)
         return result
@@ -217,7 +218,7 @@ class RunStore:
             acquired = bool(await connection.scalar(select(func.pg_try_advisory_lock(key))))
             await connection.commit()
             if not acquired:
-                raise ValueError("当前研究运行已有执行者")
+                raise ResearchConflict("当前研究运行已有执行者")
             yield
         finally:
             try:

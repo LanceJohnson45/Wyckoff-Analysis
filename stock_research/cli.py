@@ -45,6 +45,7 @@ def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="stock-research")
     commands = root.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
+    commands.add_parser("serve", help="启动仅监听loopback的独立研究API，须配置独立Bearer身份")
     commands.add_parser("init-schema", help="显式创建独立研究 schema v1；不更新已有表定义")
     commands.add_parser("schema-ddl", help="从Python schema导出可审阅DDL，不连接数据库")
     run = commands.add_parser("run", help="双策略独立初选及提交后互评，持久化预览不发送通知")
@@ -224,13 +225,25 @@ def doctor(settings: Settings) -> tuple[dict[str, object], int]:
             "benchmark_supplement",
         )
     )
-    return {"ready": ready, "checks": checks, "api": "not_implemented", "scheduler": "not_connected"}, 0 if ready else 2
+    return {
+        "ready": ready,
+        "checks": checks,
+        "api": "query_implemented_not_probed",
+        "scheduler": "not_connected",
+    }, 0 if ready else 2
 
 
 def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "serve":
+        import uvicorn
+
+        from stock_research.http_api import create_app
+
+        uvicorn.run(create_app(settings), host=settings.api_host, port=settings.api_port, access_log=False)
+        return {"stopped": True}, 0
     if args.command == "read-run":
         return asyncio.run(read_run_command(settings, args.id)), 0
     if args.command == "run":

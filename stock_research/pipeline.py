@@ -243,7 +243,7 @@ async def parallel_stages(coroutines: list[Coroutine[Any, Any, None]]) -> None:
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
-async def run_preview(
+async def prepare_preview(
     engine: AsyncEngine,
     settings: Settings,
     snapshot: Snapshot,
@@ -252,8 +252,9 @@ async def run_preview(
     *,
     parent_id: str | None = None,
     force: bool = False,
-) -> dict[str, object]:
-    """持久化预览也保留完整版本；此入口始终不发送通知。"""
+    request_id: str | None = None,
+) -> tuple[str, dict[str, ModelConnection]]:
+    """先冻结并保存输入，调用方取得run_id后才能调度执行。"""
     _opening, report_due, previous = session_times(target_session)
     if snapshot.as_of != previous or set(analyses) != set(STRATEGIES) or not snapshot.quality.passed:
         raise ValueError("运行需要前一正式交易日的合格快照和两个策略产物")
@@ -278,7 +279,7 @@ async def run_preview(
         "stage_timeout_seconds": settings.stage_timeout_seconds,
         "run_timeout_seconds": settings.run_timeout_seconds,
         "parent_id": parent_id,
-        "manual_nonce": new_id() if force else None,
+        "manual_nonce": (request_id or new_id()) if force else None,
     }
     existing = await store.find_run(digest(config))
     if existing:
@@ -297,6 +298,7 @@ async def run_preview(
         )
         manifest = {
             **config,
+            "api_request_id": request_id,
             "snapshot_id": snapshot.id,
             "snapshot_hash": snapshot.content_hash,
             "factor_results": factors,
@@ -304,12 +306,28 @@ async def run_preview(
             "models": {key: value.model_dump(mode="json") for key, value in connections.items()},
         }
         run_id = await store.create_run(manifest, parent_id=parent_id, run_key=digest(config))
+    return run_id, connections
+
+
+async def resume_preview(
+    engine: AsyncEngine, settings: Settings, run_id: str, connections: dict[str, ModelConnection] | None = None
+) -> dict[str, object]:
+    """仅从账本恢复固定输入；调用方不能替换原快照或已提交初选。"""
+    store = RunStore(engine, settings.workspace)
+    connections = connections or {}
     async with store.execution_lock(run_id):
         current = await store.summary(run_id)
         if current["status"] == "completed":
             return current
-        await store.recover_stages(run_id)
         manifest = current["manifest"]
+        if manifest["source_hash"] != source_identity() or manifest["prompt_hash"] != prompt_identity():
+            return await store.publish(
+                run_id, "partial" if current["selections"] else "failed", "execution_version_changed"
+            )
+        settings = settings.model_copy(
+            update={key: manifest[key] for key in ("stage_timeout_seconds", "run_timeout_seconds")}
+        )
+        await store.recover_stages(run_id)
         snapshot = await load_snapshot(engine, settings.workspace, manifest["snapshot_id"])
         analyses = {
             key: (MartinReport if key == "martin" else WyckoffReport).model_validate(
@@ -329,6 +347,23 @@ async def run_preview(
                     run_id, "partial" if current["selections"] else "failed", "executor_unavailable"
                 )
         return await execute_run(store, settings, snapshot, analyses, run_id, connections)
+
+
+async def run_preview(
+    engine: AsyncEngine,
+    settings: Settings,
+    snapshot: Snapshot,
+    analyses: dict[str, MartinReport | WyckoffReport],
+    target_session: date,
+    *,
+    parent_id: str | None = None,
+    force: bool = False,
+) -> dict[str, object]:
+    """CLI预览等待完整流程，HTTP可在冻结后独立调度同一恢复入口。"""
+    run_id, connections = await prepare_preview(
+        engine, settings, snapshot, analyses, target_session, parent_id=parent_id, force=force
+    )
+    return await resume_preview(engine, settings, run_id, connections)
 
 
 def model_preferences(settings: Settings) -> dict[str, object]:

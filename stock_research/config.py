@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     api_token: SecretStr | None = None
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
+    api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")
     coverage_min: float = Field(default=0.95, gt=0, le=1)
     history_rows: int = Field(default=320, ge=320)
     adjustment: Literal["qfq"] = "qfq"

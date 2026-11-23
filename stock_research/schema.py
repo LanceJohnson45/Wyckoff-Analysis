@@ -135,6 +135,14 @@ RESEARCH_RUNS = execution_table(
     Column("parent_run_uuid", String(36), ForeignKey("stock_research.research_runs.uuid"), nullable=True),
     UniqueConstraint("workspace", "run_key"),
 )
+# lint-redline:ignore PS-10 请求幂等映射依赖运行表，NULL表示尚未完成冻结绑定。
+API_REQUESTS = execution_table(
+    "api_requests",
+    Column("key_hash", String(64), nullable=False),
+    Column("request_hash", String(64), nullable=False),
+    Column("run_uuid", String(36), ForeignKey(RESEARCH_RUNS.c.uuid), nullable=True),
+    UniqueConstraint("workspace", "key_hash"),
+)
 # lint-redline:ignore PS-10 阶段表依赖上方运行表。
 STAGE_RUNS = execution_table(
     "stage_runs",

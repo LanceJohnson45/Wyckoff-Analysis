@@ -1,6 +1,6 @@
 # 独立美股研究数据命令
 
-本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)和[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)，[模型初选与互评预览](stock_research_executor.md)已接通；研究API、定时任务和飞书发送尚未接通。旧行情同步仍在独立来源工作树运行，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
+本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)和[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)，[模型初选与互评预览](stock_research_executor.md)已接通；[研究API](stock_research_api.md)已接通本机预览；定时任务和飞书发送尚未接通。旧行情同步仍在独立来源工作树运行，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
 
 本机现已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。新 `refresh-versions`、`fetch-benchmarks` 的来源、配置和实测见[公开成分与基准补充](stock_research_public_data.md)。云端QQQ/IWM仍未补写，当前使用显式供应商文件解决研究数据缺口，保留全部出处限制。
 
@@ -76,7 +76,7 @@
 .venv/bin/stock-research read-snapshot --file /ABSOLUTE/PATH/snapshot.json
 ```
 
-同样可用 `.venv/bin/python -m stock_research.cli`。退出码0表示该命令通过，2表示数据未就绪，1表示命令/配置/存储错误。失败质量报告仍保存；结构化输出的 `persisted` 区分文件物化与 PostgreSQL 提交。`doctor` 检查依赖、交易日历、输入模型、当日源库可读性及研究表可读性，不代表覆盖、源数据新鲜度、API 或调度验收通过；输出不含 DSN、密码或驱动堆栈。
+同样可用 `.venv/bin/python -m stock_research.cli`。退出码0表示该命令通过，2表示数据未就绪，1表示命令/配置/存储错误。失败质量报告仍保存；结构化输出的 `persisted` 区分文件物化与 PostgreSQL 提交。`doctor` 检查依赖、交易日历、输入模型、当日源库可读性及研究表可读性，不代表覆盖、源数据新鲜度、API进程或调度验收通过；输出不含 DSN、密码或驱动堆栈。
 
 快照使用 SQLite backup API 固定含 WAL 的一致视图，源库只读。读取窗口为配置的至少320个正式交易日；行情、源修订、隔离信息、完整版本、阈值、质量清单和来源身份摘要均参与内容摘要。操作ID与生成时间不参与摘要。重复输入可重用，历史修订生成新快照，重读会校验摘要、日期与日线唯一性。没有分时数据、拆股事件或供应商单位元数据时，不能据此声称已经验证真实复权算法及所有单位问题；当前只接受来源库明确标记的 `qfq`。
 
