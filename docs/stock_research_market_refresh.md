@@ -1,5 +1,7 @@
 # 盘前有界行情准备
 
+单用户MVP已将来源候选883872cb安装为独立后台副本，由MVP子进程使用既有授权PG配置执行云端补拉；API的market_refresh仍只读。早先“无云写入/未自动派发”的工程证明是启用前检查点，不能代表当前MVP配置；旧wxjer Actions及未升级写入器仍未自动采用锁协议。运行与验收状态见[单用户MVP](stock_research_mvp.md)。
+
 盘前有限API可由operator设置`STOCK_RESEARCH_PREMARKET_REFRESH=true`，在参数/输入版本解析后、快照和run冻结前执行已有只读PG同步。默认false，普通API/CLI run继续原路径。`STOCK_RESEARCH_MARKET_REFRESH_TIMEOUT_SECONDS`默认90秒、允许1～110秒；还受原事件余额及120秒准备总预算约束，外部客户端130秒受理上限保持。输入只接受原schedule，不能选择连接、路径、供应商或期限。
 
 行情身份仍为现有离散`PG_*`，不接受非空PG_DSN。API把本次源连接通过匿名控制管道授予独立worker，不传入argv、文件或回执；worker清空继承环境，使用0700临时HOME，不读取.env，不取得研究库、操作员、模型或Personal身份。只读、可重复读云端事务及原有协作锁、水位、修订与隔离规则保持；同步只能复制云端已有数据，不在线补拉股票或写回云端。

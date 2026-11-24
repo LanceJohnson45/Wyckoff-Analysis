@@ -1,5 +1,7 @@
 # 行情来源协调协议
 
+单用户MVP已将来源候选883872cb安装为独立后台副本，由MVP子进程使用既有授权PG配置执行云端补拉；API的market_refresh仍只读。早先“无云写入/未自动派发”的工程证明是启用前检查点，不能代表当前MVP配置；旧wxjer Actions及未升级写入器仍未自动采用锁协议。运行与验收状态见[单用户MVP](stock_research_mvp.md)。
+
 研究复制在原来源/范围锁之外，取得数据库范围的US任务与行情数据两把独占事务锁：`int.from_bytes(b"WYKUS01", "big")`、`int.from_bytes(b"WYKDAT1", "big")`。协议不随日期、分支、host别名或角色变化。忙碌时明确失败，保留本机已提交行情且不推进水位；退出事务释放锁。来源连接仍强制只读及可重复读，没有增加写身份或云端DDL。
 
 来源候选工作树从实际生产wxjer@b5cb2d79建立，独立分支codex/stock-research-market-source。其US维护CLI持有独占任务锁；PG缓存US键的upsert/裁剪及可能影响US的全表维护删除使用共享数据事务锁。任务和写事务分开，允许一项任务的多个写连接并行。旧本地同步器使用同一复制协议。既有源worktree dc5fec0e没有被切换或覆盖，候选工作树没有复制根.env。
