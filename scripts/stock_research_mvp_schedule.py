@@ -12,6 +12,7 @@ if __name__ == "__main__" and not __package__:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from stock_research.artifacts import data_lock, write_once
+from stock_research.errors import PublicationScopeError
 from stock_research.identity import canonical_json, new_id, now
 from stock_research.mvp import execute_mvp
 from stock_research.mvp_delivery import deliveries_sent
@@ -88,6 +89,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         )
         return 0 if finished(result) else 1
+    except PublicationScopeError:
+        print(json.dumps({"mode": "mvp_tick", "error_code": "mvp_publication_scope_unconfirmed"}))
+        return 1
     except (OSError, ValueError, KeyError, TimeoutError):
         print(json.dumps({"mode": "mvp_tick", "error_code": "mvp_tick_unconfirmed"}))
         return 1

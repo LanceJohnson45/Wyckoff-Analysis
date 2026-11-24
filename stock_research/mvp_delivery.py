@@ -8,8 +8,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from stock_research.artifacts import write_once
-from stock_research.identity import canonical_json
+from stock_research.artifacts import data_lock, write_once
+from stock_research.errors import PublicationScopeError
+from stock_research.identity import canonical_json, digest
 from stock_research.mvp_settings import MvpSettings
 from stock_research.processes import isolated_environment, stop_process_group
 from stock_research.schemas.premarket import PremarketInput, PremarketReceipt
@@ -141,16 +142,58 @@ def freeze_publication(directory: Path, candidate: Publication) -> Publication:
     return candidate
 
 
+def freeze_delivery(
+    settings: MvpSettings, data: PremarketInput, phase: Literal["initial", "recovery"], candidate: Publication
+) -> tuple[Publication, Path, str]:
+    """手动与定点分别冻结；旧无来源正文须核对，不能自动当作另一种通知。"""
+    scope = {**data.schedule.research_scope(), "phase": phase}
+    root = settings.state_path / str(data.schedule.target_session)
+    manual = data.schedule.trigger_kind == "manual"
+    shared = root / phase
+    directory = root / "manual" / phase if manual else shared
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    directory.chmod(0o700)
+    with data_lock(root, "publication", phase):
+        if manual and (shared / "publication.json").exists():
+            shared_scope = shared / "scope.json"
+            try:
+                original = Publication.model_validate_json((shared / "publication.json").read_bytes())
+            except ValueError:
+                raise PublicationScopeError("通知正文与本次范围不符") from None
+            expected = (
+                canonical_json(
+                    {**scope, "trigger_kind": "scheduled", "publication_hash": digest(original.model_dump(mode="json"))}
+                )
+                + "\n"
+            )
+            if not shared_scope.is_file() or shared_scope.read_text(encoding="utf-8") != expected:
+                raise PublicationScopeError("旧通知来源未确认，须核对原冻结正文与投递账本")
+        marker, publication_path = directory / "scope.json", directory / "publication.json"
+        if marker.exists():
+            if not publication_path.is_file():
+                raise PublicationScopeError("通知来源或冻结正文与本次范围不符")
+        elif publication_path.exists():
+            raise PublicationScopeError("旧通知来源未确认，须核对原冻结正文与投递账本")
+        try:
+            frozen = freeze_publication(directory, candidate)
+        except ValueError:
+            raise PublicationScopeError("通知正文与本次范围不符") from None
+        expected = canonical_json({**scope, "publication_hash": digest(frozen.model_dump(mode="json"))}) + "\n"
+        if marker.exists() and marker.read_text(encoding="utf-8") != expected:
+            raise PublicationScopeError("通知来源或冻结正文与本次范围不符")
+        write_once(marker, expected)
+        marker.chmod(0o600)
+    window = f"us:{data.schedule.target_session}:" + ("manual:" if manual else "") + phase
+    return frozen, directory, window
+
+
 async def publish(
     settings: MvpSettings, data: PremarketInput, phase: Literal["initial", "recovery"], candidate: Publication
 ) -> tuple[Publication, DeliveryReceipt]:
-    directory = settings.state_path / str(data.schedule.target_session) / phase
-    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    directory.chmod(0o700)
-    frozen = await asyncio.to_thread(freeze_publication, directory, candidate)
+    frozen, directory, window = await asyncio.to_thread(freeze_delivery, settings, data, phase, candidate)
     payload = {
         "workspace": data.schedule.workspace_id,
-        "window": f"us:{data.schedule.target_session}:{phase}",
+        "window": window,
         "body": frozen.body,
         "directory": str(directory),
     }

@@ -127,6 +127,20 @@ def test_integration_real_worker_reads_only_scoped_native_ledger(configured: tup
                 notification(settings, "initial", "sent", task_id="different-task"),
                 notification(settings, "recovery", "sent", window_key="us:2026-11-23:recovery"),
                 notification(settings, "initial", "sent", window_key="us:2026-11-25:initial", message_ref=""),
+                notification(
+                    settings,
+                    "initial",
+                    "sent",
+                    window_key="us:2026-11-24:manual:initial",
+                    updated_at=STAMP + timedelta(days=1),
+                ),
+                notification(
+                    settings,
+                    "recovery",
+                    "sent",
+                    window_key="us:2026-11-25:manual:recovery",
+                    updated_at=STAMP + timedelta(days=2),
+                ),
             ]
             async with engine.begin() as connection:
                 await connection.execute(insert(PERSONAL), rows)
@@ -148,7 +162,7 @@ def test_integration_real_worker_reads_only_scoped_native_ledger(configured: tup
                     .mappings()
                     .all()
                 )
-            assert len(saved) == 5 and all(row["body"] == "private body canary" for row in saved)
+            assert len(saved) == 7 and all(row["body"] == "private body canary" for row in saved)
         finally:
             await close_engine(engine)
 

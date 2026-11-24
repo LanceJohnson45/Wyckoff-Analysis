@@ -5,7 +5,7 @@
 `GET /v1/operations?target_session=YYYY-MM-DD`为operator私有接口，只接受一个目标日参数。只读工具身份和盘前身份均返回403，缺身份401；无效日期、额外参数或重复目标日422。浏览器同源固定清单只开放此GET，直接接口仍须Bearer。返回沿用code/message/data/correlation_id。
 
 - `latest_completed`：本研究workspace未删除的completed运行，按更新时间、UUID倒序取一条并校验清单摘要；仅返回run_id、target_session、update_time。它覆盖全部日期，partial/failed不计完整成功。查询不读取行情快照。
-- `delivery`：未配置状态来源时为null，表示查询未配置，不表示没有发送；配置后返回目标日的initial/recovery、账本核对时间和全日期最近确认送达记录。
+- `delivery`：未配置状态来源时为null，表示查询未配置，不表示没有发送；配置后返回目标日定点initial/recovery、账本核对时间和全日期最近确认定点送达记录。仅匹配`us:YYYY-MM-DD:initial|recovery`；独立`manual`键不纳入两阶段及最近定点送达，即使其时间更新、更有原生回执。
 - 两阶段的state保留not_recorded、preparing、ready、sending、retry、unknown、failed、silent、sent、unconfirmed。没有行才是not_recorded；sent缺有效原生引用转为unconfirmed，其他状态即使有引用也不自动变为sent。正文、收件人、原生消息ID、凭据及路径不出API。
 - `ledger_update_time`是Personal账本更新时间，不是原生消息创建时刻。最近确认送达只选择sent且有有效原生引用的固定股票任务记录，按更新时间、window_key倒序确定。
 

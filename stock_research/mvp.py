@@ -8,6 +8,7 @@ import signal
 from pathlib import Path
 
 from stock_research.artifacts import data_lock, write_once
+from stock_research.errors import PublicationScopeError
 from stock_research.identity import canonical_json, now
 from stock_research.models import UniverseVersion
 from stock_research.mvp_delivery import call_worker, deliveries_sent, publication, publish
@@ -100,6 +101,9 @@ def main(argv: list[str] | None = None) -> int:
         with data_lock(settings.state_path, "us", str(data.schedule.target_session)):
             result = asyncio.run(execute_mvp(settings, data))
         write_once(output, canonical_json(result) + "\n")
+    except PublicationScopeError:
+        print(json.dumps({"mode": "mvp", "error_code": "mvp_publication_scope_unconfirmed"}))
+        return 1
     except (OSError, ValueError, KeyError, TimeoutError):
         print(json.dumps({"mode": "mvp", "error_code": "mvp_execution_unconfirmed"}))
         return 1

@@ -27,6 +27,14 @@ API和来源代码须从固定版本安装到Documents之外，依各自锁文�
 
 单用户MVP采用独立launchd计划，每60秒运行 `scripts/stock_research_mvp_schedule.py --config /absolute/private/path/mvp.env --workspace <operator-workspace>`。tick固定纽约08:00原slot，只在原08:50前补跑，交易日由正式日历判断；同日已送达且研究终态保存done，不重复执行。单次进程50分钟内收尾；退出和重启不延长原slot期限。`--manual`使用真实当前事件时刻，单日手动完成标记独立保存。
 
+### 通知范围与旧记录
+
+手动和定点研究的通知正文、业务键、完成标记分别保存。同一范围内重放仍使用首次正文和原业务键，包括unknown；后来的模型结果不能覆盖已尝试发送的正文。定点沿用`us:YYYY-MM-DD:initial|recovery`和`<目标日>/<phase>/publication.json`；手动改用`us:YYYY-MM-DD:manual:initial|recovery`和`<目标日>/manual/<phase>/publication.json`。它仍是既有单日手动入口，不提供任意多次人工通知。Agent通知状态继续只统计定点键，不把手动送达当自然首报。
+
+新冻结同时记录0600的`scope.json`，绑定schedule_id、workspace_id、trigger_kind、target_session、phase及完整Publication摘要；按日期/阶段的协作锁内先冻结正文再提交范围，外部投递在两者完成后开始。范围不符、正文缺失或旧共享路径已有正文却没有范围时，两个入口均以`mvp_publication_scope_unconfirmed`退出1，不生成done，也不修改正文或调用通知。中断只留下正文时同样停止，避免重新生成不同正文继续未知投递。
+
+旧文件不会自动迁移或推断来源。部署前须按原执行input、固定报告、Personal业务行、正文摘要和原生引用核对；只有已证实属于该定点范围时，才能追加对应scope元数据并沿原业务键恢复。若旧手动通知占用了定点键，不能将其改标为scheduled、删除sent行或自动再发；保持原证据并单独处理修订。旧已完成记录及只读查询继续保留。本次修复的隔离测试不替代旧记录核验、真实unknown恢复或下一自然交易日验收。
+
 这是用户优先最小MVP后的部署选择：原42条Personal计划、网关/平台配置及权限保持。通知仍直接复用其持久组件。将来迁入Personal计划面板时再完成workflows、capabilities、external、Policy、cron及同名标识六处登记，不能仅添加cron即声称已接入Personal调度。
 
 ## 验收状态
