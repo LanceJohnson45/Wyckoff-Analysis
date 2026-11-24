@@ -26,7 +26,7 @@ scheduled_for来自原事件occurred_at，规范化为UTC，不取领取/启动�
 | late_manual | 显式手动且已过08:50，只使用原手动预算余额 |
 | skipped_non_session | 非交易日，无as_of/期限，预算0 |
 
-late表示观察时刻已过原报告期限。计划预览的`--at`必须带时区，只允许plan；execute使用实际时钟。冻结run保存原job、事件与绝对期限；量化worker、模型阶段及恢复共同取该期限与原run创建时预算的较小者，不因API重启/重试延长。成功量化、初选及旧报告修订保持。
+late表示观察时刻已过原报告期限。计划预览的`--at`必须带时区，只允许plan；execute使用实际时钟。冻结run保存首次job、事件与绝对期限；量化worker、模型阶段及恢复共同取该期限与原run创建时预算的较小者，不因API重启/重试延长。成功量化、初选及旧报告修订保持。
 
 ## 专用身份和API
 
@@ -41,7 +41,7 @@ late表示观察时刻已过原报告期限。计划预览的`--at`必须带时�
 
 专用身份仅可访问这四个动作，不能列举全部任务、管理普通研究、查询共享报告或私人问答、修改参数/持仓/配置。对象、来源或研究workspace不符404，其他功能403，未认证401，跨站/Host校验保持。普通共享只读身份也不能读取盘前job。API_REQUESTS复用原账本记录独立前缀的原事件与run绑定，PREPARATION_ATTEMPTS记录失败；没有新表/迁移，普通CreateRun请求载荷保持。
 
-请求级PG锁序列化受理、恢复与取消，SQL摘要CAS保留取消标记；重放先找原run，冻结后绑定前崩溃也可恢复映射。已取消意图不能由另一个API拥有者复活。取消已结束的partial任务只封存任务，保留原run/报告/初选，不把有效结果改写成空。恢复先保存pending状态，再排队执行。
+原事件各自使用请求级PG锁领取回执；恢复与取消统一领取首次意图锁，SQL摘要CAS保留共享取消标记；重放先找原run，冻结后绑定前崩溃也可恢复映射；别名已ready但未绑定时，从已校验的PREPARATION_ATTEMPTS找回原run，不因后来配置变化重新准备。不同API同时固定同日快照可能先返回input_unavailable准备回执，原事件按既有退避重放后复用首次run。已取消意图及其别名不能由另一个API拥有者或后来的事件复活。取消已结束的partial任务只封存任务，保留原run/报告/初选，不把有效结果改写成空。恢复先保存pending状态，再排队执行。
 
 ## 客户端恢复与收尾
 
@@ -51,4 +51,6 @@ late表示观察时刻已过原报告期限。计划预览的`--at`必须带时�
 
 当前execute使用已有合格本地行情快照；未接必要行情更新时，数据不足返回准备失败，不把旧数据当当日新研究。没有报告通知请求或自动投递。下一步接行情更新及退避、原报告期限发布、通知稳定业务键与unknown回查，再完成唯一workflow六处登记、cron所有权和正式Mac运行包/网络/自然交易日验收。
 
-当前去重边界是同一原事件及其首次冻结run；跨新手动事件的同配置合并、显式强制补跑的parent链仍须对齐plan.md第9节，正式登记前完成。
+研究幂等键按研究workspace、目标日、来源能力/trigger_kind和完整配置版本计算；事件ID、job ID和新事件时刻不进入研究键。每个事件保留自身job/plan/准备回执，`origin`给出首次PremarketBinding（job_id、schedule、execution_deadline）；未冻结则为null。相同配置的新manual事件返回同一run与固定报告，不重算量化或成功初选、不刷新运行期限，原冻结清单不改写。新事件plan的预算仅描述该事件窗口，实际研究仍服从origin和原run预算；客户端不在origin截止后恢复。不同trigger_kind或配置仍创建独立研究。
+
+强制重分析使用operator的POST /v1/research-runs，显式force=true和parent_run_id并提供新的Idempotency-Key；新run保留父链，重放同一请求仍返回原新run，原报告/初选保持。workflow身份不能调用普通创建或指定force/父链，避免新manual事件被隐式当作强制重算。

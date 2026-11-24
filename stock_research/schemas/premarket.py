@@ -48,6 +48,15 @@ class ScheduleContext(ApiModel):
             return self.scheduled_for + timedelta(seconds=3000)
         return datetime.combine(self.target_session, time(8, 50), NEW_YORK)
 
+    def research_scope(self) -> dict[str, str]:
+        """事件用于领取回执；研究身份只含同日和来源能力，不含新事件时刻。"""
+        return {
+            "schedule_id": self.schedule_id,
+            "workspace_id": self.workspace_id,
+            "trigger_kind": self.trigger_kind,
+            "target_session": str(self.target_session),
+        }
+
 
 class PremarketInput(ApiModel):
     schedule: ScheduleContext
@@ -83,6 +92,7 @@ class PremarketBinding(ApiModel):
 class PremarketReceipt(ApiModel):
     job_id: UUID4
     plan: PremarketPlan
+    origin: PremarketBinding | None
     status: Literal[
         "skipped",
         "unconfirmed",
@@ -101,6 +111,10 @@ class PremarketReceipt(ApiModel):
 
     @model_validator(mode="after")
     def coherent_references(self) -> "PremarketReceipt":
+        if bool(self.run) != bool(self.origin):
+            raise ValueError("盘前运行须有首次冻结事件绑定")
+        if self.origin and self.origin.schedule.research_scope() != self.plan.schedule.research_scope():
+            raise ValueError("盘前首次事件不属于同一研究范围")
         if self.run is None and self.status in {"pending", "running", "completed", "partial", "failed"}:
             raise ValueError("盘前运行状态缺少实际运行")
         if self.run and self.status not in {self.run.status, "cancelled"}:

@@ -340,7 +340,10 @@ async def prepare_preview(
             raise ValueError("盘前绑定与目标日或新建方式不一致")
         config["premarket"] = premarket.model_dump(mode="json")
     # 输入版本摘要已入幂等键；入口来源只描述首次冻结，不应让同版API/CLI重复选股。
-    run_key = digest({key: value for key, value in config.items() if key != "input_sources"})
+    identity = {key: value for key, value in config.items() if key != "input_sources"}
+    if premarket is not None:
+        identity["premarket"] = premarket.schedule.research_scope()
+    run_key = digest(identity)
     existing = await store.find_run(run_key)
     if existing:
         return existing["uuid"], {}

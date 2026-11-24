@@ -26,7 +26,11 @@ class WorkflowOutcome(ApiModel):
 
 def recoverable(receipt: PremarketReceipt) -> bool:
     """只恢复明确临时失败，拒绝用重试掩盖模型结构/证据或配置失败。"""
-    if receipt.run is None or receipt.run.error_code == "run_deadline_exceeded":
+    if (
+        receipt.run is None
+        or receipt.run.error_code == "run_deadline_exceeded"
+        or (receipt.origin is not None and now() >= receipt.origin.execution_deadline)
+    ):
         return False
     codes = [stage.error for stage in receipt.run.stages if stage.status == "failed"]
     codes += [job.error_code for job in receipt.run.quant if job.status == "failed"]
@@ -82,7 +86,10 @@ async def follow_job(client: PremarketClient, progress: list[PremarketReceipt]) 
             continue
         else:
             return receipt
-        if (client.data.schedule.execution_deadline - now()).total_seconds() <= delay:
+        deadline = client.data.schedule.execution_deadline
+        if receipt.origin is not None:
+            deadline = min(deadline, receipt.origin.execution_deadline)
+        if (deadline - now()).total_seconds() <= delay:
             return receipt
         await asyncio.sleep(delay)
         try:

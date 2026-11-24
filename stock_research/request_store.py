@@ -9,8 +9,9 @@ from sqlalchemy.dialects.postgresql import insert
 
 from stock_research.errors import ResearchConflict
 from stock_research.identity import digest, new_id
+from stock_research.preparations import preparation_view
 from stock_research.run_store import RunStore, verified_payload
-from stock_research.schema import API_REQUESTS, RESEARCH_RUNS
+from stock_research.schema import API_REQUESTS, PREPARATION_ATTEMPTS, RESEARCH_RUNS
 
 
 class RequestStore:
@@ -96,6 +97,28 @@ class RequestStore:
         if row:
             verified_payload(dict(row))
             return row["uuid"]
+        async with self.store.engine.connect() as connection:
+            ready = (
+                (
+                    await connection.execute(
+                        select(PREPARATION_ATTEMPTS)
+                        .where(
+                            PREPARATION_ATTEMPTS.c.workspace == self.store.workspace,
+                            PREPARATION_ATTEMPTS.c.request_uuid == request["uuid"],
+                            PREPARATION_ATTEMPTS.c.status == "ready",
+                            PREPARATION_ATTEMPTS.c.is_deleted.is_(False),
+                        )
+                        .order_by(PREPARATION_ATTEMPTS.c.create_time, PREPARATION_ATTEMPTS.c.uuid)
+                        .limit(1)
+                    )
+                )
+                .mappings()
+                .one_or_none()
+            )
+        if ready:
+            prepared = preparation_view(dict(ready))
+            await self.store.row(RESEARCH_RUNS, str(prepared.run_id))
+            return str(prepared.run_id)
         return None
 
     async def bind(self, request: dict[str, object], run_id: str) -> None:

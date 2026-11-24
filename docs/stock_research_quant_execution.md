@@ -43,4 +43,4 @@ GET /v1/research-runs/{run_id}/quant-attempts按当前run读取追加历史，pa
 最终全量门禁、本机隔离工作区实测及未验收项见[交接检查点](stock_research_handoff_2026-11-23.md)。浏览器操作仍需正常账号认证；Personal、行情更新协调、远端CI、wiki、独立整体审查和正式部署分别验收。
 
 
-盘前有限API创建的run另冻结原job、事件及绝对截止时间。量化worker和模型阶段共同取原run创建时预算与该截止的较小者，恢复不延长；普通历史run没有该字段，继续原规则。临时量化失败可在原期限内补算；取消封存盘前意图不会覆盖已有成功初选/报告。完整调用边界见[盘前入口](stock_research_premarket.md)。阶段证据摘要使用与Pydantic模型相同的期限序列化，UTC的Z/+00:00等价表示不再导致自校验失败；不改变策略数值或交易参数。
+盘前有限API创建的run另冻结原job、事件及绝对截止时间。量化worker和模型阶段共同取原run创建时预算与该截止的较小者，恢复不延长；普通历史run没有该字段，继续原规则。临时量化失败可在原期限内补算；取消封存盘前首次意图及全部事件别名，不会覆盖已有成功初选/报告。新manual事件同配置返回首次run和origin期限，不给量化增加预算；operator显式force+parent_run_id才产生新分析。完整调用边界见[盘前入口](stock_research_premarket.md)。阶段证据摘要使用与Pydantic模型相同的期限序列化，UTC的Z/+00:00等价表示不再导致自校验失败；不改变策略数值或交易参数。

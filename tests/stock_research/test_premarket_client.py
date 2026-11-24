@@ -14,7 +14,7 @@ from stock_research.models import Snapshot
 from stock_research.premarket import plan_premarket
 from stock_research.premarket_workflow import read_confirmed, recoverable, run_workflow
 from stock_research.schemas.api import ApiResponse, Code, ReportView, RunView, StageView
-from stock_research.schemas.premarket import PremarketInput, PremarketPlan, PremarketReceipt
+from stock_research.schemas.premarket import PremarketBinding, PremarketInput, PremarketPlan, PremarketReceipt
 from stock_research.workflow_client import PremarketClient, WorkflowError
 from stock_research.workflow_settings import WorkflowSettings
 
@@ -40,6 +40,7 @@ def pending() -> PremarketReceipt:
     return PremarketReceipt(
         job_id=new_id(),
         plan=PremarketPlan.model_validate(plan_premarket(data(), FIXED)),
+        origin=None,
         status="unconfirmed",
         preparation=None,
         run=None,
@@ -220,7 +221,10 @@ def running_receipt(snapshot: Snapshot) -> PremarketReceipt:
         stages=(),
     )
     report = ReportView(report_id=new_id(), revision=1, create_time=FIXED, content_hash="a" * 64, run=run)
-    return receipt.model_copy(update={"status": "running", "run": run, "report": report})
+    origin = PremarketBinding(
+        job_id=receipt.job_id, schedule=data().schedule, execution_deadline=data().schedule.execution_deadline
+    )
+    return receipt.model_copy(update={"status": "running", "origin": origin, "run": run, "report": report})
 
 
 def test_original_deadline_stops_polling_and_confirms_remote_cleanup(
@@ -253,8 +257,9 @@ def test_original_deadline_stops_polling_and_confirms_remote_cleanup(
     ],
 )
 def test_external_recovery_does_not_retry_structural_or_configuration_failures(
-    snapshot: Snapshot, error: str | None, allowed: bool
+    snapshot: Snapshot, error: str | None, allowed: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr("stock_research.premarket_workflow.now", lambda: FIXED)
     receipt = running_receipt(snapshot)
     stage = StageView(
         id=new_id(),
@@ -271,6 +276,8 @@ def test_external_recovery_does_not_retry_structural_or_configuration_failures(
         update={"status": "failed", "run": receipt.run.model_copy(update={"status": "failed", "stages": (stage,)})}
     )
     assert recoverable(changed) is allowed
+    monkeypatch.setattr("stock_research.premarket_workflow.now", lambda: FIXED + timedelta(hours=1))
+    assert recoverable(changed) is False
 
 
 @pytest.mark.parametrize("kind", ["missing", "symlink", "wide", "directory"])

@@ -40,6 +40,23 @@ def job_input(manager: RunManager, request: dict[str, object]) -> PremarketInput
     return data
 
 
+async def run_origin(
+    manager: RunManager, run_id: str, data: PremarketInput
+) -> tuple[PremarketBinding, dict[str, object]]:
+    """别名只能引用同一能力/日期/触发类别的首次意图，不能替换其期限。"""
+    row = await manager.store.row(RESEARCH_RUNS, run_id)
+    try:
+        binding = PremarketBinding.model_validate(row["payload"]["premarket"])
+    except (KeyError, ValueError):
+        raise ResearchIntegrityError("盘前运行绑定无效") from None
+    if binding.schedule.research_scope() != data.schedule.research_scope():
+        raise ResearchIntegrityError("盘前任务与运行范围不一致")
+    origin = await manager.store.row(API_REQUESTS, str(binding.job_id))
+    if job_input(manager, origin).schedule != binding.schedule or await manager.requests.frozen_run(origin) != run_id:
+        raise ResearchIntegrityError("盘前首次意图与运行绑定不一致")
+    return binding, origin
+
+
 async def job_receipt(manager: RunManager, job_id: str) -> PremarketReceipt:
     """准备失败、未确认和已有报告均从持久数据读回，不把内存任务当成功。"""
     request = await manager.store.row(API_REQUESTS, job_id)
@@ -64,19 +81,15 @@ async def job_receipt(manager: RunManager, job_id: str) -> PremarketReceipt:
         )
     preparation = preparation_view(dict(row)) if row else None
     run_id = await manager.requests.frozen_run(request)
-    run = report = None
+    run = report = binding = None
     status = "unconfirmed"
     if run_id:
         body = await manager.store.summary(run_id)
-        try:
-            binding = PremarketBinding.model_validate(body["manifest"]["premarket"])
-        except (KeyError, ValueError):
-            raise ResearchIntegrityError("盘前运行绑定无效") from None
-        if str(binding.job_id) != job_id or binding.schedule != data.schedule:
-            raise ResearchIntegrityError("盘前任务与运行不一致")
+        binding, origin = await run_origin(manager, run_id, data)
         run = await run_view(manager.store, body)
         report = await report_view(manager.store, await latest_report_id(manager.store, run_id=run_id))
-        status = "cancelled" if request["payload"].get("premarket_cancelled") else run.status
+        cancelled = request["payload"].get("premarket_cancelled") or origin["payload"].get("premarket_cancelled")
+        status = "cancelled" if cancelled else run.status
     elif request["payload"].get("premarket_cancelled"):
         status = "cancelled"
     elif plan.budget_seconds == 0:
@@ -91,7 +104,9 @@ async def job_receipt(manager: RunManager, job_id: str) -> PremarketReceipt:
             if preparation.status == "cancelled"
             else "unconfirmed"
         )
-    return PremarketReceipt(job_id=job_id, plan=plan, status=status, preparation=preparation, run=run, report=report)
+    return PremarketReceipt(
+        job_id=job_id, plan=plan, origin=binding, status=status, preparation=preparation, run=run, report=report
+    )
 
 
 async def admit_job(manager: RunManager, data: PremarketInput) -> PremarketReceipt:
@@ -136,20 +151,26 @@ async def admit_job(manager: RunManager, data: PremarketInput) -> PremarketRecei
                 if request["run_uuid"] is None:
                     await manager.requests.bind(request, run_id)
                 row = await manager.store.row(RESEARCH_RUNS, run_id)
-                if row["status"] in {"pending", "running"} and not request["payload"].get("premarket_cancelled"):
+                _, origin = await run_origin(manager, run_id, data)
+                cancelled = request["payload"].get("premarket_cancelled") or origin["payload"].get(
+                    "premarket_cancelled"
+                )
+                if row["status"] in {"pending", "running"} and not cancelled:
                     manager.start(run_id)
     return await job_receipt(manager, job_id)
 
 
 async def retry_job(manager: RunManager, job_id: str) -> PremarketReceipt:
     """请求级锁序列化取消/恢复，原期限和成功阶段不重置。"""
-    previous = await manager.store.row(API_REQUESTS, job_id)
-    data = job_input(manager, previous)
-    key, body = request_identity(data)
+    receipt = await job_receipt(manager, job_id)
+    if receipt.run is None:
+        raise ResearchConflict("盘前任务尚未冻结运行")
+    key, body = request_identity(PremarketInput(schedule=receipt.origin.schedule))
     async with manager.requests.claim(key, body) as request:
         receipt = await job_receipt(manager, job_id)
         if (
             request["payload"].get("premarket_cancelled")
+            or receipt.status == "cancelled"
             or receipt.run is None
             or now() >= receipt.plan.execution_deadline
         ):
@@ -166,10 +187,17 @@ async def cancel_job(manager: RunManager, job_id: str) -> PremarketReceipt:
     async with manager.admission:
         previous = await manager.store.row(API_REQUESTS, job_id)
         data = job_input(manager, previous)
+        run_id = await manager.requests.frozen_run(previous)
+        if run_id:
+            binding, _ = await run_origin(manager, run_id, data)
+            data = PremarketInput(schedule=binding.schedule)
         key, body = request_identity(data)
         async with manager.requests.claim(key, body) as request:
             run_id = await manager.requests.frozen_run(request)
             if run_id:
+                binding, _ = await run_origin(manager, run_id, data)
+                if str(binding.job_id) != request["uuid"]:
+                    raise ResearchConflict("盘前任务刚绑定共享运行，请重试取消")
                 row = await manager.store.row(RESEARCH_RUNS, run_id)
                 if row["status"] == "completed":
                     return await job_receipt(manager, job_id)
@@ -181,7 +209,7 @@ async def cancel_job(manager: RunManager, job_id: str) -> PremarketReceipt:
                     result = await connection.execute(
                         update(API_REQUESTS)
                         .where(
-                            API_REQUESTS.c.uuid == job_id,
+                            API_REQUESTS.c.uuid == request["uuid"],
                             API_REQUESTS.c.workspace == manager.store.workspace,
                             API_REQUESTS.c.content_hash == request["content_hash"],
                         )

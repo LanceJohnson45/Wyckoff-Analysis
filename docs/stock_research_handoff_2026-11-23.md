@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：跨事件研究去重与首次绑定恢复（2026-11-24）
+
+上一批研究3cf0a69f/services文档0db649c已本机提交并快进，本批继续对齐plan第9节。同日、研究workspace、来源能力/trigger_kind和配置版本的新盘前事件保留各自job/plan/准备回执，复用首次run、报告与期限。事件ID/job/时刻不再使研究重复创建；回执新增必填可空origin，明确首次job、事件及绝对期限，未冻结为null。别名恢复/取消统一领取首次意图锁、共享取消标记；新manual不能刷新预算或复活取消研究。不同配置或trigger_kind仍分开。强制重分析仍仅operator显式force+parent_run_id，已实测新run父链及请求重放、原初选/报告保持；workflow身份未扩权。
+
+首次冻结清单及请求映射均保持；别名已提交ready但绑定前退出时，请求账本从最早已校验ready准备回执找回run，后来配置变化也不重新准备。没有新表、迁移、配置或依赖。专项首次将新事件接收时间设在事件之前，被日历正确标before_start；修正合成夹具时刻，未改生产日历或排除用例。双API真实同日快照锁竞争可先留下input_unavailable准备回执，重放后仍只有一个run与两次量化尝试，失败历史保留。
+
+最终源码8983b80dbc27413d0224d586e952c54aa37fa5b4c78abb5a8e2b3edc944b7f0d，全量Python6112通过/无skip/50旧警告，专项83通过。真实隔离原生PG/HMAC网关连续两个manual事件→固定argv→HTTP联调1通过/6.68秒，八份产物回执；两job e1a6e0de-2f50-4a7b-b68f-3e77093ec77b与5914905e-4036-4254-9e81-7038f01edb72，共用run ef291309-3940-4f1b-8dfc-d5d53ef48499、report0234e056-27ef-4c97-adb6-f26c3799baab与origin。独立SQL确认API请求2、run1、量化job2/attempt2、初选2/评议2；合成空池、manual/late、目标23日/行情20日、真实模型和通知0。临时API76616/50132已回收/释放，services证明用例按字节核对后移除；私有材料保留忽略目录premarket-identity-*。
+
+Ruff/1285文件格式、完整质量、109文件红线零命中、workflow/dependency hygiene及合成daily dry-run通过。Python LOC143076/+66.0%、TS36116/+94.2%旧基线警告保留。额外全研究测试目录扫描的test_chat.py工具名拼接被SQL-02误报，已用HEAD字节相等确认是既有测试，未改无关文件或加豁免；不称全目录零命中。本批无Web/services生产源码变更，沿用既有完整Web409/API221及两项默认Upstash跳过、services500通过及3原Docker条件skip；无新测试排除。远端CI未执行。
+
+零活动和26表摘要守卫后，仅重启本线程8788 API：旧67720终态143、PID消失/端口释放；当前78111/session2410，日志premarket-identity-main-api.log。ready、旧cf8da076报告/a45bf9c4问答、跨workspace404/只读私人问答403独立读回通过；26表审计仍按stocks过滤有workspace表、其余全表，前后保持。生产workflow身份关闭；没有主工作区新研究/问答或通知，Personal共享8802/网关/原42计划未改未重启。
+
+下一步接必要行情更新及旧写入入口协调，再接原期限报告发布、通知稳定业务键/unknown回查和唯一stock-research-premarket六处清单/cron所有权。正式Mac运行包/TCC、Tailscale/多用户、自然交易日、正常浏览器、PIT/效果评估、独立wiki缺失、远端CI及另session整体审查继续保留；整个plan.md仍在推进，不宣称正式部署或全计划完成。
+
 ## 续接检查点：盘前有限API与实际执行（2026-11-24）
 
 在f3a422dc计划入口上接通--execute：专用workflow身份只允许盘前任务受理、读回、局部重试与取消，固定来源工作区；与operator/read身份不同，默认关闭。固定argv只读取独立workflow.env或显式--identity-file，不继承PG、模型、Personal或operator身份。API_REQUESTS持久化原事件意图、冻结run与取消标记，准备失败保留；并发及进程重建重放复用原事件，冻结后绑定前中断可找回原run。没有新表或迁移。
