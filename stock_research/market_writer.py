@@ -3,7 +3,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import URL, delete, select, tuple_
+from sqlalchemy import URL, delete, or_, select, tuple_
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 
@@ -61,7 +61,14 @@ async def write_valid(connection: AsyncConnection, bars: list[dict[str, object]]
                 name: getattr(statement.excluded, name)
                 for name in ("open", "high", "low", "close", "volume", "cloud_updated_at", "imported_at")
             },
-            where=statement.excluded.cloud_updated_at >= DAILY_BARS.c.cloud_updated_at,
+            where=(statement.excluded.cloud_updated_at >= DAILY_BARS.c.cloud_updated_at)
+            & or_(
+                statement.excluded.cloud_updated_at > DAILY_BARS.c.cloud_updated_at,
+                *(
+                    getattr(statement.excluded, name).is_distinct_from(DAILY_BARS.c[name])
+                    for name in ("open", "high", "low", "close", "volume")
+                ),
+            ),
         ),
         bars,
     )

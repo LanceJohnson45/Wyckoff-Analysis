@@ -194,6 +194,47 @@ def test_normal_incremental_sync_includes_historical_revision(postgres_settings:
     asyncio.run(scenario())
 
 
+@pytest.mark.parametrize("revision_delta,close,changed", [(0, 11, False), (0, 10.5, True), (1, 11, True)])
+def test_normal_overlap_only_reimports_changed_source_rows(
+    postgres_settings: Settings, tmp_path: Path, revision_delta: int, close: float, changed: bool
+) -> None:
+    """【正常值】重叠重放不改未变行的导入时间，同版本修正和新版本仍入库。"""
+
+    async def scenario() -> None:
+        await seed_source(postgres_settings)
+        source = source_settings(postgres_settings)
+        path = tmp_path / "overlap.sqlite3"
+        await sync_market(source, path, full=True)
+        local = local_write_engine(path)
+        admin = database_engine(postgres_settings, test=True)
+        try:
+            async with local.connect() as connection:
+                before = await connection.scalar(select(DAILY_BARS.c.imported_at).where(DAILY_BARS.c.symbol == "AAPL"))
+            async with admin.begin() as connection:
+                await connection.execute(
+                    update(CLOUD_BARS)
+                    .where(CLOUD_BARS.c.symbol == "US:AAPL")
+                    .values(close=close, updated_at=STAMP + timedelta(hours=revision_delta))
+                )
+
+            result = await sync_market(source, path, full=True)
+            async with local.connect() as connection:
+                after = (
+                    await connection.execute(
+                        select(DAILY_BARS.c.imported_at, DAILY_BARS.c.close).where(DAILY_BARS.c.symbol == "AAPL")
+                    )
+                ).one()
+
+            assert result["rows"] == 5
+            assert after.close == close
+            assert (after.imported_at != before) is changed
+        finally:
+            await close_engine(local)
+            await close_engine(admin)
+
+    asyncio.run(scenario())
+
+
 def test_normal_revision_repairs_quarantine(postgres_settings: Settings, tmp_path: Path) -> None:
     """【正常值】新修订修复隔离，随后旧修订不能覆盖新行情。"""
 

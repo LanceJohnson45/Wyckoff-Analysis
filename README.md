@@ -380,3 +380,5 @@ wyckoff mcp-list
 盘前任务仅在研究终态且所有实际发布（包括恢复更新）已送达后写当天完成标记；恢复消息未知或待重试不会被首报成功掩盖。后续tick保留原期限和通知业务键，见[盘前MVP](docs/stock_research_mvp.md)。
 
 研究行情只读复制现按10,000行流式写入，保留一天修订重叠及原90秒限制，减少重复历史窗口的往返；自然slot超时与候选测量分别记录于[行情准备](docs/stock_research_market_refresh.md)。
+
+研究重叠同步仅在云端修订或OHLCV变化时重写本机行，保留同修订数值修复；本机Web研究API的launchd资源类别及自然恢复限制见[单用户MVP](docs/stock_research_mvp.md)。
