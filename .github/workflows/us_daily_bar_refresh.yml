@@ -2,14 +2,27 @@ name: US Daily Bar Refresh
 
 on:
   workflow_dispatch:
+    inputs:
+      as_of:
+        description: "Optional fixed completed US session; provide together with symbols"
+        required: false
+        type: string
+      symbols:
+        description: "Optional explicit research pool, comma separated; requires as_of"
+        required: false
+        type: string
+
+permissions:
+  contents: read
 
 concurrency:
-  group: us-daily-bar-refresh-${{ github.ref }}
-  cancel-in-progress: true
+  group: market-data-us
+  cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       PYTHONUNBUFFERED: "1"
       PG_ENABLED: "1"
@@ -27,7 +40,7 @@ jobs:
       TZ: Asia/Shanghai
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore S&P500 snapshot cache
         id: restore-sp500-snapshot
@@ -39,7 +52,7 @@ jobs:
             us-sp500-snapshot-${{ github.ref_name }}-
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -53,15 +66,29 @@ jobs:
         run: |
           uv run --frozen --no-dev python -c "from integrations.postgres_base import postgres_configured; raise SystemExit(0 if postgres_configured() else 'PG连接配置缺失')"
 
-      - name: Refresh active S&P500 bars
+      - name: Refresh active S&P500 or explicit research pool
+        env:
+          INPUT_AS_OF: ${{ inputs.as_of }}
+          INPUT_SYMBOLS: ${{ inputs.symbols }}
         run: |
-          set -o pipefail
-          uv run --frozen --no-dev python -u scripts/us_sp500_maintenance.py refresh --trading-days ${US_REFRESH_TRADING_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
-            2>&1 | tee us_daily_bar_refresh.log
+          set -euo pipefail
+          if [ -n "$INPUT_AS_OF" ] || [ -n "$INPUT_SYMBOLS" ]; then
+            if [ -z "$INPUT_AS_OF" ] || [ -z "$INPUT_SYMBOLS" ]; then
+              echo "as_of and symbols must be supplied together" | tee us_daily_bar_refresh.log
+              exit 2
+            fi
+            uv run --frozen --no-dev python -u scripts/us_research_refresh.py --as-of "$INPUT_AS_OF" --symbols "$INPUT_SYMBOLS" \
+              --batch-size "$US_SP500_BATCH_SIZE" --sleep-seconds "$US_SP500_SLEEP_SECONDS" \
+              2>&1 | tee us_daily_bar_refresh.log
+          else
+            uv run --frozen --no-dev python -u scripts/us_sp500_maintenance.py refresh --trading-days "$US_REFRESH_TRADING_DAYS" \
+              --batch-size "$US_SP500_BATCH_SIZE" --sleep-seconds "$US_SP500_SLEEP_SECONDS" \
+              2>&1 | tee us_daily_bar_refresh.log
+          fi
 
       - name: Upload refresh log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: us-daily-bar-refresh-${{ github.run_number }}
           path: us_daily_bar_refresh.log

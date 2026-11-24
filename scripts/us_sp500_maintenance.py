@@ -6,9 +6,7 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
-from pathlib import Path
 
 import pandas as pd
 
@@ -144,6 +142,8 @@ def _download_batch(
     )
     if data is None or data.empty:
         raise RuntimeError(f"yfinance batch empty for {joined}")
+    if len(symbols) > 1 and not isinstance(data.columns, pd.MultiIndex):
+        raise RuntimeError("Multi-symbol download has no ticker labels; refusing to duplicate one history across symbols")
     out: dict[str, pd.DataFrame] = {}
     for symbol in symbols:
         frame = _normalize_batch_download(data, symbol)
@@ -154,6 +154,8 @@ def _download_batch(
                 )
             except Exception:
                 frame = pd.DataFrame()
+        if not frame.empty:
+            frame = frame.loc[frame["日期"].between(start_day.isoformat(), end_day.isoformat())].copy()
         if not frame.empty:
             out[symbol] = frame
     return out
@@ -429,4 +431,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from integrations.market_data_lock import cli_market_job
+
+    with cli_market_job(sys.argv[1:], default_market="us"):
+        raise SystemExit(main())

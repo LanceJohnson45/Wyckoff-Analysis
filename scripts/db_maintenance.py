@@ -141,7 +141,7 @@ def cleanup_table(
     cutoff = _cutoff_value(ttl_days, cutoff_kind)
     if postgres_enabled():
         try:
-            with connect_postgres() as conn, conn.cursor() as cur:
+            with connect_postgres(market_write=table == "stock_hist_cache" and not dry_run) as conn, conn.cursor() as cur:
                 if not _pg_table_exists(cur, table):
                     return "skip_missing_table", None
                 if dry_run:
@@ -193,7 +193,7 @@ def cleanup_unadjusted_cache(client) -> tuple[bool, str]:
     """删除 stock_hist_cache 中 adjust='none' 的存量缓存。"""
     if postgres_enabled():
         try:
-            with connect_postgres() as conn, conn.cursor() as cur:
+            with connect_postgres(market_write=True) as conn, conn.cursor() as cur:
                 cur.execute("delete from public.stock_hist_cache where adjust = 'none'")
             return True, "cleaned adjust=none rows"
         except Exception as e:

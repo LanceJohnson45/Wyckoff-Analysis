@@ -23,13 +23,16 @@ from integrations.market_data_sync import BENCHMARK_SYMBOLS
 from utils.trading_clock import resolve_end_calendar_day_for_market
 
 
-def refresh_benchmark(market: str, *, calendar_days: int = 550, end_date: date | None = None) -> int:
+def refresh_benchmark(market: str, *, calendar_days: int = 550, end_date: date | None = None, benchmark: str | None = None) -> int:
     """覆盖重取小规模基准历史，保留既有数据源的调整口径。"""
     if market not in BENCHMARK_SYMBOLS or calendar_days < 200:
         raise ValueError("市场必须为 cn/us，历史窗口至少200个自然日")
-    symbol = BENCHMARK_SYMBOLS[market]
+    symbol = benchmark or BENCHMARK_SYMBOLS[market]
+    allowed = ("SPY", "QQQ", "IWM") if market == "us" else (BENCHMARK_SYMBOLS[market],)
+    if symbol not in allowed:
+        raise ValueError("基准不在该市场的固定白名单内")
     end = end_date or resolve_end_calendar_day_for_market(market)
-    required_end = _resolve_trading_window(end, 1).end_trade_date if market == "cn" else None
+    required_end = _resolve_trading_window(end, 1).end_trade_date if market == "cn" else end
     frame = normalize_hist_df(fetch_index_hist(symbol, end - timedelta(days=calendar_days), end, market=market, min_rows=100, required_end=required_end))
     report = check_kline_quality(frame)
     if not report.ok or len(frame) < 100:
@@ -45,10 +48,14 @@ def main() -> int:
     parser.add_argument("--market", required=True, choices=["cn", "us"])
     parser.add_argument("--end-date", type=date.fromisoformat, help="固定为本轮批次计划的目标日")
     args = parser.parse_args()
-    rows = refresh_benchmark(args.market, end_date=args.end_date)
-    sys.stdout.write(json.dumps({"market": args.market, "benchmark_rows": rows}, ensure_ascii=False) + "\n")
+    symbols = ("SPY", "QQQ", "IWM") if args.market == "us" else (BENCHMARK_SYMBOLS[args.market],)
+    counts = {symbol: refresh_benchmark(args.market, end_date=args.end_date, benchmark=symbol) for symbol in symbols}
+    sys.stdout.write(json.dumps({"market": args.market, "benchmark_rows": counts[symbols[0]], "benchmarks": counts}, ensure_ascii=False) + "\n")
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from integrations.market_data_lock import cli_market_job
+
+    with cli_market_job(sys.argv[1:], default_market="cn"):
+        raise SystemExit(main())

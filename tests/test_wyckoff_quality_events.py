@@ -309,7 +309,11 @@ def test_upsert_cache_data_drops_rows_with_unrecoverable_missing_volume(monkeypa
             return None
 
     monkeypatch.setattr(stock_cache, "postgres_enabled", lambda: True)
-    monkeypatch.setattr(stock_cache, "connect_postgres", lambda: DummyConnection())
+    def connect_protected(*, market_write=False):
+        assert market_write is False
+        return DummyConnection()
+
+    monkeypatch.setattr(stock_cache, "connect_postgres", connect_protected)
     monkeypatch.setattr(
         stock_cache,
         "upsert_rows",

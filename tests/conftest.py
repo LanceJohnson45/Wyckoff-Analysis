@@ -23,6 +23,11 @@ def _no_network(monkeypatch):
         raise RuntimeError("Tests must not make real network calls")
 
     monkeypatch.setattr(socket, "create_connection", _guard)
+    monkeypatch.setattr(socket.socket, "connect", _guard)
+    monkeypatch.setattr(socket.socket, "connect_ex", _guard)
+    from curl_cffi.requests import Session
+
+    monkeypatch.setattr(Session, "request", _guard)
 
 
 @pytest.fixture()

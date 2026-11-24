@@ -16,8 +16,11 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: read
+
 concurrency:
-  group: us-yfinance-backfill-${{ github.ref }}
+  group: market-data-us
   cancel-in-progress: false
 
 jobs:
@@ -46,7 +49,7 @@ jobs:
       SP500_SNAPSHOT_CACHE_KEY: us-sp500-snapshot-${{ github.ref_name }}-${{ github.run_id }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore S&P500 snapshot cache
         id: restore-sp500-snapshot
@@ -58,7 +61,7 @@ jobs:
             us-sp500-snapshot-${{ github.ref_name }}-
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -94,7 +97,7 @@ jobs:
 
       - name: Upload backfill log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: us-yfinance-backfill-${{ github.run_number }}
           path: us_yfinance_backfill.log

@@ -1,0 +1,58 @@
+name: Market Source CI
+
+on:
+  push:
+    branches: [codex/stock-research-market-source]
+  pull_request:
+    branches: [wxjer]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-source-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install locked source environment
+        run: |
+          python -m pip install uv==0.12.5
+          uv sync --frozen --extra dev --extra streamlit
+      - name: Prepare native isolated PostgreSQL tools
+        run: |
+          for directory in /usr/lib/postgresql/*/bin; do
+            if [ -x "$directory/initdb" ] && [ -x "$directory/pg_ctl" ] && [ -x "$directory/createdb" ]; then
+              echo "$directory" >> "$GITHUB_PATH"
+              exit 0
+            fi
+          done
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y postgresql-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+      - name: Run complete source Python suite
+        run: |
+          set -o pipefail
+          .venv/bin/python -m pytest tests/ -x -q -ra 2>&1 | tee market-source-tests.log
+      - name: Daily operational dry-run
+        env:
+          FEISHU_WEBHOOK_URL: https://example.com
+          GEMINI_API_KEY: fake-market-source-ci
+        run: |
+          set -o pipefail
+          .venv/bin/python scripts/daily_job.py --dry-run 2>&1 | tee market-source-smoke.log
+      - name: Upload verification logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: market-source-ci-${{ github.run_number }}
+          path: market-source-*.log
+          retention-days: 7
+          if-no-files-found: warn

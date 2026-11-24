@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -20,6 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from integrations.local_market_store import DailyBar, SyncIssue, LocalMarketWriter, LOCAL_TZ, local_engine, local_market_path
 from integrations.postgres_base import get_postgres_dsn, postgres_enabled
+from integrations.market_data_lock import MARKET_DATA_KEY, US_MARKET_JOB_KEY, MarketDataBusy
 
 SYNC_BATCH_SIZE = 2000
 SYNC_OVERLAP = timedelta(days=1)
@@ -103,13 +104,13 @@ class PostgresDeltaSource:
                     )
                     bar.validate()
                     batch.append(bar)
-                except (ValueError, TypeError) as exc:
+                except (ValueError, TypeError):
                     batch.append(SyncIssue(market, kind, symbol, row["date"], row["updated_at"], "云端OHLCV缺失或无效，待修复后重同步"))
             yield batch
 
 
 @contextmanager
-def postgres_delta_source() -> Iterator[PostgresDeltaSource]:
+def postgres_delta_source(*, market: str = "us") -> Iterator[PostgresDeltaSource]:
     """复用现有PG配置，强制只读并限制连接及单条查询等待时间。"""
     if not postgres_enabled():
         raise ValueError("本地同步使用现有PostgreSQL，请先配置 PG_ENABLED=1 和 PG_*；不会隐式切到其他数据库")
@@ -126,6 +127,10 @@ def postgres_delta_source() -> Iterator[PostgresDeltaSource]:
     ))
     try:
         with engine.connect().execution_options(isolation_level="REPEATABLE READ", postgresql_readonly=True) as connection, connection.begin():
+            keys = (US_MARKET_JOB_KEY, MARKET_DATA_KEY) if market == "us" else ()
+            for key in keys:
+                if not connection.scalar(select(func.pg_try_advisory_xact_lock(key))):
+                    raise MarketDataBusy("行情来源维护、写入或复制正在运行；本机水位未推进，请按原目标日重试")
             snapshot_time = connection.scalar(select(func.now()))
             yield PostgresDeltaSource(connection, source_id, snapshot_time)
     except (SQLAlchemyError, psycopg.Error) as exc:
@@ -159,5 +164,5 @@ def sync_from_source(source: DeltaSource, market: str, *, symbols: tuple[str, ..
 
 def sync_market(market: str, *, symbols: tuple[str, ...] = (), path: Path | None = None, full: bool = False, progress: Callable[[int], None] | None = None) -> SyncResult:
     """显式同步入口；网页加载行情不会调用它。"""
-    with postgres_delta_source() as source:
+    with postgres_delta_source(market=market) as source:
         return sync_from_source(source, market, symbols=symbols, path=path, full=full, progress=progress)

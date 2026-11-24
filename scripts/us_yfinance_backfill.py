@@ -680,4 +680,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from integrations.market_data_lock import cli_market_job
+
+    with cli_market_job(sys.argv[1:], default_market="us"):
+        raise SystemExit(main())

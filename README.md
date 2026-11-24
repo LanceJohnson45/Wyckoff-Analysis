@@ -734,3 +734,5 @@ Copyright (c) 2024-2026 youngcan.
 
 ## Star History
 [![Star History Chart](https://api.star-history.com/svg?repos=YoungCan-Wang/Wyckoff-Analysis&type=Date)](https://star-history.com/#YoungCan-Wang/Wyckoff-Analysis&Date)
+
+US源端写入、研究复制与固定研究池补齐的候选契约见[行情更新协调](docs/us_market_coordination.md)。候选未合入wxjer前生产保持旧实现；本说明不是部署或自动补拉完成声明。
