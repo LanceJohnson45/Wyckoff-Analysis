@@ -8,6 +8,7 @@ import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strat
 import { preparationPageSchema } from './preparation-contract'
 import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
 import { universePageSchema } from './universe-contract'
+import { evaluationJobPageSchema, evaluationJobSchema, evaluationResultSchema, evaluationSamplePageSchema, type CreateEvaluation } from './evaluation-contract'
 import { themeProposalPageSchema, themeProposalSchema, inputPublicationPageSchema, inputPublicationSchema, manualHeadSchema, frozenInputsSchema, canonicalResearchSymbol, type ThemeDefinition, type ConfirmTheme, type CreateManualOverride } from './input-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
@@ -228,5 +229,36 @@ export async function readResearchAnchorChart(report: ResearchReport, symbol: st
 export async function readQuantAttempts(runId: string, page: number, signal?: AbortSignal) {
   const value = await request(`/v1/research-runs/${id.parse(runId)}/quant-attempts?page=${page}&page_size=10`, quantAttemptPageSchema, { signal })
   if (value.run_id !== runId || value.page !== page || value.page_size !== 10) throw new ResearchApiError('量化尝试与当前运行不一致', 502, 'invalid_response')
+  return value
+}
+
+export async function readEvaluations(page: number, signal?: AbortSignal) {
+  const value = await request(`/v1/evaluations?page=${page}&page_size=5`, evaluationJobPageSchema, { signal })
+  if (value.page !== page || value.page_size !== 5) throw new ResearchApiError('评估分页与查询不一致', 503, 'invalid_response')
+  return value
+}
+export async function readEvaluation(identifier: string, signal?: AbortSignal) {
+  const value = await request(`/v1/evaluations/${id.parse(identifier)}`, evaluationJobSchema, { signal })
+  if (value.id !== identifier) throw new ResearchApiError('评估任务身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function createEvaluation(body: CreateEvaluation, key: string) {
+  const value = await request('/v1/evaluations', evaluationJobSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '评估提交结果未知，请核对原提交')
+  if (value.profile !== body.profile || value.cutoff !== body.cutoff || value.allow_current_universe !== body.allow_current_universe) throw new ResearchApiError('评估受理内容与原提交不一致', 503, 'invalid_response')
+  return value
+}
+export async function controlEvaluation(identifier: string, action: 'cancel' | 'retry') {
+  const value = await request(`/v1/evaluations/${id.parse(identifier)}/${action}`, evaluationJobSchema, { method: 'POST' }, '评估操作结果未知，请刷新原任务状态')
+  if (value.id !== identifier) throw new ResearchApiError('评估操作身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function readEvaluationResult(identifier: string, jobId: string, signal?: AbortSignal) {
+  const value = await request(`/v1/evaluation-results/${id.parse(identifier)}`, evaluationResultSchema, { signal })
+  if (value.id !== identifier || value.job_id !== jobId) throw new ResearchApiError('评估结果不属于原任务', 503, 'invalid_response')
+  return value
+}
+export async function readEvaluationSamples(resultId: string, page: number, strategy?: Strategy, signal?: AbortSignal) {
+  const value = await request(`/v1/evaluation-results/${id.parse(resultId)}/samples?page=${page}&page_size=20${strategy ? `&strategy=${strategySchema.parse(strategy)}` : ''}`, evaluationSamplePageSchema, { signal })
+  if (value.page !== page || value.page_size !== 20 || value.items.some(sample => sample.result_id !== resultId || strategy && sample.strategy !== strategy)) throw new ResearchApiError('逐股观察与原结果或查询不一致', 503, 'invalid_response')
   return value
 }

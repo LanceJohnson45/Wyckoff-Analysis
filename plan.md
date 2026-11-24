@@ -6,9 +6,9 @@
 
 续接起点发现`evaluate`、`POST /v1/evaluations`、历史截面/后续表现/参数实验台账尚不存在；通知状态和最近成功时间的工作台呈现、正式静态运行入口仍需核对补齐。现有主题/自选维护已进入实际页面验收。自然任务须等待11月25日21:00/21:30/21:50窗口的真实回执，目标保持进行中。
 
-续接进展：主题/自选维护已补实际页面验收及06412209成功CI；`evaluate` 已接入20截面的正式量化池基线回放，当前版本和限制见[历史评估CLI](docs/stock_research_evaluations.md)。正式初选观测、人工审查、参数实验、评估API/界面及自然日仍分别待完成，不将这一批量化回放视为整个阶段六交付。
+续接进展：主题/自选维护已补实际页面验收及06412209成功CI；`evaluate` 已接入20截面的正式量化池基线回放，当前版本和限制见[历史评估CLI](docs/stock_research_evaluations.md)。正式初选观测、人工审查、参数实验、评估界面整体验收及自然日仍分别待完成，不将这一批量化回放视为整个阶段六交付。
 
-后续源码已接私有评估作业API和同源代理：实际发布版本冻结、隔离worker、取消/重启/原输入续跑及结果SQL分页已有原生PG和真实进程验证。当前批次完整门禁/提交/运行包采用另记；实验组件、正式初选观测及参数实验仍未完成。
+后续源码已接私有评估作业API和同源代理：实际发布版本冻结、隔离worker、取消/重启/原输入续跑及结果SQL分页已有原生PG和真实进程验证，d72206be八项CI成功。现有Agent新增量化池回放组件，已接原请求核对、任务状态和逐股窗口，契约/静态渲染及完整前端门禁已验；当前UI提交CI、真实页面操作及运行包采用另记。正式初选观测、人工审查及参数实验仍未完成。
 
 ## 当前稳定性批次（2026-11-24）
 
@@ -468,7 +468,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI](docs/stock_research_evaluations.md)，当前仅覆盖20截面基线回放、描述性观察及时间净化，不含正式模型初选观测、人工审查、参数实验或评估API；阶段六仍待完整验收。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI及私有作业API](docs/stock_research_evaluations.md)，当前覆盖20截面基线回放、描述性观察、时间净化与作业恢复，Agent已有量化池回放组件；不含正式模型初选观测、人工审查或参数网格实验，真实评估页面操作仍待验，阶段六仍待完整验收。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 
