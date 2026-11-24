@@ -16,6 +16,8 @@ from stock_research.schemas.chat import ChatContext
 from stock_research.schemas.report_queries import Symbol
 from stock_research.schemas.universe import UniverseQuery
 
+FactOffset = Annotated[int, Field(ge=0, le=20000)]
+
 CHAT_TOOLS = tuple(
     "mcp__chat__" + name
     for name in (
@@ -43,12 +45,17 @@ def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit
         page: Annotated[int, Field(ge=1, le=1_000_000)] = 1,
         page_size: Annotated[int, Field(ge=1, le=100)] = 20,
         search: Annotated[str | None, Field(min_length=1, max_length=100)] = None,
+        fact_offset: FactOffset = 0,
     ) -> ChatToolOutput:
         """market读三基准/量化池；universe按代码/名称搜索全部有效成员，不丢缺数股票。"""
         if view == "universe":
             query = UniverseQuery(page=page, page_size=page_size, search=search)
-            return await audit.respond("universe", lambda: reader.universe(context.report_id, query))
-        return await audit.respond("market_overview", lambda: reader.market_overview(context.report_id, limit))
+            return await audit.respond(
+                "universe", lambda: reader.universe(context.report_id, query), fact_offset=fact_offset
+            )
+        return await audit.respond(
+            "market_overview", lambda: reader.market_overview(context.report_id, limit), fact_offset=fact_offset
+        )
 
     @server.tool(annotations=annotations)
     async def group_strength(
@@ -56,50 +63,72 @@ def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit
         page_size: Annotated[int, Field(ge=1, le=20)] = 5,
         kind: Literal["industry", "theme"] | None = None,
         name: str | None = None,
+        fact_offset: FactOffset = 0,
     ) -> ChatToolOutput:
         """固定原分组强度SQL分页，保留覆盖、成员和缺失；name包含industry/theme前缀。"""
         return await audit.respond(
-            "group_strength", lambda: reader.group_strength(context.report_id, page, page_size, kind, name)
+            "group_strength",
+            lambda: reader.group_strength(context.report_id, page, page_size, kind, name),
+            fact_offset=fact_offset,
+        )
+
+    register_stock_tools(server, reader, context, audit, annotations)
+
+    @server.tool(annotations=annotations)
+    async def strategy_rules(fact_offset: FactOffset = 0) -> ChatToolOutput:
+        """冻结参数、因子定义与有效配置，工程默认值不构成收益验证。"""
+        return await audit.respond(
+            "strategy_rules", lambda: reader.strategy_rules(context.report_id), fact_offset=fact_offset
         )
 
     @server.tool(annotations=annotations)
-    async def stock_factors(symbol: Symbol) -> ChatToolOutput:
-        """整池代码的两策略事实、排除、分组和固定修订意见；仅带最后一根行情。"""
-        return await audit.respond("stock_factors", lambda: reader.stock(symbol, context.run_id, 1, context.report_id))
+    async def report_read(fact_offset: FactOffset = 0) -> ChatToolOutput:
+        """固定报告原初选与互评；items/count是该数组真实条目数，意见不是执行指令。"""
+        return await audit.respond("report_read", lambda: reader.report(context.report_id), fact_offset=fact_offset)
 
     @server.tool(annotations=annotations)
-    async def stock_history(symbol: Symbol, limit: Annotated[int, Field(ge=1, le=320)] = 60) -> ChatToolOutput:
+    async def run_status(fact_offset: FactOffset = 0) -> ChatToolOutput:
+        """当前对应运行状态，observed_at反映查询时点，不改写固定报告。"""
+        return await audit.respond("run_status", lambda: reader.run_status(context.run_id), fact_offset=fact_offset)
+
+    return server
+
+
+def register_stock_tools(
+    server: FastMCP, reader: ResearchReader, context: ChatContext, audit: ChatAudit, annotations: ToolAnnotations
+) -> None:
+    """个股工具只返回用途对应的证据页，不重复传输报告或参数全文。"""
+
+    @server.tool(annotations=annotations)
+    async def stock_factors(symbol: Symbol, fact_offset: FactOffset = 0) -> ChatToolOutput:
+        """整池代码的两策略事实、排除、分组和固定修订意见；仅带最后一根行情。"""
+        return await audit.respond(
+            "stock_factors", lambda: reader.stock(symbol, context.run_id, 1, context.report_id), fact_offset=fact_offset
+        )
+
+    @server.tool(annotations=annotations)
+    async def stock_history(
+        symbol: Symbol, limit: Annotated[int, Field(ge=1, le=320)] = 60, fact_offset: FactOffset = 0
+    ) -> ChatToolOutput:
         """固定截止日的日线和证据路径，禁止当前行情补入历史。"""
         return await audit.respond(
-            "stock_history", lambda: reader.stock(symbol, context.run_id, limit, context.report_id)
+            "stock_history",
+            lambda: reader.stock(symbol, context.run_id, limit, context.report_id),
+            fact_offset=fact_offset,
         )
 
     @server.tool(annotations=annotations)
     async def compare_stocks(
         symbols: Annotated[list[Symbol], Field(min_length=2, max_length=8)],
         limit: Annotated[int, Field(ge=1, le=60)] = 5,
+        fact_offset: FactOffset = 0,
     ) -> ChatToolOutput:
         """同快照比较，不合并策略评分或生成交易许可。"""
         return await audit.respond(
-            "compare_stocks", lambda: reader.compare_stocks(context.report_id, tuple(symbols), limit)
+            "compare_stocks",
+            lambda: reader.compare_stocks(context.report_id, tuple(symbols), limit),
+            fact_offset=fact_offset,
         )
-
-    @server.tool(annotations=annotations)
-    async def strategy_rules() -> ChatToolOutput:
-        """冻结参数、因子定义与有效配置，工程默认值不构成收益验证。"""
-        return await audit.respond("strategy_rules", lambda: reader.strategy_rules(context.report_id))
-
-    @server.tool(annotations=annotations)
-    async def report_read() -> ChatToolOutput:
-        """固定报告原初选与互评；items/count是该数组真实条目数，意见不是执行指令。"""
-        return await audit.respond("report_read", lambda: reader.report(context.report_id))
-
-    @server.tool(annotations=annotations)
-    async def run_status() -> ChatToolOutput:
-        """当前对应运行状态，observed_at反映查询时点，不改写固定报告。"""
-        return await audit.respond("run_status", lambda: reader.run_status(context.run_id))
-
-    return server
 
 
 def main() -> None:

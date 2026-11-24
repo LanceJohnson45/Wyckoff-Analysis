@@ -9,6 +9,7 @@ from pathlib import Path
 from mcp.server.fastmcp.exceptions import ToolError
 from pydantic import BaseModel, Field, model_validator
 
+from stock_research.chat_projection import project_chat_data
 from stock_research.decisions import same_value
 from stock_research.evidence import Evidence
 from stock_research.identity import digest, new_id
@@ -16,10 +17,38 @@ from stock_research.models import FrozenModel
 from stock_research.query_client import QueryError
 from stock_research.schemas.chat import ChatAnswer
 
+MAX_TOOL_OUTPUT_BYTES = 48 * 1024
+MAX_CHAT_OUTPUT_BYTES = 256 * 1024
+
 
 class ChatToolOutput(FrozenModel):
     context_hash: str
     facts: tuple[Evidence, ...]
+    total_facts: int
+    next_offset: int | None
+
+
+def evidence_page(context_hash: str, facts: dict[str, Evidence], offset: int) -> ChatToolOutput:
+    """按UTF-8字节限制完整事实页；不截断单条事实或把未返回页登记为已读。"""
+    if not 0 <= offset <= 20000:
+        raise QueryError("fact_offset须在0～20000之间")
+    values = list(facts.values())
+    page, size = [], 512
+    for fact in values[offset:]:
+        length = len(fact.model_dump_json().encode()) + 1
+        if size + length > MAX_TOOL_OUTPUT_BYTES:
+            if not page:
+                raise QueryError("单条证据过长，请改用更具体的查询")
+            break
+        page.append(fact)
+        size += length
+    end = offset + len(page)
+    return ChatToolOutput(
+        context_hash=context_hash,
+        facts=tuple(page),
+        total_facts=len(values),
+        next_offset=end if end < len(values) else None,
+    )
 
 
 class ChatEvidence(FrozenModel):
@@ -64,6 +93,7 @@ class ChatAudit:
     def __init__(self, context_hash: str, path: Path) -> None:
         self.context_hash, self.path = context_hash, path
         self.calls, self.successes = 0, 0
+        self.output_bytes = 0
         self.facts: dict[str, Evidence] = {}
         self.lock = asyncio.Lock()
 
@@ -84,27 +114,35 @@ class ChatAudit:
         finally:
             temporary.unlink(missing_ok=True)
 
-    async def respond(self, tool: str, operation: Callable[[], Awaitable[BaseModel]]) -> ChatToolOutput:
+    async def respond(
+        self, tool: str, operation: Callable[[], Awaitable[BaseModel]], *, fact_offset: int = 0
+    ) -> ChatToolOutput:
         """工具错误不输出连接详情，只有成功且有界的返回值可进入回答引用。"""
         async with self.lock:
             self.calls += 1
             await asyncio.to_thread(self.persist)
         try:
-            data = (await operation()).model_dump(mode="json")
+            data = project_chat_data(tool, (await operation()).model_dump(mode="json"))
             facts = {}
             collect_chat_facts(data, f"read/{tool}/{digest(data)[:16]}", facts)
             if len(facts) > 20000:
                 raise QueryError("查询证据过多，请缩小历史或分页范围")
+            output = evidence_page(self.context_hash, facts, fact_offset)
+            returned = {fact.ref: fact for fact in output.facts}
+            size = len(output.model_dump_json().encode())
             async with self.lock:
+                if self.output_bytes + size > MAX_CHAT_OUTPUT_BYTES:
+                    raise QueryError("本轮已读取足够证据，请根据已返回事实作答或另起问题")
                 if any(
                     ref in self.facts and not same_value(fact.value, self.facts[ref].value)
-                    for ref, fact in facts.items()
+                    for ref, fact in returned.items()
                 ):
                     raise QueryError("固定证据引用出现不一致")
-                self.facts.update(facts)
+                self.facts.update(returned)
+                self.output_bytes += size
                 self.successes += 1
                 await asyncio.to_thread(self.persist)
-            return ChatToolOutput(context_hash=self.context_hash, facts=tuple(facts.values()))
+            return output
         except QueryError as error:
             raise ToolError(str(error)) from None
 
