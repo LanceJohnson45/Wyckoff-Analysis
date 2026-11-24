@@ -102,11 +102,15 @@ async def follow_job(client: PremarketClient, progress: list[PremarketReceipt]) 
 
 
 async def run_workflow(
-    data: PremarketInput, settings: WorkflowSettings, *, client: PremarketClient | None = None
+    data: PremarketInput,
+    settings: WorkflowSettings,
+    *,
+    client: PremarketClient | None = None,
+    progress: list[PremarketReceipt] | None = None,
 ) -> WorkflowOutcome:
     """整体按原事件截止；拥有者取消或超时后有界收尾，不发送通知。"""
     client = client or PremarketClient(settings, data)
-    progress: list[PremarketReceipt] = []
+    progress = progress if progress is not None else []
     error = None
     try:
         remaining = (data.schedule.execution_deadline - now()).total_seconds()

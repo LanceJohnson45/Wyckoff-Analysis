@@ -477,7 +477,7 @@ flowchart LR
 
 ## 研究运行与报告修订
 
-研究API的202表示冻结输入已落库并受理；completed/partial/failed/cancelled描述研究本身，通知状态另行实现。报告UUID与run内revision绑定固定视图，SSE以revision断点续读。late根据该修订实际创建时间与开盘前一小时期限比较。接口只读/动作及待实现范围见[研究API](docs/stock_research_api.md)。
+研究API的202表示冻结输入已落库并受理；completed/partial/failed/cancelled描述研究本身，通知状态由Personal持久账本另行核对。报告UUID与run内revision绑定固定视图，SSE以revision断点续读。late根据该修订实际创建时间与开盘前一小时期限比较。接口只读/动作及待实现范围见[研究API](docs/stock_research_api.md)。
 
 结构化claim的ref独立指向固定事实，值必须匹配；纯文字观点分别携带有效引用，二者无需重复列举同一ref。互评的数据限制只取本次注册条目；budget耗尽与数值不一致有独立错误。旧失败记录保留，不能用新版验证器追认。
 
@@ -522,3 +522,5 @@ flowchart LR
 ### 行情维护协调锁
 
 US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协议锁。研究复制独占两把；源端任务独占前者、内部写事务共享后者，避免父任务与并发写连接自锁。仅约束采用协议的客户端，采用与测试状态见[来源协调](docs/stock_research_market_coordination.md)。
+
+**盘前单用户发布**：纽约08:30冻结已知首报，08:50原期限内成功阶段增加再发一条恢复更新；交易日与initial/recovery构成固定通知身份。Personal原生消息回执才表示sent，未知或待发送不等于送达。见[单用户MVP](docs/stock_research_mvp.md)。

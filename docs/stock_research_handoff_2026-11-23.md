@@ -1,5 +1,13 @@
 # 股票研究开发交接（2026-11-23）
 
+## 进度复核与暂停现场（2026-11-24）
+
+用户暂停状态保持。本次重新核对PR10/a66ab6ea及PR11/08c38450：均OPEN草稿、未合入，当前head的45310441300八项完整CI和45310016730来源CI均已成功（研究远端6128passed/1skip、coverage 86%，来源远端950passed/94skip），更新此前“研究head另核”的当前状态。API13914仍就绪，原报告/私人问答及权限读回通过，当前活动研究0。研究/源端工作树代码已提交，独立Wiki7503372本地提交未推送上游。
+
+Personal集成分支基线63da53f，run-contract及NOW/EVIDENCE/TODO四文件仍未提交；原checkout的hourly-report-review.md用户删除保留。本批进度文档更新也未提交。恢复时先检查这批dirty及其他线程新提交，不能覆盖或把前轮暂停误当代码继续执行。
+
+工程核心已具备手动研究能力；源候选生产采用/自动补拉、定点发布与恢复修订、真实飞书去重/unknown回查、唯一workflow六处注册/cron、正式Mac/访问/用户隔离、自然交易日/正常浏览器、PIT/效果及独立整体审查仍未完成。完整范围见plan.md当前进度表，第19节未验收项继续保持未勾选。
+
 ## 续接检查点：来源维护与研究复制协调候选（2026-11-24）
 
 研究复制新增数据库范围US任务/数据事务锁，仍只读/可重复读，忙碌失败不推进本机水位。独立来源工作树`../Wyckoff-Analysis-market-source`从实际wxjer@b5cb2d79建立，候选提交08c3845097177cd477cc9a2454c6389dae392eec，分支codex/stock-research-market-source。US旧CLI持整项任务锁，US键upsert/裁剪及可能删除US数据的清理持共享数据锁；CN/HK单市场写入/复制不取US锁。旧dc5fec0e来源工作树及.env不动，新工作树未复制根.env。详见[协调协议/采用边界](stock_research_market_coordination.md)。

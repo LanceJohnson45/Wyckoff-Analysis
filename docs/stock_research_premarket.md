@@ -1,8 +1,8 @@
 # 盘前固定任务与原计划时刻
 
-固定入口为 `python -m stock_research.premarket --plan` 或 `--execute`。plan只生成日历/预算；execute使用独立有限API身份实际受理、等待、局部恢复及读回固定报告。两者读取runner的`SA_RUN_INPUT_JSON`、在同一run目录原子保存`SA_RUN_OUTPUT_JSON`；services completed表示程序结束，研究状态另见output.receipt.status，通知当前固定为delivery=not_requested。
+固定入口为 `python -m stock_research.premarket --plan` 或 `--execute`。plan只生成日历/预算；execute使用独立有限API身份实际受理、等待、局部恢复及读回固定报告。两者读取runner的`SA_RUN_INPUT_JSON`、在同一run目录原子保存`SA_RUN_OUTPUT_JSON`；services completed表示程序结束，研究状态另见output.receipt.status，此基础入口固定delivery=not_requested；来源补拉与实际飞书发送使用新增[单用户MVP编排](stock_research_mvp.md)。
 
-当前代码已通过隔离原生PG/合成行情及真实固定argv→HTTP调用链。生产42计划未启用新开关，专用身份默认关闭；行情刷新、通知及正式股票调度仍待接续。
+当前代码已通过隔离原生PG/合成行情及真实固定argv→HTTP调用链。此处记录的是基础入口检查点：原42计划未启用新开关，专用身份默认关闭。单用户MVP的联调及部署状态独立记录，不能由本页基础入口测试推断已送达。
 
 ## 调度上下文
 

@@ -1,5 +1,7 @@
 # 研究版本配置
 
+单用户盘前编排的固定路径配置见 `mvp.env.example`，身份仍由各自服务读取；流程、定点发布及飞书状态见[单用户MVP](../../docs/stock_research_mvp.md)。
+
 本目录保存可审阅的研究参数。`baseline-v1.json` 是当前Martin日线工程基线，包含窗口、条件开关、作用方式、权重及出处；未经参数优化或收益验证。操作见 [Martin CLI](../../docs/stock_research_martin_cli.md)。
 
 `wyckoff-us-v1.json` 使用美股生产漏斗默认配置和空覆盖，参数路径由 `STOCK_RESEARCH_WYCKOFF_PARAMETERS_PATH` 指定。未知字段和错误类型拒绝运行；当前金额硬门槛固定0，完整生效配置与水温调参保存到报告，见[Wyckoff CLI](../../docs/stock_research_wyckoff_cli.md)。
