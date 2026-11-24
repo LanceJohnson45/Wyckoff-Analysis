@@ -60,6 +60,6 @@ API将原始行情一次物化到作业目录；结果目录的input.json为同�
 
 上述为隔离合成验收，不是正式模型效果或生产采用。窗口未成熟/缺数由契约及渲染测试覆盖；当前离线回放预留20日完整观察，未用虚构行情制造生产pending结果。源码提交和CI不表示旧运行包已采用，实际运行入口仍另验。实现依据见[单页设计](design/stock-research-evaluation-panel.md)。
 
-`kind=historical_quant_pool`、`model_selection=null`、`manual_review=pending` 是当前真实范围。正式模型初选的后续观测、每策略10入选/10排除人工审查、参数单组/组合实验、AKQuant整批比较及这些扩展的界面仍待实现，阶段六尚未完成。研究与比较结论应记录到GitHub Issue，不提交结果文件或收益表到仓库文档。
+`kind=historical_quant_pool`、`model_selection=null`、`manual_review=pending` 是该评估链路的真实范围。正式初选另有[固定报告观测CLI](stock_research_selection_observations.md)，按实际提交后的首个开盘观察，不能与本页量化截面收盘口径混同；其持久作业/API/UI尚待接线。每策略10入选/10排除人工审查、参数单组/组合实验、AKQuant整批比较及扩展实验界面仍未完成。研究与比较结论应记录到GitHub Issue，不提交结果文件或收益表到仓库文档。
 
 原提交结果未知后，后续核对即使收到普通401/403/409/422，也继续保留原请求身份和表单锁定；本次核对失败不能证明早先未受理。成功找回原记录后才解锁。专用静态入口的认证前会话续期只重放一次原请求，详见[同源会话与核对](stock_research_static_web.md)。

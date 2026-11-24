@@ -391,4 +391,6 @@ wyckoff mcp-list
 
 个人本机同进程工作台已由固定版本`6fc65f46`的Python API提供，入口为`http://127.0.0.1:8788/chat`；该版本八项CI成功，显式表初始化和四类活动/worker退出检查后切换。正式入口已补518成员搜索、320根图表及锚点、历史修订切换和评估空历史只读页面验收；写控件与Tailscale仍单独验收。见[运行说明](docs/stock_research_static_web.md)。
 
-[研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。本机正式API/股票tick已于11月25日04:55采用本批，直接与同源状态读取通过；该状态区域的正式页面复验继续单独记录。
+[研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。本机正式API/股票tick已于11月25日04:55采用本批，直接与同源状态读取通过；该状态区域已在正式6fc65f46页面补验刷新、跨日状态、partial修订跳转最近完整研究及单区域保持，原业务记录不变。
+
+[正式初选后续观测CLI](docs/stock_research_selection_observations.md)源码已接固定报告和只读PG绑定，按提交后首个开盘记录五窗口、成本与SPY；晚到顺延、pending/缺数、缺策略与空池分别保留。重启/修订/损坏及真实报告只读核对已有证据，完整本地Python6273项无skip及相关47项已通过，当前提交CI及采用另记。持久作业/API/UI与人工审查尚未因此完成。

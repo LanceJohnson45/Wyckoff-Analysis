@@ -56,33 +56,42 @@ def price_index(bars: Iterable[Bar]) -> dict[tuple[str, str, date], Bar]:
 
 
 def indexed_outcomes(
-    symbol: str, as_of: date, cutoff: date, prices: dict[tuple[str, str, date], Bar]
+    symbol: str,
+    as_of: date,
+    cutoff: date,
+    prices: dict[tuple[str, str, date], Bar],
+    *,
+    reference: Literal["previous_close", "forward_open"] = "previous_close",
 ) -> tuple[OutcomeWindow, ...]:
-    """基准对齐和内部缺失都保留，不悄悄缩小观测分母。"""
+    """收盘截面和前向开盘分别取参考价，缺数不缩小观测分母。"""
     symbol = normalize_symbol(symbol)
-    if as_of > cutoff:
+    if reference not in {"previous_close", "forward_open"}:
+        raise ValueError("未知观测参考点")
+    if as_of > cutoff and reference == "previous_close":
         raise ValueError("选股日期不能晚于评估截止日")
     sessions = observation_sessions(as_of)
     cost = round_trip_cost_pct(code=symbol + ".US")
     result = []
     for horizon in OBSERVATION_HORIZONS:
-        fields = dict(horizon=horizon, target_session=sessions[horizon], cost_pct=cost)
-        if sessions[horizon] > cutoff:
+        end = horizon - 1 if reference == "forward_open" else horizon
+        fields = dict(horizon=horizon, target_session=sessions[end], cost_pct=cost)
+        if sessions[end] > cutoff:
             result.append(OutcomeWindow(**fields, status="pending"))
             continue
         required = [
-            (kind, code, day)
-            for kind, code in (("stock", symbol), ("benchmark", "SPY"))
-            for day in sessions[: horizon + 1]
+            (kind, code, day) for kind, code in (("stock", symbol), ("benchmark", "SPY")) for day in sessions[: end + 1]
         ]
         missing = tuple(f"{kind}/{code}/{day}" for kind, code, day in required if (kind, code, day) not in prices)
         if missing:
             result.append(OutcomeWindow(**fields, status="missing_data", missing_sessions=missing))
             continue
-        stock = [prices["stock", symbol, day] for day in sessions[: horizon + 1]]
-        benchmark = [prices["benchmark", "SPY", day] for day in sessions[: horizon + 1]]
-        gross = (stock[-1].close / stock[0].close - 1) * 100
-        benchmark_return = (benchmark[-1].close / benchmark[0].close - 1) * 100
+        stock = [prices["stock", symbol, day] for day in sessions[: end + 1]]
+        benchmark = [prices["benchmark", "SPY", day] for day in sessions[: end + 1]]
+        base = stock[0].open if reference == "forward_open" else stock[0].close
+        spy_base = benchmark[0].open if reference == "forward_open" else benchmark[0].close
+        observed = stock if reference == "forward_open" else stock[1:]
+        gross = (stock[-1].close / base - 1) * 100
+        benchmark_return = (benchmark[-1].close / spy_base - 1) * 100
         result.append(
             OutcomeWindow(
                 **fields,
@@ -91,8 +100,8 @@ def indexed_outcomes(
                 net_return_pct=gross - cost,
                 benchmark_return_pct=benchmark_return,
                 net_excess_pct=gross - cost - benchmark_return,
-                mfe_pct=max(0.0, (max(bar.high for bar in stock[1:]) / stock[0].close - 1) * 100),
-                mae_pct=min(0.0, (min(bar.low for bar in stock[1:]) / stock[0].close - 1) * 100),
+                mfe_pct=max(0.0, (max(bar.high for bar in observed) / base - 1) * 100),
+                mae_pct=min(0.0, (min(bar.low for bar in observed) / base - 1) * 100),
             )
         )
     return tuple(result)

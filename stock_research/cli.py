@@ -32,6 +32,7 @@ from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
 from stock_research.research_commands import analyze_command, read_run_command, run_command, track_run_command
 from stock_research.schema import schema_ddl
+from stock_research.selection_observation_cli import observe_selections_command
 from stock_research.store import (
     close_engine,
     database_engine,
@@ -92,6 +93,9 @@ def parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--profile", required=True)
     evaluate.add_argument("--cutoff", type=date.fromisoformat, required=True)
     evaluate.add_argument("--allow-current-universe", action="store_true", help="显式接受当前成分及分类回溯限制")
+    observe = commands.add_parser("observe-selections", help="固定报告正式初选的前向观测，不调用模型或发送通知")
+    observe.add_argument("--report-id", required=True)
+    observe.add_argument("--cutoff", type=date.fromisoformat, required=True)
     compare = commands.add_parser("benchmark", help="独立进程对拍ATR/ADR和冷/热耗时，不比较未对齐EMA")
     compare.add_argument("--as-of", type=date.fromisoformat, required=True)
     compare.add_argument("--profile", required=True)
@@ -260,6 +264,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return evaluate_command(
             settings, args.profile, args.cutoff, allow_current_universe=args.allow_current_universe
         ), 0
+    if args.command == "observe-selections":
+        return asyncio.run(observe_selections_command(settings, args.report_id, args.cutoff)), 0
     if args.command == "serve":
         import uvicorn
 
