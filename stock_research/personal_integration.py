@@ -2,7 +2,9 @@
 
 import fcntl
 import hashlib
+import json
 import os
+from copy import deepcopy
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
@@ -157,6 +159,58 @@ def remove_plugin(content: bytes) -> bytes:
     return candidate.encode("utf-8")
 
 
+def replace_plugin(content: bytes, plugin: dict[str, object]) -> bytes:
+    """迁移只允许变更受管查询节点的目录/解释器，单次CAS前不写中间配置。"""
+    if len(content) > PROFILE_MAX_BYTES:
+        raise ValueError("Personal运行配置超过限额")
+    document = yaml.compose(content.decode("utf-8"))
+    plugins = personal_plugins(document)
+    existing = [item for item in plugins.value if fields(item).get("id", yaml.ScalarNode("", "")).value == PLUGIN_ID]
+    if len(existing) != 1:
+        raise ValueError("股票MCP尚未注册或存在重复，不能迁移")
+    previous = yaml.safe_load(yaml.serialize(existing[0]))
+    config = previous.get("config", {})
+    args = config.get("args", []) if isinstance(config, dict) else []
+    expected = deepcopy(plugin)
+    if (
+        not isinstance(args, list)
+        or len(args) != len(expected["config"]["args"])
+        or not isinstance(args[3], str)
+        or not Path(args[3]).is_absolute()
+        or not isinstance(config.get("cwd"), str)
+        or not Path(config["cwd"]).is_absolute()
+    ):
+        raise ValueError("仅允许迁移受管股票MCP的目录和解释器")
+    expected["config"]["args"][3] = args[3]
+    expected["config"]["cwd"] = config["cwd"]
+    if previous != expected:
+        raise ValueError("仅允许迁移受管股票MCP的目录和解释器")
+    for item in plugins.value:
+        body = fields(item)
+        if item is not existing[0] and body.get("name", yaml.ScalarNode("", "")).value == "@deepseek-ai/dsh-mcp-client":
+            if fields(body.get("config")).get("serverName", yaml.ScalarNode("", "")).value == "stocks":
+                raise ValueError("stocks工具命名空间已有其他注册，不能迁移")
+    retained = remove_plugin(content)
+    node = existing[0]
+    config_nodes = fields(fields(node)["config"])
+    changes = [
+        (config_nodes["cwd"], plugin["config"]["cwd"]),
+        (config_nodes["args"].value[3], plugin["config"]["args"][3]),
+    ]
+    raw = content.decode("utf-8")
+    for scalar, value in sorted(changes, key=lambda item: item[0].start_mark.index, reverse=True):
+        if scalar.start_mark.index < node.start_mark.index or scalar.end_mark.index > node.end_mark.index:
+            raise ValueError("查询路径被外部别名复用，不能迁移")
+        raw = raw[: scalar.start_mark.index] + json.dumps(value, ensure_ascii=False) + raw[scalar.end_mark.index :]
+    candidate = raw.encode("utf-8")
+    checked = personal_plugins(yaml.compose(raw)).value[plugins.value.index(node)]
+    if yaml.safe_load(yaml.serialize(checked)) != plugin:
+        raise ValueError("迁移后的股票MCP与目标不一致")
+    if remove_plugin(candidate) != retained:
+        raise ValueError("迁移改变了其他Personal文本，拒绝写入")
+    return content if previous == plugin else candidate
+
+
 def apply_profile(profile: Path, before: bytes, after: bytes, expected_hash: str, backup_dir: Path) -> Path:
     """合作式文件锁和写前摘要检查；备份与替换文件都不继承宽权限。"""
     backup_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -199,18 +253,24 @@ def configure_personal(
     apply: bool = False,
     backup_dir: Path | None = None,
     remove: bool = False,
+    replace: bool = False,
 ) -> dict[str, object]:
     """预览不写配置；显式提交绑定预览摘要，不启动服务、模型或通知。"""
     profile = profile.expanduser().absolute()
     if profile.is_symlink():
         raise ValueError("Personal配置不能是软链，请核对真实受管文件")
+    if remove and replace:
+        raise ValueError("不能同时撤回和迁移股票MCP")
     plugin = None if remove else query_plugin(workspace, python)
     if not profile.is_file():
         raise ValueError("Personal配置必须为已有的普通文件")
     with profile.open("rb") as source:
         before = source.read(PROFILE_MAX_BYTES + 1)
     try:
-        after = remove_plugin(before) if remove else append_plugin(before, plugin)
+        if remove:
+            after = remove_plugin(before)
+        else:
+            after = replace_plugin(before, plugin) if replace else append_plugin(before, plugin)
     except (yaml.YAMLError, UnicodeError, RecursionError):
         raise ValueError("Personal配置无法安全解析，请检查语法及嵌套") from None
     before_hash = hashlib.sha256(before).hexdigest()
@@ -228,7 +288,7 @@ def configure_personal(
         "change_required": before != after,
         "applied": bool(backup),
         "already_in_desired_state": before == after,
-        "operation": "remove" if remove else "install",
+        "operation": "remove" if remove else "replace" if replace else "install",
         "backup": str(backup) if backup else None,
         "plugin": plugin,
         "runtime_verified": False,

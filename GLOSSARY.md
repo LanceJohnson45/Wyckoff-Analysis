@@ -547,7 +547,7 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 
 **研究运行包采用**：以精确Git提交、锁定依赖及专用资产组成Documents之外的固定release。当前API/股票tick为d42fa219；该提交八项CI成功，四类零活动/worker退出保护后采用，本批无表迁移，评估表在此前09版本已显式初始化，撤回保留账本及新表。启动、送达和自然日分别验收，见[部署记录](docs/stock_research_mvp.md)。
 
-**Personal研究只读客户端**：DSH stocks预设的三项MCP仅持专用查询身份，读取共享固定报告/个股/运行；私人问答和评估403。当前stdio链路已实测，但客户端仍从研究checkout启动，API采用d42不表示客户端固定安装已完成，见[Personal接入](docs/stock_research_personal.md)。
+**Personal研究只读客户端**：DSH stocks预设的三项MCP仅持专用查询身份，读取共享固定报告/个股/运行；私人问答和评估403。当前stdio链路已实测，但客户端仍从研究checkout启动。`personal-mcp --replace`候选只允许目录/解释器迁移，单次CAS保持原权限与其他配置；API采用d42不表示客户端固定安装已完成，见[Personal接入](docs/stock_research_personal.md)。
 
 **研究操作状态**：目标日首报/恢复通知、全日期最近完整研究及最近确认送达记录的只读投影。研究completed不等于通知sent；sent须有有效原生引用，unknown与无记录分别保留。Personal账本更新时间不是原生消息创建时刻，来源不可访问返回明确503，见[状态契约](docs/stock_research_operations.md)。
 

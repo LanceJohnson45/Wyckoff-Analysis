@@ -57,7 +57,11 @@ def parser() -> argparse.ArgumentParser:
     personal.add_argument("--workspace", type=Path, default=Path.cwd())
     personal.add_argument("--python", type=Path)
     personal.add_argument("--apply", action="store_true")
-    personal.add_argument("--remove", action="store_true", help="只撤回本次股票MCP，保留其他Personal配置")
+    personal_action = personal.add_mutually_exclusive_group()
+    personal_action.add_argument("--remove", action="store_true", help="只撤回本次股票MCP，保留其他Personal配置")
+    personal_action.add_argument(
+        "--replace", action="store_true", help="仅迁移已注册股票MCP的目录与解释器，单次CAS发布"
+    )
     personal.add_argument("--expected-profile-hash")
     personal.add_argument("--backup-dir", type=Path)
     run = commands.add_parser("run", help="双策略独立初选及提交后互评，持久化预览不发送通知")
@@ -373,6 +377,7 @@ def main(argv: list[str] | None = None) -> int:
                     python=args.python,
                     apply=args.apply,
                     remove=args.remove,
+                    replace=args.replace,
                     expected_hash=args.expected_profile_hash,
                     backup_dir=args.backup_dir,
                 ),
