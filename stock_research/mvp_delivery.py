@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import Literal
 
@@ -36,20 +37,23 @@ def deliveries_sent(result: dict[str, object]) -> bool:
 
 
 async def call_worker(
-    settings: MvpSettings, kind: Literal["refresh", "notify"], payload: dict[str, object], timeout: float
+    settings: MvpSettings, kind: Literal["refresh", "notify", "status"], payload: dict[str, object], timeout: float
 ) -> dict[str, object]:
     """独立进程只读取自己的配置；超时/取消回收本次进程组。"""
     root = settings.source_root if kind == "refresh" else settings.personal_root
     env_file = settings.source_env_file if kind == "refresh" else settings.personal_env_file
-    worker = Path(__file__).resolve().parents[1] / "scripts/stock_research_mvp_worker.py"
+    script = "stock_research_delivery_status.py" if kind == "status" else "stock_research_mvp_worker.py"
+    worker = Path(__file__).resolve().parents[1] / "scripts" / script
+    if kind == "status":
+        root = worker.parents[1]
     environment = isolated_environment()
     environment["PYTHONPATH"] = str(root)
     if kind == "notify":
         environment["HOME"] = str(Path.home())
     process = await asyncio.create_subprocess_exec(
-        str(root / ".venv/bin/python"),
+        sys.executable if kind == "status" else str(root / ".venv/bin/python"),
         str(worker),
-        kind,
+        *([] if kind == "status" else [kind]),
         "--root",
         str(root),
         "--env-file",
@@ -71,6 +75,8 @@ async def call_worker(
             await process.stdin.drain()
             response = await process.stdout.readline()
             await asyncio.wait_for(process.wait(), 5)
+            if kind == "status" and process.returncode:
+                raise ValueError("通知状态进程未完成")
             result = json.loads(response)
             if not isinstance(result, dict) or len(response) > WORKER_MAX_BYTES:
                 raise ValueError("MVP回执无效")

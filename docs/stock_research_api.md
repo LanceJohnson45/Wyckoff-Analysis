@@ -10,6 +10,7 @@
 
 | 入口 | 已接通行为 |
 |---|---|
+| GET /v1/operations | operator私有目标日首报/恢复状态与全日期最近完整研究/送达，小投影不读行情；见[操作状态](stock_research_operations.md) |
 | GET /v1/research-runs | SQL分页，page>=1、page_size=1～100，创建时间及UUID稳定排序 |
 | POST /v1/research-runs | 固定共同输入、两份量化任务与首份pending报告后返回202，后台按策略量化并执行模型阶段 |
 | GET /v1/research-runs/{UUID} | 当前状态、质量、数据截止日、报告期限、初选、互评及错误 |

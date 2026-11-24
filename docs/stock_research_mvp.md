@@ -61,3 +61,5 @@ API与独立tick均已由launchd启动；原42条Personal计划保持。定点�
 真实HTTP已核对HTML、会话签发、直接Bearer和同源评估读；没有创建正式评估或发送测试通知。切换后15次读全部成功，含冷加载P95 1.78秒，随后热读最高0.27秒，五类业务摘要与旧版一致。浏览器渲染验收仍取自独立合成环境，正式新入口的逐项浏览器复验及Tailscale分别待验。自然11月25日窗口尚未来临，不能把本次部署当自然日闭环。
 
 采用后launchd股票tick已使用新release且在原窗口之外正常退出0；这不算自然交易日运行。首报/恢复仍各一条sent账本和一个原生消息，发布内容/消息引用/时间逐项与切换前相同；四类活动均0。远端Python6231通过/一项既有安装DSH条件跳过、coverage86%，Web和操作dry-run成功。
+
+新增可选MVP_STATUS_CONFIG_PATH供API只读核对既有Personal账本；沿既有PREMARKET_SOURCE_WORKSPACE绑定，独立进程只加载Personal数据库和workspace配置。此查询不调用投递组件、不改变tick或重试逻辑，也不将账本时间冒充原生创建时间，见[操作状态](stock_research_operations.md)。本批源码/门禁/采用分别记录。

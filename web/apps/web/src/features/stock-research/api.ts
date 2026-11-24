@@ -10,6 +10,7 @@ import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-cont
 import { universePageSchema } from './universe-contract'
 import { evaluationJobPageSchema, evaluationJobSchema, evaluationResultSchema, evaluationSamplePageSchema, type CreateEvaluation } from './evaluation-contract'
 import { renewResearchWebSession } from './web-session'
+import { operationsSchema } from './operations-contract'
 import { themeProposalPageSchema, themeProposalSchema, inputPublicationPageSchema, inputPublicationSchema, manualHeadSchema, frozenInputsSchema, canonicalResearchSymbol, type ThemeDefinition, type ConfirmTheme, type CreateManualOverride } from './input-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
@@ -243,6 +244,12 @@ export async function readQuantAttempts(runId: string, page: number, signal?: Ab
 export async function readEvaluations(page: number, signal?: AbortSignal) {
   const value = await request(`/v1/evaluations?page=${page}&page_size=5`, evaluationJobPageSchema, { signal })
   if (value.page !== page || value.page_size !== 5) throw new ResearchApiError('评估分页与查询不一致', 503, 'invalid_response')
+  return value
+}
+export async function readOperations(target: string, signal?: AbortSignal) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(target)) throw new ResearchApiError('目标日期无效', 422, 'invalid_input')
+  const value = await request(`/v1/operations?target_session=${target}`, operationsSchema, { signal })
+  if (value.target_session !== target) throw new ResearchApiError('操作状态与目标日不一致', 503, 'invalid_response')
   return value
 }
 export async function readEvaluation(identifier: string, signal?: AbortSignal) {

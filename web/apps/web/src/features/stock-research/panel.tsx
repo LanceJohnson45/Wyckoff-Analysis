@@ -10,6 +10,7 @@ import { ResearchChat, type ChatSeed } from './chat'
 import type { ResearchReport } from './api'
 import { ResearchInputMaintenance } from './inputs'
 import { ResearchEvaluations } from './evaluations'
+import { ResearchOperations } from './operations'
 
 export default function StockResearchPanel() {
   const state = useStockResearch()
@@ -26,6 +27,7 @@ export default function StockResearchPanel() {
   return <div className="mx-auto w-full max-w-7xl space-y-5" aria-label="股票策略研究">
     <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">策略研究</h2><p className="mt-1 text-xs text-muted-foreground">独立初选 · 交叉评议 · 固定快照</p></div><button type="button" onClick={state.refresh} className="rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted">刷新报告与运行记录</button></div>
     <ResearchControls state={state} />
+    <ResearchOperations target={state.actions.target} onSelect={state.selectRun} />
     <ResearchPreparations key={state.actions.target} target={state.actions.target} preparing={state.actions.busy === 'create'} onSelect={state.selectRun} />
     {state.fixed && <p className="rounded-xl bg-muted p-3 text-xs">正在查看固定历史修订；其状态保持当时原样。选择“查看实时状态”可返回本次运行。</p>}
     {state.connectionProblem && <p role="status" className="rounded-xl bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">{state.connectionProblem}</p>}

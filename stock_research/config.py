@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")
     web_dist_path: Path | None = None
+    mvp_status_config_path: Path | None = None
     coverage_min: float = Field(default=0.95, gt=0, le=1)
     history_rows: int = Field(default=320, ge=320)
     adjustment: Literal["qfq"] = "qfq"
@@ -61,7 +62,14 @@ class Settings(BaseSettings):
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
 
-    @field_validator("benchmark_path", "model_profile_path", "model_env_path", "web_dist_path", mode="before")
+    @field_validator(
+        "benchmark_path",
+        "model_profile_path",
+        "model_env_path",
+        "web_dist_path",
+        "mvp_status_config_path",
+        mode="before",
+    )
     @classmethod
     def empty_benchmark_path(cls, value: object) -> object:
         """空可选定位保持None，禁止把空串解释为当前目录。"""
@@ -75,11 +83,20 @@ class Settings(BaseSettings):
         "dsh_home",
         "dsh_agents_home",
         "web_dist_path",
+        "mvp_status_config_path",
     )
     @classmethod
     def expand_operator_home(cls, value: Path | None) -> Path | None:
         """dotenv不经过交互shell，部署路径中的~需显式展开。"""
         return value.expanduser() if value is not None else None
+
+    @field_validator("mvp_status_config_path")
+    @classmethod
+    def absolute_status_config(cls, value: Path | None) -> Path | None:
+        """状态子进程只能引用operator固定的绝对配置路径。"""
+        if value is not None and not value.is_absolute():
+            raise ValueError("通知状态配置须使用绝对路径")
+        return value
 
     def database_url(self, *, test: bool = False) -> URL:
         """由离散配置构造连接；测试库强制增加 _test 后缀。"""

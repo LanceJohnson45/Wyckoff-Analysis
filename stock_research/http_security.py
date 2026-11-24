@@ -79,6 +79,7 @@ def install_security(app: FastAPI, settings: Settings) -> None:
                     "/v1/input-publications",
                     "/v1/universe-overrides",
                     "/v1/premarket-jobs",
+                    "/v1/operations",
                 )
             ) or request.url.path.endswith("/inputs")
             if workflow and not workflow_route(request.method, request.url.path):

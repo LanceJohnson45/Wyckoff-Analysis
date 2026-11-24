@@ -4,6 +4,7 @@
   "uuid": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
   "symbol": "[A-Z][A-Z0-9.-]{0,31}",
   "GET": [
+    "/v1/operations",
     "/v1/reports/(?:latest|{id})",
     "/v1/reports/{id}/(?:market|groups|compare|rules|universe)",
     "/v1/reports/{id}/anchors/{symbol}",
