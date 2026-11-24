@@ -1,6 +1,7 @@
 """API拥有的有限研究任务；冻结先落库，执行、取消与关闭均可追踪。"""
 
 import asyncio
+from collections.abc import Mapping
 from pathlib import Path
 
 import structlog
@@ -104,7 +105,7 @@ class RunManager:
         settings: Settings,
         *,
         admission: asyncio.Lock | None = None,
-        peer_tasks: dict[str, asyncio.Task[None]] | None = None,
+        peer_tasks: Mapping[str, asyncio.Task[None]] | None = None,
     ) -> None:
         self.store, self.settings = store, settings
         self.requests = RequestStore(store)

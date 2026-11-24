@@ -17,6 +17,7 @@ from stock_research.identity import digest, new_id
 from stock_research.schema import (
     CHAT_TURNS,
     CROSS_REVIEWS,
+    EVALUATION_JOBS,
     FACTOR_RESULTS,
     PARAMETER_SETS,
     RESEARCH_REPORTS,
@@ -234,11 +235,12 @@ class RunStore:
     @asynccontextmanager
     async def execution_lock(self, run_id: str, *, table: Table = RESEARCH_RUNS) -> AsyncIterator[None]:
         """session级锁跨阶段事务持有，进程死亡后由PostgreSQL自动释放。"""
-        if table is not RESEARCH_RUNS and table is not CHAT_TURNS:
-            raise ValueError("执行锁仅支持研究运行和问答")
+        if table not in (RESEARCH_RUNS, CHAT_TURNS, EVALUATION_JOBS):
+            raise ValueError("执行锁仅支持研究运行、问答和评估")
         await self.row(table, run_id)
-        namespace = "run" if table is RESEARCH_RUNS else "chat"
-        key = int(digest({"workspace": self.workspace, namespace: run_id})[:16], 16) - (1 << 63)
+        namespace = "run" if table is RESEARCH_RUNS else "chat" if table is CHAT_TURNS else "evaluation"
+        target = self.workspace if table is EVALUATION_JOBS else run_id
+        key = int(digest({"workspace": self.workspace, namespace: target})[:16], 16) - (1 << 63)
         connection = await self.engine.connect()
         acquired = False
         try:

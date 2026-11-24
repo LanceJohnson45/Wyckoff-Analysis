@@ -1,6 +1,7 @@
 """独立loopback研究API；只公开固定workspace的研究业务视图。"""
 
 import asyncio
+from collections import ChainMap
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
@@ -13,8 +14,10 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from stock_research.chat_manager import ChatManager
 from stock_research.config import Settings
+from stock_research.evaluation_manager import EvaluationManager
 from stock_research.http_actions import register_actions
 from stock_research.http_chat import router as chat_router
+from stock_research.http_evaluations import router as evaluation_router
 from stock_research.http_events import register_events
 from stock_research.http_inputs import router as input_router
 from stock_research.http_observations import register_observations
@@ -31,6 +34,9 @@ from stock_research.run_store import RunStore
 from stock_research.schema import (
     API_REQUESTS,
     CHAT_TURNS,
+    EVALUATION_JOBS,
+    EVALUATION_RESULTS,
+    EVALUATION_SAMPLES,
     INPUT_PUBLICATIONS,
     PARAMETER_ACTIVATIONS,
     PARAMETER_PROFILES,
@@ -48,6 +54,9 @@ from stock_research.source_guard import ensure_source_current
 from stock_research.store import close_engine, database_engine
 
 RUNTIME_TABLES = (
+    EVALUATION_JOBS,
+    EVALUATION_RESULTS,
+    EVALUATION_SAMPLES,
     QUANT_JOBS,
     QUANT_ATTEMPTS,
     THEME_PROPOSALS,
@@ -71,7 +80,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine = database_engine(config)
-        manager = chat = None
+        manager = chat = evaluations = None
         try:
             async with engine.connect() as connection:
                 for table in RUNTIME_TABLES:
@@ -83,14 +92,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             chat = app.state.chat = ChatManager(
                 app.state.store, config, admission=manager.admission, peer_tasks=manager.tasks
             )
-            manager.peer_tasks = chat.tasks
+            evaluations = app.state.evaluations = EvaluationManager(
+                app.state.store, config, admission=manager.admission, peer_tasks=ChainMap(manager.tasks, chat.tasks)
+            )
+            manager.peer_tasks = ChainMap(chat.tasks, evaluations.tasks)
+            chat.peer_tasks = ChainMap(manager.tasks, evaluations.tasks)
             await manager.restore()
             await chat.restore()
+            await evaluations.restore()
             yield
         finally:
             try:
                 outcomes = await asyncio.wait_for(
-                    asyncio.gather(*(owner.close() for owner in (chat, manager) if owner), return_exceptions=True), 25
+                    asyncio.gather(
+                        *(owner.close() for owner in (evaluations, chat, manager) if owner), return_exceptions=True
+                    ),
+                    25,
                 )
                 if any(isinstance(outcome, BaseException) for outcome in outcomes):
                     structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
@@ -114,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(chat_router)
     app.include_router(input_router)
     app.include_router(premarket_router)
+    app.include_router(evaluation_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)

@@ -16,7 +16,7 @@
 
 ### 历史量化池观测（开发中）
 
-`stock-research evaluate --profile baseline-v1 --cutoff YYYY-MM-DD` 按过去SPY20日收益分层取20截面，调用两策略正式量化实现，按时间12/4/4划分并清除跨边界标签；封存组不输出表现。收益观察扣既有美股工程成本，缺数保留，当前池回溯需显式接受并保留来源限制。量化池不是模型正式初选，描述性收盘观测不是交易回测，见[评估CLI](docs/stock_research_evaluations.md)。
+`stock-research evaluate --profile baseline-v1 --cutoff YYYY-MM-DD` 按过去SPY20日收益分层取20截面，调用两策略正式量化实现，按时间12/4/4划分并清除跨边界标签；封存组不输出表现。私有评估API将实际发布输入/参数和原期限冻结为持久作业，支持隔离执行、取消、恢复和逐股SQL分页，运行包采用另记。收益观察扣既有美股工程成本，缺数保留，当前池回溯需显式接受并保留来源限制。量化池不是模型正式初选，描述性收盘观测不是交易回测，见[评估CLI与作业](docs/stock_research_evaluations.md)。
 
 ### 午间独立研究扫描
 

@@ -2,6 +2,12 @@
 
 首期只向既有Personal个人飞书收件人发送。固定入口为 `python -m stock_research.mvp --config /absolute/private/path/mvp.env`，业务输入和输出沿用[盘前任务](stock_research_premarket.md)的runner文件协议。配置模板为 `config/research/mvp.env.example`，只含operator固定路径，0600；业务输入不能提供命令、路径或凭据。
 
+## 采用含评估作业的新API版本
+
+评估API源码加入 `evaluation_jobs/results/samples` 三表，需在研究库显式执行新版本 `init-schema`，保留原账本；启动只检查，不自动迁移。当前正式本机API/调度仍为 `0d5fcb1d`，新增评估接口尚未据此切换上线。下一次采用须先取得该提交完整成功CI，再确认研究、问答、输入准备及评估作业均无pending/running任务；取消评估要等所属进程真实退出，不能只改数据库状态。
+
+运行包切换继续限于已有独立API/调度，不修改原42条Personal计划及共享服务。回退保留新三表和已保存结果，不删除实验数据；有未完成评估时先用其对应版本收尾，不让旧版本接管不认识的worker协议。新评估的进程隔离、容量与预算见[评估作业](stock_research_evaluations.md)，自然交易日验收仍分别记录。
+
 ## 一次执行
 
 1. 按原计划日期与固定股票池调用来源分支 `scripts/us_research_refresh.py`，补齐复权日线和SPY/QQQ/IWM。使用来源自己的解释器和PG配置，最长900秒，并为研究保留原期限余额。来源完成不等于质量通过，失败也不伪造行情。

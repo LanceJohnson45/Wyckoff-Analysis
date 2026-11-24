@@ -11,6 +11,9 @@
 | GET /v1/research-runs | SQL分页，page>=1、page_size=1～100，创建时间及UUID稳定排序 |
 | POST /v1/research-runs | 固定共同输入、两份量化任务与首份pending报告后返回202，后台按策略量化并执行模型阶段 |
 | GET /v1/research-runs/{UUID} | 当前状态、质量、数据截止日、报告期限、初选、互评及错误 |
+| POST、GET /v1/evaluations | operator私有基线评估受理202及SQL分页；冻结实际发布参数/输入，见[评估作业](stock_research_evaluations.md) |
+| GET /v1/evaluations/{UUID}、POST /v1/evaluations/{UUID}/cancel、retry | 原身份状态、真实进程收尾及原预算内续跑 |
+| GET /v1/evaluation-results/{UUID}、GET /v1/evaluation-results/{UUID}/samples | 固定元数据/逐股窗口分开SQL分页，封存表现不输出 |
 | GET /v1/research-runs/{UUID}/events | SSE按持久化报告revision续读，max(Last-Event-ID, after)>=0，每连接最多三十秒 |
 | POST /v1/research-runs/{UUID}/retry | 仅补未成功阶段；完整运行须显式重分析 |
 | POST /v1/research-runs/{UUID}/cancel | 取消API拥有的任务，等候收尾再保存cancelled，不接管其他执行者 |

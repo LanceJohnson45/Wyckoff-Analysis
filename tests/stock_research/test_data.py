@@ -13,6 +13,17 @@ from stock_research.data import DAILY_BARS, SOURCE_ISSUES, consistent_copy, read
 AS_OF = date(2026, 11, 20)
 
 
+def test_boundary_market_row_cap_fails_instead_of_truncating(market_path: Path) -> None:
+    """【边界值】有界worker输入上限与真实SQL读取配合，不能只返回部分行情。"""
+    start = date(2020, 1, 1)
+    _, bars, _ = read_market(market_path, start, AS_OF, max_rows=1280)
+    assert len(bars) == 1280
+    with pytest.raises(ValueError, match="超过"):
+        read_market(market_path, start, AS_OF, max_rows=1279)
+    with pytest.raises(ValueError, match="必须为正"):
+        read_market(market_path, start, AS_OF, max_rows=0)
+
+
 def test_normal_market_read_is_readonly_and_bounded(market_path: Path) -> None:
     """【正常值】只读适配不改变源文件，且严格按日期截断。"""
     before = market_path.read_bytes()

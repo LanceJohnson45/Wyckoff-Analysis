@@ -3,6 +3,7 @@
 import json
 import time
 from collections import Counter
+from collections.abc import Callable
 from datetime import date
 from pathlib import Path
 from typing import Literal
@@ -243,6 +244,7 @@ def evaluate_history(
     allow_current_universe: bool = False,
     coverage_min: float = 0.95,
     timeout_seconds: float = 3000,
+    on_section: Callable[[int], None] | None = None,
 ) -> EvaluationReport:
     """只运行基线；封存组标签不输出，不自动发布实验参数。"""
     ensure_source_current()
@@ -257,6 +259,8 @@ def evaluate_history(
         results.extend(evaluate_section(inputs, section, versions, (martin, wyckoff), root, prices, coverage_min))
         if time.monotonic() >= deadline:
             raise TimeoutError("历史评估已达到总预算")
+        if on_section:
+            on_section(len(results) // 2)
     ensure_source_current()
     content = dict(
         schema_version=1,

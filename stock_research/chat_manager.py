@@ -1,6 +1,7 @@
 """私有研究问答任务生命周期，最多两次执行，重启不重放未知模型请求。"""
 
 import asyncio
+from collections.abc import Mapping
 from datetime import timedelta
 
 import structlog
@@ -31,7 +32,7 @@ class ChatManager:
         settings: Settings,
         *,
         admission: asyncio.Lock | None = None,
-        peer_tasks: dict[str, asyncio.Task[None]] | None = None,
+        peer_tasks: Mapping[str, asyncio.Task[None]] | None = None,
     ) -> None:
         self.store, self.settings = store, settings
         self.chats = ChatStore(store)

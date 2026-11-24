@@ -73,6 +73,8 @@ def install_security(app: FastAPI, settings: Settings) -> None:
             private = request.url.path.startswith(
                 (
                     "/v1/chat-turns",
+                    "/v1/evaluations",
+                    "/v1/evaluation-results",
                     "/v1/theme-proposals",
                     "/v1/input-publications",
                     "/v1/universe-overrides",

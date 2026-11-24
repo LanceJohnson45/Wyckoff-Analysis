@@ -18,9 +18,13 @@ from sqlalchemy import create_engine, insert
 from stock_research.calendar import sessions_ending
 from stock_research.config import Settings
 from stock_research.data import DAILY_BARS, SOURCE_CONFIG, SOURCE_METADATA
-from stock_research.identity import SHANGHAI
+from stock_research.identity import SHANGHAI, digest
 from stock_research.models import Bar, Classification, ClassificationVersion, Snapshot, UniverseMember, UniverseVersion
+from stock_research.parameters import MartinParameters
 from stock_research.quality import BENCHMARKS, build_snapshot
+from stock_research.schemas.evaluation_execution import EvaluationFiles
+from stock_research.source_guard import LOADED_SOURCE_IDENTITY
+from stock_research.wyckoff import WyckoffParameters
 
 AS_OF = date(2026, 11, 20)
 STAMP = datetime(2026, 11, 21, 8, tzinfo=SHANGHAI)
@@ -197,6 +201,55 @@ def market_path(tmp_path: Path, bars: tuple[Bar, ...]) -> Path:
     finally:
         engine.dispose()
     return path
+
+
+@pytest.fixture
+def evaluation_files(
+    tmp_path: Path, market_path: Path, universe: UniverseVersion, classifications: ClassificationVersion
+) -> EvaluationFiles:
+    """评估worker的360日合成行情及私有文件，无模型或数据库身份。"""
+    engine = create_engine("sqlite:///" + str(market_path))
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                insert(DAILY_BARS),
+                [
+                    dict(
+                        market="us",
+                        kind=kind,
+                        symbol=symbol,
+                        adjust="qfq",
+                        date=day,
+                        open=10,
+                        high=12,
+                        low=9,
+                        close=11,
+                        volume=1000,
+                        cloud_updated_at=STAMP.isoformat(),
+                        imported_at=STAMP.isoformat(),
+                    )
+                    for kind, symbol in (("stock", "AAPL"), *(("benchmark", name) for name in BENCHMARKS))
+                    for day in sessions_ending(AS_OF, 360)[:40]
+                ],
+            )
+    finally:
+        engine.dispose()
+    upath, cpath = tmp_path / "universe.json", tmp_path / "classifications.json"
+    upath.write_text(universe.model_dump_json(), encoding="utf-8")
+    cpath.write_text(classifications.model_dump_json(), encoding="utf-8")
+    return EvaluationFiles(
+        cutoff=AS_OF,
+        market_path=market_path.resolve(),
+        universe_path=upath.resolve(),
+        classification_path=cpath.resolve(),
+        artifacts_path=(tmp_path / "evaluation").resolve(),
+        frozen_input_path=(tmp_path / "frozen" / "input.json").resolve(),
+        universe_hash=digest(universe.model_dump(mode="json")),
+        classification_hash=digest(classifications.model_dump(mode="json")),
+        source_hash=LOADED_SOURCE_IDENTITY,
+        martin=MartinParameters(),
+        wyckoff=WyckoffParameters(),
+    )
 
 
 @pytest.fixture(scope="session")

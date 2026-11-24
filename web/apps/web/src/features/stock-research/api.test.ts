@@ -127,4 +127,19 @@ describe('本机研究代理策略', () => {
     expect(allowedResearchRoute('GET', '/../../.env')).toBe(false)
     expect(allowedResearchRoute('GET', '//untrusted.invalid/v1/reports/latest')).toBe(false)
   })
+  it.each<[string, string, boolean]>([
+    ['GET', '/v1/evaluations', true],
+    ['POST', '/v1/evaluations', true],
+    ['GET', `/v1/evaluations/${RUN}`, true],
+    ['POST', `/v1/evaluations/${RUN}/retry`, true],
+    ['POST', `/v1/evaluations/${RUN}/cancel`, true],
+    ['GET', `/v1/evaluation-results/${RUN}`, true],
+    ['GET', `/v1/evaluation-results/${RUN}/samples`, true],
+    ['POST', `/v1/evaluation-results/${RUN}/samples`, false],
+    ['GET', `/v1/evaluations/${RUN}/samples`, false],
+    ['GET', `/v1/evaluation-results/${RUN}/input.json`, false],
+    ['POST', `/v1/evaluations/${RUN}/arbitrary`, false],
+  ])('评估代理 %s %s 的显式边界为 %s', (method, path, allowed) => {
+    expect(allowedResearchRoute(method, path)).toBe(allowed)
+  })
 })

@@ -387,4 +387,4 @@ wyckoff mcp-list
 
 量化worker的信号退出或缺终帧非零退出现保留进程失败原因，默认研究入口可沿原期限自动补算一次；未受信号中断的完整坏协议和明确计算错误继续失败。真实worker/原生PG的先红后绿记录见[量化恢复](docs/stock_research_quant_execution.md)。
 
-主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。[历史评估CLI](docs/stock_research_evaluations.md)已接入20截面、生产量化池、观察窗口及时间净化，封存组不输出表现。整份计划仍有正式入选观测、评估API/实验台账、静态运行入口及自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。
+主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。[历史评估CLI/私有作业API](docs/stock_research_evaluations.md)已接入20截面、生产量化池、观察窗口及时间净化，隔离worker支持原输入续跑、取消与重启恢复，结果分表分页，封存组不输出表现；运行包采用另记。整份计划仍有正式入选观测、参数实验/界面、静态运行入口及自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。

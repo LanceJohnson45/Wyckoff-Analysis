@@ -2,7 +2,7 @@
 
 import sqlite3
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from contextlib import closing, contextmanager
 from datetime import date
 from pathlib import Path
@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 
 from pydantic import ValidationError
 from sqlalchemy import Column, Date, Float, MetaData, String, Table, create_engine, select
+from sqlalchemy.engine import Connection, RowMapping
 
 from stock_research.identity import digest
 from stock_research.models import Bar, QualityIssue, normalize_symbol
@@ -60,7 +61,28 @@ def consistent_copy(path: Path, timeout: float = 30) -> Iterator[Path]:
         yield copied
 
 
-def read_market(path: Path, start: date, as_of: date) -> tuple[str, tuple[Bar, ...], tuple[QualityIssue, ...]]:
+def window_rows(
+    connection: Connection, table: Table, start: date, as_of: date, max_rows: int | None
+) -> Sequence[RowMapping]:
+    """SQL端限制批量worker的输入规模，越界明确失败而非静默截断。"""
+    query = (
+        select(table)
+        .where(table.c.market == "us", table.c.date.between(start, as_of))
+        .order_by(table.c.kind, table.c.symbol, table.c.date)
+    )
+    if max_rows is not None:
+        if max_rows < 1:
+            raise ValueError("行情读取行数上限必须为正")
+        query = query.limit(max_rows + 1)
+    rows = connection.execute(query).mappings().all()
+    if max_rows is not None and len(rows) > max_rows:
+        raise ValueError("行情读取超过批量评估行数上限，未采用截断数据")
+    return rows
+
+
+def read_market(
+    path: Path, start: date, as_of: date, *, max_rows: int | None = None
+) -> tuple[str, tuple[Bar, ...], tuple[QualityIssue, ...]]:
     """仅取指定窗口的前复权日线；损坏和云端隔离信息进入质量报告。"""
     with consistent_copy(path) as copied:
         engine = create_engine("sqlite://", creator=lambda: sqlite3.connect(copied.as_uri() + "?mode=ro", uri=True))
@@ -71,30 +93,8 @@ def read_market(path: Path, start: date, as_of: date) -> tuple[str, tuple[Bar, .
                 )
                 if not source_id:
                     raise ValueError("行情库缺少 cloud_source 身份，不接受来源不明的数据")
-                rows = (
-                    connection.execute(
-                        select(DAILY_BARS)
-                        .where(
-                            DAILY_BARS.c.market == "us",
-                            DAILY_BARS.c.date.between(start, as_of),
-                        )
-                        .order_by(DAILY_BARS.c.kind, DAILY_BARS.c.symbol, DAILY_BARS.c.date)
-                    )
-                    .mappings()
-                    .all()
-                )
-                rejected = (
-                    connection.execute(
-                        select(SOURCE_ISSUES)
-                        .where(
-                            SOURCE_ISSUES.c.market == "us",
-                            SOURCE_ISSUES.c.date.between(start, as_of),
-                        )
-                        .order_by(SOURCE_ISSUES.c.kind, SOURCE_ISSUES.c.symbol, SOURCE_ISSUES.c.date)
-                    )
-                    .mappings()
-                    .all()
-                )
+                rows = window_rows(connection, DAILY_BARS, start, as_of, max_rows)
+                rejected = window_rows(connection, SOURCE_ISSUES, start, as_of, max_rows)
         finally:
             engine.dispose()
     source_identity = "local-market:" + digest(source_id)

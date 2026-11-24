@@ -309,6 +309,32 @@ INPUT_PUBLICATIONS = execution_table(
 )
 
 
+# lint-redline:ignore PS-10 评估账本复用审计列，原研究报告不承担实验状态。
+EVALUATION_JOBS = execution_table(
+    "evaluation_jobs",
+    Column("key_hash", String(64), nullable=False),
+    Column("request_hash", String(64), nullable=False),
+    Column("status", String(32), nullable=False),
+    UniqueConstraint("workspace", "key_hash"),
+)
+Index("idx_evaluation_jobs_workspace_time", EVALUATION_JOBS.c.workspace, EVALUATION_JOBS.c.create_time)
+# lint-redline:ignore PS-10 完成结果只追加，依赖评估作业。
+EVALUATION_RESULTS = execution_table(
+    "evaluation_results",
+    Column("job_uuid", String(36), ForeignKey(EVALUATION_JOBS.c.uuid), nullable=False),
+    UniqueConstraint("workspace", "job_uuid"),
+)
+# lint-redline:ignore PS-10 逐股窗口单独分页，不在结果元数据里重复整份样本。
+EVALUATION_SAMPLES = execution_table(
+    "evaluation_samples",
+    Column("result_uuid", String(36), ForeignKey(EVALUATION_RESULTS.c.uuid), nullable=False),
+    Column("as_of", Date, nullable=False),
+    Column("strategy", String(32), nullable=False),
+    Column("symbol", String(32), nullable=False),
+    UniqueConstraint("workspace", "result_uuid", "as_of", "strategy", "symbol"),
+)
+
+
 def schema_ddl() -> str:
     """从受维护的Python定义导出DDL，不在仓库保存独立SQL副本。"""
     statements = [CreateSchema("stock_research", if_not_exists=True)]
