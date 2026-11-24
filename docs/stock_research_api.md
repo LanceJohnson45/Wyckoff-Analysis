@@ -56,3 +56,10 @@ API/CLI run量化已使用可取消/限时回收的独立worker，完整校验�
 按策略量化状态见RunView.quant及固定报告；GET /v1/research-runs/{run_id}/quant-attempts提供当前run独立尝试SQL分页（page_size≤20），不改变旧报告当时状态。量化失败不生成空产物，成功计算/初选不重做；缺计算的池、分组和计数可为null，不能解释为零。详见[局部量化恢复](stock_research_quant_execution.md)。
 
 私有问答响应新增attempts（历史默认为空）：最多两次，包含状态、错误码、工具请求数（null表示未确认）、余额、上下文摘要、固定截止、起止时间及回执标记。顶层tool_calls累计已确认请求数。仅明确临时provider/传输错误且预算剩余时自动重试一次，同键POST不另起尝试；不新增重试/覆盖端点。私有路径不出HTTP，详见[问答重试边界](stock_research_chat.md)。
+
+
+## 固定盘前任务的有限身份
+
+新增可选API_WORKFLOW_TOKEN及固定PREMARKET_SOURCE_WORKSPACE，默认关闭。独立身份只允许POST /v1/premarket-jobs、GET对应job及POST其retry/cancel；不能管理普通研究、读取共享报告或私人问答、修改参数/持仓。原API_TOKEN与API_READ_TOKEN语义保持，READ_TOKEN也不能读取盘前任务。任务数据只从绑定的run与固定报告投影，来源/对象/workspace不符404；不接受路径、模型、租户或任意deadline。
+
+API_REQUESTS保存原计划意图与run映射，准备失败也返回带job_id的明确回执；假日/原窗口过期保存跳过而不启动。原事件、绝对期限、成功计算/初选及旧报告不可由重放替换。取消标记在PG请求级锁及摘要CAS下持久化，防另一个拥有者复活；程序状态、研究结果及通知分开读取。没有新表或迁移。端点、独立配置及固定argv--execute用法见[盘前入口](stock_research_premarket.md)；生产计划/行情刷新/通知尚未启用。

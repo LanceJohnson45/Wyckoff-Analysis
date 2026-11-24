@@ -1,48 +1,19 @@
 """固定workflow的无副作用计划入口；按原计划纽约日期计算，不启动研究。"""
 
 import argparse
+import asyncio
 import json
 import os
-from datetime import UTC, datetime, time, timedelta
+from datetime import datetime, time
 from pathlib import Path
-from typing import Literal
-from zoneinfo import ZoneInfo
-
-from pydantic import AwareDatetime, Field, model_validator
 
 from stock_research.artifacts import write_once
 from stock_research.calendar import exchange_calendar, session_times
 from stock_research.identity import canonical_json, now
-from stock_research.schemas.api import ApiModel
+from stock_research.schemas.premarket import NEW_YORK, PremarketInput
 
-NEW_YORK = ZoneInfo("America/New_York")
 WORKFLOW = "stock-research-premarket"
 MAX_INPUT_BYTES = 16_384
-
-
-class ScheduleContext(ApiModel):
-    """唯一股票计划及可核对的原事件身份，不接受命令、路径或凭据。"""
-
-    schedule_id: Literal["stock-research-premarket"]
-    event_id: str = Field(min_length=1, max_length=160)
-    scheduled_for: AwareDatetime
-    workspace_id: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
-    trigger_kind: Literal["scheduled", "manual"]
-
-    @model_validator(mode="after")
-    def coherent_event(self) -> "ScheduleContext":
-        stamp = self.scheduled_for.astimezone(UTC).isoformat().replace("+00:00", "Z")
-        prefix = "manual-" if self.trigger_kind == "manual" else ""
-        if self.event_id != f"{self.schedule_id}:{prefix}{stamp}":
-            raise ValueError("原计划时刻与事件身份不一致")
-        local = self.scheduled_for.astimezone(NEW_YORK)
-        if self.trigger_kind == "scheduled" and local.timetz().replace(tzinfo=None) != time(8):
-            raise ValueError("自动盘前事件必须为纽约08:00的原计划时刻")
-        return self
-
-
-class PremarketInput(ApiModel):
-    schedule: ScheduleContext
 
 
 def plan_premarket(data: PremarketInput, observed_at: datetime) -> dict[str, object]:
@@ -50,7 +21,7 @@ def plan_premarket(data: PremarketInput, observed_at: datetime) -> dict[str, obj
     if observed_at.tzinfo is None:
         raise ValueError("计划观察时间必须包含时区")
     schedule = data.schedule
-    target = schedule.scheduled_for.astimezone(NEW_YORK).date()
+    target = schedule.target_session
     result = {
         "mode": "plan",
         "research_started": False,
@@ -71,7 +42,7 @@ def plan_premarket(data: PremarketInput, observed_at: datetime) -> dict[str, obj
     start = datetime.combine(target, time(8), NEW_YORK)
     stop = datetime.combine(target, time(8, 50), NEW_YORK)
     late = observed_at > due
-    deadline = schedule.scheduled_for + timedelta(seconds=3000) if schedule.trigger_kind == "manual" else stop
+    deadline = schedule.execution_deadline
     status = "within_window"
     if observed_at < schedule.scheduled_for or observed_at < start:
         status = "before_start"
@@ -110,24 +81,41 @@ def workflow_paths(environment: dict[str, str]) -> tuple[Path, Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    """显式--plan运行不加载Settings，不提供任何HTTP、模型或通知执行。"""
+    """plan不加载身份；execute只读取独立workflow身份，模型/PG留在API。"""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--plan", action="store_true", required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--plan", action="store_true")
+    mode.add_argument("--execute", action="store_true")
+    parser.add_argument("--identity-file", type=Path, help="operator固定的专用workflow配置路径；仅execute")
     parser.add_argument("--at", type=datetime.fromisoformat, help="仅用于无副作用计划验证的带时区观察时间")
     args = parser.parse_args(argv)
+    if args.plan and args.identity_file is not None:
+        parser.error("--identity-file只允许--execute")
+    if args.execute and args.at is not None:
+        parser.error("--at只允许无副作用的--plan验证")
     try:
         source, output = workflow_paths(dict(os.environ))
         with source.open("rb") as handle:
             raw = handle.read(MAX_INPUT_BYTES + 1)
         if len(raw) > MAX_INPUT_BYTES:
             raise ValueError("workflow输入超过限额")
-        result = plan_premarket(PremarketInput.model_validate_json(raw), args.at or now())
+        data = PremarketInput.model_validate_json(raw)
+        status = 0
+        if args.plan:
+            result = plan_premarket(data, args.at or now())
+        else:
+            from stock_research.premarket_workflow import execute_workflow
+            from stock_research.workflow_settings import load_workflow_identity
+
+            outcome = asyncio.run(execute_workflow(data, load_workflow_identity(args.identity_file)))
+            result = outcome.model_dump(mode="json")
+            status = 1 if outcome.error_code else 0
         write_once(output, canonical_json(result) + "\n")
     except (OSError, ValueError, KeyError, RecursionError):
-        print(json.dumps({"mode": "plan", "research_started": False, "error": "盘前计划输入或文件边界无效"}))
+        print(json.dumps({"mode": "execute" if args.execute else "plan", "error": "盘前输入、专用身份或文件边界无效"}))
         return 1
     print(canonical_json(result))
-    return 0
+    return status
 
 
 if __name__ == "__main__":

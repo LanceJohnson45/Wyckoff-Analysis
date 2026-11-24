@@ -19,6 +19,7 @@ from stock_research.http_events import register_events
 from stock_research.http_inputs import router as input_router
 from stock_research.http_observations import register_observations
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
+from stock_research.http_premarket import router as premarket_router
 from stock_research.http_preparations import register_preparations
 from stock_research.http_report_queries import router as report_query_router
 from stock_research.http_reports import register_reports
@@ -112,6 +113,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(report_query_router)
     app.include_router(chat_router)
     app.include_router(input_router)
+    app.include_router(premarket_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)

@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：盘前有限API与实际执行（2026-11-24）
+
+在f3a422dc计划入口上接通--execute：专用workflow身份只允许盘前任务受理、读回、局部重试与取消，固定来源工作区；与operator/read身份不同，默认关闭。固定argv只读取独立workflow.env或显式--identity-file，不继承PG、模型、Personal或operator身份。API_REQUESTS持久化原事件意图、冻结run与取消标记，准备失败保留；并发及进程重建重放复用原事件，冻结后绑定前中断可找回原run。没有新表或迁移。
+
+事件原截止时间贯穿准备、量化及模型阶段，恢复不延期；客户端使用60/180秒退避，读回失败只查原任务，未知受理不猜测新任务。取消在拥有者确认前不冒称成功。真实worker超时测试确认PID与进程组回收。UTC模型上下文序列化统一为Pydantic规范，修复原期限进入上下文后+00:00/Z差异导致的摘要校验失败；最早日历边界和不一致事件均在输入层拒绝。
+
+最终源码摘要69374372a05c48602f2bb20716c6ef66921e371fa3df9cd768cc176cdba8cafa。原生隔离PG/HMAC网关→direct固定argv→真实HTTP→实际量化worker→固定报告联调1通过，四份产物回执；独立SQL确认原意图1、run1、量化job2/attempt2、初选2及评议2。job66d25be2-67c8-4fbd-8375-68f0642939c0、run4f55fe00-1019-48f9-bc37-9a329e1a0e24、reportf647946c-23b6-497e-8e24-e4f02841e051均属隔离合成数据，显式manual/late、目标23日/行情20日，空池模型调用0，不是当日真实研究。临时API65139/53642终止及端口释放已确认，证明用例已从services工作树移除；私有材料仅在忽略目录.stock-research/bootstrap/premarket-execution-*。
+
+最终全量Python6105通过、无skip、50旧警告，专项76通过；Ruff/1283文件格式、完整质量、红线108文件零命中、workflow/dependency hygiene及合成daily dry-run通过。Python LOC143004/+65.9%、TS36116/+94.2%旧基线警告保留；无新豁免、测试排除或依赖变化。services全量500通过/3原Docker条件skip。本批无Web源码变化，沿用a4f1408a完整Web409/API221及两项默认Upstash跳过，不将本地通过称为远端CI通过。
+
+零活动守卫后仅更新本线程8788 API；旧48204终态143、PID消失/端口释放，当前67720/session85786，日志premarket-execution-main-api.log。ready及原完整报告/问答、跨workspace404/只读私人问答403独立读回通过。额外独立repeatable-read只读审计26表：有workspace字段按stocks过滤，其余全表逐行摘要，重启前后保持；没有新增主工作区研究或通知。生产workflow身份仍关闭，原42计划/Personal共享8802及网关未改未重启。
+
+下一步优先对齐plan第9节：当前只保证同一事件重放，新manual事件的同配置去重与强制补跑parent链仍待实现。随后接行情更新协调、通知/未知回执回查、唯一stock-research-premarket六处清单和cron所有权。正式Mac运行包/TCC、Tailscale/多用户、自然交易日、正常浏览器、PIT/效果评估、独立wiki缺失、远端CI与另session整体审查继续保留；整个plan.md未完成。
+
 ## 续接检查点：盘前原计划时刻与固定入口计划预览（2026-11-24）
 
 Personal三项只读接入已提交研究6d8c1e3f、services3b52256/文档6f60ac2并本机快进；运行宿主8802已加载、原11项保持。此后继续plan第10/11节，先修正direct cron固定脚本收不到原slot的问题。services本批代码f238c70：仅显式pass_schedule_context=true的direct计划追加五项原事件元数据至既有input.json，严格布尔/身份时刻一致；缺省保持原action/输入/幂等，原42计划未启用。生产网关部署副本未更新，不冒称新调度已生效。

@@ -3,7 +3,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import AwareDatetime, Field, model_validator
+from pydantic import AwareDatetime, Field, TypeAdapter, model_validator
 
 from stock_research.analysis import MartinReport
 from stock_research.identity import digest
@@ -143,7 +143,7 @@ def build_context(
             snapshot_hash=snapshot.content_hash,
             analysis_hash=analysis.content_hash,
             as_of=snapshot.as_of,
-            deadline=deadline,
+            deadline=TypeAdapter(AwareDatetime).dump_python(deadline, mode="json"),
             tool_budget=20,
             pool=analysis.pool if role == "select" else (),
             symbols=symbols,

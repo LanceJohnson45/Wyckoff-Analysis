@@ -1,14 +1,34 @@
 """固定证据的范围、截止日和模型输出契约。"""
 
 from datetime import timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 from mcp.server.fastmcp.exceptions import ToolError
 
+from stock_research.analysis import compute_martin
 from stock_research.decisions import validate_decision
-from stock_research.evidence import EvidenceContext
+from stock_research.evidence import EvidenceContext, build_context
 from stock_research.evidence_mcp import EvidenceReader
 from stock_research.identity import digest, new_id, now
+from stock_research.models import Snapshot
+from stock_research.parameters import MartinParameters
+
+
+@pytest.mark.parametrize("zone", ["UTC", "America/New_York", "Asia/Shanghai"])
+def test_production_context_deadline_survives_timezone_serialization(snapshot: Snapshot, zone: str) -> None:
+    deadline = (now() + timedelta(seconds=60)).astimezone(ZoneInfo(zone))
+    context = build_context(
+        snapshot,
+        compute_martin(snapshot, MartinParameters()),
+        workspace="timezone-fixture",
+        run_id=new_id(),
+        stage_id=new_id(),
+        role="select",
+        deadline=deadline,
+    )
+    restored = EvidenceContext.model_validate_json(context.model_dump_json())
+    assert restored.deadline == deadline and restored.content_hash == context.content_hash
 
 
 def make_context(**changes: object) -> EvidenceContext:

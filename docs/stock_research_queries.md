@@ -8,7 +8,7 @@
 
 ## 独立查询身份
 
-API进程可配置 `STOCK_RESEARCH_API_READ_TOKEN`，至少32字符且必须与operator的API_TOKEN不同。未配置时不会生成默认只读身份。只读身份仅允许共享研究数据GET，私有chat-turns/人工维护历史/冻结输入来源的GET及所有写入方法403，不能启动、续跑、取消运行或改变配置；既有Host/Origin校验仍有效。身份只保存在受保护的operator配置，不进入URL或研究正文。
+API进程可配置 `STOCK_RESEARCH_API_READ_TOKEN`，至少32字符且必须与operator的API_TOKEN不同。未配置时不会生成默认只读身份。只读身份仅允许共享研究数据GET，私有chat-turns/人工维护历史/冻结输入来源/盘前任务的GET及所有写入方法403，不能启动、续跑、取消运行或改变配置；既有Host/Origin校验仍有效。身份只保存在受保护的operator配置，不进入URL或研究正文。
 
 外部客户端使用自己的 `.stock-research/query.env`（见config/research/query.env.example，权限0600），包含QUERY_HOST=127.0.0.1、QUERY_PORT与QUERY_TOKEN。该token值与API的READ_TOKEN匹配；客户端不加载根.env、不持有PG、模型或Personal网关配置。也可由operator通过同名环境变量注入。默认不读取 ~/.dsh/secrets；接入通过显式[Personal配置命令](stock_research_personal.md)，查询进程本身不修改宿主配置。
 

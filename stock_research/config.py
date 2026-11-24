@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     postgres_password: SecretStr = SecretStr("")
     api_token: SecretStr | None = None
     api_read_token: SecretStr | None = None
+    api_workflow_token: SecretStr | None = None
+    premarket_source_workspace: str = ""
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")

@@ -1,5 +1,6 @@
 """研究API认证与错误翻译；不共享Personal身份或输出内部异常。"""
 
+import re
 import secrets
 from collections.abc import Awaitable, Callable
 
@@ -39,6 +40,14 @@ def install_security(app: FastAPI, settings: Settings) -> None:
     read_token = settings.api_read_token.get_secret_value() if settings.api_read_token else ""
     if read_token and (len(read_token) < 32 or read_token != read_token.strip() or read_token == token):
         raise ValueError("研究只读身份须独立且至少32字符")
+    workflow_token = settings.api_workflow_token.get_secret_value() if settings.api_workflow_token else ""
+    if workflow_token and (
+        len(workflow_token) < 32
+        or workflow_token != workflow_token.strip()
+        or workflow_token in {token, read_token}
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", settings.premarket_source_workspace)
+    ):
+        raise ValueError("盘前身份须独立且至少32字符，并固定来源工作区")
 
     @app.middleware("http")
     async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
@@ -54,14 +63,25 @@ def install_security(app: FastAPI, settings: Settings) -> None:
             reader = bool(read_token) and secrets.compare_digest(
                 authorization.encode(), f"Bearer {read_token}".encode()
             )
-            if not operator and not reader:
+            workflow = bool(workflow_token) and secrets.compare_digest(
+                authorization.encode(), f"Bearer {workflow_token}".encode()
+            )
+            if not operator and not reader and not workflow:
                 response = error_response(request, 401, Code.UNAUTHENTICATED, "需要研究API身份")
                 response.headers["WWW-Authenticate"] = "Bearer"
                 return response
             private = request.url.path.startswith(
-                ("/v1/chat-turns", "/v1/theme-proposals", "/v1/input-publications", "/v1/universe-overrides")
+                (
+                    "/v1/chat-turns",
+                    "/v1/theme-proposals",
+                    "/v1/input-publications",
+                    "/v1/universe-overrides",
+                    "/v1/premarket-jobs",
+                )
             ) or request.url.path.endswith("/inputs")
-            if not operator and (request.method != "GET" or private):
+            if workflow and not workflow_route(request.method, request.url.path):
+                return error_response(request, 403, Code.FORBIDDEN, "此研究身份仅允许盘前任务")
+            if reader and (request.method != "GET" or private):
                 return error_response(request, 403, Code.FORBIDDEN, "此研究身份仅允许查询")
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
@@ -70,6 +90,14 @@ def install_security(app: FastAPI, settings: Settings) -> None:
         return response
 
     install_error_handlers(app)
+
+
+def workflow_route(method: str, path: str) -> bool:
+    """前缀相似的路径不能变成普通研究、私有数据或额外写能力。"""
+    if path == "/v1/premarket-jobs":
+        return method == "POST"
+    match = re.fullmatch(r"/v1/premarket-jobs/[A-Fa-f0-9-]{36}(/retry|/cancel)?", path)
+    return bool(match) and method == ("POST" if match.group(1) else "GET")
 
 
 def install_error_handlers(app: FastAPI) -> None:

@@ -515,4 +515,4 @@ flowchart LR
 
 **量化worker执行边界**：API/CLI run对原生产量化的独立进程监督，取消/超时等候终态，父进程EOF使worker终止，校验成功后才发布缓存。按策略任务和追加尝试持久化，成功计算/初选复用；当前绑定投影保存到新报告修订，旧修订不补读后来产物。详见[量化执行](docs/stock_research_quant_execution.md)。
 
-**盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。无副作用计划入口输出日期/期限/预算，research_started=false，不能将runner completed当作研究完成。见[盘前入口](docs/stock_research_premarket.md)。
+**盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，冻结期限约束量化/模型与恢复，取消标记防复活。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。

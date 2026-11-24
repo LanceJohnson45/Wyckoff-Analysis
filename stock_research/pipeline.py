@@ -15,6 +15,7 @@ from stock_research.calendar import session_times
 from stock_research.config import Settings
 from stock_research.decisions import ResearchPoint, ReviewDecision, SelectionDecision
 from stock_research.evidence import EvidenceContext, build_context
+from stock_research.execution_budget import run_deadline
 from stock_research.executor import StageResult, execute_stage, verify_runtime
 from stock_research.identity import digest, new_id, now
 from stock_research.input_configuration import verify_input_sources
@@ -24,6 +25,7 @@ from stock_research.prompts import prompt_identity
 from stock_research.quant_compute import quant_parameters
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
+from stock_research.schemas.premarket import PremarketBinding
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current, source_identity
 from stock_research.store import load_snapshot, save_snapshot
 from stock_research.wyckoff import WyckoffReport, engine_hash
@@ -174,7 +176,7 @@ async def execute_run(
 ) -> dict[str, object]:
     """两个初选各自隔离；全部尝试结束并提交后才生成互评上下文。"""
     run = await store.row(RESEARCH_RUNS, run_id)
-    deadline = run["create_time"] + timedelta(seconds=settings.run_timeout_seconds)
+    deadline = run_deadline(run, settings.run_timeout_seconds)
     await store.publish(run_id, "running")
     try:
         async with asyncio.timeout(max(0, (deadline - now()).total_seconds())):
@@ -301,6 +303,7 @@ async def prepare_preview(
     request_id: str | None = None,
     parameter_sources: dict[str, object] | None = None,
     input_sources: dict[str, object] | None = None,
+    premarket: PremarketBinding | None = None,
 ) -> tuple[str, dict[str, ModelConnection]]:
     """先冻结并保存输入，调用方取得run_id后才能调度执行。"""
     ensure_source_current()
@@ -332,6 +335,10 @@ async def prepare_preview(
         "parent_id": parent_id,
         "manual_nonce": (request_id or new_id()) if force else None,
     }
+    if premarket is not None:
+        if premarket.schedule.target_session != target_session or force:
+            raise ValueError("盘前绑定与目标日或新建方式不一致")
+        config["premarket"] = premarket.model_dump(mode="json")
     # 输入版本摘要已入幂等键；入口来源只描述首次冻结，不应让同版API/CLI重复选股。
     run_key = digest({key: value for key, value in config.items() if key != "input_sources"})
     existing = await store.find_run(run_key)
@@ -417,6 +424,8 @@ async def resume_preview(
             key: value for key, (_identifier, value) in (await frozen_analyses(store, manifest, snapshot)).items()
         }
         runtime_error = manifest.get("model_error")
+        if now() >= run_deadline(await store.row(RESEARCH_RUNS, run_id), settings.run_timeout_seconds):
+            return await failed_run(store, run_id, "run_deadline_exceeded")
         if any(value.pool for value in analyses.values()) and not runtime_error:
             try:
                 connections = connections or await asyncio.to_thread(model_connections, settings)

@@ -1,13 +1,13 @@
 """运行锁内执行缺失量化，失败不阻断另一策略，成功结果不重做。"""
 
 import asyncio
-from datetime import timedelta
 
 import structlog
 
 from stock_research.artifacts import write_once
 from stock_research.config import Settings
 from stock_research.errors import ResearchSourceChanged
+from stock_research.execution_budget import run_deadline
 from stock_research.identity import canonical_json, digest, now
 from stock_research.models import Snapshot
 from stock_research.parameters import MartinParameters
@@ -40,7 +40,7 @@ async def run_quant_job(
     for attempt in range(2):
         row = await start_job(store, row)
         await store.publish(run["uuid"], "running")
-        remaining = (run["create_time"] + timedelta(seconds=settings.run_timeout_seconds) - now()).total_seconds()
+        remaining = (run_deadline(run, settings.run_timeout_seconds) - now()).total_seconds()
         error = None
         try:
             if remaining <= 0:

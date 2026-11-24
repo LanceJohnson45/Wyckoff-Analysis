@@ -16,6 +16,7 @@ from stock_research.errors import (
     ResearchSourceChanged,
     ResearchUnavailable,
 )
+from stock_research.identity import now
 from stock_research.input_configuration import resolve_run_inputs
 from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
@@ -24,13 +25,21 @@ from stock_research.preparations import record_preparation
 from stock_research.request_store import RequestStore
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
+from stock_research.schemas.premarket import PremarketBinding
 from stock_research.schemas.requests import CreateRun
 from stock_research.source_guard import ensure_source_current
 
 logger = structlog.get_logger(__name__)
 
 
-async def prepare_from_market(store: RunStore, settings: Settings, data: CreateRun, request_id: str) -> str:
+async def prepare_from_market(
+    store: RunStore,
+    settings: Settings,
+    data: CreateRun,
+    request_id: str,
+    *,
+    premarket: PremarketBinding | None = None,
+) -> str:
     """只读operator固定行情路径；请求不接受文件、模型或连接配置。"""
     from stock_research.cli import snapshot_command
 
@@ -40,7 +49,11 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
     except ValueError:
         raise ResearchInputError("目标日期不是正式交易日") from None
     try:
-        async with record_preparation(store, data.target_session, "api", request_id) as attempt, asyncio.timeout(120):
+        budget = min(120, (premarket.execution_deadline - now()).total_seconds()) if premarket else 120
+        async with (
+            record_preparation(store, data.target_session, "api", request_id) as attempt,
+            asyncio.timeout(max(0, budget)),
+        ):
             settings, parameter_sources = await resolve_run_parameters(store, settings)
             await attempt.checkpoint("snapshot")
             settings, input_sources = await resolve_run_inputs(store, settings, previous)
@@ -63,6 +76,7 @@ async def prepare_from_market(store: RunStore, settings: Settings, data: CreateR
                 request_id=request_id,
                 parameter_sources=parameter_sources,
                 input_sources=input_sources.model_dump(mode="json"),
+                **({"premarket": premarket} if premarket else {}),
             )
             await attempt.ready(run_id)
             return run_id
@@ -162,6 +176,7 @@ class RunManager:
                 raise ResearchConflict("当前运行不能重试")
             async with self.store.execution_lock(run_id):
                 await self.store.recover_stages(run_id)
+                await self.store.publish(run_id, "pending")
             self.start(run_id)
 
     async def restore(self) -> None:
