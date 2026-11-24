@@ -43,6 +43,13 @@ describe('人工输入维护', () => {
     expect(card).toContain('生效日 2026-11-24')
     expect(renderToStaticMarkup(createElement(PublicationCard, { value: inputPublicationSchema.parse(publication) }))).toContain('确认')
   })
+  it.each([1, 2])('已确认建议在当前修订 %i 下保留确认结果，不再提示未确认冲突', (current_revision) => {
+    const row = themeProposalSchema.parse({ ...proposal, current_revision, status: 'confirmed', publication })
+    const html = renderToStaticMarkup(createElement(ThemeReview, { proposal: row, actions, onUpdate: () => undefined, onClose: () => undefined }))
+    expect(html).toContain('已确认修订 1，生效日 2026-11-24')
+    expect(html).not.toContain('已有新发布，当前建议不能覆盖')
+    expect(html).not.toContain('确认并发布此主题')
+  })
   it('代理开放固定人工入口，不提供建议覆盖/自动确认或任意路径', () => {
     for (const path of ['/v1/theme-proposals', `/v1/theme-proposals/${ID}`, '/v1/input-publications', '/v1/universe-overrides', '/v1/universe-overrides/AAPL', `/v1/research-runs/${ID}/inputs`]) expect(allowedResearchRoute('GET', path)).toBe(true)
     expect(allowedResearchRoute('POST', `/v1/theme-proposals/${ID}/confirm`)).toBe(true)

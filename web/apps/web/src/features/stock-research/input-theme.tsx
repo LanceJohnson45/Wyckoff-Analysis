@@ -34,7 +34,7 @@ export function ThemeReview({ proposal, actions, onUpdate, onClose }: { proposal
   const previous = new Set(proposal.previous_members), next = new Set(proposal.definition.members)
   const added = proposal.definition.members.filter(symbol => !previous.has(symbol))
   const removed = proposal.previous_members.filter(symbol => !next.has(symbol))
-  const stale = proposal.current_revision !== proposal.base_revision
+  const stale = proposal.status === 'pending' && proposal.current_revision !== proposal.base_revision
   async function refresh() { setReading(true); try { onUpdate(await readThemeProposal(proposal.id)) } catch (error) { actions.showMessage(error instanceof Error ? error.message : '提议刷新失败') } finally { setReading(false) } }
   async function confirm() {
     await actions.submit({ kind: 'confirm', identifier: proposal.id, body: { expected_revision: proposal.base_revision, effective_date: effective } })

@@ -386,3 +386,5 @@ wyckoff mcp-list
 研究执行现区分模型响应流空闲超时与其他连接超时，阶段、问答及盘前恢复保持原重试边界和预算；真实回执诊断及未消除的模型延迟见[执行器](docs/stock_research_executor.md)。参数冲突/发布读回、量化失败补算、问答提交未知确认与取消已在隔离原生PG的真实页面逐项验收，见[研究面板](docs/stock_research_agent_panel.md)。
 
 量化worker的信号退出或缺终帧非零退出现保留进程失败原因，默认研究入口可沿原期限自动补算一次；未受信号中断的完整坏协议和明确计算错误继续失败。真实worker/原生PG的先红后绿记录见[量化恢复](docs/stock_research_quant_execution.md)。
+
+主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。整份计划仍有评估命令/API、研究台账及自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。
