@@ -3,18 +3,27 @@ name: US S&P500 Bootstrap
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: us-sp500-bootstrap-${{ github.ref }}
-  cancel-in-progress: true
+  group: market-data-us
+  cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     env:
       PYTHONUNBUFFERED: "1"
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      PG_ENABLED: "1"
+      PG_HOST: ${{ secrets.PG_HOST }}
+      PG_PORT: ${{ secrets.PG_PORT }}
+      PG_DATABASE: ${{ secrets.PG_DATABASE }}
+      PG_USER: ${{ secrets.PG_USER }}
+      PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+      PG_SSLMODE: ${{ secrets.PG_SSLMODE }}
+      PG_DSN: ${{ secrets.PG_DSN }}
       US_SP500_BOOTSTRAP_DAYS: "360"
       US_SP500_BATCH_SIZE: "40"
       US_SP500_SLEEP_SECONDS: "1.0"
@@ -22,7 +31,7 @@ jobs:
       TZ: Asia/Shanghai
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore S&P500 snapshot cache
         id: restore-sp500-snapshot
@@ -34,47 +43,25 @@ jobs:
             us-sp500-snapshot-${{ github.ref_name }}-
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           cache: "pip"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -e .
-
-      - name: Verify environment variables
-        run: |
-          echo "Checking environment variables..."
-          if [ -z "$SUPABASE_URL" ]; then
-            echo "❌ SUPABASE_URL is not set"
-            exit 1
-          fi
-          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "❌ SUPABASE_SERVICE_ROLE_KEY is not set"
-            exit 1
-          fi
-          echo "✓ SUPABASE_URL: ${SUPABASE_URL:0:20}..."
-          echo "✓ SUPABASE_SERVICE_ROLE_KEY: (length=${#SUPABASE_SERVICE_ROLE_KEY})"
-          echo "  Key prefix: ${SUPABASE_SERVICE_ROLE_KEY:0:10}..."
-          echo "  Key suffix: ...${SUPABASE_SERVICE_ROLE_KEY: -10}"
-
-      - name: Diagnostic - Test Supabase connection
-        run: python test_supabase_diagnostic.py
-
-      - name: Diagnostic - Test US write/verify
-        run: python test_us_write_verify.py
+          python -m pip install uv==0.12.5
+          uv sync --frozen --no-dev
 
       - name: Bootstrap S&P500 cache
         run: |
-          python -u scripts/us_sp500_maintenance.py bootstrap --trading-days ${US_SP500_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
+          set -o pipefail
+          uv run --frozen --no-dev python -u scripts/us_sp500_maintenance.py bootstrap --trading-days ${US_SP500_BOOTSTRAP_DAYS} --batch-size ${US_SP500_BATCH_SIZE} --sleep-seconds ${US_SP500_SLEEP_SECONDS} \
             2>&1 | tee us_sp500_bootstrap.log
 
       - name: Upload bootstrap log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: us-sp500-bootstrap-${{ github.run_number }}
           path: us_sp500_bootstrap.log

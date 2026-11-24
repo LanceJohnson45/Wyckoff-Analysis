@@ -10,7 +10,7 @@ import pytest
 from core.indicator_rule_engine import IndicatorRuleEngine, load_indicator_definition
 
 
-QUERY_DIR = Path("/Volumes/E/github/Wyckoff-Analysis/query")
+QUERY_DIR = Path(__file__).resolve().parents[1] / "query"
 BASE_FIELDS = {"open", "high", "low", "close", "volume"}
 
 

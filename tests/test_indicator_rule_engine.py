@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
 
 from core.indicator_rule_engine import IndicatorRuleEngine, load_indicator_definition
@@ -88,7 +90,7 @@ def test_before_rule_requires_background_to_happen_before_event():
 
 def test_jiatu_rule_matches_on_completion_day_and_expires_after_lookback():
     engine = IndicatorRuleEngine()
-    spec = load_indicator_definition("/Volumes/E/github/Wyckoff-Analysis/query/001_jiatu.json")
+    spec = load_indicator_definition(Path(__file__).resolve().parents[1] / "query/001_jiatu.json")
 
     completion_day_closes = (
         [20.0] * 20

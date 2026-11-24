@@ -4,6 +4,8 @@ from contextlib import contextmanager
 import os
 from typing import Any, Iterable, Sequence
 
+from integrations.market_data_lock import US_CACHE_PREFIXES, protect_market_write
+
 try:
     import psycopg
     from psycopg.rows import dict_row
@@ -62,11 +64,16 @@ def get_postgres_dsn() -> str:
 
 
 @contextmanager
-def connect_postgres(*, autocommit: bool = False):
+def connect_postgres(*, autocommit: bool = False, market_write: bool = False):
     _require_psycopg()
-    conn = psycopg.connect(get_postgres_dsn(), row_factory=dict_row)
+    if market_write and autocommit:
+        raise ValueError("行情写入保护必须使用显式事务")
+    conn = psycopg.connect(get_postgres_dsn(), row_factory=dict_row, connect_timeout=10)
     conn.autocommit = autocommit
     try:
+        if market_write:
+            with conn.cursor() as cursor:
+                protect_market_write(cursor)
         yield conn
         if not autocommit:
             conn.commit()
@@ -159,6 +166,7 @@ def upsert_rows(
     )
 
     payload = [adapt_json_columns(row, json_columns=json_columns) for row in rows]
-    with connect_postgres() as conn, conn.cursor() as cur:
+    protected = table == "stock_hist_cache" and any(str(row.get("symbol", "")).startswith(US_CACHE_PREFIXES) for row in rows)
+    with connect_postgres(market_write=protected) as conn, conn.cursor() as cur:
         cur.executemany(insert_sql, payload)
     return len(payload)

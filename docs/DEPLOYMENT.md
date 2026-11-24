@@ -321,3 +321,7 @@ Before going live:
 - Entry: `streamlit_app.py`
 - Recommended platform: Streamlit Cloud
 - Alternative: containerized Streamlit service
+
+## US行情源协调候选
+
+同库US写Actions共用market-data-us非取消队列，跨本机/Actions的参与者另用数据库任务/写事务两把协议锁。bootstrap和成分sync统一PG身份及冻结uv安装；手动refresh成对提供as_of/symbols可补指定研究池和三基准。没有新增cron，也不能用现有cron先后代替数据依赖。[采用清单及限制](us_market_coordination.md)须在合入/部署前核验，候选代码不代表生产已切换。

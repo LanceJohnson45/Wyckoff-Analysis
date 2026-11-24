@@ -14,6 +14,7 @@ from supabase import Client
 from core.constants import TABLE_STOCK_HIST_CACHE
 from core.kline_quality import repair_ohlc_relationship
 from integrations.postgres_base import connect_postgres, postgres_enabled, upsert_rows
+from integrations.market_data_lock import US_CACHE_PREFIXES
 from integrations.supabase_base import create_admin_client as _create_admin_client
 
 _ADMIN_CLIENT: Client | None = None
@@ -522,7 +523,7 @@ def upsert_cache_data(
                 records,
                 conflict_columns=("symbol", "adjust", "date"),
             )
-            with connect_postgres() as conn, conn.cursor() as cur:
+            with connect_postgres(market_write=symbol.startswith(US_CACHE_PREFIXES)) as conn, conn.cursor() as cur:
                 _trim_symbol_history_window_pg(
                     cur=cur,
                     symbol=symbol,
@@ -693,7 +694,7 @@ def cleanup_cache(
     if postgres_enabled():
         cutoff = (datetime.now(timezone.utc) - timedelta(days=ttl_days)).date()
         try:
-            with connect_postgres() as conn, conn.cursor() as cur:
+            with connect_postgres(market_write=True) as conn, conn.cursor() as cur:
                 cur.execute(
                     "delete from public.stock_hist_cache where date < %s",
                     (cutoff,),

@@ -448,7 +448,6 @@ class TestFunnelPrewarm:
 
         root = Path(__file__).resolve().parent.parent
         for workflow_name in (
-            "wyckoff_funnel.yml",
             "wyckoff_funnel_us.yml",
             "wyckoff_funnel_hk.yml",
         ):
@@ -456,6 +455,10 @@ class TestFunnelPrewarm:
             assert "prewarm_status=${PIPESTATUS[0]}" in workflow
             assert "Prewarm timeout" in workflow
             assert 'exit "${prewarm_status}"' in workflow
+
+        cn = (root / ".github" / "workflows" / "wyckoff_funnel.yml").read_text()
+        assert "--run-budget-seconds" in cn and "--dispatch-budget-seconds" in cn
+        assert "set -o pipefail" in cn and "--symbol-timeout-seconds" in cn
 
 
 # ── core/strategy bridge ──
