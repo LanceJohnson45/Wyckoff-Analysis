@@ -102,4 +102,14 @@ describe('历史评估可见状态', () => {
     expect(html).toContain('跨区标签已剔除')
     expect(html).not.toContain('0.90%')
   })
+  it.each([
+    ['evaluation_history_insufficient', '完整历史截面不足20个'],
+    ['evaluation_quality_failed', '历史截面行情质量未通过'],
+  ])('%s资料失败说明修复办法，隐藏无效原输入续跑', (code, explanation) => {
+    const actions = { act: async () => undefined, busy: null, pending: null, uncertain: false, readbackId: null, message: '', blocked: false }
+    const html = renderToStaticMarkup(createElement(EvaluationJobView, { job: evaluationJobSchema.parse({ ...job, status: 'failed', error_code: code }), actions }))
+    expect(html).toContain(explanation)
+    expect(html).toContain('创建新评估')
+    expect(html).not.toContain('按原输入续跑')
+  })
 })

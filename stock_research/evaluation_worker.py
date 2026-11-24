@@ -7,7 +7,7 @@ import threading
 import structlog
 
 from core.trade_friction import configure_slippage
-from stock_research.errors import ResearchSourceChanged
+from stock_research.errors import EvaluationHistoryInsufficient, EvaluationQualityFailed, ResearchSourceChanged
 from stock_research.evaluation_local import evaluate_files
 from stock_research.processes import control_closed
 from stock_research.schemas.evaluation_execution import MAX_EVALUATION_REQUEST, EvaluationFiles, EvaluationFrame
@@ -57,6 +57,10 @@ def main() -> int:
         return 0
     except ResearchSourceChanged:
         error = "evaluation_source_changed"
+    except EvaluationHistoryInsufficient:
+        error = "evaluation_history_insufficient"
+    except EvaluationQualityFailed:
+        error = "evaluation_quality_failed"
     except (ValueError, OSError, TimeoutError):
         error = "evaluation_calculation_failed"
     except Exception:

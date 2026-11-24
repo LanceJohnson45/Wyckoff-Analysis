@@ -60,7 +60,14 @@ class EvaluationFrame(FrozenModel):
     report_hash: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     report_path: Path | None = None
     error_code: (
-        Literal["evaluation_source_changed", "evaluation_input_invalid", "evaluation_calculation_failed"] | None
+        Literal[
+            "evaluation_source_changed",
+            "evaluation_input_invalid",
+            "evaluation_calculation_failed",
+            "evaluation_history_insufficient",
+            "evaluation_quality_failed",
+        ]
+        | None
     ) = None
 
     @model_validator(mode="after")

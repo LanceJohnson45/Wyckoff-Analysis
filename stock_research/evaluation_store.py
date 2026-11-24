@@ -299,6 +299,8 @@ class EvaluationStore:
             payload = row["payload"]
             if row["status"] not in {"failed", "cancelled"} or payload.get("attempt_count", 0) >= 2:
                 raise ResearchConflict("评估不在可续跑状态或尝试数已用完")
+            if payload.get("error_code") in {"evaluation_history_insufficient", "evaluation_quality_failed"}:
+                raise ResearchConflict("冻结输入资料不足或质量未通过，请补齐资料后创建新评估")
             configuration = payload["configuration"]
             if (
                 configuration.get("source_hash") != source_hash

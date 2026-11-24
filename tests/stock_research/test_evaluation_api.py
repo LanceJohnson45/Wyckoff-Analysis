@@ -414,3 +414,55 @@ def test_integration_evaluation_missing_configuration_finishes_failed(evaluation
             assert data["attempt_count"] == 0 and data["result_id"] is None
 
     asyncio.run(scenario())
+
+
+@pytest.mark.usefixtures("local_postgres_socket")
+@pytest.mark.parametrize(
+    ("cutoff", "remove_stock", "expected_code"),
+    [
+        pytest.param("2026-11-18", False, "evaluation_history_insufficient", id="insufficient-history"),
+        pytest.param("2026-11-20", True, "evaluation_quality_failed", id="snapshot-quality"),
+    ],
+)
+def test_integration_evaluation_data_failure_requires_new_input(
+    evaluation_settings: Settings, cutoff: str, remove_stock: bool, expected_code: str
+) -> None:
+    """[INTEGRATION] 真实资料失败明确归因，不浪费剩余次数重算同一份坏输入。"""
+    from sqlalchemy import create_engine, delete
+
+    from stock_research.data import DAILY_BARS
+
+    async def scenario() -> None:
+        await initialize(evaluation_settings)
+        if remove_stock:
+            engine = create_engine("sqlite:///" + str(evaluation_settings.local_market_path))
+            try:
+                with engine.begin() as connection:
+                    connection.execute(delete(DAILY_BARS).where(DAILY_BARS.c.kind == "stock"))
+            finally:
+                engine.dispose()
+        app = create_app(evaluation_settings)
+        async with (
+            app.router.lifespan_context(app),
+            httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app),
+                base_url="http://127.0.0.1:8788",
+                headers={"Authorization": "Bearer " + OPERATOR},
+            ) as client,
+        ):
+            response = await client.post(
+                "/v1/evaluations",
+                json={"profile": "acceptance-baseline-v1", "cutoff": cutoff},
+                headers={"Idempotency-Key": "data-prerequisite-000001"},
+            )
+            assert response.status_code == 202
+            identifier = response.json()["data"]["id"]
+            result = await terminal(client, identifier)
+            assert result["status"] == "failed" and result["error_code"] == expected_code, result
+            assert result["attempt_count"] == 1 and result["result_id"] is None
+            original = await EvaluationStore(app.state.store).read(identifier)
+            retry = await client.post(f"/v1/evaluations/{identifier}/retry")
+            assert retry.status_code == 409 and retry.json()["code"] == "research.conflict"
+            assert (await EvaluationStore(app.state.store).read(identifier))["payload"] == original["payload"]
+
+    asyncio.run(scenario())
