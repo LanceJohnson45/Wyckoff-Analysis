@@ -33,3 +33,5 @@ coding-redline、code-repair-verify-gate；完整目标结束后另session整体
 本批只接已有授权只读来源，不替代云端补拉或旧写入端的统一互斥。旧来源维护/Actions协调、云端QQQ/IWM及WBD隔离、正式/PIT资料、通知/unknown回查、唯一workflow六处注册/cron单所有者、正式Mac/TCC/网络/多用户、自然交易日、效果记录、正常浏览器、远端CI及整体独立审查继续推进；不能据此宣布全plan完成。
 
 最终本地验证：6125 Python、35专项，Web412/API221及2原Upstash条件跳过；Ruff/1292文件格式、114文件红线、完整质量/hygiene/daily dry-run通过。真实只读传输与三基准/历史快照、原生网关→HTTP→更新worker→固定报告，以及主workspace26表摘要守卫均有独立回执。Personal镜像同批另行提交。
+
+续接验证：为独立研究分支增加复用标准CI的push/PR入口及full_web布尔契约，不传生产secrets、不部署。原fork main与开发历史相差810提交，评审head使用codex/stock-research-runtime，base保留codex/stock-research。该门禁与数据功能分别提交，远端结果按真实run核对。

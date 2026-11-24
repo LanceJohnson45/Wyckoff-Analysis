@@ -1,5 +1,11 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：研究分支CI与评审入口（2026-11-24）
+
+有界行情准备已提交77eb2a4b。当前fork的main与本地开发历史相差810提交，续接沿本地codex/stock-research，发布评审head使用codex/stock-research-runtime、base保留原codex/stock-research，分别核对本次续接与上游合入范围。新增Stock Research CI在开发分支push及以它为base的PR中复用同提交ci.yml，full_web=true，不传生产secrets，不部署；PR-policy仅PR事件适用。具体配置与真实head/run核对方法见[研究CI](stock_research_ci.md)，源码检查仍以ci.yml为准。
+
+CI入口变更本地workflow/dependency检查4项、CI政策16项与完整hygiene/静态门禁通过，数据功能仍为6125全量/35专项及Web412/API221+2原条件跳过的冻结源码。分支检查、PR策略、正式部署及整体审查分别验收，运行结果以实际Actions终态为准；不因发布评审分支或本地绿灯宣称可合入。独立Wiki本地分支codex/stock-research单独提交，不推送上游。
+
 ## 续接检查点：有界行情更新与Wiki定位恢复（2026-11-24）
 
 在6476e9bc上接通operator显式启用的盘前行情准备：PREMARKET_REFRESH默认false，独立worker只读PG增量同步，再刷新原已明确启用的三基准补充，正式快照质量通过后才冻结run。新增refresh-market CLI，不调用模型或写研究库；更新完成与quality_checked分别表达。更新预算受原事件/120秒准备总预算限制，子预算默认90、允许1～110秒。匿名控制管道授予只读源连接，argv/文件/回执不含凭据，清空继承身份并使用临时HOME；新基准路径只供本次准备，不改根.env或旧研究。

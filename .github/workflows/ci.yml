@@ -1,6 +1,13 @@
 name: CI
 
 on:
+  workflow_call:
+    inputs:
+      full_web:
+        description: Run the complete web gate for a caller that changes the research API contract
+        required: false
+        type: boolean
+        default: false
   push:
     branches: [main, feature/visible]
     paths:
@@ -172,7 +179,7 @@ jobs:
 
   web-check:
     runs-on: ubuntu-latest
-    if: contains(toJSON(github.event.commits.*.modified), 'web/') || contains(toJSON(github.event.commits.*.added), 'web/') || github.event_name == 'pull_request'
+    if: inputs.full_web || contains(toJSON(github.event.commits.*.modified), 'web/') || contains(toJSON(github.event.commits.*.added), 'web/') || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v7
       # 刻意留在 v4 线，只把补丁提到 4.4.0（那一版才带 Node 24 运行时）。

@@ -1,0 +1,21 @@
+name: Stock Research CI
+
+on:
+  push:
+    branches: [codex/stock-research]
+  pull_request:
+    branches: [codex/stock-research]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: stock-research-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: ./.github/workflows/ci.yml
+    with:
+      full_web: true
