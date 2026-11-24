@@ -17,7 +17,9 @@
 
 API和来源代码须从固定版本安装到Documents之外，依各自锁文件建立venv；输入版本、SQLite和私有配置也放在可供后台读取的独立状态目录。不要直接把交互开发目录当24小时后台部署。来源候选必须包含行情协调锁和研究整池入口；API配置的空 `BENCHMARK_PATH` 表示消费来源云端已维护的三个基准，显式非空则另执行供应商基准补充。
 
-Personal自动计划需六处一致：workflows固定argv、服务端capabilities、external能力、Policy路由、cron、同名标识；纽约 `0 8 * * 1-5`，`pass_schedule_context=true`，单次3300秒。更改共享配置前确认没有活动run，保存原资产、保留其他计划，再按既有操作规程加载。原有42条计划不替换。
+单用户MVP采用独立launchd计划，每60秒运行 `scripts/stock_research_mvp_schedule.py --config /absolute/private/path/mvp.env --workspace <operator-workspace>`。tick固定纽约08:00原slot，只在原08:50前补跑，交易日由正式日历判断；同日已送达且研究终态保存done，不重复执行。单次进程50分钟内收尾；退出和重启不延长原slot期限。`--manual`使用真实当前事件时刻，单日手动完成标记独立保存。
+
+这是用户优先最小MVP后的部署选择：原42条Personal计划、网关/平台配置及权限保持。通知仍直接复用其持久组件。将来迁入Personal计划面板时再完成workflows、capabilities、external、Policy、cron及同名标识六处登记，不能仅添加cron即声称已接入Personal调度。
 
 ## 验收状态
 
