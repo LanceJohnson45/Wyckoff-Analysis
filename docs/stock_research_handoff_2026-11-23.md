@@ -1,5 +1,19 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：来源维护与研究复制协调候选（2026-11-24）
+
+研究复制新增数据库范围US任务/数据事务锁，仍只读/可重复读，忙碌失败不推进本机水位。独立来源工作树`../Wyckoff-Analysis-market-source`从实际wxjer@b5cb2d79建立，候选提交08c3845097177cd477cc9a2454c6389dae392eec，分支codex/stock-research-market-source。US旧CLI持整项任务锁，US键upsert/裁剪及可能删除US数据的清理持共享数据锁；CN/HK单市场写入/复制不取US锁。旧dc5fec0e来源工作树及.env不动，新工作树未复制根.env。详见[协调协议/采用边界](stock_research_market_coordination.md)。
+
+源候选复用既有正式批量前复权下载/落库、固定目标日AAPL/SPY就绪检查，为显式研究池及SPY/QQQ/IWM独立键补齐；多票缺ticker标签拒收、按原窗口裁剪，缺目标日/部分失败返回不完整。既有手动refresh成对接受as_of/symbols，US写Actions候选共用非取消并发组；bootstrap/成分sync统一PG与冻结uv安装并去除旧凭据片段打印，无新增cron。研究worker没有写身份、没有自动派发源补拉。源候选未生产采用，原wxjer/SQL/PostgREST不会自动取得锁；不能把本机接线称云端旧写入已经受控。
+
+冻结研究源码655af6d14232037aed173f18500113feb745bb19c85c07a1a1dd5582ec223f76：全量6129passed/无skip/50旧警告，协调与原同步12passed。源候选完整tests/950passed/94条件skip/37旧警告（4真实旧行情、7真实模型、83文档型指标），修复旧绝对路径以实际执行规则用例；旧OpenD手工联网脚本逐字移到scripts，不把它当单测通过。两端daily dry-run、研究完整静态/质量/hygiene通过；源端6个workflow hygiene、新模块Ruff/format通过。源端窄输入红线的3项目录误报已核实真实目录分别31/60/47个py文件；裸dict实际问题改为TypedDict，无新豁免。
+
+实际跨工作树源CLI→原生PG→研究复制→正式快照1passed/2.96秒：源任务持锁时复制被拒绝、本机水位仍null，源端成功后1280行/1合成股票及3基准复制、质量通过；源端最后回执quality_checked=false与正式质量区分。只替换供应商I/O边界，完整源写入/PG提交/研究读取均实际执行；退出0且源进程组消失，0云写入/主研究写入/模型/通知。工程材料只在忽略目录market-coordination-*。
+
+仅自有研究8788保护重启：旧86866/session77198终态143、PID消失/端口释放，新13914/session9507，ready/旧固定报告及问答、跨workspace404/只读私有问答403通过；26表摘要保持、活动数0。根.env及生产更新/workflow身份关闭不变，未重启共享Personal/DSH或改变42计划。
+
+源候选与研究评审head分别运行远端门禁，当前本地证据不代替真实head/run终态。独立Wiki同批本地说明协调及采用边界，未推送上游。后续继续源候选采用/必要时自动补拉与unknown回查、原报告期限发布、通知业务键/unknown回查、唯一workflow六处清单/cron所有权、正式Mac/TCC/网络/多用户与自然交易日；正常浏览器、PIT/效果证据和另session整体审查保留。整份plan继续，不宣称完成或已正式上线。
+
 ## 续接检查点：研究分支CI与评审入口（2026-11-24）
 
 有界行情准备已提交77eb2a4b。当前fork的main与本地开发历史相差810提交，续接沿本地codex/stock-research，发布评审head使用codex/stock-research-runtime、base保留原codex/stock-research，分别核对本次续接与上游合入范围。新增Stock Research CI在开发分支push及以它为base的PR中复用同提交ci.yml，full_web=true，不传生产secrets，不部署；PR-policy仅PR事件适用。具体配置与真实head/run核对方法见[研究CI](stock_research_ci.md)，源码检查仍以ci.yml为准。
@@ -410,3 +424,7 @@ git worktree add ../Wyckoff-Analysis-source origin/codex/stock-research-source
 ```
 
 如果开发分支已存在，改用 `git switch codex/stock-research` 后检查本地改动再快进。从来源工作树逐项核对行情、教材和公式；不要复制 `.env` 或整个旧应用。下一步先完成 plan.md 阶段一，再推进 Martin 与 Wyckoff 适配。
+
+源端独立草稿[PR #11](https://github.com/LanceJohnson45/Wyckoff-Analysis/pull/11)以wxjer为base；研究续接继续[PR #10](https://github.com/LanceJohnson45/Wyckoff-Analysis/pull/10)，base仍为原研究分支。两者不是同一部署范围，实际CI按各自head核对。
+
+源候选08c38450的[Market Source CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45310016730)已completed/success，完整源端测试与daily dry-run均在同一job成功。另以现有授权云端连接实际取得两把协议锁，transaction_read_only=on，退出释放、未写数据；股票最新仍20日，云端QQQ/IWM仍0行。该结果验证云端只读协议兼容，不代表源候选已部署或缺口已修复。

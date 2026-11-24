@@ -563,3 +563,5 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 - [Personal运行契约](https://github.com/LanceJohnson45/dsh-superagent-services/blob/680a67ac88a73a30d345cb89f6e526a6d51b75a6/docs/api/run-contract.md)
 - [AKQuant因子引擎](https://akquant.akfamily.xyz/guide/factor/)
 - [AKQuant参数优化](https://akquant.akfamily.xyz/guide/optimization/)
+
+2026-11-24行情协调续接：研究复制新增数据库范围任务/写事务协议锁；独立源候选从实际wxjer生产基线复用既有维护、PG写入与固定目标日检查，提供显式研究池/三基准补齐及既有手动Actions参数。原source工作树与根.env保持。源码候选、原生验证、远端门禁和生产采用分别记录，未自动启用补拉或改变cron；源端部署、云端QQQ/IWM/WBD及完整阶段一/五验收仍未勾选，见[来源协调](docs/stock_research_market_coordination.md)。

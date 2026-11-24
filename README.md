@@ -370,3 +370,5 @@ wyckoff mcp-list
   <img alt="Star history" src="assets/star-history/star-history-light.svg">
 </picture>
 <!-- star-history:end -->
+
+研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选尚未生产采用，不据此称旧云端写入已互斥。

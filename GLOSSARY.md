@@ -518,3 +518,7 @@ flowchart LR
 **盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，同日同配置及触发类别的新事件复用首次研究，回执origin标明首次事件和期限；取消标记约束全部别名，强制重分析须operator显式force+parent_run_id。准备记录的market_refresh区分只读同步、显式基准补充与后续快照质量，未知计数不补零；更新完成不等于研究完成。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。
 
 **研究分支CI**：开发分支的push/PR复用标准ci.yml并显式覆盖完整Web门禁；按实际head SHA检查终态。分支验证、PR策略与生产部署分别验收，不因分支检查成功自动启用调度。见[研究CI](docs/stock_research_ci.md)。
+
+### 行情维护协调锁
+
+US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协议锁。研究复制独占两把；源端任务独占前者、内部写事务共享后者，避免父任务与并发写连接自锁。仅约束采用协议的客户端，采用与测试状态见[来源协调](docs/stock_research_market_coordination.md)。

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from stock_research.config import MarketSourceSettings
 from stock_research.data import SOURCE_ISSUES
 from stock_research.identity import SHANGHAI, digest, now
+from stock_research.market_coordination import protect_market_copy
 from stock_research.market_writer import checkpoint, complete, initialize_local, local_write_engine, write_batch
 from stock_research.models import Bar
 from stock_research.quality import BENCHMARKS
@@ -109,6 +110,7 @@ async def copy_source(
     async with source.connect() as connection:
         connection = await connection.execution_options(isolation_level="REPEATABLE READ")
         async with connection.begin():
+            await protect_market_copy(connection)
             lock_key = int(digest({"source": source_id, "scope": SYNC_SCOPE})[:15], 16)
             if not await connection.scalar(select(func.pg_try_advisory_xact_lock(lock_key))):
                 raise ValueError("同一行情来源的研究同步任务正在运行")

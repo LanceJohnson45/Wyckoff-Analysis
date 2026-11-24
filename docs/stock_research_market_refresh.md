@@ -29,3 +29,5 @@ PREPARATION_ATTEMPTS的payload新增可空`market_refresh`；旧记录缺该字�
 旧云端维护/Actions写入尚未参与研究协作锁，原云端QQQ/IWM和WBD问题仍未修复；现有锁只约束参与者，不称全体系互斥完成。下一步统一旧写入协议、接必要源数据补拉，再接通知/唯一计划、正式Mac/TCC/网络/自然交易日；Wiki按README对应地址恢复为独立本地checkout并同步，提交与主仓库分开，尚未向上游推送；远端CI与整体独立审查另验。
 
 新的manual事件完成一次更新后仍可能复用origin；更新回执属于本次准备尝试，不能据此推断旧run使用了新行情。原报告以其固定快照为准，重算须显式force+parent_run_id。
+
+来源候选后续已将既有US可执行入口、PG缓存写事务及旧同步接入[同一协调协议](stock_research_market_coordination.md)，并提供固定池/三基准更新入口。该源码接线尚未生产采用，前述旧云端/原worktree不参与的限制继续有效；本worker仍只读复制，没有取得写身份或自动调用源端补拉。

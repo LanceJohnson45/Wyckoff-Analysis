@@ -101,3 +101,7 @@
 API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。共同输入先冻结，单策略失败已在run内独立记录并继续另一策略，补算复用成功产物，详见[量化执行边界](stock_research_quant_execution.md)。
 
 盘前API现可显式启用同一只读同步和已有供应商补充的[有界行情准备](stock_research_market_refresh.md)，默认关闭；独立CLI为refresh-market --as-of。更新、质量和研究状态分别读取，旧云端写入/Actions尚未参与统一互斥。
+
+## 源维护协调候选
+
+研究同步现增加数据库范围US任务/数据锁。独立新来源工作树从实际wxjer@b5cb2d79接入既有CLI及PG写事务，旧dc5fec0e工作树与其.env保持。候选提供固定研究池/三基准补齐及现有手动Actions参数；仍须源候选生产采用，研究身份没有写权限升级、盘前worker也未自动派发源任务。详见[来源协调](stock_research_market_coordination.md)。
