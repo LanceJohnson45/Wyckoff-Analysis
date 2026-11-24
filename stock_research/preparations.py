@@ -21,6 +21,7 @@ from stock_research.identity import digest, new_id
 from stock_research.models import QualityReport
 from stock_research.run_store import RunStore, verified_payload
 from stock_research.schema import API_REQUESTS, PREPARATION_ATTEMPTS, RESEARCH_RUNS
+from stock_research.schemas.market_refresh import RefreshReceipt
 from stock_research.schemas.preparations import PreparationPage, PreparationPhase, PreparationState, PreparationView
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY
 
@@ -86,6 +87,13 @@ class Preparation:
         if run["payload"]["target_session"] != self.state.target_session.isoformat():
             raise ResearchIntegrityError("准备回执与运行目标日不一致")
         await self.save(status="ready", phase="freeze", run_id=run_id)
+
+    async def refresh(self, receipt: RefreshReceipt) -> None:
+        """更新属于本次准备，后续进度不能替换已经领取的更新身份。"""
+        previous = self.state.market_refresh
+        if previous and (previous.id != receipt.id or previous.status != "unconfirmed"):
+            raise ResearchIntegrityError("行情更新身份已变化或已经结束")
+        await self.save(market_refresh=receipt)
 
 
 @asynccontextmanager

@@ -62,4 +62,4 @@ API/CLI run量化已使用可取消/限时回收的独立worker，完整校验�
 
 新增可选API_WORKFLOW_TOKEN及固定PREMARKET_SOURCE_WORKSPACE，默认关闭。独立身份只允许POST /v1/premarket-jobs、GET对应job及POST其retry/cancel；不能管理普通研究、读取共享报告或私人问答、修改参数/持仓。原API_TOKEN与API_READ_TOKEN语义保持，READ_TOKEN也不能读取盘前任务。任务数据只从绑定的run与固定报告投影，来源/对象/workspace不符404；不接受路径、模型、租户或任意deadline。
 
-API_REQUESTS保存原计划意图与run映射，准备失败也返回带job_id的明确回执；假日/原窗口过期保存跳过而不启动。原事件、绝对期限、成功计算/初选及旧报告不可由重放替换。不同事件在同日/配置/trigger_kind下绑定同一首次run；回执新增必填可空origin，明确首次job/事件/期限，未冻结为null。别名恢复/取消共用原意图锁和取消标记，不延长首次预算；显式重分析仍仅operator提供force+parent_run_id。取消标记在PG请求级锁及摘要CAS下持久化，防另一个拥有者复活；程序状态、研究结果及通知分开读取。没有新表或迁移。端点、独立配置及固定argv--execute用法见[盘前入口](stock_research_premarket.md)；生产计划/行情刷新/通知尚未启用。
+API_REQUESTS保存原计划意图与run映射，准备失败也返回带job_id的明确回执；假日/原窗口过期保存跳过而不启动。原事件、绝对期限、成功计算/初选及旧报告不可由重放替换。不同事件在同日/配置/trigger_kind下绑定同一首次run；回执新增必填可空origin，明确首次job/事件/期限，未冻结为null。别名恢复/取消共用原意图锁和取消标记，不延长首次预算；显式重分析仍仅operator提供force+parent_run_id。取消标记在PG请求级锁及摘要CAS下持久化，防另一个拥有者复活；准备回执新增可空market_refresh，记录原as_of/源码/状态、已确认同步与基准摘要；没有连接、密码或路径，旧记录保持null。Agent输入准备区消费同一契约。程序状态、行情更新、研究结果及通知分开读取。没有新表或迁移。端点、独立配置及固定argv--execute用法见[盘前入口](stock_research_premarket.md)；生产计划/行情刷新/通知尚未启用。

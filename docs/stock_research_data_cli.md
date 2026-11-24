@@ -1,6 +1,6 @@
 # 独立美股研究数据命令
 
-本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)和[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)，[模型初选与互评预览](stock_research_executor.md)已接通；[研究API](stock_research_api.md)已接通本机预览；定时任务和飞书发送尚未接通。旧行情同步仍在独立来源工作树运行，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
+本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)和[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)，[模型初选与互评预览](stock_research_executor.md)已接通；[研究API](stock_research_api.md)已接通本机预览；定时任务和飞书发送尚未接通。旧同步入口保留在独立来源工作树，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
 
 本机现已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。新 `refresh-versions`、`fetch-benchmarks` 的来源、配置和实测见[公开成分与基准补充](stock_research_public_data.md)。云端QQQ/IWM仍未补写，当前使用显式供应商文件解决研究数据缺口，保留全部出处限制。
 
@@ -88,7 +88,7 @@
 
 数据阶段以 `stock_research/schema.py` 为DDL正本，通过 `schema-ddl` 导出，不在Git保存SQL副本。导出文本供具有建schema权限的维护身份审阅/执行；已有schema的应用身份可用 `init-schema` 初始化表，不需要数据库CREATE权限。数据阶段创建 `stock_research` 下的universes、universe_members、classification_versions、group_members、market_snapshots；执行阶段另补建[运行账本表](stock_research_executor.md)，保存UUID4、来源全文、有效日期及操作时间。当前采用完整快照JSON保存行情和质量，后续查询性能有需求时再建立额外索引。CLI初始化不自动授予账号权限，不修改行情源或Personal schema；以后表结构变更须维护Python迁移定义，`create_all` 不能升级已有列。
 
-每次保存将版本、成员与快照放在同一事务；workspace/version和workspace/content_hash唯一约束处理并发重试。同名不同内容版本使事务回滚。读取校验 workspace；连接及关闭都有超时。当前CLI是本机受信进程入口，API鉴权和最小权限角色仍属于后续接入。
+每次保存将版本、成员与快照放在同一事务；workspace/version和workspace/content_hash唯一约束处理并发重试。同名不同内容版本使事务回滚。读取校验 workspace；连接及关闭都有超时。当前CLI是本机受信进程入口；API已有独立操作员、只读及有限盘前身份，见[研究API](stock_research_api.md)。
 
 回滚应用时保留研究schema及历史文件，不运行 DROP、不删除行情源。集成测试使用临时原生PostgreSQL簇和 `_test` 数据库，经专用Unix socket运行；不修改现有服务，不使用SQLite替代研究状态库。缺少 initdb/pg_ctl/createdb 时测试会明确skip，不能将这种结果报告成数据库验收通过。
 
@@ -99,3 +99,5 @@
 默认run现先解析[人工输入发布](stock_research_input_maintenance.md)并按摘要物化股票池/分类，再生成快照；显式--snapshot-file保持原版本。单独snapshot --offline仍只读operator路径，不连接PG读取维护配置。
 
 API/CLI run量化已使用可取消/限时回收的独立worker，完整校验后才发布缓存；同步analyze保持前台执行。共同输入先冻结，单策略失败已在run内独立记录并继续另一策略，补算复用成功产物，详见[量化执行边界](stock_research_quant_execution.md)。
+
+盘前API现可显式启用同一只读同步和已有供应商补充的[有界行情准备](stock_research_market_refresh.md)，默认关闭；独立CLI为refresh-market --as-of。更新、质量和研究状态分别读取，旧云端写入/Actions尚未参与统一互斥。

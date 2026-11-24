@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     api_read_token: SecretStr | None = None
     api_workflow_token: SecretStr | None = None
     premarket_source_workspace: str = ""
+    premarket_refresh: bool = False
+    market_refresh_timeout_seconds: int = Field(default=90, ge=1, le=110)
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")

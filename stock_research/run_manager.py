@@ -57,6 +57,17 @@ async def prepare_from_market(
             settings, parameter_sources = await resolve_run_parameters(store, settings)
             await attempt.checkpoint("snapshot")
             settings, input_sources = await resolve_run_inputs(store, settings, previous)
+            if premarket is not None and settings.premarket_refresh:
+                from stock_research.market_refresh import refresh_market
+
+                settings = await refresh_market(
+                    settings,
+                    previous,
+                    timeout=min(
+                        settings.market_refresh_timeout_seconds, (premarket.execution_deadline - now()).total_seconds()
+                    ),
+                    checkpoint=attempt.refresh,
+                )
             output, status = await asyncio.to_thread(snapshot_command, settings, previous, offline=True)
             await attempt.checkpoint("snapshot", QualityReport.model_validate(output["quality"]))
             if status:

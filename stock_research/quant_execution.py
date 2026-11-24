@@ -1,8 +1,6 @@
 """API/CLI量化进程监督：取消/超时必须等候本次子进程真实退出。"""
 
 import asyncio
-import os
-import signal
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -13,6 +11,7 @@ from stock_research.artifacts import write_once
 from stock_research.config import Settings
 from stock_research.errors import ResearchUnavailable
 from stock_research.models import Snapshot
+from stock_research.processes import isolated_environment, stop_process_group
 from stock_research.quant_compute import QuantParameters, QuantReport, analysis_path, quant_parameters, verify_analysis
 from stock_research.schemas.quant_execution import (
     MAX_QUANT_REPORT,
@@ -34,36 +33,6 @@ class QuantExecutionError(ResearchUnavailable):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__("量化执行未完成：" + code)
-
-
-def quant_environment() -> dict[str, str]:
-    """显式白名单阻断行情、PG、API和模型身份继承，临时cwd没有.env。"""
-    return {
-        "PYTHONPATH": str(Path(__file__).resolve().parents[1]),
-        "PYTHONUNBUFFERED": "1",
-        "PYTHONFAULTHANDLER": "1",
-        "OPENBLAS_NUM_THREADS": "1",
-        "OMP_NUM_THREADS": "1",
-        "VECLIB_MAXIMUM_THREADS": "1",
-        **{key: os.environ[key] for key in ("LANG", "LC_ALL", "TZ") if key in os.environ},
-    }
-
-
-async def stop_quant_process(process: asyncio.subprocess.Process) -> None:
-    """仅回收本次创建的进程组，wait成功前不视为停止。"""
-    try:
-        if process.returncode is None:
-            os.killpg(process.pid, signal.SIGTERM)
-            try:
-                await asyncio.wait_for(process.wait(), 2)
-            except TimeoutError:
-                os.killpg(process.pid, signal.SIGKILL)
-                await asyncio.wait_for(process.wait(), 3)
-    except ProcessLookupError:
-        await asyncio.wait_for(process.wait(), 3)
-    finally:
-        if process.stdin:
-            process.stdin.close()
 
 
 async def quant_response(process: asyncio.subprocess.Process, request: QuantRequest) -> QuantFinished:
@@ -106,7 +75,7 @@ async def execute_quant(request: QuantRequest, timeout: float) -> QuantFinished:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.DEVNULL,
                 cwd=request.output_path.parent,
-                env=quant_environment(),
+                env=isolated_environment(),
                 start_new_session=True,
             )
             process.stdin.write(raw)
@@ -118,7 +87,7 @@ async def execute_quant(request: QuantRequest, timeout: float) -> QuantFinished:
         raise QuantExecutionError("quant_process_failed") from None
     finally:
         if process:
-            cleanup = asyncio.create_task(stop_quant_process(process))
+            cleanup = asyncio.create_task(stop_process_group(process))
             try:
                 await asyncio.shield(cleanup)
             except asyncio.CancelledError:

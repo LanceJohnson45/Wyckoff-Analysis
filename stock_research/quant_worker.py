@@ -9,6 +9,7 @@ import structlog
 
 from stock_research.errors import ResearchSourceChanged
 from stock_research.models import Snapshot
+from stock_research.processes import control_closed
 from stock_research.quant_compute import compute_analysis
 from stock_research.schemas.quant_execution import (
     MAX_QUANT_REPORT,
@@ -21,14 +22,6 @@ from stock_research.schemas.quant_execution import (
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 
 logger = structlog.get_logger(__name__)
-
-
-def control_closed() -> None:
-    """独立线程可在主线程计算中观察父进程死亡，半份临时产物不会被父端采纳。"""
-    try:
-        os.read(sys.stdin.fileno(), 1)
-    finally:
-        os._exit(75)
 
 
 def worker_compute(request: QuantRequest) -> str:

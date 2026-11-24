@@ -44,3 +44,5 @@ GET /v1/research-runs/{run_id}/quant-attempts按当前run读取追加历史，pa
 
 
 盘前有限API创建的run另冻结原job、事件及绝对截止时间。量化worker和模型阶段共同取原run创建时预算与该截止的较小者，恢复不延长；普通历史run没有该字段，继续原规则。临时量化失败可在原期限内补算；取消封存盘前首次意图及全部事件别名，不会覆盖已有成功初选/报告。新manual事件同配置返回首次run和origin期限，不给量化增加预算；operator显式force+parent_run_id才产生新分析。完整调用边界见[盘前入口](stock_research_premarket.md)。阶段证据摘要使用与Pydantic模型相同的期限序列化，UTC的Z/+00:00等价表示不再导致自校验失败；不改变策略数值或交易参数。
+
+量化与[行情更新worker](stock_research_market_refresh.md)共用processes.py的环境白名单、父端控制管道和进程组回收，量化协议、缓存和预算语义保持；原量化取消、硬退出和缓存回归继续通过。

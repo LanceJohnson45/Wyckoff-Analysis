@@ -10,8 +10,9 @@ import pytest
 from stock_research.config import Settings
 from stock_research.models import Snapshot
 from stock_research.parameters import MartinParameters
+from stock_research.processes import isolated_environment
 from stock_research.quant_compute import compute_analysis
-from stock_research.quant_execution import QuantExecutionError, analyze_isolated, execute_quant, quant_environment
+from stock_research.quant_execution import QuantExecutionError, analyze_isolated, execute_quant
 from stock_research.schemas.quant_execution import QuantRequest, QuantStarted
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY
 from stock_research.wyckoff import WyckoffParameters
@@ -131,7 +132,7 @@ def test_real_worker_control_eof_and_wrong_binding(snapshot: Snapshot, tmp_path:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
             cwd=tmp_path,
-            env=quant_environment(),
+            env=isolated_environment(),
             start_new_session=True,
         )
         try:

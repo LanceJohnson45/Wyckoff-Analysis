@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { readPreparations } from './api'
 import type { PreparationAttempt } from './preparation-contract'
+import type { MarketRefresh } from './market-refresh-contract'
 import { nyTime } from './report'
 
 const phases = { parameters: '参数解析', snapshot: '行情快照', analysis: '策略量化', freeze: '冻结输入' }
@@ -30,8 +31,27 @@ export function PreparationItemView({ item, onSelect }: { item: PreparationAttem
     <p className="text-xs font-medium">{statuses[item.status]} · {phases[item.phase]}<span className="ml-2 text-muted-foreground">{item.origin === 'api' ? '工作台/API' : 'CLI'}</span></p>
     <p className="text-[11px] text-muted-foreground">目标 {item.target_session} · 要求行情截止 {item.as_of} · {nyTime(item.update_time)} 纽约</p>
     {item.error_code && <p className="text-xs text-amber-700 dark:text-amber-300">{errors[item.error_code]}</p>}
+    {item.market_refresh && <MarketRefreshView receipt={item.market_refresh} />}
     {item.quality ? <p className="text-xs">快照质量{item.quality.passed ? '通过' : '未通过'} · 覆盖 {(item.quality.coverage * 100).toFixed(2)}% · {item.quality.aligned_count}/{item.quality.universe_count} 只对齐</p> : <p className="text-xs text-muted-foreground">尚无可确认的快照质量数据</p>}
     {item.quality && <details><summary className="cursor-pointer text-[11px] text-muted-foreground">质量问题与限制 · {item.quality.issues.length} 项</summary><div className="mt-2 max-h-48 space-y-1 overflow-auto text-[11px]">{item.quality.issues.map((issue, index) => <p key={`${issue.symbol}:${issue.reason}:${index}`}>{issue.symbol} · {issue.strategy} · {issue.reason}</p>)}{item.quality.limitations.map((text, index) => <p key={index}>{text}</p>)}</div></details>}
     {item.run_id && <><p className="text-[11px] text-muted-foreground">已冻结输入不代表量化或模型研究已完成。</p><button type="button" className="text-xs text-primary" onClick={() => { if (item.run_id) onSelect(item.run_id) }}>查看对应研究</button></>}
   </article>
+}
+
+function MarketRefreshView({ receipt }: { receipt: MarketRefresh }) {
+  const labels = { unconfirmed: '更新尚未确认', completed: '行情更新完成', failed: '行情更新失败', cancelled: '行情更新已取消' }
+  const messages = {
+    refresh_configuration_invalid: '行情连接配置无效，请检查授权数据源。', refresh_source_changed: '更新代码已变化，请重启研究服务后重试。',
+    refresh_sync_failed: '行情同步失败，原数据保持可读。', refresh_benchmark_failed: '基准补充失败，请核对供应商状态。',
+    refresh_protocol_invalid: '更新回执未通过校验，请查看准备记录。', refresh_process_failed: '行情更新进程未完成，请重试。',
+    refresh_timeout: '行情更新超时，可在原期限内重试。', refresh_cancelled: '行情更新已停止。',
+  }
+  return <div className="space-y-1 rounded-lg border border-border p-2 text-xs" aria-label="行情更新回执">
+    <p>{labels[receipt.status]} · 截止 {receipt.as_of}</p>
+    {receipt.sync ? <p>{receipt.sync.rows} 行已同步 · {receipt.sync.rejected} 行拒收 · {receipt.sync.issues} 项隔离待核对</p> : <p className="text-muted-foreground">尚无可确认的同步结果</p>}
+    {receipt.error_code && <p className="text-amber-700 dark:text-amber-300">{messages[receipt.error_code]}</p>}
+    {receipt.status === 'unconfirmed' && receipt.sync && <p className="text-muted-foreground">同步已确认，后续更新尚未确认。</p>}
+    {receipt.benchmark_hash && <p>三基准补充已取得，仍须快照对拍与质量检查。</p>}
+    <p className="text-[11px] text-muted-foreground">更新完成不代表快照质量通过或研究已完成。</p>
+  </div>
 }

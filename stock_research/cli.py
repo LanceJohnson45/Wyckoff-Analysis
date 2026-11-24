@@ -72,6 +72,8 @@ def parser() -> argparse.ArgumentParser:
     sync = commands.add_parser("sync-market", help="从 PG_* 授权行情只读增量同步，不执行云端写入")
     sync.add_argument("--market", choices=["us"], required=True)
     sync.add_argument("--full", action="store_true")
+    refresh_market = commands.add_parser("refresh-market", help="有界只读同步及已启用基准补充，不调用模型")
+    refresh_market.add_argument("--as-of", type=date.fromisoformat, required=True)
     benchmarks = commands.add_parser("fetch-benchmarks", help="显式获取带供应商出处的三基准补充文件")
     benchmarks.add_argument("--as-of", type=date.fromisoformat, required=True)
     refresh = commands.add_parser("refresh-versions", help="固定公开聚合源提交，不把当前清单冒充严格历史成员")
@@ -289,6 +291,10 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return analyze_command(settings, path, args.as_of, strategy=args.strategy), 0
     if args.command == "fetch-benchmarks":
         return fetch_benchmarks(args.as_of, settings.history_rows, settings.artifacts_path / "benchmarks"), 0
+    if args.command == "refresh-market":
+        from stock_research.market_refresh import refresh_command
+
+        return asyncio.run(refresh_command(settings, args.as_of))
     if args.command == "refresh-versions":
         if not args.allow_current_universe:
             raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")

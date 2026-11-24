@@ -1,5 +1,23 @@
 # 股票研究开发交接（2026-11-23）
 
+## 续接检查点：有界行情更新与Wiki定位恢复（2026-11-24）
+
+在6476e9bc上接通operator显式启用的盘前行情准备：PREMARKET_REFRESH默认false，独立worker只读PG增量同步，再刷新原已明确启用的三基准补充，正式快照质量通过后才冻结run。新增refresh-market CLI，不调用模型或写研究库；更新完成与quality_checked分别表达。更新预算受原事件/120秒准备总预算限制，子预算默认90、允许1～110秒。匿名控制管道授予只读源连接，argv/文件/回执不含凭据，清空继承身份并使用临时HOME；新基准路径只供本次准备，不改根.env或旧研究。
+
+PREPARATION_ATTEMPTS的JSON新增market_refresh，旧记录为null；更新未确认先落库，同步已确认立即保存，基准失败/超时/取消保留已知同步，不补零或伪成功。父端确认worker退出并校验产物后才发布成功，真实SIGKILL父进程验证控制管道关闭使worker和进程组消失。直接父端是API/显式更新CLI，外层workflow的未知HTTP受理仍按admission_unconfirmed处理。Agent已有输入准备区域消费同一契约，显示更新状态/已确认同步/拒收隔离和错误，仍分别显示快照质量与研究结果，无新页面。量化共用processes.py隔离/回收边界，原协议/缓存/预算保持。没有新表、迁移或依赖。
+
+最终源码794459d5de1d3319880b9361b15e2c02117468b68be4083fa4bde501afdf4f11，全量Python6125通过、无skip、50旧警告；专项35通过，含坏配置/进程绑定/超限报文、真实CLI两种退出、原生PG/API落库、供应商失败、超时、取消及父端SIGKILL。Web412、API221及2项原Upstash条件跳过，锁定安装/TS strict/Web构建/Pages函数构建通过；旧chunk提示保留。Ruff/1292文件格式、114文件红线零命中、完整质量与workflow/dependency hygiene、合成daily dry-run通过。Python143498/+66.5%、TS36179/+94.6%旧LOC基线警告保留，无豁免、排除或锁文件变化。
+
+最终原生隔离PG/HMAC网关→fixed argv→真实HTTP→更新worker→快照/实际量化→固定报告联调1通过/8.48秒，两个manual事件八份回执；首次同步1280行、别名增量0行，共用run26d8958e-1f05-4f16-bcbb-4baa564c8748/report90324696-e1ef-4d3b-b2e5-48269a7ccdc6及origin。独立SQL确认两请求/一run、量化2job/2attempt、初选2/评议2。明确合成空池、manual/late、目标23日/行情20日、0模型和通知；临时API85615/59245已回收/释放，临时services测试按字节核对后移除。
+
+授权云端仅SELECT→隔离本机库及真实公共供应商实测58.71秒完成：195132行、520只股票、保留1项隔离，三基准摘要38383fc6ab006f5ebbb1d36f87b3eedc39165de3d9072bb2d454595bec7b5c30。2026-11-20离线快照501/518对齐、96.72%、quality通过，persisted=false，无新研究/模型/通知。独立读隔离库确认股票最新日20日、当前要求23日为0只；不是当前行情就绪。实际worker84904终态0且进程组不存在，父端故意污染的PG/API/Personal环境未被继承。私有证据仅在忽略目录.stock-research/bootstrap/premarket-refresh-*。
+
+零活动/26表摘要守卫后仅重启本线程8788 API：旧78111终态143、PID消失及端口释放；当前86866/session77198，日志premarket-refresh-main-api.log。ready、旧cf8da076报告/a45bf9c4问答、跨workspace404/只读私人问答403独立读回通过；26表仍按stocks过滤有workspace表、其余全表，前后保持。新更新开关和workflow身份均关闭，根.env未改；共享8802/网关/原42计划不改不重启，旧数据文件和原默认基准不覆盖。
+
+此前只检查当前fork的Wiki不完整。README指向YoungCan-Wang/WyckoffTradingAgent Wiki，该地址可读，已克隆为忽略的独立wiki_repo_new/，基线61b9fed；新增开发分支设计页并同步Home/Sidebar及架构/运维导航，分支配置/表契约仍由docs维护。Wiki独立提交、不向上游推送；旧检查点的“本机Wiki缺失”按本条更新。当前fork Wiki的HTTPS/既有SSH探测均Repository not found，不据此断言上游Wiki不存在。
+
+下一步必须处理源端更新与旧维护/Actions写入的统一互斥，不能仅把本批只读复制当作补拉。随后接报告期限发布、通知稳定业务键/unknown回查、唯一stock-research-premarket六处清单及cron所有权。正式Mac/TCC、网络/多用户、自然交易日、正常浏览器、PIT/效果评估、远端CI及另session整体审查仍待完成；整个plan.md目标保持。对应研究、Wiki与Personal契约分别交付，运行面未正式启用。
+
 ## 续接检查点：跨事件研究去重与首次绑定恢复（2026-11-24）
 
 上一批研究3cf0a69f/services文档0db649c已本机提交并快进，本批继续对齐plan第9节。同日、研究workspace、来源能力/trigger_kind和配置版本的新盘前事件保留各自job/plan/准备回执，复用首次run、报告与期限。事件ID/job/时刻不再使研究重复创建；回执新增必填可空origin，明确首次job、事件及绝对期限，未冻结为null。别名恢复/取消统一领取首次意图锁、共享取消标记；新manual不能刷新预算或复活取消研究。不同配置或trigger_kind仍分开。强制重分析仍仅operator显式force+parent_run_id，已实测新run父链及请求重放、原初选/报告保持；workflow身份未扩权。
