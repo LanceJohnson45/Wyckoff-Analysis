@@ -736,3 +736,5 @@ Copyright (c) 2024-2026 youngcan.
 [![Star History Chart](https://api.star-history.com/svg?repos=YoungCan-Wang/Wyckoff-Analysis&type=Date)](https://star-history.com/#YoungCan-Wang/Wyckoff-Analysis&Date)
 
 US源端写入、研究复制与固定研究池补齐的候选契约见[行情更新协调](docs/us_market_coordination.md)。候选未合入wxjer前生产保持旧实现；本说明不是部署或自动补拉完成声明。
+
+研究池补拉先在同一协调锁内检查截止日及所需长度，已提交完整股票窗口不重复下载或重写；三基准先于缺失股票补齐，避免慢股票耗尽预算使基准一直缺失。该缓存检查不代替研究端按正式交易日的质量门禁。

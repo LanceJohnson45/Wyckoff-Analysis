@@ -38,11 +38,27 @@ class RefreshResult(TypedDict):
     quality_checked: Literal[False]
 
 
+def covered_symbols(symbols: list[str], as_of: date, history_rows: int) -> set[str]:
+    """Reuse already committed windows; the research snapshot still checks exact sessions."""
+    rows = fetch_all(
+        "select symbol from public.stock_hist_cache where symbol = any(%s) and adjust = 'qfq' and date <= %s "
+        "and open > 0 and high >= open and high >= close and low > 0 and low <= open and low <= close "
+        "and volume >= 0 and close > 0 and high >= low group by symbol "
+        "having count(*) >= %s and max(date) = %s",
+        ([f"US:{symbol}" for symbol in symbols], as_of, history_rows, as_of),
+    )
+    return {row["symbol"].removeprefix("US:") for row in rows}
+
+
 def research_symbols(raw: str) -> list[str]:
     """Require an explicit frozen pool; do not fall back to a live S&P-only list."""
-    values = [value.strip().upper().removeprefix("US:").replace(".", "-") for value in raw.split(",")]
+    values = [
+        value.strip().upper().removeprefix("US:").replace(".", "-")
+        for value in raw.split(",")
+    ]
     if not 1 <= len(values) <= 2000 or any(
-        not re.fullmatch(r"[A-Z][A-Z0-9]{0,9}(?:-[A-Z0-9]{1,4})?", value) for value in values
+        not re.fullmatch(r"[A-Z][A-Z0-9]{0,9}(?:-[A-Z0-9]{1,4})?", value)
+        for value in values
     ):
         raise ValueError("股票池须为1–2000个有效US代码，逗号分隔，不接受空项")
     return sorted(set(values))
@@ -58,26 +74,38 @@ def refresh_research(
 ) -> RefreshResult:
     """Reuse production adjusted-history downloads/writes under one fixed-date job."""
     symbols = research_symbols(",".join(symbols))
-    if not 360 <= trading_days <= 1000 or not 1 <= batch_size <= 100 or not 0 <= sleep_seconds <= 60:
+    if (
+        not 360 <= trading_days <= 1000
+        or not 1 <= batch_size <= 100
+        or not 0 <= sleep_seconds <= 60
+    ):
         raise ValueError("维护窗口360–1000、批量1–100、批间等待0–60秒")
     latest = resolve_end_calendar_day_for_market("us")
-    if as_of > latest or as_of not in _approx_us_market_dates(start=as_of - timedelta(days=10), end=as_of):
+    if as_of > latest or as_of not in _approx_us_market_dates(
+        start=as_of - timedelta(days=10), end=as_of
+    ):
         raise ValueError("as_of必须为已收盘US交易日；不自动滚动到其他日期")
-    days = _approx_us_market_dates(start=as_of - timedelta(days=trading_days * 2), end=as_of)
+    days = _approx_us_market_dates(
+        start=as_of - timedelta(days=trading_days * 2), end=as_of
+    )
     start = days[-trading_days] if len(days) >= trading_days else days[0]
     with us_market_job():
+        covered = covered_symbols(symbols, as_of, trading_days)
         verify_target(as_of)
+        benchmarks = {
+            symbol: refresh_benchmark(
+                "us", calendar_days=trading_days * 2, end_date=as_of, benchmark=symbol
+            )
+            for symbol in RESEARCH_BENCHMARKS
+        }
         stats = _run_batches(
-            symbols,
+            [symbol for symbol in symbols if symbol not in covered],
             start_day=start,
             end_day=as_of,
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
         )
-        benchmarks = {
-            symbol: refresh_benchmark("us", calendar_days=trading_days * 2, end_date=as_of, benchmark=symbol)
-            for symbol in RESEARCH_BENCHMARKS
-        }
+        stats["symbols"] += len(covered)
         rows = fetch_all(
             "select symbol from public.stock_hist_cache where symbol = any(%s) and adjust = 'qfq' and date = %s "
             "and open > 0 and high >= open and high >= close and low > 0 and low <= open and low <= close "
@@ -86,7 +114,11 @@ def refresh_research(
         )
     present = {row["symbol"].removeprefix("US:") for row in rows}
     missing = sorted(set(symbols) - present)
-    complete = stats["symbols"] == len(symbols) and not missing and all(n >= 320 for n in benchmarks.values())
+    complete = (
+        stats["symbols"] == len(symbols)
+        and not missing
+        and all(n >= 320 for n in benchmarks.values())
+    )
     return {
         "as_of": as_of.isoformat(),
         "symbols": len(symbols),

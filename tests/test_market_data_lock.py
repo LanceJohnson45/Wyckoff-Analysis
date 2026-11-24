@@ -26,7 +26,9 @@ def offline_provider(monkeypatch):
     from curl_cffi.requests import Session
 
     def denied(*args, **kwargs):
-        raise AssertionError("Market coordination tests must not access an external provider")
+        raise AssertionError(
+            "Market coordination tests must not access an external provider"
+        )
 
     monkeypatch.setattr(Session, "request", denied)
 
@@ -35,7 +37,9 @@ def offline_provider(monkeypatch):
 def market_postgres():
     binaries = {name: shutil.which(name) for name in ("initdb", "pg_ctl", "createdb")}
     if not all(binaries.values()):
-        pytest.skip("Install PostgreSQL server tools for native market-coordination integration tests")
+        pytest.skip(
+            "Install PostgreSQL server tools for native market-coordination integration tests"
+        )
     with tempfile.TemporaryDirectory(prefix="mkpg-", dir="/tmp") as directory:
         cluster = str(Path(directory) / "data")
         subprocess.run(
@@ -119,13 +123,32 @@ def test_copy_excludes_real_upsert_and_committed_write_is_readable(source_databa
     with psycopg.connect(source_database) as copy:
         copy.execute("select pg_advisory_xact_lock(%s)", (MARKET_DATA_KEY,))
         with pytest.raises(MarketDataBusy):
-            upsert_rows("stock_hist_cache", [row], conflict_columns=("symbol", "adjust", "date"))
+            upsert_rows(
+                "stock_hist_cache", [row], conflict_columns=("symbol", "adjust", "date")
+            )
         cn = {**row, "symbol": "CN:000001"}
-        assert upsert_rows("stock_hist_cache", [cn], conflict_columns=("symbol", "adjust", "date")) == 1
-        assert copy.execute("select count(*) from stock_hist_cache where symbol like 'US:%'").fetchone()[0] == 0
-    assert upsert_rows("stock_hist_cache", [row], conflict_columns=("symbol", "adjust", "date")) == 1
+        assert (
+            upsert_rows(
+                "stock_hist_cache", [cn], conflict_columns=("symbol", "adjust", "date")
+            )
+            == 1
+        )
+        assert (
+            copy.execute(
+                "select count(*) from stock_hist_cache where symbol like 'US:%'"
+            ).fetchone()[0]
+            == 0
+        )
+    assert (
+        upsert_rows(
+            "stock_hist_cache", [row], conflict_columns=("symbol", "adjust", "date")
+        )
+        == 1
+    )
     with psycopg.connect(source_database) as reader:
-        assert reader.execute("select close from stock_hist_cache where symbol = 'US:AAPL'").fetchone() == (11,)
+        assert reader.execute(
+            "select close from stock_hist_cache where symbol = 'US:AAPL'"
+        ).fetchone() == (11,)
 
 
 def test_parallel_writer_transactions_exclude_copy_and_release_on_rollback(
@@ -136,14 +159,18 @@ def test_parallel_writer_transactions_exclude_copy_and_release_on_rollback(
         connect_postgres(market_write=True),
         psycopg.connect(source_database) as reader,
     ):
-        assert not reader.execute("select pg_try_advisory_xact_lock(%s)", (MARKET_DATA_KEY,)).fetchone()[0]
+        assert not reader.execute(
+            "select pg_try_advisory_xact_lock(%s)", (MARKET_DATA_KEY,)
+        ).fetchone()[0]
     with (
         pytest.raises(RuntimeError, match="rollback"),
         connect_postgres(market_write=True),
     ):
         raise RuntimeError("rollback")
     with psycopg.connect(source_database) as reader:
-        assert reader.execute("select pg_try_advisory_xact_lock(%s)", (MARKET_DATA_KEY,)).fetchone()[0]
+        assert reader.execute(
+            "select pg_try_advisory_xact_lock(%s)", (MARKET_DATA_KEY,)
+        ).fetchone()[0]
     with (
         pytest.raises(ValueError, match="显式事务"),
         connect_postgres(market_write=True, autocommit=True),
@@ -160,8 +187,13 @@ def test_whole_job_excludes_other_job_but_allows_independent_writes(source_datab
                 "insert into stock_hist_cache(symbol,adjust,date,close) values('US:AAPL','qfq','2026-11-20',11)"
             )
         with psycopg.connect(source_database) as reader:
-            assert reader.execute("select count(*) from stock_hist_cache").fetchone()[0] == 1
-            assert not reader.execute("select pg_try_advisory_xact_lock(%s)", (US_MARKET_JOB_KEY,)).fetchone()[0]
+            assert (
+                reader.execute("select count(*) from stock_hist_cache").fetchone()[0]
+                == 1
+            )
+            assert not reader.execute(
+                "select pg_try_advisory_xact_lock(%s)", (US_MARKET_JOB_KEY,)
+            ).fetchone()[0]
     with pytest.raises(RuntimeError), us_market_job():
         raise RuntimeError("job failed")
     with us_market_job():
@@ -238,14 +270,22 @@ def adjusted_provider(monkeypatch):
     return frame
 
 
-def test_real_research_update_writes_pool_and_three_distinct_benchmarks(source_database, adjusted_provider):
+def test_real_research_update_writes_pool_and_three_distinct_benchmarks(
+    source_database, adjusted_provider
+):
     from scripts.us_research_refresh import refresh_research
 
     result = refresh_research(["AAPL", "MSFT"], date(2026, 11, 20), sleep_seconds=0)
-    assert result["status"] == "completed" and result["missing_target"] == [] and result["quality_checked"] is False
+    assert (
+        result["status"] == "completed"
+        and result["missing_target"] == []
+        and result["quality_checked"] is False
+    )
     assert set(result["benchmarks"]) == {"SPY", "QQQ", "IWM"}
     with psycopg.connect(source_database) as reader:
-        rows = reader.execute("select symbol,count(*) from stock_hist_cache group by symbol").fetchall()
+        rows = reader.execute(
+            "select symbol,count(*) from stock_hist_cache group by symbol"
+        ).fetchall()
     assert {symbol for symbol, _ in rows} == {
         "US:AAPL",
         "US:MSFT",
@@ -256,16 +296,56 @@ def test_real_research_update_writes_pool_and_three_distinct_benchmarks(source_d
     assert all(count >= 320 for _, count in rows)
 
 
-def test_stale_preflight_prevents_all_writes(source_database, adjusted_provider, monkeypatch):
+def test_stale_preflight_prevents_all_writes(
+    source_database, adjusted_provider, monkeypatch
+):
     import yfinance
 
     from scripts.us_research_refresh import refresh_research
 
-    monkeypatch.setattr(yfinance, "download", lambda *args, **kwargs: adjusted_provider.iloc[:-1].copy())
+    monkeypatch.setattr(
+        yfinance, "download", lambda *args, **kwargs: adjusted_provider.iloc[:-1].copy()
+    )
     with pytest.raises(RuntimeError):
         refresh_research(["AAPL"], date(2026, 11, 20), sleep_seconds=0)
     with psycopg.connect(source_database) as reader:
-        assert reader.execute("select count(*) from stock_hist_cache").fetchone()[0] == 0
+        assert (
+            reader.execute("select count(*) from stock_hist_cache").fetchone()[0] == 0
+        )
+
+
+def test_research_refresh_reuses_committed_stock_windows(
+    source_database, adjusted_provider, monkeypatch
+):
+    import yfinance
+
+    from scripts.us_research_refresh import refresh_research
+
+    first = refresh_research(["AAPL", "MSFT"], date(2026, 11, 20), sleep_seconds=0)
+    assert first["stats"]["rows"] > 0
+    with psycopg.connect(source_database) as reader:
+        before = reader.execute(
+            "select symbol,date,close,updated_at from stock_hist_cache "
+            "where symbol like 'US:%%' order by symbol,date"
+        ).fetchall()
+    download = yfinance.download
+
+    def benchmarks_only(symbols, **options):
+        if symbols == "MSFT" or " " in symbols:
+            pytest.fail(
+                "A committed complete stock window was unnecessarily downloaded again"
+            )
+        return download(symbols, **options)
+
+    monkeypatch.setattr(yfinance, "download", benchmarks_only)
+    second = refresh_research(["AAPL", "MSFT"], date(2026, 11, 20), sleep_seconds=0)
+    assert second["status"] == "completed" and second["stats"]["rows"] == 0
+    with psycopg.connect(source_database) as reader:
+        after = reader.execute(
+            "select symbol,date,close,updated_at from stock_hist_cache "
+            "where symbol like 'US:%%' order by symbol,date"
+        ).fetchall()
+    assert after == before
 
 
 def test_missing_symbol_retains_confirmed_writes_but_returns_incomplete(
@@ -275,14 +355,21 @@ def test_missing_symbol_retains_confirmed_writes_but_returns_incomplete(
 
     from scripts.us_research_refresh import refresh_research
 
-    monkeypatch.setattr(yfinance, "download", lambda *args, **kwargs: adjusted_provider.copy())
+    monkeypatch.setattr(
+        yfinance, "download", lambda *args, **kwargs: adjusted_provider.copy()
+    )
     result = refresh_research(["AAPL", "MSFT"], date(2026, 11, 20), sleep_seconds=0)
     assert result["status"] == "incomplete" and result["missing_target"] == [
         "AAPL",
         "MSFT",
     ]
     with psycopg.connect(source_database) as reader:
-        assert reader.execute("select count(distinct symbol) from stock_hist_cache").fetchone()[0] == 3
+        assert (
+            reader.execute(
+                "select count(distinct symbol) from stock_hist_cache"
+            ).fetchone()[0]
+            == 3
+        )
 
 
 @pytest.mark.parametrize("raw", ["", "AAPL,,MSFT", "$AAPL", "../MSFT", "AAPL;rm"])

@@ -32,3 +32,5 @@ Market Source CI只读、无生产secrets，安装锁定的历史源分支环境
 ## 源分支测试收集修正
 
 原tests/test_futu_client.py并非离线单测，而是连接实际OpenD、订阅行情的手工脚本，其host/port/code参数由命令行main提供而非pytest fixture；默认环境也未声明futu SDK。现原样移到scripts/futu_client_smoke.py保留手工入口，不给回归用例加skip或伪造SDK。全量计数仅为tests/离线套件，不把这个依赖实际OpenD的手工脚本计为已验收；本批没有启动OpenD或访问Futu网络。
+
+研究池补拉先在同一协调锁内检查截止日及所需长度，已提交完整股票窗口不重复下载或重写；三基准先于缺失股票补齐，避免慢股票耗尽预算使基准一直缺失。该缓存检查不代替研究端按正式交易日的质量门禁。
