@@ -1,6 +1,7 @@
 """固定MVP子进程：各自读取既有行情或Personal身份，不向父进程返回凭据。"""
 
 import argparse
+import ast
 import contextlib
 import json
 import os
@@ -21,14 +22,17 @@ def parent_closed() -> None:
 
 
 def load_selected(path: Path, keys: set[str]) -> None:
-    from dotenv import dotenv_values
-
     if not path.is_file() or path.is_symlink() or path.stat().st_mode & 0o077:
         raise ValueError("private_configuration_invalid")
-    values = dotenv_values(path, interpolate=False)
-    for key in keys:
-        if values.get(key) is not None:
-            os.environ[key] = values[key]
+    for line in path.read_text(encoding="utf-8").splitlines():
+        key, separator, value = line.strip().partition("=")
+        if separator and key in keys:
+            value = value.strip()
+            if value.startswith(("'", '"')):
+                value = ast.literal_eval(value)
+            if not isinstance(value, str):
+                raise ValueError("private_configuration_invalid")
+            os.environ[key] = value
 
 
 def refresh(payload: dict[str, object], env_file: Path) -> dict[str, object]:

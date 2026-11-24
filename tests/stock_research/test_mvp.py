@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from scripts.stock_research_mvp_worker import load_selected
 from stock_research import mvp, mvp_delivery
 from stock_research.identity import new_id
 from stock_research.models import Snapshot
@@ -188,6 +189,20 @@ def test_private_configuration_rejects_public_file(settings: MvpSettings, tmp_pa
         load_mvp_settings(path)
     path.chmod(0o600)
     assert load_mvp_settings(path) == settings
+
+
+def test_selected_worker_configuration_needs_only_standard_library(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "selected.env"
+    path.write_text("PG_HOST='fixture-host'\nSA_PG_URL=postgresql://fixture/test\nUNRELATED_MODEL_KEY=must-not-load\n")
+    path.chmod(0o600)
+    monkeypatch.delenv("UNRELATED_MODEL_KEY", raising=False)
+    monkeypatch.setenv("PG_HOST", "before")
+    monkeypatch.setenv("SA_PG_URL", "before")
+    load_selected(path, {"PG_HOST", "SA_PG_URL"})
+    assert os.environ["PG_HOST"] == "fixture-host" and os.environ["SA_PG_URL"] == "postgresql://fixture/test"
+    assert "UNRELATED_MODEL_KEY" not in os.environ
 
 
 @pytest.mark.parametrize("stall", [False, True])
