@@ -2,6 +2,8 @@
 
 现有Agent运行区新增小型状态读取，目标美国交易日沿用上方运行表单。最近完整研究、该日首报/恢复通知和最近确认送达记录分别展示；历史报告保持原修订。状态查询不创建研究、续跑或投递任务。
 
+本机当前API/tick为06:38采用的d42fa219，精确代码八项CI、包内128项及切换空闲/进程保护通过。24日首报/恢复与25日无记录的15次状态读全成功/P95 0.262秒，权限401/403/403/422；两个已核实定点旧文件只追加scope，原账本/原生消息/正文保持，未发送。采用细节见[MVP](stock_research_mvp.md#2026-11-25通知隔离采用)，不以状态读代替真实unknown或自然日。
+
 `GET /v1/operations?target_session=YYYY-MM-DD`为operator私有接口，只接受一个目标日参数。只读工具身份和盘前身份均返回403，缺身份401；无效日期、额外参数或重复目标日422。浏览器同源固定清单只开放此GET，直接接口仍须Bearer。返回沿用code/message/data/correlation_id。
 
 - `latest_completed`：本研究workspace未删除的completed运行，按更新时间、UUID倒序取一条并校验清单摘要；仅返回run_id、target_session、update_time。它覆盖全部日期，partial/failed不计完整成功。查询不读取行情快照。
