@@ -13,3 +13,4 @@
 后台部署可用同目录两份 `com.wxjer.stock-research-*.plist.example`，替换 `__RELEASE__`、`__STATE__`、`__HOME__`、`__WORKSPACE__` 后安装到LaunchAgents。API常驻，盘前tick每60秒启动检查纽约slot；真实配置和状态目录须在Documents之外。
 
 个人本机Web入口：根`.env`同时启用`STOCK_RESEARCH_WEB_PROXY_ENABLED=true`与`STOCK_RESEARCH_WEB_SINGLE_USER=true`，以loopback启动Vite，即可直接进入`/chat`研究工作台，无需账户密码。独立API身份由Node代理保管；该单用户入口不进入生产静态构建。见[Agent研究面板](../../docs/stock_research_agent_panel.md)。
+`classification-supplement-20261124-v1.json`是15只缺行业成员的有出处补充，须按symbol补入完整基线，不能直接作为`CLASSIFICATION_PATH`。本机合并版保留原行业、主题和版本，补充取得时间及非PIT限制随新快照保存；公开成分刷新只沿用有效的GICS缺项补充，不覆盖新源分类。

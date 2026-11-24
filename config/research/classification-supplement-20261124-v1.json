@@ -1,0 +1,144 @@
+{
+  "version": "gics-supplement-20261124-v1",
+  "records": [
+    {
+      "symbol": "ALAB",
+      "company_name": "Astera Labs",
+      "industry": "GICS:Semiconductors",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/0970/holdings/latest;fund=vti;as_of=2026-10-31;sha256=69a0a2852056c51f2a62d3fa87e655963e0a930c92221733044c172bfde93c03;issuer=Astera Labs Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "ALNY",
+      "company_name": "Alnylam Pharmaceuticals",
+      "industry": "GICS:Biotechnology",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/4393/holdings/daily;fund=esgv;as_of=2026-11-23;sha256=e380ab7d00404c649a16d5a9dc301782185474ff0a709bc0a7de2755f5144c39;issuer=Alnylam Pharmaceuticals Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "ARM",
+      "company_name": "Arm Holdings",
+      "industry": "GICS:Semiconductors",
+      "themes": [],
+      "source": "https://seekreturns.com/en/stock-analysis/arm;published=2026-09-27;public-GICS-subindustry;cross-check=https://investors.arm.com/;issuer=Arm Holdings plc ADR",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "ASML",
+      "company_name": "ASML Holding",
+      "industry": "GICS:Semiconductor Materials & Equipment",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=ASML Holding NV",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "CCEP",
+      "company_name": "Coca-Cola Europacific Partners",
+      "industry": "GICS:Soft Drinks & Non-alcoholic Beverages",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=Coca-Cola Europacific Partners PLC",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "CRWV",
+      "company_name": "CoreWeave",
+      "industry": "GICS:Internet Services & Infrastructure",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/0970/holdings/latest;fund=vti;as_of=2026-10-31;sha256=69a0a2852056c51f2a62d3fa87e655963e0a930c92221733044c172bfde93c03;issuer=CoreWeave Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "FER",
+      "company_name": "Ferrovial",
+      "industry": "GICS:Construction & Engineering",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=Ferrovial NV",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "MELI",
+      "company_name": "Mercado Libre",
+      "industry": "GICS:Broadline Retail",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/4393/holdings/daily;fund=esgv;as_of=2026-11-23;sha256=e380ab7d00404c649a16d5a9dc301782185474ff0a709bc0a7de2755f5144c39;issuer=MercadoLibre Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "MSTR",
+      "company_name": "MicroStrategy",
+      "industry": "GICS:Application Software",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/4393/holdings/daily;fund=esgv;as_of=2026-11-23;sha256=e380ab7d00404c649a16d5a9dc301782185474ff0a709bc0a7de2755f5144c39;issuer=Strategy Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "NBIS",
+      "company_name": "Nebius Group",
+      "industry": "GICS:Systems Software",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=Nebius Group NV",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "PDD",
+      "company_name": "PDD Holdings",
+      "industry": "GICS:Broadline Retail",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=PDD HOLDINGS INC",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "RKLB",
+      "company_name": "Rocket Lab",
+      "industry": "GICS:Aerospace & Defense",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/4393/holdings/daily;fund=esgv;as_of=2026-11-23;sha256=e380ab7d00404c649a16d5a9dc301782185474ff0a709bc0a7de2755f5144c39;issuer=Rocket Lab Corp",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "SHOP",
+      "company_name": "Shopify",
+      "industry": "GICS:Internet Services & Infrastructure",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=Shopify Inc",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "SPCX",
+      "company_name": "SpaceX",
+      "industry": "GICS:Alternative Carriers",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/0970/holdings/latest;fund=vti;as_of=2026-10-31;sha256=69a0a2852056c51f2a62d3fa87e655963e0a930c92221733044c172bfde93c03;issuer=Space Exploration Technologies Corp",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    },
+    {
+      "symbol": "TRI",
+      "company_name": "Thomson Reuters",
+      "industry": "GICS:Research & Consulting Services",
+      "themes": [],
+      "source": "https://advisors.vanguard.com/investments/products/api/funds/3141/holdings/latest;fund=vt;as_of=2026-10-31;sha256=f68162f10d2da5807bcfa87dfaadb994c404ba202f99cb77702417ddc56d7824;issuer=Thomson Reuters Corp",
+      "obtained_time": "2026-11-24T20:35:11.014288+08:00",
+      "effective_date": "2026-11-23"
+    }
+  ],
+  "limitations": [
+    "行业补充使用Vanguard持仓披露的GICS细分行业（2026-10-31/2026-11-23），ARM使用公开GICS资料；均非指数提供方分类认证。仅补缺项，不自动分配主题。",
+    "资料取得于2026-11-24，研究适用日为2026-11-23；不是严格历史时点分类。"
+  ]
+}

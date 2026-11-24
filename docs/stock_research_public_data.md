@@ -40,3 +40,10 @@
 实际2026-11-20快照已提交研究库：518只中501只日期对齐，覆盖96.72%，达到95%的工程门槛；Martin历史可用491只，Wyckoff历史可用490只。28条质量问题仍保留，少数缺数、缺分类、历史不足和原隔离不会被填造或隐藏。这些数量是数据接线和质量检查，不是策略推荐或收益证据。
 
 公开成分初批验收时，离线研究测试87项通过，无skip，覆盖公开源格式/版本/过期保护、取数失败不发布、人工自选和主题保留、补充文件摘要、时区、日期、价格及成交量冲突、CLI快照读写。真实取数和数据库检查在独立命令中执行，pytest不请求外网。当时尚未执行完整pytest、前端与远端CI。后续完整本地门禁及独立Wiki恢复见最新交接检查点；远端CI仍未验收。
+## 2026-11-24 资料补充
+
+`config/research/classification-supplement-20261124-v1.json`保存15只原缺行业成员的补充记录与逐行来源，仅为补充清单，不可直接替换完整分类基线。14只来自Vanguard公开持仓的细分行业（ESGV日度2026-11-23、VTI/VT月度2026-10-31），ARM来自公开GICS分类页面；均保留实际取得时间，非指数提供方认证，也不构成严格PIT分类。VT中的TRI存在同代码不同公司的记录，采用Thomson Reuters身份，不能只按代码取第一条。
+
+本机完整分类版本在原503条基础上只补15条，不覆盖已有行业或人工主题。后续公开成分刷新保留当前有效成员已有的GICS缺项补充及其来源/限制；新源有分类时以新源为准，未来生效和其他分类体系不混入。
+
+FDXF、HONA、Q、VYLR截至2026-11-23分别有126、113、271、38根日线，库内首日到截止日没有内部漏日。首日分别与分拆的when-issued/独立上市期相符：[FedEx发行交易说明](https://investors.fedex.com/news-and-events/investor-news/investor-news-details/2026/FedEx-Board-of-Directors-Approves-Spin-off-of-FedEx-Freight/default.aspx)、[Honeywell发行交易说明](https://investor.honeywell.com/news-releases/news-release-details/honeywell-board-directors-approves-spin-honeywell-aerospace)、[Qnity发行交易说明](https://www.sec.gov/Archives/edgar/data/2058873/000119312525240313/d21160dex992.htm)、[Vylor分拆完成公告](https://investors.corteva.com/static-files/e29a4232-d274-4e3f-bcad-f6cf0ade356f)。这些是上市历史限制，不能拼入母公司历史以凑足320根。补行业后SPCX也会显露320根不足（2026-06-12起114根），原分类缺失曾先行排除它；不能据缺数条目减少就判断全部资料已齐。

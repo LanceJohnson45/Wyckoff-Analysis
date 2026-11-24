@@ -184,7 +184,7 @@ def refresh_versions(settings: Settings, version: str, as_of: date, destination:
 def preserve_manual_versions(
     settings: Settings, universe: UniverseVersion, classifications: ClassificationVersion, as_of: date
 ) -> tuple[UniverseVersion, ClassificationVersion]:
-    """刷新指数不得丢失已生效自选或已有人工主题，不替代缺失行业来源。"""
+    """保留已生效自选、主题与缺项的GICS补充，来源和资料限制随版本沿用。"""
     manual = ()
     if settings.universe_path.is_file():
         previous = UniverseVersion.model_validate_json(settings.universe_path.read_text(encoding="utf-8"))
@@ -210,10 +210,22 @@ def preserve_manual_versions(
         )
         known = {record.symbol for record in records}
         manual_symbols = {member.symbol for member in manual}
+        active_symbols = set(universe.active(as_of))
         records += tuple(
             record
             for record in previous.records
-            if record.symbol in manual_symbols - known and record.effective_date <= as_of
+            if record.symbol not in known
+            and record.effective_date <= as_of
+            and (
+                record.symbol in manual_symbols
+                or (record.symbol in active_symbols and (record.industry or "").startswith("GICS:"))
+            )
         )
-        classifications = ClassificationVersion.model_validate({**classifications.model_dump(), "records": records})
+        classifications = ClassificationVersion.model_validate(
+            {
+                **classifications.model_dump(),
+                "records": records,
+                "limitations": tuple(sorted(set(classifications.limitations + previous.limitations))),
+            }
+        )
     return universe, classifications

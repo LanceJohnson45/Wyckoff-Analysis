@@ -11,6 +11,7 @@ import pytest
 from pydantic import ValidationError
 
 from stock_research.identity import now
+from stock_research.models import Snapshot
 from stock_research.public_versions import (
     ConstituentSource,
     build_public_versions,
@@ -191,3 +192,42 @@ def test_normal_refresh_retains_existing_manual_members_and_themes(
     assert by_symbol["A0"].themes == ("Human theme",)
     assert "human-confirmed" in by_symbol["A0"].source
     assert by_symbol["CUSTOM"].industry == "approved:Hardware"
+
+
+@pytest.mark.parametrize(
+    "industry,offset,retained",
+    [
+        pytest.param("GICS:Semiconductors", 0, True, id="normal-supplement"),
+        pytest.param("GICS:Semiconductors", 1, False, id="error-future"),
+        pytest.param("ICB:Technology", 0, False, id="error-other-taxonomy"),
+    ],
+)
+def test_normal_refresh_preserves_effective_gics_supplements(
+    tmp_path: Path, snapshot: Snapshot, industry: str, offset: int, retained: bool
+) -> None:
+    """【正常/异常值】缺分类成员沿用有出处的同口径补充，未来和异口径资料不混入。"""
+    from stock_research.config import Settings
+    from stock_research.models import ClassificationVersion
+    from stock_research.public_versions import preserve_manual_versions
+
+    previous = ClassificationVersion(
+        version="supplement",
+        records=(
+            snapshot.classifications.records[0].model_copy(
+                update={"industry": industry, "effective_date": snapshot.as_of + timedelta(days=offset)}
+            ),
+        ),
+        limitations=("supplement-source-is-not-refreshed",),
+    )
+    path = tmp_path / "classifications.json"
+    path.write_text(previous.model_dump_json())
+    settings = Settings(_env_file=None, universe_path=tmp_path / "missing", classification_path=path)
+
+    _, result = preserve_manual_versions(
+        settings, snapshot.universe, ClassificationVersion(version="new", records=()), snapshot.as_of
+    )
+
+    assert len(result.records) == int(retained)
+    if retained:
+        assert result.records == previous.records
+        assert previous.limitations[0] in result.limitations
