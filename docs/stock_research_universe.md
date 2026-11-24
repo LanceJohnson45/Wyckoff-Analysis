@@ -10,4 +10,4 @@ GET /v1/reports/{report_id}/universe只读，身份和workspace边界沿固定�
 
 原生PG/ASGI测试包含双指数去重、过期/未来成员、缺行情/分类、未来分类不泄入、字面搜索、SQL分页、初选null/false、个股逐字段对拍、只读身份、跨workspace和损坏产物拒绝。真实固定cf8da076修订3读取518只，保留17只无行情与15只无行业；Martin数据/实际计算491、量化池30、初选5，Wyckoff490/0/0。此为冻结数据结构核验，不是收益或完整正式成分/PIT验收。
 
-实际客户端、MCP及最终门禁见[交接检查点](stock_research_handoff_2026-11-23.md)。正常登录后的搜索/翻页/打开股票仍另验；[人工自选与主题确认](stock_research_input_maintenance.md)已接日期生效与新快照消费；正式成分/PIT、锚点叠加、调度和正式部署继续开发。
+实际客户端、MCP及最终门禁见[交接检查点](stock_research_handoff_2026-11-23.md)。2026-11-24本机单用户搜索、翻页、空结果及打开股票已验，云端账号流程另验；[人工自选与主题确认](stock_research_input_maintenance.md)已接日期生效与新快照消费；正式成分/PIT与多用户部署仍待验收；锚点叠加及本机定点首报/恢复已实测，后者包含人工部署恢复，见[当前验收](stock_research_mvp.md#2026-11-24稳定性验收)。
