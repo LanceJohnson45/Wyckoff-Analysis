@@ -1,8 +1,10 @@
 """SQLAlchemy async 数据存取；事务提交后才返回持久化快照。"""
 
 import asyncio
+from dataclasses import dataclass, field
+from weakref import WeakKeyDictionary
 
-from sqlalchemy import Table, func, select
+from sqlalchemy import Table, Text, cast, column, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, create_async_engine
 from sqlalchemy.schema import CreateSchema
@@ -19,6 +21,20 @@ from stock_research.schema import (
     UNIVERSE_MEMBERS,
     UNIVERSES,
 )
+
+SNAPSHOT_CACHE_MAX_BYTES = 96 * 1024 * 1024
+
+
+@dataclass
+class SnapshotRead:
+    """每个连接池最多保留一份已验证快照，冷读共用同一把锁。"""
+
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    version: tuple[object, ...] | None = None
+    snapshot: Snapshot | None = None
+
+
+SNAPSHOT_READS: WeakKeyDictionary[AsyncEngine, SnapshotRead] = WeakKeyDictionary()
 
 
 def database_engine(settings: Settings, *, test: bool = False) -> AsyncEngine:
@@ -167,27 +183,46 @@ async def save_snapshot(engine: AsyncEngine, workspace: str, snapshot: Snapshot)
 
 
 async def load_snapshot(engine: AsyncEngine, workspace: str, snapshot_id: str) -> Snapshot:
-    """独立连接重读且重新验证内容摘要，跨 workspace 不返回数据。"""
-    async with engine.connect() as connection:
-        row = (
-            (
-                await connection.execute(
-                    select(MARKET_SNAPSHOTS).where(
-                        MARKET_SNAPSHOTS.c.workspace == workspace,
-                        MARKET_SNAPSHOTS.c.uuid == snapshot_id,
-                        MARKET_SNAPSHOTS.c.is_deleted.is_(False),
-                    )
-                )
-            )
-            .mappings()
-            .one_or_none()
+    """每次核对PG行版本与权限；相同版本合并载荷传输和完整校验。"""
+    cached = SNAPSHOT_READS.setdefault(engine, SnapshotRead())
+    predicate = (
+        MARKET_SNAPSHOTS.c.workspace == workspace,
+        MARKET_SNAPSHOTS.c.uuid == snapshot_id,
+        MARKET_SNAPSHOTS.c.is_deleted.is_(False),
+    )
+    # xmin随任何UPDATE变化，包括绕过update_time的手动修订。
+    metadata = select(
+        cast(column("xmin"), Text).label("row_version"),
+        MARKET_SNAPSHOTS.c.content_hash,
+        MARKET_SNAPSHOTS.c.schema_version,
+    ).where(*predicate)
+    async with cached.lock:
+        async with engine.connect() as connection:
+            row = (await connection.execute(metadata)).one_or_none()
+            if row is None:
+                raise ValueError("快照不存在或不属于当前 workspace")
+            version = (workspace, snapshot_id, *row)
+            if cached.version != version or cached.snapshot is None:
+                cached.version, cached.snapshot = None, None
+                loaded = (
+                    await connection.execute(metadata.add_columns(cast(MARKET_SNAPSHOTS.c.payload, Text)))
+                ).one_or_none()
+                if loaded is None:
+                    raise ValueError("快照不存在或不属于当前 workspace")
+        if cached.snapshot is None:
+            snapshot = await asyncio.to_thread(Snapshot.model_validate_json, loaded[-1])
+            if loaded.schema_version != SCHEMA_VERSION or snapshot.content_hash != loaded.content_hash:
+                raise ValueError("快照存储版本或摘要不一致")
+            if snapshot.id != snapshot_id:
+                raise ValueError("快照存储身份不一致")
+            if len(loaded[-1].encode()) <= SNAPSHOT_CACHE_MAX_BYTES:
+                cached.version, cached.snapshot = (workspace, snapshot_id, *loaded[:-1]), snapshot
+        else:
+            snapshot = cached.snapshot
+        # frozen模型仍允许修改dict内容；只复制唯一的可变容器，日线元组安全共享。
+        return snapshot.model_copy(
+            update={"quality": snapshot.quality.model_copy(update={"eligible": dict(snapshot.quality.eligible)})}
         )
-    if row is None:
-        raise ValueError("快照不存在或不属于当前 workspace")
-    snapshot = Snapshot.model_validate(row["payload"])
-    if row["schema_version"] != SCHEMA_VERSION or snapshot.content_hash != row["content_hash"]:
-        raise ValueError("快照存储版本或摘要不一致")
-    return snapshot
 
 
 async def database_ready(engine: AsyncEngine) -> bool:
@@ -200,4 +235,5 @@ async def database_ready(engine: AsyncEngine) -> bool:
 async def close_engine(engine: AsyncEngine) -> None:
     """即使数据库异常，连接池关闭也有确定期限。"""
     async with asyncio.timeout(5):
+        SNAPSHOT_READS.pop(engine, None)
         await engine.dispose()

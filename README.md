@@ -372,3 +372,6 @@ wyckoff mcp-list
 <!-- star-history:end -->
 
 研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选尚未生产采用，不据此称旧云端写入已互斥。
+# 股票研究稳定性
+
+冻结快照读取共用连接池内的一份有界缓存，热查询仅核对PostgreSQL行版本，避免报告、股票池及个股反复传输完整行情。缓存失效、隔离和测量边界见[研究查询](docs/stock_research_queries.md)。完整页面操作与自然交易日定点送达分别验收，进度见[实施计划](plan.md)。

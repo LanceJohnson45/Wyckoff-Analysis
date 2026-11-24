@@ -60,3 +60,10 @@ API、HTTP客户端、只读CLI与stdio工具均已实际调用：本机完整�
 最小ResearchReader新增anchor_chart及query_cli anchor-chart，只读固定报告的原锚点目录和一条显示重建曲线；不改变Personal三工具或独立研究八工具。省略索引选择最近确认项，完整冻结行情累计后按limit截断，不重新识别结构。接口和边界见[个股图表](stock_research_stock_view.md)。
 
 RunView.quant新增固定修订当时的两策略量化状态；缺计算时股票/整池in_pool、分组和计数为null，成功空池才返回实际空集合/零计数。ResearchReader.quant_attempts和query_cli quant-attempts读取当前run独立尝试分页，明确与旧报告状态分开；原三项/八项MCP名单不变。详见[局部量化恢复](stock_research_quant_execution.md)。
+# 冻结快照读取
+
+报告、股票池、个股及研究工具共用 `load_snapshot`。每个研究连接池最多保留一份完整校验后的快照，载荷超过96MiB则不保留；关闭连接池释放缓存。冷请求串行合并，同一版本只传输、解析和校验一次，JSON解析与摘要校验在工作线程执行。
+
+每次读取仍向PostgreSQL查询workspace、未删除状态、schema版本、内容摘要和`xmin`行版本。任何UPDATE（即使保留update_time）、删除或workspace变化都会重新读取或拒绝；不以TTL延后检测。调用者得到独立的质量字典，不能改变下一次查询。新快照按内容身份读取，不改旧报告，不缓存报告修订或量化状态。
+
+本机71,975,276字节、165,781根日线的只读测量：两路并发连续5轮，修复前传输10份、请求耗时1.42～3.44秒；修复后传输1份，首轮约2.12秒，其余8次0.65～1.62毫秒。这是同机存储读取测量，不能直接当作HTTP或浏览器延迟，也不是多进程共享缓存的保证。切换快照会替换这一份缓存。

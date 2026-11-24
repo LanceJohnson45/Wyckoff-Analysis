@@ -6,7 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
-from sqlalchemy import update
+from sqlalchemy import event, update
 
 from stock_research.chat_evidence import ChatAudit, ChatEvidence
 from stock_research.chat_manager import ChatManager
@@ -106,6 +106,12 @@ def test_normal_universe_keeps_missing_members_and_fixed_selection_state(
                     headers={"Authorization": "Bearer " + READER},
                 ) as client,
             ):
+                statements = []
+                event.listen(
+                    app.state.store.engine.sync_engine,
+                    "before_cursor_execute",
+                    lambda c, q, s, p, x, m: statements.append(s),
+                )
                 frozen = await reader.latest_report()
                 first = await reader.universe(frozen.report_id, UniverseQuery(page_size=2))
                 tail = await reader.universe(frozen.report_id, UniverseQuery(page=2, page_size=2))
@@ -128,6 +134,7 @@ def test_normal_universe_keeps_missing_members_and_fixed_selection_state(
                     assert found.total == 1 and found.items[0].company.symbol == "AAPL"
                 assert (await reader.universe(frozen.report_id, UniverseQuery(search="%' OR 1=1 --"))).total == 0
                 assert not (await reader.universe(frozen.report_id, UniverseQuery(page=3, page_size=2))).items
+                assert len([sql for sql in statements if "market_snapshots.payload" in sql]) == 1
                 for params in (
                     {"page_size": 101},
                     {"page": 0},

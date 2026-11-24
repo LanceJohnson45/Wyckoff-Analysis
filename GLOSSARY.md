@@ -526,3 +526,4 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 **盘前单用户发布**：纽约08:30冻结已知首报，08:50原期限内成功阶段增加再发一条恢复更新；交易日与initial/recovery构成固定通知身份。Personal原生消息回执才表示sent，未知或待发送不等于送达。见[单用户MVP](docs/stock_research_mvp.md)。
 
 **本机单用户研究界面**：根`.env`的`STOCK_RESEARCH_WEB_SINGLE_USER=true`配合研究代理，在Vite serve的loopback访问中直接进入现有`/chat`研究工作台，不创建云端账号或会话。独立研究API身份留在Node代理；生产静态构建恒关闭此入口，保留原账号鉴权。
+**冻结快照读缓存**：每个研究连接池最多保留一份不超过96MiB载荷的已验证快照。请求仍查询PG的workspace、删除状态、摘要、schema及xmin；版本变化重新读取并完整验证。缓存不覆盖历史报告修订、实时运行状态或量化产物校验，关闭池释放。
