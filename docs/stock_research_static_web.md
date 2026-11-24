@@ -19,6 +19,8 @@ STOCK_RESEARCH_API_ALLOWED_ORIGINS=["http://127.0.0.1:8788","http://localhost:87
 
 隔离验收使用临时原生PG、合成行情与真实Python HTTP/worker：无Vite/Node的浏览器入口、固定报告/图表、评估窗口、回执截断、普通401核对、服务重启续会话均已实跑。评估保持3个用户创建、3个结果、180条观察且各一次执行；主题建议只有一条且未发布，问答只有一条。问答验收隔离模型凭据，因此验证受理/恢复及明确失败，未验证模型回答。旧研究/报告/初选/互评/因子/快照/参数发布摘要保持。
 
-这是本机候选能力；正式运行包采用另记。采用前需当前提交全部CI成功、显式初始化所需新表、研究/问答/准备/评估均无活动任务且所属worker退出。实际Tailscale代理的外部来源与身份边界仍待验收；本机HTTP成功不表示远程入口完成。设计与边界见[静态入口设计](design/stock-research-static-web.md)。
+2026-11-25上海03:58本机正式API/股票tick已采用冻结`09bdd3cb`，其[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45474002419)全部成功。独立release、显式新表初始化与四类零活动/worker退出保护均已执行；原版本保留可撤回。采用前需当前提交全部CI成功、显式初始化所需新表、研究/问答/准备/评估均无活动任务且所属worker退出。实际Tailscale代理的外部来源与身份边界仍待验收；本机HTTP成功不表示远程入口完成。设计与边界见[静态入口设计](design/stock-research-static-web.md)。
 
 本批本地完整Python6,232项通过、无跳过；Web458/API221通过（两个既有Upstash外部条件跳过），锁定安装、TS strict、公开/专用研究/Pages函数构建、wheel资源隔离导入、Ruff/格式/函数质量及workflow/dependency hygiene、同CI假配置daily dry-run通过。首次全量执行在pytest临时目录创建处报错，测试文件单跑及随后完整重跑均通过，未排除测试；首次错误日志保留。当前head远端门禁和正式部署仍分别核对。
+
+采用后实际HTTP签发会话、Bearer直连及同源评估读取通过，正式评估记录仍0；15次固定业务读全成功、五类摘要不变。上述页面截图/控件验收来自隔离合成环境；正式入口浏览器复验继续另验。部署细节见[单用户MVP](stock_research_mvp.md)。
