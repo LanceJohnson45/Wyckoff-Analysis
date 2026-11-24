@@ -1,6 +1,6 @@
 import { normalizeGeminiStream } from '../../packages/shared/src/gemini-sse-normalize'
 import { defineConfig, loadEnv } from 'vite'
-import { stockResearchProxy } from './server/stock-research-proxy'
+import { localResearchEnabled, stockResearchProxy } from './server/stock-research-proxy'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import fs from 'node:fs/promises'
@@ -172,17 +172,21 @@ function newsEventsPlugin(): Plugin {
   }
 }
 
-export default defineConfig(({ mode }) => ({
-  plugins: [react(), tailwindcss(), llmProxyPlugin(), marketDataPlugin(), appVersionPlugin(), newsEventsPlugin(), stockResearchProxy(loadEnv(mode, path.dirname(REPO_DATA_DIR), 'STOCK_RESEARCH_'))],
-  define: {
-    __APP_VERSION__: JSON.stringify(BUILD_VERSION),
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode, command }) => {
+  const researchEnvironment = loadEnv(mode, path.dirname(REPO_DATA_DIR), 'STOCK_RESEARCH_')
+  return {
+    plugins: [react(), tailwindcss(), llmProxyPlugin(), marketDataPlugin(), appVersionPlugin(), newsEventsPlugin(), stockResearchProxy(researchEnvironment)],
+    define: {
+      __APP_VERSION__: JSON.stringify(BUILD_VERSION),
+      __LOCAL_STOCK_RESEARCH__: JSON.stringify(localResearchEnabled(researchEnvironment, command)),
     },
-  },
-  server: {
-    port: 5173,
-  },
-}))
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    server: {
+      port: 5173,
+    },
+  }
+})

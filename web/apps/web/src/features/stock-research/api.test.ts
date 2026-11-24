@@ -1,10 +1,11 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
-import { decodeResearchData, reportSchema, type ResearchReport } from './api'
+import { describe, expect, it, vi } from 'vitest'
+import { decodeResearchData, readLatestReport, reportSchema, type ResearchReport } from './api'
 import { newestReport, newYorkDay } from './state'
 import { ResearchReportView } from './report'
-import { allowedResearchRoute, trustedResearchRequest } from '../../../server/stock-research-proxy'
+import { allowedResearchRoute, localResearchEnabled, stockResearchProxy, trustedResearchRequest } from '../../../server/stock-research-proxy'
+import type { ViteDevServer } from 'vite'
 
 const RUN = '11111111-1111-4111-8111-111111111111'
 const SELECTION = '22222222-2222-4222-8222-222222222222'
@@ -27,6 +28,27 @@ function fixtureReport(): ResearchReport {
 const envelope = (data: unknown) => ({ code: '0000', message: 'ok', data, correlation_id: RUN })
 
 describe('研究报告契约', () => {
+  it('远端快照读取超过20秒仍可完成，但60秒无响应会明确失败', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) => new Promise<Response>((resolve, reject) => {
+        const timer = setTimeout(() => resolve(Response.json(envelope(fixtureReport()))), 30_000)
+        options.signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new Error('aborted')) }, { once: true })
+      })))
+      const delayed = readLatestReport()
+      await vi.advanceTimersByTimeAsync(30_000)
+      expect((await delayed)?.report_id).toBe(REPORT)
+      vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) => new Promise<Response>((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      })))
+      const expired = expect(readLatestReport()).rejects.toThrow('研究请求未确认')
+      await vi.advanceTimersByTimeAsync(60_000)
+      await expired
+    } finally {
+      vi.unstubAllGlobals()
+      vi.useRealTimers()
+    }
+  })
   it('解包固定报告并拒绝把失败或缺字段当作空初选', () => {
     expect(decodeResearchData(envelope(fixtureReport()), reportSchema).run.selections).toHaveLength(1)
     expect(() => decodeResearchData({ ...envelope(null), code: 'research.unavailable', message: '来源未就绪' }, reportSchema, 503)).toThrow('来源未就绪')
@@ -65,6 +87,23 @@ describe('研究报告契约', () => {
 })
 
 describe('本机研究代理策略', () => {
+  it('单用户须显式启用代理，生产构建始终保留账号流程', () => {
+    const environment = { STOCK_RESEARCH_WEB_SINGLE_USER: 'true', STOCK_RESEARCH_WEB_PROXY_ENABLED: 'true' }
+    expect(localResearchEnabled({}, 'serve')).toBe(false)
+    expect(localResearchEnabled(environment, 'serve')).toBe(true)
+    expect(localResearchEnabled(environment, 'build')).toBe(false)
+    expect(() => localResearchEnabled({ STOCK_RESEARCH_WEB_SINGLE_USER: 'true' }, 'serve')).toThrow('研究代理')
+  })
+  it('单用户代理拒绝公网绑定和缺失服务端身份', () => {
+    const environment = { STOCK_RESEARCH_WEB_PROXY_ENABLED: 'true', STOCK_RESEARCH_API_TOKEN: 't'.repeat(32) }
+    const start = (values: Record<string, string>, host: string | boolean) => {
+      const plugin = stockResearchProxy(values)
+      if (typeof plugin.configureServer !== 'function') throw new Error('missing server hook')
+      return plugin.configureServer({ config: { server: { host } } } as ViteDevServer)
+    }
+    for (const host of ['0.0.0.0', '::', true, '192.168.1.2']) expect(() => start(environment, host)).toThrow('本机监听')
+    expect(() => start({ ...environment, STOCK_RESEARCH_API_TOKEN: '' }, '127.0.0.1')).toThrow('独立身份')
+  })
   it('只接收本机同源请求，拒绝跨站和伪造Host', () => {
     expect(trustedResearchRequest({ host: '127.0.0.1:5173', origin: 'http://127.0.0.1:5173', 'sec-fetch-site': 'same-origin' })).toBe(true)
     expect(trustedResearchRequest({ host: '127.0.0.1:5173', origin: 'https://untrusted.invalid' })).toBe(false)

@@ -13,3 +13,4 @@ interface ImportMeta {
 }
 
 declare const __APP_VERSION__: string
+declare const __LOCAL_STOCK_RESEARCH__: boolean

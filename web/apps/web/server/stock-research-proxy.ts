@@ -10,6 +10,14 @@ const MAX_BODY_BYTES = 8192
 const CHAT_BODY_BYTES = 49152
 const INPUT_BODY_BYTES = 65536
 
+export function localResearchEnabled(environment: Record<string, string>, command: 'serve' | 'build'): boolean {
+  if (command !== 'serve' || environment.STOCK_RESEARCH_WEB_SINGLE_USER !== 'true') return false
+  if (environment.STOCK_RESEARCH_WEB_PROXY_ENABLED !== 'true') {
+    throw new Error('本机单用户界面须先启用研究代理')
+  }
+  return true
+}
+
 function fail(res: ServerResponse, status: 403 | 404 | 413 | 503, message: string): void {
   res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' })
   const code = { 403: 'research.forbidden', 404: 'research.not_found', 413: 'research.invalid_input', 503: 'research.unavailable' }[status]

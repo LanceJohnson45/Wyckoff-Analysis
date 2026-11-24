@@ -524,3 +524,5 @@ flowchart LR
 US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协议锁。研究复制独占两把；源端任务独占前者、内部写事务共享后者，避免父任务与并发写连接自锁。仅约束采用协议的客户端，采用与测试状态见[来源协调](docs/stock_research_market_coordination.md)。
 
 **盘前单用户发布**：纽约08:30冻结已知首报，08:50原期限内成功阶段增加再发一条恢复更新；交易日与initial/recovery构成固定通知身份。Personal原生消息回执才表示sent，未知或待发送不等于送达。见[单用户MVP](docs/stock_research_mvp.md)。
+
+**本机单用户研究界面**：根`.env`的`STOCK_RESEARCH_WEB_SINGLE_USER=true`配合研究代理，在Vite serve的loopback访问中直接进入现有`/chat`研究工作台，不创建云端账号或会话。独立研究API身份留在Node代理；生产静态构建恒关闭此入口，保留原账号鉴权。

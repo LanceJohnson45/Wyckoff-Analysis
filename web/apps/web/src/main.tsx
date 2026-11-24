@@ -12,6 +12,7 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { AppUpdateGate } from '@/components/app-update-gate'
 import { PreferencesProvider } from '@/lib/preferences'
 import { installCloudflareWebAnalytics } from '@/lib/product-analytics'
+import { LocalResearchRoutes } from '@/features/stock-research/local'
 
 installCloudflareWebAnalytics()
 
@@ -45,7 +46,7 @@ createRoot(document.getElementById('root')!).render(
         <AppUpdateGate />
         <BrowserRouter>
           <Suspense fallback={<WyckoffLoading />}>
-            <Routes>
+            {__LOCAL_STOCK_RESEARCH__ && ['127.0.0.1', 'localhost'].includes(window.location.hostname) ? <LocalResearchRoutes /> : <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/m" element={<RemotePage />} />
               {/* 斐波那契画线对未登录访客开放：不套 AuthGuard，页面内也不查星球会员。 */}
@@ -68,7 +69,7 @@ createRoot(document.getElementById('root')!).render(
                   <Route path="/settings" element={<SettingsPage />} />
                 </Route>
               </Route>
-            </Routes>
+            </Routes>}
           </Suspense>
         </BrowserRouter>
       </PreferencesProvider>

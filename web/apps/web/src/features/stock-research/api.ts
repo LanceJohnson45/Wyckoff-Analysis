@@ -74,7 +74,9 @@ async function request<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unkno
   const abort = () => controller.abort()
   if (options.signal?.aborted) controller.abort()
   options.signal?.addEventListener('abort', abort, { once: true })
-  const timer = setTimeout(abort, options.method === 'POST' && path.startsWith('/v1/research-runs') ? 130_000 : 20_000)
+  // 冻结快照读取与其他页面查询共用远端PG连接，须给排队和传输留出有界时间。
+  const timeout = !options.method || options.method === 'GET' ? 60_000 : options.method === 'POST' && path.startsWith('/v1/research-runs') ? 130_000 : 20_000
+  const timer = setTimeout(abort, timeout)
   try {
     const response = await fetch(RESEARCH_BASE + path, { ...options, signal: controller.signal, cache: 'no-store' })
     let raw: unknown
