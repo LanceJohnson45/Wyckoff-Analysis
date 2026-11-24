@@ -54,3 +54,5 @@ execute可由operator明确启用[有界行情准备](stock_research_market_refr
 研究幂等键按研究workspace、目标日、来源能力/trigger_kind和完整配置版本计算；事件ID、job ID和新事件时刻不进入研究键。每个事件保留自身job/plan/准备回执，`origin`给出首次PremarketBinding（job_id、schedule、execution_deadline）；未冻结则为null。相同配置的新manual事件返回同一run与固定报告，不重算量化或成功初选、不刷新运行期限，原冻结清单不改写。新事件plan的预算仅描述该事件窗口，实际研究仍服从origin和原run预算；客户端不在origin截止后恢复。不同trigger_kind或配置仍创建独立研究。
 
 强制重分析使用operator的POST /v1/research-runs，显式force=true和parent_run_id并提供新的Idempotency-Key；新run保留父链，重放同一请求仍返回原新run，原报告/初选保持。workflow身份不能调用普通创建或指定force/父链，避免新manual事件被隐式当作强制重算。
+
+量化进程信号退出或无终帧非零退出已准确映射quant_process_failed，默认研究内部先沿原总期限补算一次，仍失败时才由盘前既有恢复规则处理。未受信号中断的完整非法协议、输出超限及明确计算/源码错误不因此进入临时错误白名单；恢复不另给原事件新的期限。

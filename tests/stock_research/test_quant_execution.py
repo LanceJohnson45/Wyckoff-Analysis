@@ -178,8 +178,13 @@ def test_protocol_limits_and_malformed_worker_are_rejected(
             parameters=MartinParameters(),
         )
         original, children = asyncio.create_subprocess_exec, []
-        for payload, pause in ((b"x" * (MAX_QUANT_RESPONSE + 1), 5), (b"invalid\ninvalid\n", 0)):
-            code = f"import sys,time; sys.stdin.buffer.readline(); sys.stdout.buffer.write({payload!r}); sys.stdout.buffer.flush(); time.sleep({pause})"
+        for payload, pause, exit_code in (
+            (b"x" * (MAX_QUANT_RESPONSE + 1), 5, 0),
+            (b"invalid\ninvalid\n", 0, 0),
+            (b"invalid\ninvalid\n", 0, 7),
+            (b"", 0, 0),
+        ):
+            code = f"import sys,time; sys.stdin.buffer.readline(); sys.stdout.buffer.write({payload!r}); sys.stdout.buffer.flush(); time.sleep({pause}); raise SystemExit({exit_code})"
 
             async def malformed(*_args, code: str = code, **kwargs):
                 child = await original(sys.executable, "-c", code, **kwargs)
@@ -193,13 +198,72 @@ def test_protocol_limits_and_malformed_worker_are_rejected(
             assert children[-1].returncode is not None
         with pytest.raises(QuantExecutionError) as error:
             await execute_quant(request.model_copy(update={"snapshot_path": Path("/" + "a" * MAX_QUANT_REQUEST)}), 10)
-        assert error.value.code == "quant_input_invalid" and len(children) == 2
+        assert error.value.code == "quant_input_invalid" and len(children) == 4
         oversized = tmp_path / "oversized.json"
         with oversized.open("wb") as output:
             output.truncate(MAX_QUANT_REPORT + 1)
         with pytest.raises(QuantExecutionError) as error:
             bounded_report(oversized)
         assert error.value.code == "quant_output_invalid"
+        assert not request.output_path.exists()
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "mode,expected",
+    [
+        ("before_started", "quant_process_failed"),
+        ("after_started", "quant_process_failed"),
+        ("exit_without_result", "quant_process_failed"),
+        ("terminal_failure", "quant_calculation_failed"),
+    ],
+)
+def test_error_worker_exit_retains_protocol_or_process_failure(
+    snapshot: Snapshot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str, expected: str
+) -> None:
+    """【异常值】真实进程中断和无终帧异常退出保留进程错误，不冒充坏结果。"""
+
+    async def scenario() -> None:
+        _settings, path = sample_settings(tmp_path, snapshot)
+        request = QuantRequest(
+            strategy="martin",
+            snapshot_path=path.resolve(),
+            snapshot_id=snapshot.id,
+            snapshot_hash=snapshot.content_hash,
+            source_hash=LOADED_SOURCE_IDENTITY,
+            output_path=(tmp_path / "result.json").resolve(),
+            parameters=MartinParameters(),
+        )
+        original, children = asyncio.create_subprocess_exec, []
+        code = "import os,signal,sys; sys.stdin.buffer.readline(); "
+        if mode == "after_started":
+            code = (
+                "import os,signal; import stock_research.quant_worker as worker; "
+                "worker.worker_compute=lambda request: os.kill(os.getpid(),signal.SIGTERM); "
+                "raise SystemExit(worker.main())"
+            )
+        elif mode == "terminal_failure":
+            code = (
+                "import os,signal; import stock_research.quant_worker as worker; "
+                "worker.worker_compute=lambda request: (_ for _ in ()).throw(ValueError('fixture')); "
+                "worker.main(); os.kill(os.getpid(),signal.SIGTERM)"
+            )
+        else:
+            code += "raise SystemExit(7)" if mode == "exit_without_result" else "os.kill(os.getpid(),signal.SIGTERM)"
+
+        async def interrupt(*_args, **kwargs):
+            child = await original(sys.executable, "-c", code, **kwargs)
+            children.append(child)
+            return child
+
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", interrupt)
+        with pytest.raises(QuantExecutionError) as error:
+            await execute_quant(request, 10)
+        assert error.value.code == expected
+        assert children[-1].returncode != 0 and children[-1].returncode is not None
+        with pytest.raises(ProcessLookupError):
+            os.kill(children[-1].pid, 0)
         assert not request.output_path.exists()
 
     asyncio.run(scenario())

@@ -507,3 +507,75 @@ def test_failed_quant_preserves_prior_day_watch_state_with_unreviewed_marker(
             await close_engine(engine)
 
     asyncio.run(scenario())
+
+
+def test_error_real_worker_signal_recovers_in_original_run(
+    postgres_settings: Settings, snapshot: Snapshot, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """【异常值】默认生产入口实际终止一次worker，落库错误并自动补齐同一研究。"""
+    import os
+    import sys
+
+    async def scenario() -> None:
+        settings = postgres_settings.model_copy(
+            update={"workspace": "quant-signal-" + new_id(), "artifacts_path": tmp_path}
+        )
+        engine = database_engine(settings, test=True)
+        original, children = asyncio.create_subprocess_exec, []
+        code = (
+            "import os,signal; import stock_research.quant_worker as worker; "
+            "worker.worker_compute=lambda request: os.kill(os.getpid(),signal.SIGTERM); "
+            "raise SystemExit(worker.main())"
+        )
+
+        async def interrupt_once(*args, **kwargs):
+            child = (
+                await original(sys.executable, "-c", code, **kwargs)
+                if not children
+                else await original(*args, **kwargs)
+            )
+            children.append(child)
+            return child
+
+        monkeypatch.setattr(asyncio, "create_subprocess_exec", interrupt_once)
+        try:
+            await initialize_schema(engine)
+            store = RunStore(engine, settings.workspace)
+            run_id, _ = await prepare_preview(engine, settings, snapshot, None, snapshot.as_of.replace(day=23))
+            before = await store.row(RESEARCH_RUNS, run_id)
+            initial = await report_view(store, await latest_report_id(store, run_id=run_id))
+            result = await resume_preview(engine, settings, run_id)
+            assert result["status"] == "completed" and len(result["stages"]) == 4
+            assert len(children) == 3 and children[0].returncode == -15
+            assert all(child.returncode is not None for child in children)
+            for child in children:
+                with pytest.raises(ProcessLookupError):
+                    os.kill(child.pid, 0)
+            async with engine.connect() as connection:
+                jobs = (
+                    (await connection.execute(select(QUANT_JOBS).where(QUANT_JOBS.c.run_uuid == run_id)))
+                    .mappings()
+                    .all()
+                )
+                attempts = (
+                    (
+                        await connection.execute(
+                            select(QUANT_ATTEMPTS).where(QUANT_ATTEMPTS.c.job_uuid.in_([row["uuid"] for row in jobs]))
+                        )
+                    )
+                    .mappings()
+                    .all()
+                )
+            assert {row["strategy"]: row["attempt_count"] for row in jobs} == {"martin": 2, "wyckoff": 1}
+            failed = next(row for row in attempts if row["status"] == "failed")
+            assert failed["payload"]["error_code"] == "quant_process_failed"
+            after = await store.row(RESEARCH_RUNS, run_id)
+            assert after["content_hash"] == before["content_hash"]
+            assert (await report_view(store, str(initial.report_id))).model_dump() == initial.model_dump()
+            factors = result["manifest"]["factor_results"]
+            assert (await resume_preview(engine, settings, run_id))["manifest"]["factor_results"] == factors
+            assert len(children) == 3
+        finally:
+            await close_engine(engine)
+
+    asyncio.run(scenario())

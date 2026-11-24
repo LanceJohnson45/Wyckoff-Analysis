@@ -43,14 +43,17 @@ async def quant_response(process: asyncio.subprocess.Process, request: QuantRequ
         if len(content) > MAX_QUANT_RESPONSE:
             raise QuantExecutionError("quant_output_invalid")
     await process.wait()
+    frames = bytes(content).splitlines()
     try:
-        first, last = bytes(content).splitlines()
+        first, last = frames
         started, result = QuantStarted.model_validate_json(first), QuantFinished.model_validate_json(last)
         if (started.pid, started.strategy) != (process.pid, request.strategy):
             raise ValueError("量化启动绑定无效")
         if started.source_hash != request.source_hash:
             raise QuantExecutionError("quant_source_changed")
     except (ValueError, TypeError):
+        if process.returncode and (process.returncode < 0 or len(frames) < 2):
+            raise QuantExecutionError("quant_process_failed") from None
         raise QuantExecutionError("quant_output_invalid") from None
     if result.status != "completed":
         raise QuantExecutionError(result.error_code)
