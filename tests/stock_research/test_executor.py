@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
@@ -204,3 +205,33 @@ def test_transport_enforces_stage_budget_below_global_maximum(tmp_path: Path) ->
         assert transport.process.returncode is not None
 
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    "code,message,expected",
+    [
+        pytest.param(
+            "TIMEOUT", "pi-ai stream idle timeout after 60000ms", "provider_stream_idle_timeout", id="error-stream-idle"
+        ),
+        pytest.param("TIMEOUT", "HTTP request timed out", "transient_provider_error", id="error-request-timeout"),
+        pytest.param("NETWORK_ERROR", "network unavailable", "transient_provider_error", id="error-network"),
+        pytest.param("RATE_LIMIT", "limited", "provider_rate_limit", id="error-rate-limit"),
+    ],
+)
+def test_error_provider_timeout_retains_specific_stream_cause(code: str, message: str, expected: str) -> None:
+    """【异常值】真实SDK终态形状区分流空闲与其他超时，额度错误仍独立。"""
+    transcript = SimpleNamespace(
+        tool_calls=0,
+        events=[
+            {
+                "params": {
+                    "event": {
+                        "type": "turn/end",
+                        "data": {"reason": {"kind": "error", "error": {"code": code, "message": message}}},
+                    }
+                }
+            }
+        ],
+    )
+
+    assert protocol_error(transcript, 20) == expected

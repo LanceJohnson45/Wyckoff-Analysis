@@ -8,7 +8,7 @@ import { evidenceValue } from './stock'
 
 export interface ChatSeed { report: ResearchReport; text: string; sequence: number }
 const labels = { pending: '已受理', running: '正在读取证据与回答', completed: '回答已保存', failed: '本次回答未完成', cancelled: '本次问答已取消' }
-const errors: Record<string, string> = { deadline_exceeded: '本次问答超过时间预算', invalid_output: '回答未通过结构或证据核验', provider_rate_limit: '模型服务限流', transient_provider_error: '模型服务暂不可用', execution_interrupted: '执行已中断，未自动重复模型请求', execution_version_changed: '执行版本已变化，请新建问题', chat_execution_failed: '本次问答执行失败，请核对研究服务配置', tool_budget_exceeded: '本轮证据调用预算已用完', boundary_or_protocol_failed: '执行器边界或协议校验未通过', cleanup_failed: '执行器收尾未确认', cancelled: '问答已取消', api_shutdown: '研究服务关闭时取消了问答', transport_error: '研究执行器暂不可用', executor_unavailable: '研究执行器不可用，请核对本机安装与权限' }
+const errors: Record<string, string> = { provider_stream_idle_timeout: '模型响应流长时间没有新数据', deadline_exceeded: '本次问答超过时间预算', invalid_output: '回答未通过结构或证据核验', provider_rate_limit: '模型服务限流', transient_provider_error: '模型服务暂不可用', execution_interrupted: '执行已中断，未自动重复模型请求', execution_version_changed: '执行版本已变化，请新建问题', chat_execution_failed: '本次问答执行失败，请核对研究服务配置', tool_budget_exceeded: '本轮证据调用预算已用完', boundary_or_protocol_failed: '执行器边界或协议校验未通过', cleanup_failed: '执行器收尾未确认', cancelled: '问答已取消', api_shutdown: '研究服务关闭时取消了问答', transport_error: '研究执行器暂不可用', executor_unavailable: '研究执行器不可用，请核对本机安装与权限' }
 const button = 'rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40'
 
 export function ResearchChat({ report, currentReport, seed, bindReport, consumeSeed }: { report: ResearchReport; currentReport: ResearchReport; seed?: ChatSeed; bindReport: (report: ResearchReport) => void; consumeSeed: () => void }) {

@@ -4,6 +4,7 @@ import { QuantAttemptHistory } from './quant-history'
 import { statusLabels, strategyLabels } from './state'
 
 const errorLabels: Record<string, string> = {
+  provider_stream_idle_timeout: '模型响应流长时间没有新数据',
   deadline_exceeded: '阶段超时', run_deadline_exceeded: '运行预算已耗尽', transient_provider_error: '模型连接暂时异常',
   provider_rate_limit: '模型额度或限流', max_tokens: '模型输出截断', invalid_output: '模型结论未通过证据校验',
   tool_budget_exceeded: '证据查询预算已耗尽', boundary_or_protocol_failed: '执行边界校验失败', executor_unavailable: '研究执行器不可用',

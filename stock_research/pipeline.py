@@ -14,6 +14,7 @@ from stock_research.analysis import MartinReport
 from stock_research.calendar import session_times
 from stock_research.config import Settings
 from stock_research.decisions import ResearchPoint, ReviewDecision, SelectionDecision
+from stock_research.errors import RETRYABLE_MODEL_ERRORS
 from stock_research.evidence import EvidenceContext, build_context
 from stock_research.execution_budget import run_deadline
 from stock_research.executor import StageResult, execute_stage, verify_runtime
@@ -159,7 +160,7 @@ async def run_stage(
         await store.finish_stage(stage_id, context, result)
         if (
             result.status == "completed"
-            or result.error not in {"deadline_exceeded", "transient_provider_error", "transport_error"}
+            or result.error not in RETRYABLE_MODEL_ERRORS | {"deadline_exceeded"}
             or attempt
         ):
             return

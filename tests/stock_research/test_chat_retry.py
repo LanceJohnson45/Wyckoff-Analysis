@@ -176,7 +176,12 @@ def test_retry_actual_harness_preserves_attempts_and_http_replay(
 
 @pytest.mark.parametrize(
     ("error", "calls", "expected"),
-    [("transient_provider_error", 3, 2), ("transport_error", 3, 2), ("transient_provider_error", 20, 1)]
+    [
+        ("transient_provider_error", 3, 2),
+        ("provider_stream_idle_timeout", 3, 2),
+        ("transport_error", 3, 2),
+        ("transient_provider_error", 20, 1),
+    ]
     + [
         (error, 1, 1)
         for error in (

@@ -1,5 +1,7 @@
 """领域错误不依赖HTTP，API边界负责稳定错误码翻译。"""
 
+RETRYABLE_MODEL_ERRORS = frozenset({"transient_provider_error", "provider_stream_idle_timeout", "transport_error"})
+
 
 class ResearchNotFound(ValueError):
     """当前workspace不存在该业务对象。"""

@@ -5,6 +5,7 @@ import signal
 from typing import Literal
 from uuid import UUID
 
+from stock_research.errors import RETRYABLE_MODEL_ERRORS
 from stock_research.identity import now
 from stock_research.schemas.api import ApiModel
 from stock_research.schemas.premarket import PremarketInput, PremarketReceipt
@@ -12,9 +13,7 @@ from stock_research.workflow_client import PremarketClient, WorkflowError
 from stock_research.workflow_settings import WorkflowSettings
 
 PREPARATION_DELAYS = (60, 180)
-RETRYABLE_CODES = frozenset(
-    {"transient_provider_error", "transport_error", "deadline_exceeded", "quant_timeout", "quant_process_failed"}
-)
+RETRYABLE_CODES = RETRYABLE_MODEL_ERRORS | {"deadline_exceeded", "quant_timeout", "quant_process_failed"}
 
 
 class WorkflowOutcome(ApiModel):

@@ -1,6 +1,6 @@
 # 双策略研究执行预览
 
-`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令先冻结共同输入，再按策略保存独立量化尝试及成功产物；局部失败保留回执、另一策略继续，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，页面操作待登录验证；[持续观察名单](stock_research_watchlists.md)已接终态事务及HTTP/CLI，面板及services调度待接。
+`stock-research run --market us --target-session 2026-11-23 --preview` 使用前一正式交易日的合格快照。可用 `--snapshot-file /absolute/snapshot.json` 固定已有快照。命令先冻结共同输入，再按策略保存独立量化尝试及成功产物；局部失败保留回执、另一策略继续，独立初选各最多五只，事务提交后才交叉评议；不会发送通知或创建订单。[研究API与运行管理](stock_research_api.md)已接通本机预览；[Agent研究面板](stock_research_agent_panel.md)已接线，主要单用户页面路径已实测，边界验收见[研究面板](stock_research_agent_panel.md)；[持续观察名单](stock_research_watchlists.md)已接终态事务及HTTP/CLI，面板及独立launchd盘前编排已接通。
 
 ```bash
 uv sync --frozen --python 3.12 --extra dev --extra research
@@ -23,7 +23,7 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 
 本地忽略目录保存context、完整SDK请求/响应/事件、用量和脱敏stderr及摘要，文件权限0600。API凭据字面值在JSON编码前递归脱敏；不要提交这些原始产物。`read-run` 使用独立研究连接重读已提交结果，不启动模型。
 
-本机没有 `wiki_repo_new/`，未声称独立wiki同步或远端CI通过。研究执行验证不代表历史收益、成本后表现、生产通知或自然交易日部署验收。
+独立 `wiki_repo_new/` 已同步并单独提交，当前提交的CI与部署状态以[实施计划](../plan.md)为准。研究执行验证不代表历史收益、成本后表现、生产通知或自然交易日部署验收。
 
 模型输出契约v2允许结构化claim用自身ref独立引用事实，纯文字观点仍各自需要有效引用；正确价格不必在文字字段重复列引用。错误数值明确返回ref及固定值供唯一一次修正；互评data_limitations的schema动态枚举本次注册限制，缺本策略计算时只能标insufficient_evidence。修正轮次复用现有证据并显示剩余查询预算；工具预算耗尽明确记tool_budget_exceeded，不自动重试。旧失败结果不追认，版本变化使用force关联父运行。API OpenAPI同时声明统一的空data错误报文。
 
@@ -35,6 +35,12 @@ uv sync --frozen --python 3.12 --extra dev --extra research
 
 参数版本后台已接通：CLI run与HTTP新建先解析当前发布或operator基线，物化私有不可变文件并将parameter_sources冻结到清单；当前配置改变不重写旧运行。analyze/benchmark仍使用operator指定文件，详情见[参数版本](stock_research_parameters.md)。
 
-固定报告问答复用精简Harness、传输监督和脱敏回执，使用独立八工具名单及证据注册表，不扩展选择/评议原有两工具边界。私有GET身份由临时0600文件注入受控MCP并在收尾删除，配置只含路径；问答默认不自动重试provider失败，详见[研究问答](stock_research_chat.md)。
+固定报告问答复用精简Harness、传输监督和脱敏回执，使用独立八工具名单及证据注册表，不扩展选择/评议原有两工具边界。私有GET身份由临时0600文件注入受控MCP并在收尾删除，配置只含路径；问答仅对明确的临时provider、流空闲或传输失败在原截止与剩余工具预算内至多重试一次，详见[研究问答](stock_research_chat.md)。
 
 [局部量化恢复](stock_research_quant_execution.md)已接入默认API/CLI run：quant_jobs/quant_attempts同输入冻结后执行，成功与因子同事务提交，重启/显式retry只补未成功任务。旧修订保存原绑定，量化失败不触发程序空池结论；执行配置不可用只使需要模型的阶段失败，成功空池仍可记录。
+
+## 流空闲超时归因
+
+真实失败回执的SDK终态为`TIMEOUT`、`pi-ai stream idle timeout after 60000ms`，现单独保存为`provider_stream_idle_timeout`；其他请求超时仍为`transient_provider_error`。阶段、问答契约与盘前恢复共用可重试模型错误集合，前端显示“模型响应流长时间没有新数据”。旧错误码与已保存失败保留，不追认旧报告。
+
+DSH请求120秒、流空闲60秒、阶段180秒、运行3000秒及工具/输出预算保持。四次旧复核中两次没有工具请求，不能归因为研究工具耗时；相同冻结输入的真实执行器重放在60秒配置下成功两次（69.13/89.57秒总耗时），120秒候选成功一次（74.82秒）。这些结果未证明提高空闲阈值有效，因此不采用候选，不声称上游慢响应已修复。隔离浏览器使用本机合成provider和真实DSH再次触发60秒错误，确认自动第二次尝试、原期限/余额及取消回收；不以合成结果证明真实模型稳定性。

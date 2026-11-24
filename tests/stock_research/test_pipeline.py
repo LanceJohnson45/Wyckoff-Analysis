@@ -27,10 +27,25 @@ from stock_research.wyckoff import WyckoffParameters, compute_wyckoff
 pytestmark = pytest.mark.usefixtures("local_postgres_socket")
 
 
-def test_partial_run_resumes_failed_stage_without_replacing_selection(
-    postgres_settings: Settings, snapshot: Snapshot, trending_bars, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "first_error,first_status,first_selections,first_watches",
+    [
+        pytest.param("invalid_output", "partial", 1, 0, id="error-structure-explicit-resume"),
+        pytest.param("provider_stream_idle_timeout", "completed", 2, 1, id="error-idle-automatic-resume"),
+    ],
+)
+def test_normal_stage_recovery_preserves_successful_selection(
+    postgres_settings: Settings,
+    snapshot: Snapshot,
+    trending_bars,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    first_error: str,
+    first_status: str,
+    first_selections: int,
+    first_watches: int,
 ) -> None:
-    """注入一次结构错误后续跑：已提交空初选不重算，互评只在另一初选提交后执行。"""
+    """【异常值】结构失败显式续跑、流空闲自动恢复，成功产物与名单保持。"""
     from stock_research import pipeline
 
     bars = tuple(bar for bar in snapshot.bars if bar.kind == "benchmark") + trending_bars
@@ -59,7 +74,7 @@ def test_partial_run_resumes_failed_stage_without_replacing_selection(
                 context_hash=context.content_hash,
                 status="failed",
                 decision=None,
-                error="invalid_output",
+                error=first_error,
                 receipt_path="fixture-failure",
             )
         if context.role == "select":
@@ -113,17 +128,17 @@ def test_partial_run_resumes_failed_stage_without_replacing_selection(
         try:
             await initialize_schema(engine)
             target = valid.as_of.replace(day=23)
-            partial = await run_preview(engine, settings, valid, analyses, target)
-            assert partial["status"] == "partial"
-            assert len(partial["selections"]) == 1
+            initial = await run_preview(engine, settings, valid, analyses, target)
+            assert initial["status"] == first_status
+            assert len(initial["selections"]) == first_selections
             from stock_research.run_store import RunStore
             from stock_research.watch_queries import event_page, watch_page
 
             watch_store = RunStore(engine, settings.workspace)
-            assert (await watch_page(watch_store, 1, 100)).total == 0
-            original = partial["selections"][0]
+            assert (await watch_page(watch_store, 1, 100)).total == first_watches
+            original = initial["selections"][0]
             recovered = await run_preview(engine, settings, valid, analyses, target)
-            assert recovered["run_id"] == partial["run_id"]
+            assert recovered["run_id"] == initial["run_id"]
             assert recovered["status"] == "completed"
             assert original in recovered["selections"]
             assert len(recovered["selections"]) == len(recovered["reviews"]) == 2

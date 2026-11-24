@@ -64,7 +64,9 @@ function useParameterActions(strategy: Strategy, revision: number, refreshVersio
     } catch (error) {
       if (action === 'publish') setLocked(true)
       const detail = error instanceof Error ? error.message : '参数操作失败'
-      setMessage(error instanceof ResearchApiError && error.status === 409 ? `${detail}。请先读取当前配置，核对后再发布。` : detail)
+      const conflict = error instanceof ResearchApiError && error.status === 409
+      if (conflict && action === 'register') setMessage('同名版本内容不同，请修改版本名称后重新登记。')
+      else setMessage(conflict ? `${detail}。请先读取当前配置，核对后再发布。` : detail)
     } finally { guard.current = false; setBusy(false) }
   }
   return { act, busy, locked, message }

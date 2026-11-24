@@ -10,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from stock_research.chat_runtime import chat_prompt_identity, execute_chat
 from stock_research.chat_store import ChatStore
 from stock_research.config import Settings
-from stock_research.errors import ResearchConflict, ResearchSourceChanged, ResearchUnavailable
+from stock_research.errors import RETRYABLE_MODEL_ERRORS, ResearchConflict, ResearchSourceChanged, ResearchUnavailable
 from stock_research.identity import SHANGHAI, digest, now
 from stock_research.model_connection import ModelConnection, primary_model
 from stock_research.observations import frozen_scope
@@ -143,7 +143,7 @@ class ChatManager:
                 return
             if (
                 result.status != "failed"
-                or result.error_code not in {"transient_provider_error", "transport_error"}
+                or result.error_code not in RETRYABLE_MODEL_ERRORS
                 or attempt
                 or current.tool_calls >= 20
                 or now() >= context.deadline

@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import UUID4, AwareDatetime, Field, field_validator, model_validator
 
 from stock_research.decisions import EvidenceClaim, ResearchPoint
+from stock_research.errors import RETRYABLE_MODEL_ERRORS
 from stock_research.identity import digest
 from stock_research.models import FrozenModel
 from stock_research.schemas.api import ApiModel
@@ -169,7 +170,7 @@ class ChatTurnView(ApiModel):
             if number < len(self.attempts) and (
                 attempt.status != "failed"
                 or attempt.tool_calls is None
-                or attempt.error_code not in {"transient_provider_error", "transport_error"}
+                or attempt.error_code not in RETRYABLE_MODEL_ERRORS
             ):
                 raise ValueError("问答错误不允许重试")
             spent += attempt.tool_calls or 0

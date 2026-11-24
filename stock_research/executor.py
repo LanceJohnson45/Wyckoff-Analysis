@@ -139,12 +139,15 @@ def protocol_error(transport: DshTransport | None, budget: int) -> str:
         if item.get("params", {}).get("event", {}).get("type") == "turn/end"
     ]
     reason = terminals[-1] if terminals else {}
-    code = reason.get("error", {}).get("code")
+    failure = reason.get("error", {})
+    code, message = failure.get("code"), failure.get("message")
     return (
         "tool_budget_exceeded"
         if transport and transport.tool_calls > budget
         else "max_tokens"
         if reason.get("kind") == "max-tokens"
+        else "provider_stream_idle_timeout"
+        if code == "TIMEOUT" and isinstance(message, str) and message.startswith("pi-ai stream idle timeout after ")
         else "transient_provider_error"
         if code in {"NETWORK_ERROR", "TIMEOUT", "SERVICE_UNAVAILABLE"}
         else "provider_rate_limit"

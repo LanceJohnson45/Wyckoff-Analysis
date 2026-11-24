@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { chatTurnSchema, chatIsActive } from './chat-contract'
 import { ChatTurnView } from './chat'
+import { failureLabel } from './report'
 import { allowedResearchRoute } from '../../../server/stock-research-proxy'
 
 const ID = '11111111-1111-4111-8111-111111111111'
@@ -61,6 +62,14 @@ describe('固定报告私有问答', () => {
     expect(chatTurnSchema.parse(turn).attempts).toEqual([])
     const legacy = renderToStaticMarkup(createElement(ChatTurnView, { turn: chatTurnSchema.parse(turn), disabled: false, onContinue: () => undefined }))
     expect(legacy).toContain('未记录逐次执行明细')
+  })
+  it('流空闲超时可按原预算恢复且展示具体原因', () => {
+    const attempts = [{ ...firstAttempt, error_code: 'provider_stream_idle_timeout' }, secondAttempt]
+    const row = chatTurnSchema.parse({ ...turn, attempts })
+    const html = renderToStaticMarkup(createElement(ChatTurnView, { turn: row, disabled: false, onContinue: () => undefined }))
+    expect(html).toContain('模型响应流长时间没有新数据')
+    expect(html).toContain('已确认工具请求 2 次')
+    expect(failureLabel('provider_stream_idle_timeout')).toBe('模型响应流长时间没有新数据')
   })
   it('拒绝重置预算、延长期限、忽略第一次请求和对非临时错误重试', () => {
     for (const invalid of [

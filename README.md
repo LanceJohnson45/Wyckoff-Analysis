@@ -382,3 +382,5 @@ wyckoff mcp-list
 研究行情只读复制现按10,000行流式写入，保留一天修订重叠及原90秒限制，减少重复历史窗口的往返；自然slot超时与候选测量分别记录于[行情准备](docs/stock_research_market_refresh.md)。
 
 研究重叠同步仅在云端修订或OHLCV变化时重写本机行，保留同修订数值修复；本机Web研究API的launchd资源类别及自然恢复限制见[单用户MVP](docs/stock_research_mvp.md)。
+
+研究执行现区分模型响应流空闲超时与其他连接超时，阶段、问答及盘前恢复保持原重试边界和预算；真实回执诊断及未消除的模型延迟见[执行器](docs/stock_research_executor.md)。参数冲突/发布读回、量化失败补算、问答提交未知确认与取消已在隔离原生PG的真实页面逐项验收，见[研究面板](docs/stock_research_agent_panel.md)。

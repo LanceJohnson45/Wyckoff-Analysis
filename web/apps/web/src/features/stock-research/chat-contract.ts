@@ -23,7 +23,7 @@ export const chatTurnSchema = z.object({
     let spent = 0
     turn.attempts.forEach((attempt, index) => {
       if (attempt.number !== index + 1 || attempt.tool_budget !== 20 - spent || Date.parse(attempt.deadline) !== Date.parse(first.deadline)) context.addIssue({ code: z.ZodIssueCode.custom, message: '问答尝试预算或截止时间不一致' })
-      if (index < turn.attempts.length - 1 && (attempt.status !== 'failed' || attempt.tool_calls === null || !['transient_provider_error', 'transport_error'].includes(attempt.error_code || ''))) context.addIssue({ code: z.ZodIssueCode.custom, message: '问答错误不允许重试' })
+      if (index < turn.attempts.length - 1 && (attempt.status !== 'failed' || attempt.tool_calls === null || !['transient_provider_error', 'provider_stream_idle_timeout', 'transport_error'].includes(attempt.error_code || ''))) context.addIssue({ code: z.ZodIssueCode.custom, message: '问答错误不允许重试' })
       spent += attempt.tool_calls ?? 0
     })
     if (spent !== turn.tool_calls || (turn.status !== 'running' && last.status === 'running') || (turn.status === 'completed' && (last.status !== 'completed' || turn.context_hash !== last.context_hash))) context.addIssue({ code: z.ZodIssueCode.custom, message: '问答尝试与最终结果不一致' })

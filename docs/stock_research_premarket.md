@@ -47,7 +47,7 @@ late表示观察时刻已过原报告期限。计划预览的`--at`必须带时�
 
 输入限16KiB，文件限runner授予的同一run目录，拒绝软链/越界；输出0600且不覆盖不同内容。HTTP禁代理/重定向，单次响应上限2MB，响应核对原job、计划、run与报告绑定；错误不回显正文/凭据。
 
-准备失败或未确认按60秒、180秒两次退避，始终重放同一原意图。首次POST传输未知也使用该身份重放，不创建新事件。GET观察失败只重读原job，不据此认定终态或重启执行。仅明确临时的provider/transport/quant超时或进程错误可局部恢复，先60秒再180秒间隔，并服从原总期限；结构/证据/配置错误和已耗尽运行预算不重试。截止或SIGTERM时，对已确认任务有界取消/读回；准备重放后仍未确认记录preparation_unconfirmed；无法确认受理或取消时保留admission_unconfirmed/cancel_unconfirmed，不能声称已停止。未知受理不通过新POST猜测取消。
+准备失败或未确认按60秒、180秒两次退避，始终重放同一原意图。首次POST传输未知也使用该身份重放，不创建新事件。GET观察失败只重读原job，不据此认定终态或重启执行。仅明确临时的provider（含provider_stream_idle_timeout）/transport/quant超时或进程错误可局部恢复，先60秒再180秒间隔，并服从原总期限；结构/证据/配置错误和已耗尽运行预算不重试。截止或SIGTERM时，对已确认任务有界取消/读回；准备重放后仍未确认记录preparation_unconfirmed；无法确认受理或取消时保留admission_unconfirmed/cancel_unconfirmed，不能声称已停止。未知受理不通过新POST猜测取消。
 
 execute可由operator明确启用[有界行情准备](stock_research_market_refresh.md)：PREMARKET_REFRESH默认false，MARKET_REFRESH_TIMEOUT_SECONDS默认90秒；在原准备/事件期限内执行只读PG同步，并仅刷新原已明确启用的三基准补充。准备回执market_refresh持久记录已确认步骤，不将更新完成当作质量通过；数据不足仍失败，不把旧数据当当日新研究。没有报告通知请求或自动投递。下一步统一旧写入/源数据补拉、原报告期限发布与通知稳定业务键/unknown回查，再完成唯一workflow六处登记、cron所有权和正式Mac运行包/网络/自然交易日验收。
 

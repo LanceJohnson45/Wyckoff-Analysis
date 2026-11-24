@@ -250,6 +250,7 @@ def test_original_deadline_stops_polling_and_confirms_remote_cleanup(
     "error,allowed",
     [
         ("transient_provider_error", True),
+        ("provider_stream_idle_timeout", True),
         ("transport_error", True),
         ("invalid_selection", False),
         ("executor_configuration_failed", False),
