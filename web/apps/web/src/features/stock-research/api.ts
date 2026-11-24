@@ -9,6 +9,7 @@ import { preparationPageSchema } from './preparation-contract'
 import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
 import { universePageSchema } from './universe-contract'
 import { evaluationJobPageSchema, evaluationJobSchema, evaluationResultSchema, evaluationSamplePageSchema, type CreateEvaluation } from './evaluation-contract'
+import { renewResearchWebSession } from './web-session'
 import { themeProposalPageSchema, themeProposalSchema, inputPublicationPageSchema, inputPublicationSchema, manualHeadSchema, frozenInputsSchema, canonicalResearchSymbol, type ThemeDefinition, type ConfirmTheme, type CreateManualOverride } from './input-contract'
 
 export const statusSchema = z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled'])
@@ -59,6 +60,11 @@ export class ResearchApiError extends Error {
   constructor(message: string, readonly status: number, readonly code: string) { super(message) }
 }
 
+export function submissionUnconfirmed(error: unknown, reconciling = false): boolean {
+  // 拒绝本次核对不能证明较早的提交未受理。
+  return reconciling || error instanceof ResearchApiError && (error.status === 0 || error.status >= 500 || error.code === 'invalid_response')
+}
+
 export function decodeResearchData<T>(raw: unknown, schema: z.ZodType<T, z.ZodTypeDef, unknown>, status = 200): T {
   const parsed = envelope.safeParse(raw)
   if (!parsed.success) throw new ResearchApiError('研究服务响应格式不正确，请重新连接', status, 'invalid_response')
@@ -79,7 +85,9 @@ async function request<T>(path: string, schema: z.ZodType<T, z.ZodTypeDef, unkno
   const timeout = !options.method || options.method === 'GET' ? 60_000 : options.method === 'POST' && path.startsWith('/v1/research-runs') ? 130_000 : 20_000
   const timer = setTimeout(abort, timeout)
   try {
-    const response = await fetch(RESEARCH_BASE + path, { ...options, signal: controller.signal, cache: 'no-store' })
+    const fetchOptions: RequestInit = { ...options, signal: controller.signal, cache: 'no-store' }
+    let response = await fetch(RESEARCH_BASE + path, fetchOptions)
+    if (response.status === 401 && response.headers.get('X-Research-Web-Session') === 'required' && await renewResearchWebSession() && !controller.signal.aborted) response = await fetch(RESEARCH_BASE + path, fetchOptions)
     let raw: unknown
     try { raw = await response.json() }
     catch { throw new ResearchApiError('研究连接暂不可用，请重新连接', response.status, 'invalid_response') }

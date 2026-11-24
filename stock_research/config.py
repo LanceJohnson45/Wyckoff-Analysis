@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")
+    web_dist_path: Path | None = None
     coverage_min: float = Field(default=0.95, gt=0, le=1)
     history_rows: int = Field(default=320, ge=320)
     adjustment: Literal["qfq"] = "qfq"
@@ -60,10 +61,10 @@ class Settings(BaseSettings):
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
 
-    @field_validator("benchmark_path", "model_profile_path", "model_env_path", mode="before")
+    @field_validator("benchmark_path", "model_profile_path", "model_env_path", "web_dist_path", mode="before")
     @classmethod
     def empty_benchmark_path(cls, value: object) -> object:
-        """空配置表示继续使用云端基准，禁止把空串解释为当前目录。"""
+        """空可选定位保持None，禁止把空串解释为当前目录。"""
         return None if value == "" else value
 
     @field_validator(
@@ -73,6 +74,7 @@ class Settings(BaseSettings):
         "dsh_executable",
         "dsh_home",
         "dsh_agents_home",
+        "web_dist_path",
     )
     @classmethod
     def expand_operator_home(cls, value: Path | None) -> Path | None:

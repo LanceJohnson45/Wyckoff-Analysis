@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:research": "tsc -b && vite build --config vite.research.config.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run"

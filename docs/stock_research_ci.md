@@ -7,3 +7,5 @@
 调用者只授予contents/pull-requests读取权限，不传递生产secrets，没有定时任务、模型调用或部署步骤。分支并发组取消已过期的前一轮检查；A股漏斗/Step4共享组保持。已有部署监听限定main，研究分支检查不启用生产计划、通知或部署。
 
 本地成功不是远端结果。核对对应head SHA的实际Actions运行和各job终态；queued/in_progress/失败或未覆盖必要范围的skip均不能当成发布门禁已通过。独立Wiki解释分支隔离目的，具体验证实现以ci.yml为准。
+
+Web门禁同时构建公开站点与`build:research`专用研究产物，并继续构建Pages函数。专用构建会拒绝云端登录、遥控和站点分析依赖进入本机运行包；标准Python构建把浏览器白名单JSON作为包资源。构建检查不替代实际同进程HTTP、会话及原提交核对的页面验收，详见[静态入口](stock_research_static_web.md)。

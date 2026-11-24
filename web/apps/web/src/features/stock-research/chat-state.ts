@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { cancelChatTurn, createChatTurn, readChatTurn, readChatTurns, ResearchApiError } from './api'
+import { cancelChatTurn, createChatTurn, readChatTurn, readChatTurns, submissionUnconfirmed } from './api'
 import { chatIsActive, type ChatTurn, type CreateChatTurn } from './chat-contract'
 
 export function useResearchChat(reportId: string) {
@@ -26,6 +26,7 @@ export function useResearchChat(reportId: string) {
   const refresh = () => { void history.refetch(); if (conversation) void leaf.refetch(); if (activeId) void active.refetch() }
   async function send() {
     if (guard.current || (running && !request.current)) return
+    const reconciling = request.current !== null
     if (!request.current) {
       if (!draft.trim() || draft.length > 6000 || (conversation && (!latest || leaf.error || leaf.isFetching))) return
       request.current = { body: { report_id: reportId, question: draft.trim(), ...(latest ? { parent_turn_id: latest.id } : {}) }, key: crypto.randomUUID() }
@@ -35,9 +36,9 @@ export function useResearchChat(reportId: string) {
       const result = await createChatTurn(request.current.body, request.current.key)
       request.current = null; setUncertain(false); setDraft(''); setConversation(result.conversation_id); setPage(1); setActiveId(result.id)
       client.setQueryData(['research', 'chat-turn', result.id], result)
-      await client.invalidateQueries({ queryKey: ['research', 'chat-history', reportId] })
+      void client.invalidateQueries({ queryKey: ['research', 'chat-history', reportId] })
     } catch (error) {
-      const unknown = error instanceof ResearchApiError && (error.status === 0 || error.code === 'invalid_response' || error.status >= 500)
+      const unknown = submissionUnconfirmed(error, reconciling)
       setUncertain(unknown)
       if (!unknown) request.current = null
       setMessage(error instanceof Error ? error.message : '问答提交未确认')

@@ -19,7 +19,7 @@
 3. 个人本机使用时，在根 `.env` 显式设 `STOCK_RESEARCH_WEB_SINGLE_USER=true`，同时保留上一步的研究代理配置。重启Vite后，`/`、`/login`直接转到`/chat`研究工作台，无需注册或输入账户密码，不创建Supabase用户或会话。关闭此键恢复原账号界面。既有前端公开Supabase配置继续保留，不复制service_role、密码或会话。
 4. 从 `web/` 安装锁定依赖并运行 `pnpm --filter @wyckoff/web dev --host 127.0.0.1`，访问本机/chat。默认端口5173。
 
-单用户界面只在Vite serve且显式启用研究代理时生效，只展示现有研究功能；Node代理仍持有独立服务端身份并检查loopback绑定、Host、Origin和研究路由。公开绑定会拒绝启动。生产静态构建始终关闭单用户入口，保留云端账号鉴权；生产构建没有这条Node代理，不能将其视为已部署的Tailscale入口。
+单用户界面只在Vite serve且显式启用研究代理时生效，只展示现有研究功能；Node代理仍持有独立服务端身份并检查loopback绑定、Host、Origin和研究路由。公开绑定会拒绝启动。公开站点构建关闭此开发入口并保留云端账号鉴权；其没有这条Node代理。专用`build:research`沿用同一Agent，由Python API提供静态资源及同源会话，见[同进程静态入口](stock_research_static_web.md)。两种本机路径均不能据此视为已部署的Tailscale入口。
 
 若Apple Silicon上的全局pnpm包装器误选x64可选依赖，使用原生Node运行锁定包管理器，从web执行 `CI=true npm exec --yes --package=pnpm@10.33.2 -- pnpm install --frozen-lockfile`，后续pnpm命令用同样前缀；不向manifest加入平台专用依赖，不改锁文件绕过错误。
 
@@ -62,3 +62,5 @@ CI测试现在安装research extra并显式准备initdb/pg_ctl/createdb，研究
 上述worker中断后手动续跑是分类修复前的实际检查点。后续已修正信号/非零无终帧退出的归因，默认运行会自动补算一次；原生PG/实际worker已通过该路径，旧失败修订仍按原记录显示。完整非法协议和计算错误继续等待明确处理，不把它们改为成功空池。详见[量化执行](stock_research_quant_execution.md)。
 
 2026-11-25已补主题/人工自选的实际控件验收，覆盖确认前后、并发旧修订、未来日期、截断响应原操作核对、三页历史与重启；当前报告冻结来源保持。已确认主题复核仅展示原确认结果，不再同时提示未确认冲突，过期待确认仍锁定。具体范围与隔离边界见[人工输入维护](stock_research_input_maintenance.md)。整份计划按[完整矩阵](stock_research_completion.md)继续开发，不能把上述控件验收等同评估/通知状态等尚缺能力完成。
+
+同进程静态入口在隔离原生PG和实际Python服务下补验固定报告、图表及评估窗口。服务重启时只续会话，不卸载页面；评估、维护、问答未知提交在普通401核对后仍保留原意图，实际同键找回后解锁。三类记录各自独立读回，旧研究内容不变；问答隔离模型凭据，未取得模型回答。详见[静态入口验收边界](stock_research_static_web.md)。

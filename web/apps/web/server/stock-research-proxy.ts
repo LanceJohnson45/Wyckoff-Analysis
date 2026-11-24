@@ -2,13 +2,13 @@ import { randomUUID } from 'node:crypto'
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http'
 import { Readable } from 'node:stream'
 import type { Plugin } from 'vite'
+import routes from '../../../../stock_research/web_routes.json'
 
-const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-const READ_PATH = new RegExp(`^/v1/(?:reports/(?:latest|${UUID}(?:/(?:market|groups|compare|rules|universe|anchors/[A-Z][A-Z0-9.-]{0,31}))?)|research-runs(?:/${UUID}(?:/(?:reports|events|parameters|inputs|quant-attempts))?)?|watchlists(?:/events)?|stocks/[A-Z][A-Z0-9.-]{0,31}/observations|strategies|parameter-sets(?:/${UUID})?|preparations|chat-turns(?:/${UUID})?|theme-proposals(?:/${UUID})?|input-publications|universe-overrides(?:/[A-Z][A-Z0-9.-]{0,31})?|evaluations(?:/${UUID})?|evaluation-results/${UUID}(?:/samples)?)$`)
-const WRITE_PATH = new RegExp(`^/v1/(?:research-runs(?:/${UUID}/(?:retry|cancel))?|parameter-sets|strategies/(?:martin|wyckoff)/activate-parameters|chat-turns(?:/${UUID}/cancel)?|theme-proposals(?:/${UUID}/confirm)?|universe-overrides|evaluations(?:/${UUID}/(?:retry|cancel))?)$`)
-const MAX_BODY_BYTES = 8192
-const CHAT_BODY_BYTES = 49152
-const INPUT_BODY_BYTES = 65536
+const readPath = new RegExp(`^(?:${routes.GET.map(path => path.replaceAll('{id}', routes.uuid).replaceAll('{symbol}', routes.symbol)).join('|')})$`)
+const writePath = new RegExp(`^(?:${routes.POST.map(path => path.replaceAll('{id}', routes.uuid).replaceAll('{symbol}', routes.symbol)).join('|')})$`)
+const MAX_BODY_BYTES = routes.body_limits.default
+const CHAT_BODY_BYTES = routes.body_limits.chat
+const INPUT_BODY_BYTES = routes.body_limits.inputs
 
 export function localResearchEnabled(environment: Record<string, string>, command: 'serve' | 'build'): boolean {
   if (command !== 'serve' || environment.STOCK_RESEARCH_WEB_SINGLE_USER !== 'true') return false
@@ -35,7 +35,7 @@ export function trustedResearchRequest(headers: IncomingHttpHeaders): boolean {
 }
 
 export function allowedResearchRoute(method: string | undefined, pathname: string): boolean {
-  return method === 'GET' ? READ_PATH.test(pathname) : method === 'POST' && WRITE_PATH.test(pathname)
+  return method === 'GET' ? readPath.test(pathname) : method === 'POST' && writePath.test(pathname)
 }
 
 async function requestBody(req: IncomingMessage, maximum: number): Promise<ArrayBuffer | undefined> {

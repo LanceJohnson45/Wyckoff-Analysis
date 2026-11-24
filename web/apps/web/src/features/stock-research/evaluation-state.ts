@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { controlEvaluation, createEvaluation, readCurrentParameters, readEvaluation, readEvaluations, readEvaluationResult, ResearchApiError } from './api'
+import { controlEvaluation, createEvaluation, readCurrentParameters, readEvaluation, readEvaluations, readEvaluationResult, submissionUnconfirmed } from './api'
 import { evaluationActive, type CreateEvaluation, type EvaluationJob } from './evaluation-contract'
 
 type Action = { kind: 'create'; body: CreateEvaluation } | { kind: 'confirm' } | { kind: 'cancel' | 'retry' | 'read'; id: string }
@@ -37,7 +37,7 @@ function useEvaluationActions(accept: (job: EvaluationJob) => void) {
       setReadbackId(null)
       setMessage(submission ? '评估已受理，任务与原输入会分别留档。' : action.kind === 'read' ? '已读取原任务状态。' : action.kind === 'cancel' ? '已核对取消请求；实际状态如下。' : '已受理原任务续跑，期限与输入保持。')
     } catch (error) {
-      const unknown = error instanceof ResearchApiError && (error.status === 0 || error.status >= 500 || error.code === 'invalid_response')
+      const unknown = submissionUnconfirmed(error, action.kind === 'confirm')
       if (submission) {
         setUncertain(unknown)
         if (!unknown) { original.current = null; setPending(null) }

@@ -2,6 +2,8 @@
 
 `stock-research serve` 启动独立研究API，仅监听 `127.0.0.1:8788`。本机研究库需先显式 `init-schema`，启动会检查运行账本及请求映射表可读，不自动迁移。`.env` 中配置独立且至少32字符的 `STOCK_RESEARCH_API_TOKEN`，不能复用Personal网关身份；本机已生成身份，保存在0600的忽略文件中。部署主机和端口分别使用API_HOST/API_PORT，Origin白名单使用API_ALLOWED_ORIGINS的JSON数组；不提供任意主机绑定或关闭认证的配置。
 
+可选同进程HTML/资产及浏览器会话入口见[静态工作台](stock_research_static_web.md)；启用后只有固定浏览器前缀经会话转换进入原鉴权链，直接API端点仍使用Bearer。
+
 健康检查 `/healthz`、依赖就绪 `/readyz` 无需身份，其余端点包括OpenAPI均需 `Authorization: Bearer <研究API身份>`。Host只接受localhost/127.0.0.1；带Origin的浏览器请求须在白名单内。当前未配置跨源CORS代理，工作台接入须使用受信同源后端。令牌不能进入URL、原始报告、浏览器持久化或日志。
 
 所有JSON响应为code/message/data/correlation_id四键，与plan.md约定一致。成功code为0000；未认证401、未授权来源403、对象不存在404、状态/幂等冲突409、无效参数422、数据或存储未就绪503。未处理错误使用500及脱敏消息，不输出驱动错误、凭据或本地文件路径。
