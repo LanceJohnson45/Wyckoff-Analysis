@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime
 
 import pandas as pd
@@ -143,7 +144,9 @@ def _download_batch(
     if data is None or data.empty:
         raise RuntimeError(f"yfinance batch empty for {joined}")
     if len(symbols) > 1 and not isinstance(data.columns, pd.MultiIndex):
-        raise RuntimeError("Multi-symbol download has no ticker labels; refusing to duplicate one history across symbols")
+        raise RuntimeError(
+            "Multi-symbol download has no ticker labels; refusing to duplicate one history across symbols"
+        )
     out: dict[str, pd.DataFrame] = {}
     for symbol in symbols:
         frame = _normalize_batch_download(data, symbol)
@@ -155,7 +158,9 @@ def _download_batch(
             except Exception:
                 frame = pd.DataFrame()
         if not frame.empty:
-            frame = frame.loc[frame["日期"].between(start_day.isoformat(), end_day.isoformat())].copy()
+            frame = frame.loc[
+                frame["日期"].between(start_day.isoformat(), end_day.isoformat())
+            ].copy()
         if not frame.empty:
             out[symbol] = frame
     return out
@@ -172,7 +177,7 @@ def _upsert_us_history(
     latest_date = pd.to_datetime(norm["date"], errors="coerce").dropna().max()
     if pd.isna(latest_date):
         return 0
-    
+
     max_retries = 3
     ok = False
     for attempt in range(max_retries):
@@ -187,16 +192,16 @@ def _upsert_us_history(
             break
         if attempt < max_retries - 1:
             time.sleep(0.5 * (attempt + 1))
-    
+
     if not ok:
         return 0
-    
+
     for delay in [0.2, 0.5, 1.0]:
         time.sleep(delay)
         meta = get_cache_meta(f"US:{symbol}", "qfq", context=context)
         if meta is not None and meta.end_date >= latest_date.date():
             return int(len(norm))
-    
+
     return 0
 
 
@@ -223,6 +228,32 @@ def _filter_symbols_needing_backfill(
     return needs, covered
 
 
+def _write_batch(
+    symbols: list[str], frames: dict[str, pd.DataFrame], write_workers: int
+) -> dict[str, int]:
+    available = [
+        symbol for symbol in symbols if symbol in frames and not frames[symbol].empty
+    ]
+    stats = {
+        "symbols": 0,
+        "rows": 0,
+        "failed": len(symbols) - len(available),
+        "write_fail": 0,
+    }
+    with ThreadPoolExecutor(max_workers=write_workers) as executor:
+        results = executor.map(
+            _upsert_us_history, available, (frames[symbol] for symbol in available)
+        )
+        for symbol, rows in zip(available, results):
+            if rows <= 0:
+                stats["write_fail"] += 1
+                _log(f"write verification failed {symbol}")
+            else:
+                stats["symbols"] += 1
+                stats["rows"] += rows
+    return stats
+
+
 def _run_batches(
     symbols: list[str],
     *,
@@ -230,7 +261,10 @@ def _run_batches(
     end_day: date,
     batch_size: int,
     sleep_seconds: float,
+    write_workers: int = 1,
 ) -> dict[str, int]:
+    if not 1 <= write_workers <= 4:
+        raise ValueError("history write workers must be between 1 and 4")
     stats = {"symbols": 0, "rows": 0, "failed": 0, "write_fail": 0}
     for idx, chunk in enumerate(_chunked(symbols, batch_size), start=1):
         _log(f"batch {idx}: downloading {len(chunk)} symbols {start_day}..{end_day}")
@@ -242,19 +276,9 @@ def _run_batches(
             if sleep_seconds > 0:
                 time.sleep(sleep_seconds)
             continue
-        for symbol in chunk:
-            frame = frames.get(symbol)
-            if frame is None or frame.empty:
-                stats["failed"] += 1
-                _log(f"batch {idx}: empty {symbol}")
-                continue
-            rows = _upsert_us_history(symbol, frame)
-            if rows <= 0:
-                stats["write_fail"] += 1
-                _log(f"batch {idx}: write verification failed {symbol}")
-                continue
-            stats["symbols"] += 1
-            stats["rows"] += rows
+        written = _write_batch(chunk, frames, write_workers)
+        for key in stats:
+            stats[key] += written[key]
         if sleep_seconds > 0:
             time.sleep(sleep_seconds)
     return stats
@@ -330,7 +354,9 @@ def refresh_constituents(
         sleep_seconds=sleep_seconds,
     )
     _log(f"refresh complete stats={json.dumps(stats, ensure_ascii=False)}")
-    return 0 if stats["symbols"] == len(snapshot.symbols) and stats["symbols"] > 0 else 1
+    return (
+        0 if stats["symbols"] == len(snapshot.symbols) and stats["symbols"] > 0 else 1
+    )
 
 
 def prewarm_constituents(

@@ -104,6 +104,7 @@ def refresh_research(
             end_day=as_of,
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
+            write_workers=4,
         )
         stats["symbols"] += len(covered)
         rows = fetch_all(
