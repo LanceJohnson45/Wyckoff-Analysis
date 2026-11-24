@@ -29,6 +29,12 @@ class Publication(BaseModel):
     report_id: str | None
 
 
+def deliveries_sent(result: dict[str, object]) -> bool:
+    """有恢复发布时必须也取得sent，否则后续tick仍需沿原业务键重放。"""
+    recovery = result.get("recovery")
+    return result.get("initial", {}).get("state") == "sent" and (recovery is None or recovery.get("state") == "sent")
+
+
 async def call_worker(
     settings: MvpSettings, kind: Literal["refresh", "notify"], payload: dict[str, object], timeout: float
 ) -> dict[str, object]:

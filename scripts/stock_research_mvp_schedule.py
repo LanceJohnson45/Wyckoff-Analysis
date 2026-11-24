@@ -14,6 +14,7 @@ if __name__ == "__main__" and not __package__:
 from stock_research.artifacts import data_lock, write_once
 from stock_research.identity import canonical_json, new_id, now
 from stock_research.mvp import execute_mvp
+from stock_research.mvp_delivery import deliveries_sent
 from stock_research.mvp_settings import load_mvp_settings
 from stock_research.premarket import plan_premarket
 from stock_research.schemas.premarket import NEW_YORK, PremarketInput
@@ -39,7 +40,7 @@ def daily_input(observed_at: datetime, workspace: str, *, manual: bool = False) 
 def finished(result: dict[str, object]) -> bool:
     research = result.get("research") or {}
     receipt = research.get("receipt") or {}
-    return result.get("initial", {}).get("state") == "sent" and receipt.get("status") in {
+    return deliveries_sent(result) and receipt.get("status") in {
         "completed",
         "partial",
         "failed",

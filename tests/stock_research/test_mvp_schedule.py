@@ -39,3 +39,15 @@ def test_manual_retains_actual_event_time_and_delivery_unknown_is_not_finished()
     assert not finished(result)
     result["initial"]["state"] = "sent"
     assert finished(result)
+
+
+@pytest.mark.parametrize("state", ["retry", "ready", "unknown", "unconfirmed"])
+def test_recovery_delivery_pending_keeps_tick_retryable(state: str) -> None:
+    """【异常值】首报送达但恢复消息未送达时，不能生成done阻止后续tick补发。"""
+    result = {
+        "initial": {"state": "sent"},
+        "recovery": {"state": state},
+        "research": {"receipt": {"status": "completed"}},
+    }
+
+    assert not finished(result)

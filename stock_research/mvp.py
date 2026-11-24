@@ -10,7 +10,7 @@ from pathlib import Path
 from stock_research.artifacts import data_lock, write_once
 from stock_research.identity import canonical_json, now
 from stock_research.models import UniverseVersion
-from stock_research.mvp_delivery import call_worker, publication, publish
+from stock_research.mvp_delivery import call_worker, deliveries_sent, publication, publish
 from stock_research.mvp_settings import MvpSettings, load_mvp_settings
 from stock_research.premarket import MAX_INPUT_BYTES, plan_premarket, workflow_paths
 from stock_research.premarket_workflow import WorkflowOutcome, run_workflow
@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"mode": "mvp", "error_code": "mvp_execution_unconfirmed"}))
         return 1
     print(canonical_json({key: value for key, value in result.items() if key != "research"}))
-    return int(result.get("initial", {}).get("state", "sent") != "sent")
+    return int("initial" in result and not deliveries_sent(result))
 
 
 if __name__ == "__main__":
