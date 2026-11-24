@@ -99,6 +99,51 @@ def test_normal_sync_preserves_three_benchmarks_and_stock_identity(postgres_sett
     asyncio.run(scenario())
 
 
+def test_normal_large_sync_uses_bounded_large_batches(postgres_settings: Settings, tmp_path: Path) -> None:
+    """【正常值】历史窗口不拆成大量远端往返和SQLite事务，所有行仍独立读回。"""
+
+    async def scenario() -> None:
+        await seed_source(postgres_settings)
+        admin = database_engine(postgres_settings, test=True)
+        try:
+            async with admin.begin() as connection:
+                await connection.execute(delete(CLOUD_BARS))
+                await connection.execute(
+                    insert(CLOUD_BARS),
+                    [
+                        dict(
+                            symbol=f"US:T{symbol}",
+                            adjust="qfq",
+                            date=SESSION - timedelta(days=day),
+                            open=10,
+                            high=12,
+                            low=9,
+                            close=11,
+                            volume=1000,
+                            updated_at=STAMP,
+                        )
+                        for symbol in range(20)
+                        for day in range(600)
+                    ],
+                )
+            path = tmp_path / "large-sync.sqlite3"
+
+            result = await sync_market(source_settings(postgres_settings), path)
+            local = local_write_engine(path)
+            try:
+                async with local.connect() as connection:
+                    count = await connection.scalar(select(func.count()).select_from(DAILY_BARS))
+
+                assert result["rows"] == count == 12000
+                assert result["batches"] <= 2
+            finally:
+                await close_engine(local)
+        finally:
+            await close_engine(admin)
+
+    asyncio.run(scenario())
+
+
 def test_error_cloud_connection_rejects_writes(postgres_settings: Settings) -> None:
     """【异常值】生产源连接的事务只读真实生效，INSERT被服务器拒绝。"""
 

@@ -378,3 +378,5 @@ wyckoff mcp-list
 研究资料维护保留逐行分类出处；公开成分刷新会沿用当前有效成员的GICS缺项补充，完整基线不由15条[补充清单](config/research/classification-supplement-20261124-v1.json)替代。上市历史限制与漏同步的核查方法见[公开资料说明](docs/stock_research_public_data.md)。
 固定报告问答的工具结果按用途投影并分页，每页48KiB、每轮累计256KiB，只登记实际返回的证据。可用`fact_offset`续读，完整参数单独查询，避免多次工具调用重复装入整份报告。见[问答契约](docs/stock_research_chat.md)。
 盘前任务仅在研究终态且所有实际发布（包括恢复更新）已送达后写当天完成标记；恢复消息未知或待重试不会被首报成功掩盖。后续tick保留原期限和通知业务键，见[盘前MVP](docs/stock_research_mvp.md)。
+
+研究行情只读复制现按10,000行流式写入，保留一天修订重叠及原90秒限制，减少重复历史窗口的往返；自然slot超时与候选测量分别记录于[行情准备](docs/stock_research_market_refresh.md)。

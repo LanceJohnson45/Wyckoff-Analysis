@@ -105,3 +105,5 @@ API/CLI run量化已使用可取消/限时回收的独立worker，完整校验�
 ## 源维护协调候选
 
 研究同步现增加数据库范围US任务/数据锁。独立新来源工作树从实际wxjer@b5cb2d79接入既有CLI及PG写事务，旧dc5fec0e工作树与其.env保持。候选提供固定研究池/三基准补齐及现有手动Actions参数；仍须源候选生产采用，研究身份没有写权限升级、盘前worker也未自动派发源任务。详见[来源协调](stock_research_market_coordination.md)。
+
+只读复制按10,000行流式提交，保留一天修订重叠窗口；不以缩减修订范围换取速度。源事务完成后才推进水位，取消与失败仍允许安全重放。完整有界worker及自然任务分别验收，见[行情准备](stock_research_market_refresh.md)。

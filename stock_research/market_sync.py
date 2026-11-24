@@ -33,7 +33,7 @@ CLOUD_BARS = Table(
     schema="public",
 )
 SYNC_SCOPE = "research:us:all:benchmarks-v1"
-SYNC_BATCH_ROWS = 2000
+SYNC_BATCH_ROWS = 10000
 SYNC_OVERLAP = timedelta(days=1)
 
 
