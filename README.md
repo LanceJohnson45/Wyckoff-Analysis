@@ -371,7 +371,7 @@ wyckoff mcp-list
 </picture>
 <!-- star-history:end -->
 
-研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选尚未生产采用，不据此称旧云端写入已互斥。
+研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选883872cb已用于独立MVP补拉副本，旧云端任务和未升级写入器仍未自动参加协议。
 # 股票研究稳定性
 
 冻结快照读取共用连接池内的一份有界缓存，热查询仅核对PostgreSQL行版本，避免报告、股票池及个股反复传输完整行情。缓存失效、隔离和测量边界见[研究查询](docs/stock_research_queries.md)。完整页面操作与自然交易日定点送达分别验收，进度见[实施计划](plan.md)。
@@ -389,6 +389,6 @@ wyckoff mcp-list
 
 主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。[历史评估CLI/私有作业API](docs/stock_research_evaluations.md)已接入20截面、生产量化池、观察窗口及时间净化，隔离worker支持原输入续跑、取消与重启恢复，结果分表分页，封存组不输出表现。现有Agent的量化池回放、原提交核对、取消续跑和两级分页已通过隔离合成资料的真实页面验收；历史不足/质量失败明确归因并拒绝重算原坏输入，运行包采用另记。[同进程静态入口](docs/stock_research_static_web.md)已接专用研究构建、同源会话及固定API桥接；隔离真实页面补验服务重启续会话，评估/维护/问答核对失败继续保留原意图。整份计划仍有正式入选观测、参数实验及其界面、正式入口写控件复验、远程入口和自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。
 
-个人本机同进程工作台已由固定版本`09bdd3cb`的Python API提供，入口为`http://127.0.0.1:8788/chat`；该版本八项CI成功，显式表初始化和四类活动/worker退出检查后切换。正式入口已补518成员搜索、320根图表及锚点、历史修订切换和评估空历史只读页面验收；写控件与Tailscale仍单独验收。见[运行说明](docs/stock_research_static_web.md)。
+个人本机同进程工作台已由固定版本`6fc65f46`的Python API提供，入口为`http://127.0.0.1:8788/chat`；该版本八项CI成功，显式表初始化和四类活动/worker退出检查后切换。正式入口已补518成员搜索、320根图表及锚点、历史修订切换和评估空历史只读页面验收；写控件与Tailscale仍单独验收。见[运行说明](docs/stock_research_static_web.md)。
 
-[研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。当前运行包是否采用该批次仍须单独核验。
+[研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。本机正式API/股票tick已于11月25日04:55采用本批，直接与同源状态读取通过；该状态区域的正式页面复验继续单独记录。
