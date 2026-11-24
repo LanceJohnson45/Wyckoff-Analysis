@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>HOME</key>
+		<string>__HOME__</string>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/bin:/bin</string>
+		<key>PYTHONUNBUFFERED</key>
+		<string>1</string>
+		<key>TZ</key>
+		<string>Asia/Shanghai</string>
+	</dict>
+	<key>ExitTimeOut</key>
+	<integer>45</integer>
+	<key>Label</key>
+	<string>com.wxjer.stock-research-premarket</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>__RELEASE__/.venv/bin/python</string>
+		<string>__RELEASE__/scripts/stock_research_mvp_schedule.py</string>
+		<string>--config</string>
+		<string>__STATE__/mvp.env</string>
+		<string>--workspace</string>
+		<string>__WORKSPACE__</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>__STATE__/schedule.err.log</string>
+	<key>StandardOutPath</key>
+	<string>__STATE__/schedule.out.log</string>
+	<key>StartInterval</key>
+	<integer>60</integer>
+	<key>WorkingDirectory</key>
+	<string>__RELEASE__</string>
+</dict>
+</plist>
