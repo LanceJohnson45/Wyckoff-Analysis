@@ -22,7 +22,7 @@ React Web、CLI、MCP 与 GitHub Actions 共同组成当前产品形态；日线
 
 独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，最新检查点见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。
 
-本机API与股票tick于2026-11-25上海06:38采用固定运行包`notifications-d42fa219`，该代码[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45499569161)全部成功。已有研究复用前移、手动/定点通知隔离及旧正文来源保护已安装；真实固定报告追问、引用逐值核验及重启读回已补验。自然交易日、真实通知unknown恢复、Tailscale入口和完整计划其余项仍独立验收，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。
+本机API与股票tick于2026-11-25上海06:38采用固定运行包`notifications-d42fa219`，该代码[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45499569161)全部成功。已有研究复用前移、手动/定点通知隔离及旧正文来源保护已安装；真实固定报告追问、引用逐值核验及重启读回已补验；正式历史评估创建、20截面完成、固定产物重读、分页与页面重载也已验收，限制见[评估记录](docs/stock_research_evaluations.md#正式页面与真实行情验收)。自然交易日、真实通知unknown恢复、Tailscale入口和完整计划其余项仍独立验收，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。
 
 数据与量化已接通：[数据CLI](docs/stock_research_data_cli.md)提供公开成分版本、只读同步、一致快照及独立基准，[来源与实测](docs/stock_research_public_data.md)保留公开源和当前池回溯限制；[Martin量化](docs/stock_research_martin_cli.md)、[Wyckoff生产适配](docs/stock_research_wyckoff_cli.md)形成独立复核池，[执行预览](docs/stock_research_executor.md)保存初选及交叉评议。
 
