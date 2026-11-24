@@ -26,4 +26,15 @@ def canonical_json(value: object) -> str:
 
 def digest(value: object) -> str:
     """计算规范化 JSON 的 SHA256。"""
-    return hashlib.sha256(canonical_json(value).encode()).hexdigest()
+    if not isinstance(value, dict) or any(not isinstance(key, str) for key in value):
+        return hashlib.sha256(canonical_json(value).encode()).hexdigest()
+    result = hashlib.sha256(b"{")
+    for index, key in enumerate(sorted(value)):
+        if index:
+            result.update(b",")
+        result.update(canonical_json(key).encode())
+        result.update(b":")
+        # 少量中文元数据会把整份行情JSON扩成宽字符；按顶层字段保持原字节协议。
+        result.update(canonical_json(value[key]).encode())
+    result.update(b"}")
+    return result.hexdigest()

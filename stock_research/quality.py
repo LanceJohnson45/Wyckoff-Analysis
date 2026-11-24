@@ -46,6 +46,8 @@ def build_snapshot(
             (b for b in selected if (b.kind, b.symbol) not in invalid), key=lambda b: (b.kind, b.symbol, b.session_date)
         )
     )
+    # 序列化前释放窗口索引，避免批量截面同时持有多份大字典。
+    del selected, duplicates
     quality = assess_quality(universe, classifications, clean, as_of, sessions, coverage_min, issues, extra_limitations)
     content = dict(
         as_of=as_of.isoformat(),
@@ -55,7 +57,17 @@ def build_snapshot(
         quality=quality.model_dump(mode="json"),
         source_identity=source_identity,
     )
-    return Snapshot(**content, content_hash=digest(content))
+    content_hash = digest(content)
+    del content
+    return Snapshot(
+        as_of=as_of,
+        universe=universe,
+        classifications=classifications,
+        bars=clean,
+        quality=quality,
+        source_identity=source_identity,
+        content_hash=content_hash,
+    )
 
 
 def assess_quality(

@@ -6,6 +6,8 @@
 
 续接起点发现`evaluate`、`POST /v1/evaluations`、历史截面/后续表现/参数实验台账尚不存在；通知状态和最近成功时间的工作台呈现、正式静态运行入口仍需核对补齐。现有主题/自选维护已进入实际页面验收。自然任务须等待11月25日21:00/21:30/21:50窗口的真实回执，目标保持进行中。
 
+续接进展：主题/自选维护已补实际页面验收及06412209成功CI；`evaluate` 已接入20截面的正式量化池基线回放，当前版本和限制见[历史评估CLI](docs/stock_research_evaluations.md)。正式初选观测、人工审查、参数实验、评估API/界面及自然日仍分别待完成，不将这一批量化回放视为整个阶段六交付。
+
 ## 当前稳定性批次（2026-11-24）
 
 按读取稳定性→资料补齐→真实页面→自然交易日闭环推进，暂不扩功能。[本批约束与验收清单](docs/design/stock-research-stability-2026-11-24.md)独立记录。
@@ -464,7 +466,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读；evaluate仍为后续验收目标。已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI](docs/stock_research_evaluations.md)，当前仅覆盖20截面基线回放、描述性观察及时间净化，不含正式模型初选观测、人工审查、参数实验或评估API；阶段六仍待完整验收。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 

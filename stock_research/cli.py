@@ -21,6 +21,7 @@ from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
+from stock_research.evaluation_cli import evaluate_command
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
@@ -87,6 +88,10 @@ def parser() -> argparse.ArgumentParser:
     analyze.add_argument("--strategy", choices=["martin", "wyckoff"], required=True)
     analyze.add_argument("--no-llm", action="store_true")
     analyze.add_argument("--snapshot-file", type=Path)
+    evaluate = commands.add_parser("evaluate", help="20截面历史量化池观测，不调用模型或发布生产参数")
+    evaluate.add_argument("--profile", required=True)
+    evaluate.add_argument("--cutoff", type=date.fromisoformat, required=True)
+    evaluate.add_argument("--allow-current-universe", action="store_true", help="显式接受当前成分及分类回溯限制")
     compare = commands.add_parser("benchmark", help="独立进程对拍ATR/ADR和冷/热耗时，不比较未对齐EMA")
     compare.add_argument("--as-of", type=date.fromisoformat, required=True)
     compare.add_argument("--profile", required=True)
@@ -251,6 +256,10 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "evaluate":
+        return evaluate_command(
+            settings, args.profile, args.cutoff, allow_current_universe=args.allow_current_universe
+        ), 0
     if args.command == "serve":
         import uvicorn
 

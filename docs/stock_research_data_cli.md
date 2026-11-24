@@ -1,8 +1,8 @@
 # 独立美股研究数据命令
 
-本页描述 `codex/stock-research` 的数据阶段实现。后续已接通[Martin量化观察](stock_research_martin_cli.md)和[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)，[模型初选与互评预览](stock_research_executor.md)已接通；[研究API](stock_research_api.md)已接通本机预览；定时任务和飞书发送尚未接通。旧同步入口保留在独立来源工作树，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
+本页描述 `codex/stock-research` 的数据阶段实现。[Martin量化观察](stock_research_martin_cli.md)、[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)、[模型初选与互评预览](stock_research_executor.md)和[研究API](stock_research_api.md)已接通；[盘前MVP](stock_research_mvp.md)记录已安装定时任务、飞书送达及尚待无人干预自然日验收的边界。[历史评估CLI](stock_research_evaluations.md)已提供基线量化池回放，完整阶段六仍未完成。旧同步入口保留在独立来源工作树，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
 
-本机现已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。新 `refresh-versions`、`fetch-benchmarks` 的来源、配置和实测见[公开成分与基准补充](stock_research_public_data.md)。云端QQQ/IWM仍未补写，当前使用显式供应商文件解决研究数据缺口，保留全部出处限制。
+本机已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。`refresh-versions`、`fetch-benchmarks` 的来源、配置和初期实测见[公开成分与基准补充](stock_research_public_data.md)。初期QQQ/IWM缺口使用显式供应商文件补充；当前可用范围以本地源和补充文件的实际截止日、完整性及来源检查为准，不能把早期缺口记录当成当前源状态。评估命令仅用本地源，不自动消费该补充文件。
 
 ## 本机配置
 
