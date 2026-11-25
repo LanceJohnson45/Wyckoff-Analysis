@@ -109,3 +109,9 @@ API与独立tick均已由launchd启动；原42条Personal计划保持。定点�
 Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启只读MCP，三项工具在新API读完2/8/2页（IEX320根），每页最多32736字节，重建原模型/摘要与HTTP一致，owned子进程已回收、原进程与live profile不变，模型调用0。这是SDK兼容核验；08:32真实模型页面验收另记，不把本次读取描述成新模型问答。
 
 完整计划保持进行中：自然11月25日21:00/21:30/21:50及真实通知unknown仍未发生/验证，正式初选持久观测/人工审查、参数实验/AKQuant、Tailscale与独立整体审查等继续推进。收尾文档head的CI单独核对，不把实现633的绿灯移用于后续提交。
+
+## 2026-11-25瞬时源重试采用
+
+上海22:58，正式API与股票tick同时采用`stability-51c1ee22`。实现提交`250fe70a`的[Stock Research CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45631935944)整体成功；文档head`51c1ee22`另有[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45635384613)成功。运行包来自精确Git归档，1995个跟踪文件逐blob匹配；schema、依赖清单和锁文件与前一包逐字节相同，无DDL。锁定解释器为同一3.11版本、同一uv锁；专用研究构建生成research.html和4个assets。包内MVP、定点、盘前API与操作相关85项测试通过。
+
+采用前全workspace研究、阶段、量化、量化尝试、准备、问答和评估的pending/running均为0，无真实worker进程；候选`.env`继承旧包并仅把`WEB_DIST_PATH`改到新包，权限0600。两个launchd plist先备份再定向替换路径。首次bootstrap在旧进程关闭竞争下返回Input/output error，核对两个服务已卸载后分别重新bootstrap；API PID45907，调度加载后窗口外tick退出0。采用后16次真实HTTP全200、P95 50.202ms，四类活动复查仍0，`release.json`指向同一`51c1ee22`和固定目录；原`selection-14d414cd`保留回退。真实瞬时源失败重试、自然交易日首报/恢复及通知去重仍须自然窗口分别验收。
