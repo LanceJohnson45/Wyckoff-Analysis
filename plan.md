@@ -65,6 +65,8 @@ Personal固定客户端迁移推进：原安装拒绝所有不同注册，已新
 
 2026-11-26复验：正式`parameter-ui-ac6ba511`仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。`knowledge_search`仍无授权接线，正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
 
+05:34自然窗口预检：`stocks`的chat、evaluation、preparation、quant attempt/job、research和stage七类账本pending/running均为0；无真实worker。API/调度launchd的program和working directory均为`parameter-ui-ac6ba511`，调度不运行且上次退出0；窗口外手动tick退出0。这只证明11月27日前服务可受理，不替代无人干预定点首报/恢复/去重。
+
 续接稳定性：实际4次TIMEOUT均为DSH 60秒流空闲，新增`provider_stream_idle_timeout`贯穿阶段/问答/定点恢复，保留原预算与重试次数。相同冻结复核在原60秒阈值两次重放成功、120秒候选一次成功，不足以证明延长阈值有效，因此未采用。参数登记409提示已修正；隔离原生PG的真实页面补验参数发布/CAS/重启/响应丢失读回、量化失败只补单策略、问答未知提交确认/自动重试取消。成功因子/阶段与旧报告逐行未变。完整Python6,167通过；主题/自选维护逐项页面、模型偶发慢响应、自然无人干预日、通知真实unknown与独立整体审查仍待处理。
 
 上一交付检查点：修复提交`ed465e40`已推送，原生故障回执经已安装运行包重新分类通过；[该代码完整CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45415931892)八项均completed/success（检查状态矛盾后重新运行确认），远端6,166通过/一项既有DSH安装条件skip、coverage86%。无活动研究/问答/准备时API及盘前调度已采用此不可变运行包。切换后15次真实HTTP全部200、含冷加载P95 2.00秒，报告/股票池/个股/市场/参数结果摘要与切换前一致；原首报与恢复仍各一条sent，原生飞书读回和冻结正文匹配。独立wiki另行提交；文档收尾head的CI仍单独跟踪，PR保持草稿。
