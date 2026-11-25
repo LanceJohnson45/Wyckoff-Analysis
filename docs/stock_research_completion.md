@@ -107,3 +107,5 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 2026-11-26上海03:22独立审查：另一session/model审查`76af9041`，八项CI全成功、fast gate通过、运行时health/ready为200且API/tick指向`doctor-wiring-c0ae327b`；结论为无P0/P1缺陷。因原始agent会话不可用，流程审查降级为Git/CI/runtime/文件/测试证据。审查发现的文档当前版本漂移和wiki滞后登记为P2；主文档已在`e23316f1`同步，独立wiki在本地`codex/stock-research`分支`44e9972`单独提交。真实Serve远端浏览器、2026-11-27自然窗口、自然瞬时`OperationalError`和Feishu `unknown`继续保持未完成。
 
 04:52参数实验运行包采用：`ac6ba511`精确head CI八项成功，API/tick已切到`parameter-ui-ac6ba511`。候选源码身份、2002个跟踪文件、无DDL、五文件前端、六项候选聚焦测试、doctor、15次readyz、窗口外tick退出和零活动复查通过；8788真实页面复读参数实验历史成功作业且未新建。自然日无人干预3/4→4/4、通知去重、真实unknown和Tailscale远端入口继续保持未完成。
+
+2026-11-26只读复验：正式`parameter-ui-ac6ba511`报告仍为修订14、目标2026-11-24、518/518且覆盖率1.0；15只行业补充与SNDK目标日行情保持，五只历史排除（FDXF/HONA/Q/SPCX/VYLR）均为上市或分拆时间限制，来源限制逐条保留。隔离CDP 9223真实页面按“Apple”搜索冻结池，读回518只池命中1只。同源两批各16路唯一搜索全200：第一批含冷合并，P95 2.038秒；第二批P95 1.905秒。本轮仅GET，不创建评估、观测、问答或通知。`knowledge_search`仍无授权实现；正式初选观测正式数据仍1条，跨页和失败视图不能由现有单条自然数据证明，自然窗口与真实瞬时故障继续未完成。
