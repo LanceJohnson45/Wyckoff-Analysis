@@ -21,7 +21,9 @@ from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
+from stock_research.evaluation import EvaluationReport
 from stock_research.evaluation_cli import evaluate_command, evaluate_parameter_experiments_command
+from stock_research.evaluation_review import manual_review_samples
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
@@ -103,6 +105,8 @@ def parser() -> argparse.ArgumentParser:
     experiments.add_argument("--field", choices=["support_atr", "extension_atr", "contraction_ratio"], required=True)
     experiments.add_argument("--values", nargs=3, type=float, required=True)
     experiments.add_argument("--allow-current-universe", action="store_true")
+    review = commands.add_parser("review-evaluation", help="从已完成评估生成每策略10入选/10排除审查清单")
+    review.add_argument("--report", type=Path, required=True)
     observe = commands.add_parser("observe-selections", help="固定报告正式初选的前向观测，不调用模型或发送通知")
     observe.add_argument("--report-id", required=True)
     observe.add_argument("--cutoff", type=date.fromisoformat, required=True)
@@ -272,6 +276,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return doctor(settings)
     if args.command == "evaluate-parameters":
         return execute_evaluation_parameters(args, settings)
+    if args.command == "review-evaluation":
+        return execute_evaluation_review(args)
     if args.command == "evaluate":
         return evaluate_command(
             settings, args.profile, args.cutoff, allow_current_universe=args.allow_current_universe
@@ -279,12 +285,7 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     if args.command == "observe-selections":
         return asyncio.run(observe_selections_command(settings, args.report_id, args.cutoff)), 0
     if args.command == "serve":
-        import uvicorn
-
-        from stock_research.http_api import create_app
-
-        uvicorn.run(create_app(settings), host=settings.api_host, port=settings.api_port, access_log=False)
-        return {"stopped": True}, 0
+        return _serve_command(settings), 0
     if args.command == "read-run":
         return asyncio.run(read_run_command(settings, args.id)), 0
     if args.command == "track-run":
@@ -367,6 +368,16 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     return asyncio.run(database_command(settings, args.command, getattr(args, "id", None))), 0
 
 
+def _serve_command(settings: Settings) -> dict[str, object]:
+    """独立API仅监听operator配置的loopback地址。"""
+    import uvicorn
+
+    from stock_research.http_api import create_app
+
+    uvicorn.run(create_app(settings), host=settings.api_host, port=settings.api_port, access_log=False)
+    return {"stopped": True}
+
+
 def execute_evaluation_parameters(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """单组实验显式冻结一份输入，三个变体顺序复用。"""
     return (
@@ -380,6 +391,12 @@ def execute_evaluation_parameters(args: argparse.Namespace, settings: Settings) 
         ),
         0,
     )
+
+
+def execute_evaluation_review(args: argparse.Namespace) -> tuple[object, int]:
+    """只读已完成评估，不重算或补造审查样本。"""
+    report = EvaluationReport.model_validate_json(args.report.read_text(encoding="utf-8"))
+    return manual_review_samples(report, args.report.parent), 0
 
 
 def validate_refresh_versions(args: argparse.Namespace) -> None:
