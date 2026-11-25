@@ -112,4 +112,11 @@ describe('历史评估可见状态', () => {
     expect(html).toContain('创建新评估')
     expect(html).not.toContain('按原输入续跑')
   })
+  it('显式取消不是调研缺数，已完成截面和原输入续跑分开保留', () => {
+    const actions = { act: async () => undefined, busy: null, pending: null, uncertain: false, readbackId: null, message: '', blocked: false }
+    const html = renderToStaticMarkup(createElement(EvaluationJobView, { job: evaluationJobSchema.parse({ ...job, status: 'cancelled', error_code: 'evaluation_interrupted', cancel_requested: true }), actions }))
+    expect(html).toContain('已取消；已完成截面继续保留')
+    expect(html).toContain('按原输入续跑')
+    expect(html).not.toContain('任务未完成')
+  })
 })

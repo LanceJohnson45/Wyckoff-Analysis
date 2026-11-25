@@ -18,6 +18,8 @@
 
 `stock-research evaluate --profile baseline-v1 --cutoff YYYY-MM-DD` 按过去SPY20日收益分层取20截面，调用两策略正式量化实现，按时间12/4/4划分并清除跨边界标签；封存组不输出表现。私有评估API将实际发布输入/参数和原期限冻结为持久作业，支持隔离执行、取消、恢复和逐股SQL分页。Agent“历史评估 · 量化池回放”接相同资源，未知提交核对原正文与幂等键，窗口未满/缺数/封存均不当零收益；隔离合成资料及正式d42运行包的真实行情页面均已验；后者从创建到20截面完成、独立落库/产物校验和页面重载通过，保持当前池回溯、净化后样本不足及封存限制。冻结历史不足和截面质量失败分别保留固定原因，不能通过原任务续跑补资料，须修复后创建新评估。收益观察扣既有美股工程成本，缺数保留，当前池回溯需显式接受并保留来源限制。量化池不是模型正式初选，描述性收盘观测不是交易回测，见[评估CLI与作业](docs/stock_research_evaluations.md)。
 
+显式取消终态为`cancelled/evaluation_interrupted`，保留已完成截面和原输入；它与历史不足、行情质量缺数分开显示。
+
 ### 午间独立研究扫描
 
 工作日 12:00 运行的全 A 股只读研究任务，与盘后 Wyckoff 漏斗相互独立。一次运行内按“有效横截面 → 可成交池 → 六通道实时注意力池 → 深度证据池 → 六视角60只短名单 → 10—20只公告终审”逐层收敛，并记录每层数量、淘汰原因和真实耗时。六个研究视角为质量成长、合理估值、盈利变化、稳定相对强度、行业扩散和逆向修复；任何单一技术形态或综合分都不能直接生成买入结论。
@@ -553,6 +555,6 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 
 **研究操作状态**：目标日首报/恢复通知、全日期最近完整研究及最近确认送达记录的只读投影。研究completed不等于通知sent；sent须有有效原生引用，unknown与无记录分别保留。Personal账本更新时间不是原生消息创建时刻，来源不可访问返回明确503，见[状态契约](docs/stock_research_operations.md)。
 
-**正式初选前向观测**：以固定报告所引用的已提交初选为范围，参考不早于目标日且严格晚于提交时刻的首个XNYS开盘，至第1/3/5/10/20个交易日收盘观察；晚到顺延。独立于量化截面前收盘口径，缺策略不补、缺数不跳日。CLI/不可变文件已可用；持久作业/API与Agent源码已接独立`formal_selection_observations`资源族，提交CI、真实页面与运行包采用另行验收，详见[观测契约](docs/stock_research_selection_observations.md)与[作业设计](docs/design/stock-research-selection-observation-jobs.md)。
+**正式初选前向观测**：以固定报告所引用的已提交初选为范围，参考不早于目标日且严格晚于提交时刻的首个XNYS开盘，至第1/3/5/10/20个交易日收盘观察；晚到顺延。独立于量化截面前收盘口径，缺策略不补、缺数不跳日；显式取消`cancelled/evaluation_interrupted`与窗口缺数分开保留。CLI/不可变文件已可用；持久作业/API与Agent源码已接独立`formal_selection_observations`资源族，提交CI、真实页面与运行包采用另行验收，详见[观测契约](docs/stock_research_selection_observations.md)与[作业设计](docs/design/stock-research-selection-observation-jobs.md)。
 
 **研究MCP完整续页**：原三工具QueryPage v2，Personal新会话已实际采用；每页回显固定result_id/内容摘要/原scope，以JSON路径保存完整子树，长字符串有字符偏移。next_cursor非空表示尚未读完，续页不刷新latest或当前运行；缓存期限/容量或进程重启后明确拒绝，不能拼接新旧结果。单页SDK文本≤32KiB；新会话8次真实调用及原生/HTTP逐页重建已验，旧会话保留原预设，HTTP/CLI原领域模型不变，见[查询契约](docs/stock_research_queries.md)。

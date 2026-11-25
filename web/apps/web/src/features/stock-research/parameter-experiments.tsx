@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import { ResearchApiError, controlExperiment, createExperiment, readCurrentParameters, readExperiment, readExperimentResult, readExperiments, submissionUnconfirmed } from './api'
-import { businessNumber, experimentActive, type CreateExperiment, type ExperimentJob } from './evaluation-contract'
+import { businessNumber, experimentActive, interruptedCancellation, type CreateExperiment, type ExperimentJob } from './evaluation-contract'
 
 const button = 'rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40'
 type Action = { kind: 'create'; body: CreateExperiment } | { kind: 'confirm' } | { kind: 'cancel' | 'retry' | 'read'; id: string }
@@ -120,13 +120,15 @@ function ExperimentHistory({ state }: { state: { history: ExperimentHistoryQuery
   </section>
 }
 
-function ExperimentJobView({ job, actions }: { job: ExperimentJob; actions: ReturnType<typeof useActions> }) {
+export function ExperimentJobView({ job, actions }: { job: ExperimentJob; actions: ReturnType<typeof useActions> }) {
   const active = experimentActive(job)
+  const cancelled = interruptedCancellation(job)
   return <section className="space-y-3 rounded-xl border border-border p-4" aria-label="所选参数实验任务">
     <h3 className="text-sm font-medium">{businessNumber(job.create_time, job.id)} · {job.status}</h3>
     <p className="break-all text-xs text-muted-foreground">{job.profile} · {job.field} {job.values.join(' / ')} · 尝试 {job.attempt_count}/2</p>
     {job.cancel_requested && active && <p role="status" className="text-xs">已请求取消，正在等待计算进程实际退出。</p>}
-    {job.error_code && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">任务未完成：{job.error_code}。请核对冻结输入后按原输入续跑。</p>}
+    {job.error_code && !cancelled && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">任务未完成：{job.error_code}。请核对冻结输入后按原输入续跑。</p>}
+    {cancelled && <p role="status" className="text-xs">已取消；原冻结输入保留，可按原输入续跑。</p>}
     <div className="flex flex-wrap gap-2">
       {active && !job.cancel_requested && <button type="button" disabled={actions.blocked} onClick={() => { void actions.act({ kind: 'cancel', id: job.id }) }} className={button}>取消所选实验</button>}
       {['failed', 'cancelled'].includes(job.status) && job.attempt_count < 2 && <button type="button" disabled={actions.blocked} onClick={() => { void actions.act({ kind: 'retry', id: job.id }) }} className={button}>按原输入续跑</button>}

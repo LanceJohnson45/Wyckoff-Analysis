@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { allowedResearchRoute } from '../../../server/stock-research-proxy'
-import { ResearchParameterExperiments } from './parameter-experiments'
+import { ExperimentJobView, ResearchParameterExperiments } from './parameter-experiments'
 import { businessNumber, experimentJobSchema, experimentResultSchema } from './evaluation-contract'
 
 const ID = '01890a5d-ac96-774b-bcce-b302099a8057'
@@ -37,5 +37,14 @@ describe('parameter experiments', () => {
       ['GET', `/v1/parameter-experiment-results/${RESULT}`, true], ['DELETE', '/v1/parameter-experiments', false],
     ] as const
     for (const [method, path, expected] of allowed) expect(allowedResearchRoute(method, path)).toBe(expected)
+  })
+
+  it('显式取消不是冻结输入错误，原输入续跑保持可见', () => {
+    const cancelled = experimentJobSchema.parse({ ...job, status: 'cancelled', error_code: 'evaluation_interrupted', result_id: null, cancel_requested: true })
+    const actions = { act: async () => undefined, busy: null, pending: null, uncertain: false, readbackId: null, message: '', blocked: false }
+    const html = renderToStaticMarkup(createElement(ExperimentJobView, { job: cancelled, actions }))
+    expect(html).toContain('已取消；原冻结输入保留')
+    expect(html).toContain('按原输入续跑')
+    expect(html).not.toContain('任务未完成')
   })
 })

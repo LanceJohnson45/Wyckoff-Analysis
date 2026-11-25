@@ -11,10 +11,11 @@ import {
 import {
   type SelectionObservationResult,
   outcomeWindowSchema,
+  selectionObservationJobSchema,
   selectionObservationResultSchema,
 } from './evaluation-contract'
 import { allowedResearchRoute } from '../../../server/stock-research-proxy'
-import { ResearchSelectionObservations } from './selection-observations'
+import { ObservationJobView, ResearchSelectionObservations } from './selection-observations'
 
 const ID = '11111111-1111-4111-8111-111111111111'
 const REPORT = '22222222-2222-4222-8222-222222222222'
@@ -85,6 +86,15 @@ describe('正式初选观测可见状态', () => {
     })
     expect(value.net_return_pct).toBeNull()
     expect(outcomeWindowSchema.safeParse({ ...value, net_return_pct: 0 }).success).toBe(false)
+  })
+
+  it('显式取消不是数据调研失败，原任务仍按原输入续跑', () => {
+    const cancelled = selectionObservationJobSchema.parse({ ...job, status: 'cancelled', error_code: 'evaluation_interrupted', cancel_requested: true })
+    const actions = { act: async () => undefined, busy: null, pending: null, uncertain: false, readbackId: null, message: '', blocked: false }
+    const html = renderToStaticMarkup(createElement(ObservationJobView, { job: cancelled, actions }))
+    expect(html).toContain('已取消；原任务可按原报告和截止日续跑')
+    expect(html).toContain('按原输入续跑')
+    expect(html).not.toContain('任务未完成')
   })
 
   it.each<[string, string, boolean]>([

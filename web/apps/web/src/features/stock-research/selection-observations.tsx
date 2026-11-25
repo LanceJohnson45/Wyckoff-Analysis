@@ -12,6 +12,7 @@ import {
 } from './api'
 import {
   selectionObservationActive,
+  interruptedCancellation,
   businessNumber,
   type CreateSelectionObservation,
   type SelectionObservationJob,
@@ -134,13 +135,15 @@ function ObservationHistory({ state }: { state: { history: ObservationHistoryQue
   </section>
 }
 
-function ObservationJobView({ job, actions }: { job: SelectionObservationJob; actions: ObservationActions }) {
+export function ObservationJobView({ job, actions }: { job: SelectionObservationJob; actions: ObservationActions }) {
   const active = selectionObservationActive(job)
+  const cancelled = interruptedCancellation(job)
   return <section className="space-y-3 rounded-xl border border-border p-4" aria-label="所选正式观测任务">
     <h3 className="text-sm font-medium">正式观测 · {job.status}</h3>
     <p className="break-all text-xs text-muted-foreground">报告 {job.report_id} · 尝试 {job.attempt_count}/2</p>
     {job.cancel_requested && active && <p role="status" className="text-xs">已请求取消，正在等待计算进程实际退出。</p>}
-    {job.error_code && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">任务未完成：{job.error_code}。请核对固定报告与输入后创建新观测。</p>}
+    {job.error_code && !cancelled && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">任务未完成：{job.error_code}。请核对固定报告与输入后创建新观测。</p>}
+    {cancelled && <p role="status" className="text-xs">已取消；原任务可按原报告和截止日续跑。</p>}
     <div className="flex flex-wrap gap-2">
       {active && !job.cancel_requested && <button type="button" disabled={actions.blocked} onClick={() => { void actions.act({ kind: 'cancel', id: job.id }) }} className={button}>取消所选观测</button>}
       {['failed', 'cancelled'].includes(job.status) && job.attempt_count < 2 && <button type="button" disabled={actions.blocked} onClick={() => { void actions.act({ kind: 'retry', id: job.id }) }} className={button}>按原输入续跑</button>}

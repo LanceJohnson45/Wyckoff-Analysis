@@ -118,6 +118,9 @@ export function evaluationActive(job: EvaluationJob): boolean { return job.statu
 export function selectionObservationActive(job: SelectionObservationJob): boolean { return job.status === 'pending' || job.status === 'running' }
 export interface CreateExperiment { profile: string; cutoff: string; field: ExperimentJob['field']; values: [number, number, number] }
 export function experimentActive(job: ExperimentJob): boolean { return job.status === 'pending' || job.status === 'running' }
+export function interruptedCancellation(job: { status: string; error_code: string | null }): boolean {
+  return job.status === 'cancelled' && job.error_code === 'evaluation_interrupted'
+}
 export function businessNumber(createTime: string, identifier: string) {
   const day = createTime.slice(0, 10).replaceAll('-', '')
   const suffix = identifier.replaceAll('-', '').slice(0, 6).toUpperCase()

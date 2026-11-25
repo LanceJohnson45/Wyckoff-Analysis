@@ -34,6 +34,8 @@
 
 CLI的`missing_strategies`明确报告缺少的策略；`manual_review=pending`始终保留。人工每策略10入选/10排除仍需实际审查，同日重分析和快照修订不能当独立样本。研究结论与比较证据应放GitHub Issue，不提交收益结果到仓库文档。设计和行动前清单见[观测边界](design/stock-research-selection-observations.md)。当前实现提交CI、实际运行包采用与整份计划分别验收。
 
+持久观测任务的显式取消是`cancelled/evaluation_interrupted`；页面不得把它和窗口`pending/missing_data`都渲染成“请核对数据后创建新观测”。
+
 验收检查点：相关47项、两次完整Python6273项/无skip（后一轮原始无探针命令）、Ruff/格式/函数质量/hygiene及同CI假配置daily dry-run通过。真实既有报告完成实际CLI两次/独立重算，原研究/报告/初选/快照及正式15次读取的五类摘要保持；文件上限另以一次性副本实测，不改原证据。首次全套的并发准备失败日志保留，单跑与两轮完整重跑通过，根因未证实且未宣称修复。当前实现提交CI和运行包采用分别跟踪，正式API/tick仍6fc65f46。
 
 独立wiki已另提交6f6310e，保留在其独立本地仓库；当前实现提交CI另验，不视为已部署。
