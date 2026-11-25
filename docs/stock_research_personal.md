@@ -76,8 +76,18 @@ stock-research personal-mcp --replace --workspace /operator/fixed-query-workspac
 
 本次另发现DSH会把过长工具结果截成约50KB文本：latest_report与stock分别省略3414/4955字节，完整格式化结果保存在宿主临时spill文件。独立校验读取原完整结果通过；本次回答正确不能代替输出完整性修复，后续须在不丢事实/范围/版本的前提下消除不可访问的截断。浏览器保留两条验收前的扩展连接错误，本次问答期间无新增error；不声称全页从未报错。自然日、真实通知unknown及完整计划剩余项仍未完成。
 
-## 长结果完整续页候选
+## 长结果完整续页
 
-原三项MCP已新增QueryPage v2源码候选，保持工具/权限及HTTP/CLI契约；scope回显原版本，next_cursor在同工具/原参数下读取同一结果。所有页按JSON path可重建全部原事实与摘要，单页实际SDK文本≤32KiB，暂存5分钟/8结果/8MiB，过期或重启明确拒绝。真实原结果2/4/2页和IEX320根历史8页均完整对照通过；线上仍d42旧格式，精确CI/采用及新的实际宿主验收尚待完成，不能以本次SDK重放关闭线上截断。详见[分页契约](stock_research_queries.md#mcp-v2完整续页源码候选尚未采用)。
+原三项MCP现采用QueryPage v2，保持工具/权限及HTTP/CLI契约；scope回显原版本，next_cursor在同工具/原参数下读取同一结果。所有页按JSON path可重建全部原事实与摘要，单页实际SDK文本≤32KiB，暂存5分钟/8结果/8MiB，过期或重启明确拒绝。真实原结果2/4/2页和IEX320根历史8页均完整对照通过；该处为采用前SDK验证；08:32后的新Personal会话已完成真实模型全页读取，旧会话保留原预设。详见[分页契约](stock_research_queries.md#mcp-v2完整续页)。
 
-本批最终完整Python6313通过/无skip、50条既有警告（308.85秒），34聚焦及Ruff/1360文件格式/函数质量、workflow/dependency hygiene与CI同形操作dry-run通过；最终全量前后源码指纹相同。原大小复现循环已由失败转为通过，另逐页重建证明全部原事实保留；这不是把首页面当作完整结果。15次正式业务读取全成功/P95 0.336秒，原五类HTTP摘要和四类研究表投影保持、四类活动0。精确CI、固定包采用及新版共享宿主模型读取仍待验，线上保持d42。
+本批最终完整Python6313通过/无skip、50条既有警告（308.85秒），34聚焦及Ruff/1360文件格式/函数质量、workflow/dependency hygiene与CI同形操作dry-run通过；最终全量前后源码指纹相同。原大小复现循环已由失败转为通过，另逐页重建证明全部原事实保留；这不是把首页面当作完整结果。15次正式业务读取全成功/P95 0.336秒，原五类HTTP摘要和四类研究表投影保持、四类活动0。此为采用前本地门禁；随后ece83八项CI及新会话实际采用均已通过，实际证据另见本页08:32记录。
+
+## 08:32 完整分页实际采用
+
+2026-11-25上海08:32，ece83f6f的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45517132603)全部completed/success后，Personal查询客户端及operator镜像已采用完整分页v2。固定代码在`~/.local/share/stock-research/clients/query-pages-ece83f6f`，1977个Git文件与最终全量源码指纹核验通过；工作区为`~/.dsh/secrets/stock-research-query-pages-ece83f6f`，原专用身份0600保持，仍复用d42锁定解释器。实际只改变stocks节点cwd；API/股票tick/42计划、共享宿主PID及其他配置不变。清空环境查询入口的60个已加载项目模块均未落在Documents内。
+
+新Personal页面的一次GLM-5.3问答完成1轮/7步、8次stocks只读调用，报告/个股/运行分别读完2/4/2页。独立原生记录逐页核对原参数/游标、result_id、摘要与终止条件，8份模型可见文本全为完整JSON，最大32736字节；全部chunks重建原模型和摘要，固定报告/个股与HTTP全文相同，当前run仅observed_at变化。修订14、11月23日截止、两策略正式初选及四阶段状态逐项一致；模型在报告后并行读取个股和运行的续页，未将不同结果拼接。实际目录33项、其他30项定义及原11项Personal保持，3个旧Personal会话投影完全相同；私人问答/评估仍403，未调用Personal/知识/文件/通知工具。另有一次系统标题生成。
+
+本次新页面无error，截图及原生回执分别保存。页面用时74秒；完整读取增加模型轮次，不能据此宣称提速或降成本。采用后15次正式业务读全成功、P95 0.431秒，原五类HTTP摘要及四类研究表投影保持，全workspace四类活动0。
+
+已有会话继续原预设修订，旧v1会话不会自动变成分页v2；使用本次新能力应新建Personal会话，并以实际schema_version=2核对。CLI预览的runtime_verified=false保持原义，实机采用/执行由以上独立证据确认。自然交易日、真实通知unknown及完整计划其余交付仍未完成。

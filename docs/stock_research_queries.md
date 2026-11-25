@@ -68,14 +68,24 @@ RunView.quant新增固定修订当时的两策略量化状态；缺计算时股�
 
 本机71,975,276字节、165,781根日线的只读测量：两路并发连续5轮，修复前传输10份、请求耗时1.42～3.44秒；修复后传输1份，首轮约2.12秒，其余8次0.65～1.62毫秒。这是同机存储读取测量，不能直接当作HTTP或浏览器延迟，也不是多进程共享缓存的保证。切换快照会替换这一份缓存。
 
-## MCP v2完整续页（源码候选，尚未采用）
+## MCP v2完整续页
 
-原三项工具增加可选cursor，返回统一QueryPage；HTTP/ResearchReader/只读CLI仍返回原ReportView、StockObservation或RunView。独立研究八工具中的同名三项也采用QueryPage，另外五项保持原模型；绑定报告问答的chat MCP不变。工具名称/数量、身份及无资源目录保持。
+原三项工具增加可选cursor，返回统一QueryPage；HTTP/ResearchReader/只读CLI仍返回原ReportView、StockObservation或RunView。同版本源码的独立研究八工具复用同名三项，另外五项保持原模型；其他入口不随Personal profile切换自动升级，以实际包/schema为准；绑定报告问答的chat MCP不变。工具名称/数量、身份及无资源目录保持。
 
 每页含schema_version=2、result_id、tool、content_hash、scope、page、total_pages、next_cursor和chunks。scope保留本次读回实际存在的run/report/snapshot/as_of等元数据，未在原模型出现的值为null，不补推断。保持原参数并传next_cursor续读，所有页result_id/content_hash必须相同；读到next_cursor=null才取得完整结果。chunks.path是原JSON对象键/数组下标序列，value是原子树；长字符串另给Unicode码点位置text_offset及完整长度text_total。按path放回，长字符串按Unicode码点偏移连接，可完整重建原模型并用既有规范摘要核对；空对象/数组、false、null、0、原证据ref与限制均保留。
 
 每页完整SDK文本UTF-8≤32KiB，不依赖客户端截断或文件spill。续页只读本进程首次读回的已授权值，不刷新latest或当前run；独立scope.observed_at与本页读取时间不同。缓存固定5分钟、最多8结果/8MiB序列化页。跨工具/入参、失效、淘汰或进程重启后的cursor明确拒绝；须重新查询并核对版本，不能拼接新旧结果。它不是文件、URL、业务ID或通用资源能力。
 
-实际旧三份结果通过生产MCP入口完整还原为2/4/2页，最大32736字节；真实固定IEX的320根历史为8页，原模型/摘要全等。以上为隔离源码候选的SDK/HTTP验证，零模型/写入；线上Personal仍用d42旧返回格式。34项相关回归包含原生PG/ASGI链、Unicode/转义/空值、缓存绑定/淘汰/期限以及真实stdio三项/八项目录。stdio回归另复现了子进程误读原checkout，已显式绑定测试源码路径并重跑；完整门禁、精确CI和运行采用分别跟踪。
+实际旧三份结果通过生产MCP入口完整还原为2/4/2页，最大32736字节；真实固定IEX的320根历史为8页，原模型/摘要全等。以上为采用前的隔离SDK/HTTP验证，零模型/写入；后续实际Personal采用与模型读取见下节。34项相关回归包含原生PG/ASGI链、Unicode/转义/空值、缓存绑定/淘汰/期限以及真实stdio三项/八项目录。stdio回归另复现了子进程误读原checkout，已显式绑定测试源码路径并重跑；完整门禁、精确CI和运行采用分别跟踪。
 
-本批最终完整Python6313通过/无skip、50条既有警告（308.85秒），34聚焦及Ruff/1360文件格式/函数质量、workflow/dependency hygiene与CI同形操作dry-run通过；最终全量前后源码指纹相同。原大小复现循环已由失败转为通过，另逐页重建证明全部原事实保留；这不是把首页面当作完整结果。15次正式业务读取全成功/P95 0.336秒，原五类HTTP摘要和四类研究表投影保持、四类活动0。精确CI、固定包采用及新版共享宿主模型读取仍待验，线上保持d42。
+本批最终完整Python6313通过/无skip、50条既有警告（308.85秒），34聚焦及Ruff/1360文件格式/函数质量、workflow/dependency hygiene与CI同形操作dry-run通过；最终全量前后源码指纹相同。原大小复现循环已由失败转为通过，另逐页重建证明全部原事实保留；这不是把首页面当作完整结果。15次正式业务读取全成功/P95 0.336秒，原五类HTTP摘要和四类研究表投影保持、四类活动0。此为采用前本地门禁；随后ece83八项CI及新会话实际采用均已通过，实际证据另见本页08:32记录。
+
+## 08:32 Personal采用与模型读取
+
+2026-11-25上海08:32，ece83f6f的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45517132603)全部completed/success后，Personal查询客户端及operator镜像已采用完整分页v2。固定代码在`~/.local/share/stock-research/clients/query-pages-ece83f6f`，1977个Git文件与最终全量源码指纹核验通过；工作区为`~/.dsh/secrets/stock-research-query-pages-ece83f6f`，原专用身份0600保持，仍复用d42锁定解释器。实际只改变stocks节点cwd；API/股票tick/42计划、共享宿主PID及其他配置不变。清空环境查询入口的60个已加载项目模块均未落在Documents内。
+
+新Personal页面的一次GLM-5.3问答完成1轮/7步、8次stocks只读调用，报告/个股/运行分别读完2/4/2页。独立原生记录逐页核对原参数/游标、result_id、摘要与终止条件，8份模型可见文本全为完整JSON，最大32736字节；全部chunks重建原模型和摘要，固定报告/个股与HTTP全文相同，当前run仅observed_at变化。修订14、11月23日截止、两策略正式初选及四阶段状态逐项一致；模型在报告后并行读取个股和运行的续页，未将不同结果拼接。实际目录33项、其他30项定义及原11项Personal保持，3个旧Personal会话投影完全相同；私人问答/评估仍403，未调用Personal/知识/文件/通知工具。另有一次系统标题生成。
+
+本次新页面无error，截图及原生回执分别保存。页面用时74秒；完整读取增加模型轮次，不能据此宣称提速或降成本。采用后15次正式业务读全成功、P95 0.431秒，原五类HTTP摘要及四类研究表投影保持，全workspace四类活动0。
+
+已有会话继续原预设修订，旧v1会话不会自动变成分页v2；使用本次新能力应新建Personal会话，并以实际schema_version=2核对。CLI预览的runtime_verified=false保持原义，实机采用/执行由以上独立证据确认。自然交易日、真实通知unknown及完整计划其余交付仍未完成。
