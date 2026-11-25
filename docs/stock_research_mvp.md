@@ -12,7 +12,7 @@
 
 ## 一次执行
 
-1. 按原计划日期与固定股票池调用来源分支 `scripts/us_research_refresh.py`，补齐复权日线和SPY/QQQ/IWM。使用来源自己的解释器和PG配置，最长900秒，并为研究保留原期限余额。来源完成不等于质量通过，失败也不伪造行情。
+1. 按原计划日期与固定股票池调用来源分支 `scripts/us_research_refresh.py`，补齐复权日线和SPY/QQQ/IWM。使用来源自己的解释器和PG配置，最长900秒，并为研究保留原期限余额。来源完成不等于质量通过，失败也不伪造行情。当来源回执明确为`failed/OperationalError`且剩余研究预算超过300秒时，最多按同一预算规则重试一次；超时、取消、校验失败和其他错误不重试，最终失败仍交给正式质量门禁裁决。
 2. 用专用workflow身份调用原盘前API。API开启 `PREMARKET_REFRESH` 后只读复制行情，再走既有覆盖率、历史长度、固定快照、两策略与交叉评议；原期限及成功产物复用规则不变。
 3. 自动事件等到纽约08:30冻结已知首报。未完成也发布准备/运行状态，不将缺名单解释为空机会。整个研究流程同时继续，原08:50前成功阶段增加时再发一条恢复更新。
 4. 发送复用Personal的 `task_delivery.reserve/ready/deliver` 和既有 `feishu_send.py`。按目标交易日、触发类别及 `initial/recovery` 固定业务键，发送前保存正文；重放读取原正文。`sent`只有真实原生消息回执才成立，`retry/ready/unknown/unconfirmed`均不是成功。

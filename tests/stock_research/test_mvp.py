@@ -13,7 +13,7 @@ import pytest
 from scripts.stock_research_mvp_worker import load_selected
 from stock_research import mvp, mvp_delivery
 from stock_research.identity import new_id
-from stock_research.models import Snapshot
+from stock_research.models import Snapshot, UniverseMember, UniverseVersion
 from stock_research.mvp_delivery import Publication, call_worker, freeze_publication, publication
 from stock_research.mvp_settings import MvpSettings, load_mvp_settings
 from stock_research.premarket import plan_premarket
@@ -42,6 +42,25 @@ def data() -> PremarketInput:
             }
         }
     )
+
+
+@pytest.fixture
+def plan(data: PremarketInput) -> PremarketPlan:
+    return PremarketPlan.model_validate(plan_premarket(data, FIXED))
+
+
+@pytest.fixture
+def mvp_universe(settings: MvpSettings, plan: PremarketPlan) -> MvpSettings:
+    member = UniverseMember(
+        symbol="AAPL",
+        name="Apple",
+        index="sp500",
+        source="test",
+        effective_date=plan.as_of,
+        obtained_time=FIXED,
+    )
+    settings.universe_path.write_text(UniverseVersion(version="test", members=(member,)).model_dump_json())
+    return settings
 
 
 def completed(data: PremarketInput, snapshot: Snapshot) -> PremarketReceipt:
@@ -175,6 +194,86 @@ def test_no_report_does_not_invent_empty_selections(data: PremarketInput) -> Non
     value = publication(data, None, "initial", "source_refresh_unconfirmed")
     assert value.report_id is None and value.completed_stages == 0
     assert "source_refresh_unconfirmed" in value.body and "尚无可发布" in value.body
+
+
+def test_transient_source_failure_is_retried_once(
+    mvp_universe: MvpSettings,
+    data: PremarketInput,
+    plan: PremarketPlan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def scenario() -> None:
+        calls = []
+
+        async def transport(_settings, _kind, payload, timeout):
+            calls.append((payload["symbols"], payload["as_of"], timeout))
+            if len(calls) == 1:
+                return {"status": "failed", "error_type": "OperationalError"}
+            return {"status": "completed"}
+
+        monkeypatch.setattr(mvp, "now", lambda: FIXED)
+        monkeypatch.setattr(mvp, "call_worker", transport)
+        result = await mvp.refresh_source(mvp_universe, data, plan)
+
+        assert calls == [(["AAPL"], str(plan.as_of), 900)] * 2
+        assert result == {"status": "completed"}
+
+    asyncio.run(scenario())
+
+
+def test_second_transient_source_failure_remains_failed(
+    mvp_universe: MvpSettings,
+    data: PremarketInput,
+    plan: PremarketPlan,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def scenario() -> None:
+        calls = []
+
+        async def transport(_settings, _kind, _payload, timeout):
+            calls.append(timeout)
+            return {"status": "failed", "error_type": "OperationalError"}
+
+        monkeypatch.setattr(mvp, "now", lambda: FIXED)
+        monkeypatch.setattr(mvp, "call_worker", transport)
+        result = await mvp.refresh_source(mvp_universe, data, plan)
+
+        assert calls == [900, 900]
+        assert result == {"status": "failed", "error_type": "OperationalError"}
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("observed_at", "expected_timeout"),
+    [
+        (datetime(2026, 11, 23, 13, 49, tzinfo=UTC), 1),
+        (FIXED, 900),
+    ],
+)
+def test_non_retryable_or_low_budget_source_failure_stops(
+    mvp_universe: MvpSettings,
+    data: PremarketInput,
+    plan: PremarketPlan,
+    observed_at: datetime,
+    expected_timeout: int,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def scenario() -> None:
+        calls = []
+
+        async def transport(_settings, _kind, _payload, timeout):
+            calls.append(timeout)
+            return {"status": "failed", "error_type": "SourceUnavailable"}
+
+        monkeypatch.setattr(mvp, "now", lambda: observed_at)
+        monkeypatch.setattr(mvp, "call_worker", transport)
+        result = await mvp.refresh_source(mvp_universe, data, plan)
+
+        assert calls == [expected_timeout]
+        assert result == {"status": "failed", "error_type": "SourceUnavailable"}
+
+    asyncio.run(scenario())
 
 
 def test_private_configuration_rejects_public_file(settings: MvpSettings, tmp_path: Path) -> None:
