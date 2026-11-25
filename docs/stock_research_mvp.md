@@ -137,3 +137,11 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 源级审查发现`supported_python`只被测试直接调用，`doctor`生产分支仍内联`(3,11)`；这不是行为错误，但会让后续下限调整出现双源漂移。提交`c0ae327b`让生产doctor改为消费该helper，并用monkeypatch监听真实doctor传入`(3,11,16)`、monkeypatch数据库失败返回非ready，先验证接线而非只测边界函数。聚焦7项、Ruff/format、函数门禁通过；该head的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45669331940)全部成功。
 
 上海02:10，正式API与股票tick采用`doctor-wiring-c0ae327b`。候选来自精确Git归档，依赖清单与`doctor-beade4f0`逐字节相同，Python仍3.11.16；`.env`保持Qwen和16384输出预算，仅改专用前端路径且权限0600。切换前五类active为0、无调度进程；plist备份在`state/plist-backups/doctor-wiring-c0ae327b/`，本次先等旧API退出再bootstrap，未复现I/O error。新API实际PID4161且cwd在新包；15次readyz全200、P95 12.727ms；doctor ready=true；revision14报告仍518/518且coverage 1.0；窗口外tick退出0、active复查0。当前包上50次并发混合业务读全部成功，P95 969.686ms、最大1013.704ms。真实浏览器重载报告和质量行正常、无新增page error。Tailscale Serve仍为`No serve config`。
+
+### 2026-11-26参数实验运行包采用
+
+上海04:52，正式API与股票tick采用`parameter-ui-ac6ba511`。实现提交`ac6ba511`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45695590610)全部成功；精确Git归档2002个跟踪文件、加载源码身份`17b952e988e9c35aab3794da527dee665842cb167d1aa240556ec2599662e8f1`、`pyproject.toml`/`uv.lock`与`doctor-wiring-c0ae327b`逐字节相同，无DDL。专用前端为research.html加4个assets，逐SHA256匹配；候选参数实验与评估聚焦6项通过，candidate doctor返回ready。
+
+切换前`chat_turns`、`evaluation_jobs`、`preparation_attempts`、`quant_attempts`、`quant_jobs`、`research_runs`和`stage_runs`的pending/running均为0；schedule未运行，真实worker不存在。候选`.env`权限0600，仅改`WEB_DIST_PATH`。两个plist先备份到`state/plist-backups/parameter-ui-ac6ba511/`，随后先卸载旧调度、再等旧API退出且8788释放，最后加载候选两个owner。新API实际PID55377且cwd在新包；15次readyz全200、P95 19.411ms。窗口外tick加载后退出0。`release.json`的API与调度指针均指向`ac6ba511`和候选目录，原`doctor-wiring-c0ae327b`保留回退。
+
+真实隔离CDP 9223页面核验8788 Agent工作台：历史报告修订14、518/518覆盖、股票池搜索区和问答区可读；参数实验折叠区显示completed/cancelled/failed历史，打开成功作业`SR-20261125-US-CD8D35`可读人工审查pending、三变体候选36、research 1/validation 0/sealed 4及参数摘要。未创建新实验，console和page error为0。自然交易日定点首报、失败恢复、通知去重、Tailscale远端浏览器与真实unknown仍待验。
