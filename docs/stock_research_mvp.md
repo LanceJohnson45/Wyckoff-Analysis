@@ -115,3 +115,11 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 上海22:58，正式API与股票tick同时采用`stability-51c1ee22`。实现提交`250fe70a`的[Stock Research CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45631935944)整体成功；文档head`51c1ee22`另有[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45635384613)成功。运行包来自精确Git归档，1995个跟踪文件逐blob匹配；schema、依赖清单和锁文件与前一包逐字节相同，无DDL。锁定解释器为同一3.11版本、同一uv锁；专用研究构建生成research.html和4个assets。包内MVP、定点、盘前API与操作相关85项测试通过。
 
 采用前全workspace研究、阶段、量化、量化尝试、准备、问答和评估的pending/running均为0，无真实worker进程；候选`.env`继承旧包并仅把`WEB_DIST_PATH`改到新包，权限0600。两个launchd plist先备份再定向替换路径。首次bootstrap在旧进程关闭竞争下返回Input/output error，核对两个服务已卸载后分别重新bootstrap；API PID45907，调度加载后窗口外tick退出0。采用后16次真实HTTP全200、P95 50.202ms，四类活动复查仍0，`release.json`指向同一`51c1ee22`和固定目录；原`selection-14d414cd`保留回退。真实瞬时源失败重试、自然交易日首报/恢复及通知去重仍须自然窗口分别验收。
+
+## 2026-11-26 Tailscale候选固定包采用
+
+上海00:07，正式API与股票tick同时采用`tailscale-1802719f`。该实现提交的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45648628187)全部completed/success；远端Python6342通过、1项既有安装DSH条件skip，smoke dry-run成功。候选来自精确Git归档，1996个跟踪文件逐blob匹配；`uv.lock`和`pyproject.toml`与51包逐字节相同，无schema差异，专用前端为research.html加4个assets。包内Tailscale/静态入口聚焦24项通过，候选health/ready启动通过。
+
+切换前研究、准备、评估、正式观测和问答的pending/running均为0，无真实worker。两个launchd plist备份在`state/plist-backups/tailscale-1802719f/`后定向替换；新API实际PID69764且cwd在新包。调度加载后窗口外tick退出0。候选`.env`权限0600，仅把`WEB_DIST_PATH`改到新包，未新增Serve键。采用后15次真实HTTP全200，P95 1532.828ms、中位数99.624ms；首读latest report冷加载1532.828ms，读回修订14、目标2026-11-24。五类资源active复查仍0。
+
+`release.json`的API与调度指针均指向`tailscale-1802719f`；原`stability-51c1ee22`保留回退。当前`tailscale serve status`仍是`No serve config`，候选代码没有启用远端入口。真实Serve远端浏览器验收、自然交易日3/4→4/4恢复、瞬时故障重放和真实通知unknown继续未完成。

@@ -33,7 +33,7 @@ STOCK_RESEARCH_API_ALLOWED_ORIGINS=["http://127.0.0.1:8788","http://localhost:87
 
 04:55曾采用6fc65f46，新增只读通知/最近成功记录；该版本八项CI、直接/同源状态读取及四类空闲检查通过，状态区正式刷新/跨日/完整研究跳转与单区域保持已验。06:38继续采用八项CI成功的d42fa219，前端树及专用资产不变，无迁移；旧包保留。正式固定报告追问已得到真实模型回答，3次只读调用/20项声明逐值复核；新包重启后浏览器仍读同一答案，引用展开及控制台无error已验。其余写控件、Tailscale真实来源/身份及自然日仍待验，详见[采用记录](stock_research_mvp.md#2026-11-25通知隔离采用)。
 
-23:23完成Tailscale Serve显式候选代码与隔离PG/ASGI回归：远端契约签发`Secure`会话并继续走同源桥接；坏Host、HTTP转发、非白名单Tailscale身份、跨站Fetch-Site、歧义Host、未同源写请求、配置缺身份和未白名单HTTPS Origin均拒收；配置Serve后本机HTTP入口仍签发普通会话。完整Python6343项通过、无skip及50条既有警告；Ruff/format、函数质量、workflow/dependency hygiene通过。这不是真实Tailscale Serve验收，也未替换运行包。
+23:23完成Tailscale Serve显式候选代码与隔离PG/ASGI回归：远端契约签发`Secure`会话并继续走同源桥接；坏Host、HTTP转发、非白名单Tailscale身份、跨站Fetch-Site、歧义Host、未同源写请求、配置缺身份和未白名单HTTPS Origin均拒收；配置Serve后本机HTTP入口仍签发普通会话。完整Python6343项通过、无skip及50条既有警告；Ruff/format、函数质量、workflow/dependency hygiene通过。`1802719f`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45648628187)已全部成功并于00:07采用本机候选包；仍未配置Tailscale Serve，真实远端浏览器验收未开始。
 
 07:03已补正式静态入口的真实行情评估创建到完成、独立PG/API/40产物核验、分页/策略/窗口/成本与重载原结果。此项不依赖Vite、不调用模型或通知，其他写控件及阶段六继续分别验收，见[正式评估记录](stock_research_evaluations.md#正式页面与真实行情验收)。
 

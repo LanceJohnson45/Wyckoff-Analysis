@@ -32,6 +32,8 @@
 
 22:58运行包采用：正式API与股票tick已切至`stability-51c1ee22`，包含上述有界源重试。精确归档1995文件逐blob核对，schema/依赖与前一包逐字节相同、无DDL；包内85项相关测试通过。切换前四类活动0、无worker；切换后16次HTTP全200、P95 50.202ms，窗口外tick退出0，活动复查仍0，`release.json`指向同一固定包。原`selection-14d414cd`保留回退。这只完成运行包采用；真实瞬时失败重放、下一自然交易日无人干预首报/恢复/去重仍未闭环。
 
+2026-11-26 00:07 Tailscale候选运行包采用：`1802719f`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45648628187)全部成功，远端Python6342通过/1项既有安装DSH条件skip，smoke dry-run成功。该候选精确归档1996个跟踪文件逐blob相同，`uv.lock`/`pyproject.toml`与51包逐字节相同，无schema差异；专用前端5文件，候选自身24项Serve/静态回归、health/ready启动、15次真实HTTP全200（P95 1532.828ms，含首读1.532s冷加载）、报告修订14/目标11月24日、窗口外tick退出0及零活动复查通过。API/tick已指向`tailscale-1802719f`，原51包保留。候选`.env`仅改`WEB_DIST_PATH`，未配置Serve，`tailscale serve status`仍为`No serve config`；这只完成本机候选包采用，真实远端浏览器、 Serve账号开关、自然日、瞬时故障重放及真实unknown继续待验。
+
 07:03正式评估补验：2026-11-25上海06:57从正式d42静态工作台显式创建baseline-v1、截止11月23日的当前池回溯评估，一次尝试于06:59完成20截面。独立只读PG/API与文件重读重建20份截面、校验40份正式量化产物、612条观察及2425个公开窗口，127条封存观察保持无表现；API全量/分策略分页共64次读取及页面分页、策略/窗口、成本展开、审计和整页重载原结果均通过，浏览器无error。原报告/运行/初选/快照四类投影及五类HTTP摘要不变；计算期间15次业务读全成功，P95 0.479秒，终态worker已退出、四类活动0。净化后仅1个研究/0个验证/4个封存截面可用，不能据此调参；人工审查、模型正式初选持久观测、参数实验和AKQuant仍缺。
 
 同进程静态工作台候选已补：专用研究构建由Python API提供，同源有签名会话及内存桥接复用原鉴权；无Vite/Node的隔离真实页面验证重启续会话、固定报告/图表/评估窗口，以及评估/主题建议/问答原提交的回执丢失和普通401后同键找回。原研究摘要不变；模型凭据隔离，问答未取得回答。运行包03:58采用09bdd3cb后，04:55继续采用八项CI成功的6fc65f46；正式只读页面与新状态区已补浏览器验收，写控件及Tailscale仍分别核验，见[静态入口](docs/stock_research_static_web.md)。
@@ -655,4 +657,4 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 
 f17c689d已提交推送且CI45496618794八项全部成功；后续通知稳定性核对发现done虽分开、正文目录和业务键却共用。真实publish四用例先红，现手动与定点分别冻结/去重；定点键保持，旧无范围文件停止核对，不自动改标或补发。相关50项已验正文摘要/篡改拒收、未知重放、旧正文保持、两个入口错误/完成标记及原生PG状态过滤；本批最终完整Python6296/无skip、fast/quality/hygiene/操作dry-run通过，源码指纹保持；后续d42八项CI及06:38旧记录完整核对/实际采用已补验。自然窗口及真实unknown仍待实跑。
 
-23:23Tailscale Serve候选已补显式代码路径：必须同时配置Tailnet主机与允许登录，`https://<host>`须白名单；运行时只接受loopback反代、单值HTTPS `X-Forwarded-*`、一致Host、白名单身份和同源Origin/Fetch-Site，远端会话加`Secure`，本机HTTP入口保留。Tailscale与静态入口聚焦回归24项通过，覆盖正常远端读、坏主机/协议/身份/跨站、歧义Host、未同源写、配置拒启与本机回退；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。当前head CI、运行包采用和真实远端浏览器验收另行记录，不开启Funnel。
+23:23Tailscale Serve候选已补显式代码路径：必须同时配置Tailnet主机与允许登录，`https://<host>`须白名单；运行时只接受loopback反代、单值HTTPS `X-Forwarded-*`、一致Host、白名单身份和同源Origin/Fetch-Site，远端会话加`Secure`，本机HTTP入口保留。Tailscale与静态入口聚焦回归24项通过，覆盖正常远端读、坏主机/协议/身份/跨站、歧义Host、未同源写、配置拒启与本机回退；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。`1802719f`的八项CI与本机运行包采用已另行补记；真实远端浏览器验收仍须等待Tailscale Serve账号开关，不开启Funnel。
