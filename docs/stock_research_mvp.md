@@ -131,3 +131,9 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 上海01:31，正式API与股票tick采用`doctor-beade4f0`。候选来自该head精确Git归档的1996个跟踪文件；`pyproject.toml`与`uv.lock`和`tailscale-1802719f`逐字节相同，锁定解释器仍为Python 3.11.16，无schema变更。候选`.env`继承原配置并只把`WEB_DIST_PATH`改到新包，权限0600，未新增Serve键。两个plist备份在`state/plist-backups/doctor-beade4f0/`。API首次bootstrap再次出现旧进程关闭竞争的Input/output error，核对API已卸载且旧调度tick退出后分别重新bootstrap；重启前五类资源active为0。
 
 采用后API实际PID93548、cwd在新包；15次`readyz`全200，P95 12.868ms、中位数10.682ms、最大55.495ms。candidate doctor返回`ready=true`，Python检查通过，其余依赖、日历、universe、分类、本地行情、基准补充和数据库检查全部通过。`reports/latest?target_session=2026-11-24`读回`b14ad808-a5ec-456e-add7-d53bef90365e`、revision 14、518/518且coverage 1.0；五类资源active复查仍0。新调度owner加载后窗口外手动tick退出0。`release.json`的API与调度指针指向`doctor-beade4f0`，`tailscale-1802719f`保留回退。Tailscale Serve仍是`No serve config`；远端浏览器、自然交易日3/4→4/4恢复、真实瞬时故障和真实通知unknown继续未完成。
+
+### doctor下限接线补验
+
+源级审查发现`supported_python`只被测试直接调用，`doctor`生产分支仍内联`(3,11)`；这不是行为错误，但会让后续下限调整出现双源漂移。提交`c0ae327b`让生产doctor改为消费该helper，并用monkeypatch监听真实doctor传入`(3,11,16)`、monkeypatch数据库失败返回非ready，先验证接线而非只测边界函数。聚焦7项、Ruff/format、函数门禁通过；该head的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45669331940)全部成功。
+
+上海02:10，正式API与股票tick采用`doctor-wiring-c0ae327b`。候选来自精确Git归档，依赖清单与`doctor-beade4f0`逐字节相同，Python仍3.11.16；`.env`保持Qwen和16384输出预算，仅改专用前端路径且权限0600。切换前五类active为0、无调度进程；plist备份在`state/plist-backups/doctor-wiring-c0ae327b/`，本次先等旧API退出再bootstrap，未复现I/O error。新API实际PID4161且cwd在新包；15次readyz全200、P95 12.727ms；doctor ready=true；revision14报告仍518/518且coverage 1.0；窗口外tick退出0、active复查0。当前包上50次并发混合业务读全部成功，P95 969.686ms、最大1013.704ms。真实浏览器重载报告和质量行正常、无新增page error。Tailscale Serve仍为`No serve config`。
