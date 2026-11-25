@@ -113,3 +113,5 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 05:34自然窗口预检：`stocks`工作区七张状态账本（chat_turns、evaluation_jobs、preparation_attempts、quant_attempts、quant_jobs、research_runs、stage_runs）全workspace的pending/running均为0，也没有真实研究或量化worker。API/调度plist、launchd program和working directory均指向`parameter-ui-ac6ba511`；调度owner已加载但不运行，last exit 0，当前包窗口外手动tick退出0。`/readyz`保持200。该预检不替代11月27日21:00/21:30/21:50无人干预启动、3/4→4/4恢复、通知去重或真实unknown验收。
 
 06:12knowledge运行包采用：`1409a288`八项CI成功后，API/tick已切到`knowledge-1409a288`。候选2005个跟踪文件逐blob匹配、依赖清单与参数UI包逐字节相同、无DDL，33项knowledge/chat焦点通过，5个前端资产逐SHA256相同。切换前七类账本active为0；切换后15次readyz全200/P95 37.968ms，修订14固定报告518/518，窗口外tick退出0，七类active复查0。生产未配置knowledge reader，实际默认目录仍八工具；doctor对最新已完成11-25交易段如实报告本地行情待自然补数，11-24只读复核为521根且无issue，固定报告仍518/518。真实授权检索、自然窗口、真实unknown和Tailscale远端继续未完成。
+
+06:54取消状态运行包采用：`fcd635e9`八项CI成功后，API/tick已切到`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的`cancelled/evaluation_interrupted`不再渲染成资料缺数；2005个跟踪文件逐blob匹配、依赖清单不变、无DDL，切换前/后七类账本active为0。15次readyz和15次目标报告读全200，修订14报告518/518且coverage 1.0，窗口外tick退出0；隔离CDP 9223读回新`research-D106y3CL.js`和三个区域标题，未创建评估、观测、问答或通知。自然窗口、真实unknown、真实瞬时故障和Tailscale远端继续未完成。
