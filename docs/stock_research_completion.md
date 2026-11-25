@@ -25,7 +25,7 @@
 | §14.4全部命令 | doctor、snapshot、两策略analyze、run、evaluate、benchmark实际执行及退出码 | evaluate已由真实CLI子进程从本地源生成40份量化证据、复用及损坏拒收；AKQuant 0.3.93已用真实快照完成ATR/ADR逐值一致性、冷/热耗时和峰值RSS实测，164784行最大误差0，但不覆盖EMA或完整策略，不据此替换生产路径；完整历史研究仍未验收 |
 | §15–16阶段产物 | 对应源码/CLI/API/UI/部署/研究台账及各阶段验收记录 | 阶段一/五有真实环境限制待确认；人工审查、参数单组/组合实验与AKQuant已实跑完成，阶段六剩余验收为Tailscale Serve账号开关后的真实入口验收、真实unknown及自然日 |
 | §17–18运维与撤回 | 设备/版本/模型/PG/行情/通知/入口/持久目录/进程实测，撤回保留数据 | 633不可变包、Mac mini M4、实际锁定venv/源码、两个launchd owner和退出/空闲检查已验；旧d42/6fc/09/0d包及原记录保留。Tailscale节点在线但无Serve入口；23:23已补显式Serve候选和隔离PG/ASGI回归，真实远端同源/身份仍待接通 |
-| §19交付检查与独立审查 | 每个检查项都有当前证据，文档/独立wiki/提交/部署分别登记 | 保持未证实项未完成；最后安排独立整体审查 |
+| §19交付检查与独立审查 | 每个检查项都有当前证据，文档/独立wiki/提交/部署分别登记 | 76af9041已由另一session/model完成独立审查，未发现P0/P1；流程回放因原始会话不可用而降级，P2文档/wiki漂移已修复。保持未证实项未完成：真实Serve、自然窗口、瞬时重放及真实unknown |
 
 自然任务的下一验收窗口为上海时间2026-11-27 21:00启动、21:30首报、21:50恢复截止；2026-11-26是交易所日历假日。这只是正式日历和当前配置给出的期望时刻，不能当作已经运行的证据。
 
@@ -103,3 +103,5 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 2026-11-26 doctor下限修复`beade4f0`通过八项CI后，正式API/tick已采用`doctor-beade4f0`。真实candidate doctor在Python 3.11返回ready=true，15次readyz全200/P95 12.868ms，固定报告仍revision 14且518/518；窗口外tick退出0、五类active为0。远端Serve、自然恢复窗口、真实unknown和独立审查继续保持未完成。
 
 02:10doctor接线补验：`c0ae327b`通过八项CI并采用`doctor-wiring-c0ae327b`。生产doctor真实消费Python下限helper，candidate在3.11.16返回ready=true；15次readyz全200/P95 12.727ms，revision14报告518/518，窗口外tick退出0、五类active为0；50次并发混合读全成功。远端Serve、自然恢复窗口、真实unknown和独立审查继续保持未完成。
+
+2026-11-26上海03:22独立审查：另一session/model审查`76af9041`，八项CI全成功、fast gate通过、运行时health/ready为200且API/tick指向`doctor-wiring-c0ae327b`；结论为无P0/P1缺陷。因原始agent会话不可用，流程审查降级为Git/CI/runtime/文件/测试证据。审查发现的文档当前版本漂移和wiki滞后登记为P2；主文档已在`e23316f1`同步，独立wiki在本地`codex/stock-research`分支`44e9972`单独提交。真实Serve远端浏览器、2026-11-27自然窗口、自然瞬时`OperationalError`和Feishu `unknown`继续保持未完成。
