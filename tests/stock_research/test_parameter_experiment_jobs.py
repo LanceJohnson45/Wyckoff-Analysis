@@ -9,6 +9,7 @@ import pytest
 
 from stock_research.config import Settings
 from stock_research.http_api import create_app
+from stock_research.schema import EVALUATION_JOBS
 from stock_research.store import close_engine, database_engine, initialize_schema
 from tests.stock_research.test_evaluation_api import OPERATOR
 from tests.stock_research.test_evaluation_api import evaluation_settings as evaluation_settings
@@ -32,6 +33,31 @@ async def terminal(client: httpx.AsyncClient, identifier: str) -> dict[str, obje
             return data
         await asyncio.sleep(0.03)
     raise AssertionError("参数实验未到终态")
+
+
+async def configuration_files(settings: Settings, identifier: str) -> dict[str, object]:
+    """读取持久化配置，验证冻结语义不因API请求默认值丢失。"""
+    from sqlalchemy import select
+
+    engine = database_engine(settings)
+    try:
+        async with engine.connect() as connection:
+            row = (
+                (
+                    await connection.execute(
+                        select(EVALUATION_JOBS.c.payload).where(
+                            EVALUATION_JOBS.c.workspace == settings.workspace,
+                            EVALUATION_JOBS.c.uuid == identifier,
+                            EVALUATION_JOBS.c.is_deleted.is_(False),
+                        )
+                    )
+                )
+                .mappings()
+                .one()
+            )
+        return row["payload"]["configuration"]["files"]
+    finally:
+        await close_engine(engine)
 
 
 @pytest.mark.usefixtures("local_postgres_socket")
@@ -62,6 +88,7 @@ def test_integration_parameter_experiment_api_completes_and_replays_original(eva
             identifier = accepted.json()["data"]["id"]
             completed = await terminal(client, identifier)
             assert completed["status"] == "completed", completed
+            assert (await configuration_files(evaluation_settings, identifier))["allow_current_universe"] is True
             assert completed["values"] == [0.5, 0.75, 1.0]
             replay = await client.post(
                 "/v1/parameter-experiments", json=body, headers={"Idempotency-Key": "parameter-api-000000000001"}

@@ -65,7 +65,7 @@ function ExperimentWorkspace({ active, initialCutoff }: { active: boolean; initi
     void client.invalidateQueries({ queryKey: ['research', 'parameter-experiments'] })
   })
   return <div className="mt-4 space-y-5">
-    <p className="text-xs leading-relaxed text-muted-foreground">同一冻结输入顺序运行三个显式 Martin 变体；结果只作描述性观察，不发布生产参数，也不构成调参依据。</p>
+    <p className="text-xs leading-relaxed text-muted-foreground">同一冻结输入顺序运行三个显式 Martin 变体；当前股票池与分类回填历史截面，存在存活偏差。结果只作描述性观察，不发布生产参数，也不构成调参依据。</p>
     <ExperimentForm initialCutoff={initialCutoff} profile={profile} parametersPending={parameters.isPending} state={{ history, actions }} />
     <ExperimentHistory state={{ history, page, selected, setSelected, setPage }} />
     {job.isPending && selected && <p role="status" className="text-xs">正在读取参数实验任务…</p>}

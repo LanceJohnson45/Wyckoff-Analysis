@@ -24,7 +24,10 @@ async def freeze_evaluation(store: RunStore, settings: Settings, row: dict[str, 
         body = CreateParameterExperiment.model_validate(
             {key: value for key, value in raw_request.items() if key != "kind"}
         )
-        request = CreateEvaluation.model_validate({"profile": body.profile, "cutoff": body.cutoff})
+        # 参数实验固定回放当前池；旧截面不回填会使当前版本的有效期早于所有抽样日。
+        request = CreateEvaluation.model_validate(
+            {"profile": body.profile, "cutoff": body.cutoff, "allow_current_universe": True}
+        )
     else:
         request = CreateEvaluation.model_validate(raw_request)
     config = row["payload"]["configuration"]
