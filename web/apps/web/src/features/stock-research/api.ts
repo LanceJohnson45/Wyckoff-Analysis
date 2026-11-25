@@ -8,7 +8,18 @@ import { parameterPageSchema, parameterSetSchema, strategyParameterSchema, strat
 import { preparationPageSchema } from './preparation-contract'
 import { chatPageSchema, chatTurnSchema, type CreateChatTurn } from './chat-contract'
 import { universePageSchema } from './universe-contract'
-import { evaluationJobPageSchema, evaluationJobSchema, evaluationResultSchema, evaluationSamplePageSchema, type CreateEvaluation } from './evaluation-contract'
+import {
+  evaluationJobPageSchema,
+  evaluationJobSchema,
+  evaluationResultSchema,
+  evaluationSamplePageSchema,
+  selectionObservationJobPageSchema,
+  selectionObservationJobSchema,
+  selectionObservationResultSchema,
+  selectionObservationSamplePageSchema,
+  type CreateEvaluation,
+  type CreateSelectionObservation,
+} from './evaluation-contract'
 import { renewResearchWebSession } from './web-session'
 import { operationsSchema } from './operations-contract'
 import { themeProposalPageSchema, themeProposalSchema, inputPublicationPageSchema, inputPublicationSchema, manualHeadSchema, frozenInputsSchema, canonicalResearchSymbol, type ThemeDefinition, type ConfirmTheme, type CreateManualOverride } from './input-contract'
@@ -275,5 +286,36 @@ export async function readEvaluationResult(identifier: string, jobId: string, si
 export async function readEvaluationSamples(resultId: string, page: number, strategy?: Strategy, signal?: AbortSignal) {
   const value = await request(`/v1/evaluation-results/${id.parse(resultId)}/samples?page=${page}&page_size=20${strategy ? `&strategy=${strategySchema.parse(strategy)}` : ''}`, evaluationSamplePageSchema, { signal })
   if (value.page !== page || value.page_size !== 20 || value.items.some(sample => sample.result_id !== resultId || strategy && sample.strategy !== strategy)) throw new ResearchApiError('逐股观察与原结果或查询不一致', 503, 'invalid_response')
+  return value
+}
+
+export async function readSelectionObservations(page: number, signal?: AbortSignal) {
+  const value = await request(`/v1/selection-observations?page=${page}&page_size=5`, selectionObservationJobPageSchema, { signal })
+  if (value.page !== page || value.page_size !== 5) throw new ResearchApiError('正式观测分页与查询不一致', 503, 'invalid_response')
+  return value
+}
+export async function readSelectionObservation(identifier: string, signal?: AbortSignal) {
+  const value = await request(`/v1/selection-observations/${id.parse(identifier)}`, selectionObservationJobSchema, { signal })
+  if (value.id !== identifier) throw new ResearchApiError('正式观测任务身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function createSelectionObservation(body: CreateSelectionObservation, key: string) {
+  const value = await request('/v1/selection-observations', selectionObservationJobSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '正式观测提交结果未知，请核对原提交')
+  if (value.report_id !== body.report_id || value.cutoff !== body.cutoff) throw new ResearchApiError('正式观测受理内容与原提交不一致', 503, 'invalid_response')
+  return value
+}
+export async function controlSelectionObservation(identifier: string, action: 'cancel' | 'retry') {
+  const value = await request(`/v1/selection-observations/${id.parse(identifier)}/${action}`, selectionObservationJobSchema, { method: 'POST' }, '正式观测操作结果未知，请刷新原任务状态')
+  if (value.id !== identifier) throw new ResearchApiError('正式观测操作身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function readSelectionObservationResult(identifier: string, jobId: string, signal?: AbortSignal) {
+  const value = await request(`/v1/selection-observation-results/${id.parse(identifier)}`, selectionObservationResultSchema, { signal })
+  if (value.id !== identifier || value.job_id !== jobId) throw new ResearchApiError('正式观测结果不属于原任务', 503, 'invalid_response')
+  return value
+}
+export async function readSelectionObservationSamples(resultId: string, page: number, signal?: AbortSignal) {
+  const value = await request(`/v1/selection-observation-results/${id.parse(resultId)}/samples?page=${page}&page_size=20`, selectionObservationSamplePageSchema, { signal })
+  if (value.page !== page || value.page_size !== 20 || value.items.some(sample => sample.result_id !== resultId)) throw new ResearchApiError('正式逐股观测与原结果或查询不一致', 503, 'invalid_response')
   return value
 }

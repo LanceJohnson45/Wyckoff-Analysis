@@ -21,6 +21,11 @@ from stock_research.run_store import RunStore
 from stock_research.schema import EVALUATION_JOBS
 from stock_research.schemas.evaluation_execution import EvaluationFiles, EvaluationFrame
 from stock_research.schemas.evaluations import CreateEvaluation
+from stock_research.schemas.selection_observation_execution import SelectionObservationFiles, SelectionObservationFrame
+from stock_research.schemas.selection_observation_jobs import CreateSelectionObservation
+from stock_research.schemas.selection_observations import SelectionObservationReport
+from stock_research.selection_observation_execution import execute_selection_observation
+from stock_research.selection_observation_results import freeze_selection_observation, publish_selection_observation
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
 
 logger = structlog.get_logger(__name__)
@@ -43,7 +48,7 @@ class EvaluationManager:
         self.watcher: asyncio.Task[None] | None = None
         self.closing = False
 
-    async def submit(self, key: str, body: CreateEvaluation) -> str:
+    async def submit(self, key: str, body: CreateEvaluation | CreateSelectionObservation) -> str:
         """先落原意图和总期限，未知响应重放原身份，不重新消费配置。"""
         ensure_source_current()
         if body.cutoff > latest_complete_session():
@@ -117,10 +122,14 @@ class EvaluationManager:
             raise ResearchSourceChanged("评估源码已改变")
         if row["payload"].get("cancel_requested"):
             raise asyncio.CancelledError
+        formal = row["payload"]["request"].get("kind") == "formal_selection_observations"
         if configuration.get("files") is None:
             remaining = (datetime.fromisoformat(configuration["deadline"]) - now()).total_seconds()
             async with asyncio.timeout(max(0, remaining)):
-                configuration = await freeze_evaluation(self.store, self.settings, row)
+                if formal:
+                    configuration = await freeze_selection_observation(self.store, self.settings, row)
+                else:
+                    configuration = await freeze_evaluation(self.store, self.settings, row)
                 await self.jobs.configure(identifier, configuration)
         while True:
             row = await self.jobs.read(identifier)
@@ -132,17 +141,28 @@ class EvaluationManager:
                 await self.finish_error(identifier, "evaluation_attempts_exhausted")
                 return
             row = await self.jobs.start_attempt(identifier)
-            files = EvaluationFiles.model_validate(row["payload"]["configuration"]["files"])
-            files = files.model_copy(update={"timeout_seconds": max(1, int(remaining))})
+            if formal:
+                files = SelectionObservationFiles.model_validate(row["payload"]["configuration"]["files"])
+            else:
+                files = EvaluationFiles.model_validate(row["payload"]["configuration"]["files"]).model_copy(
+                    update={"timeout_seconds": max(1, int(remaining))}
+                )
             try:
-                report = await self.run_worker(identifier, files, remaining)
+                report = await (
+                    self.run_observation_worker(identifier, files, remaining)
+                    if formal
+                    else self.run_worker(identifier, files, remaining)
+                )
             except EvaluationExecutionError as error:
                 if error.code == "evaluation_process_failed" and row["payload"]["attempt_count"] < 2:
                     continue
                 raise
             if (await self.jobs.read(identifier))["payload"].get("cancel_requested"):
                 raise asyncio.CancelledError
-            await publish_evaluation(self.store, identifier, report)
+            if formal:
+                await publish_selection_observation(self.store, identifier, report)
+            else:
+                await publish_evaluation(self.store, identifier, report)
             return
 
     async def run_worker(self, identifier: str, files: EvaluationFiles, remaining: float) -> EvaluationReport:
@@ -152,6 +172,28 @@ class EvaluationManager:
             await self.jobs.progress(identifier, frame)
 
         task = asyncio.create_task(execute_evaluation(files, timeout=remaining, checkpoint=checkpoint))
+        try:
+            while not task.done():
+                done, _ = await asyncio.wait((task,), timeout=1)
+                if not done and (await self.jobs.read(identifier))["payload"].get("cancel_requested"):
+                    task.cancel()
+                    await asyncio.gather(task, return_exceptions=True)
+                    raise asyncio.CancelledError
+            return await task
+        finally:
+            if not task.done():
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+
+    async def run_observation_worker(
+        self, identifier: str, files: SelectionObservationFiles, remaining: float
+    ) -> SelectionObservationReport:
+        """正式观测同样轮询持久取消意图，终态等待真实进程退出。"""
+
+        async def checkpoint(frame: SelectionObservationFrame) -> None:
+            await self.jobs.observation_progress(identifier, frame)
+
+        task = asyncio.create_task(execute_selection_observation(files, timeout=remaining, checkpoint=checkpoint))
         try:
             while not task.done():
                 done, _ = await asyncio.wait((task,), timeout=1)

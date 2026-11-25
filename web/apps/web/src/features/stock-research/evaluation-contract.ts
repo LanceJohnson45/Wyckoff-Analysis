@@ -12,6 +12,15 @@ export const evaluationJobSchema = z.object({
 })
 
 export const evaluationJobPageSchema = z.object({ items: z.array(evaluationJobSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
+export const selectionObservationJobSchema = z.object({
+  id, kind: z.literal('formal_selection_observations'), report_id: id, cutoff: day,
+  status: z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']), error_code: z.string().nullable(),
+  result_id: id.nullable(), cancel_requested: z.boolean(), attempt_count: z.number().int().min(0).max(2),
+  create_time: z.string().datetime({ offset: true }), update_time: z.string().datetime({ offset: true }),
+}).superRefine((job, context) => {
+  if (job.status === 'completed' ? !job.result_id || job.error_code !== null || job.attempt_count === 0 : job.result_id !== null) context.addIssue({ code: 'custom', message: '正式观测完成状态与结果不一致' })
+})
+export const selectionObservationJobPageSchema = z.object({ items: z.array(selectionObservationJobSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
 export const horizonSchema = z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10), z.literal(20)])
 const metric = z.number().finite().nullable()
 export const outcomeWindowSchema = z.object({
@@ -45,9 +54,40 @@ export const evaluationSampleSchema = z.object({
 })
 export const evaluationSamplePageSchema = z.object({ items: z.array(evaluationSampleSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
 
+const selectionBindingSchema = z.object({
+  selection_id: id, strategy: strategySchema, selection_hash: hash, context_hash: hash,
+  committed_at: z.string().datetime({ offset: true }), reference_session: day,
+  source: z.enum(['model', 'empty_pool']), symbols: z.array(z.string()).max(5),
+})
+export const selectionScopeSchema = z.object({
+  workspace: z.string().min(1), report_id: id, report_hash: hash, report_revision: z.number().int().positive(),
+  report_status: z.enum(['pending', 'running', 'completed', 'partial', 'failed', 'cancelled']), run_id: id,
+  snapshot_id: id, snapshot_hash: hash, target_session: day, selections: z.array(selectionBindingSchema).max(2),
+})
+export const selectionObservationResultSchema = z.object({
+  id, job_id: id, kind: z.literal('formal_selection_observations'),
+  algorithm: z.literal('selection-forward-open-v1'), reference: z.literal('first_open_after_commit'),
+  scope: selectionScopeSchema, cutoff: day, report_hash: hash, input_hash: hash, source_hash: hash,
+  source_identity: z.string().min(1), costs: z.record(z.number().finite().nonnegative()),
+  selection_count: z.number().int().min(0).max(2), observation_count: z.number().int().min(0).max(10),
+  missing_strategies: z.array(strategySchema), manual_review: z.literal('pending'), limitations: z.array(z.string()),
+})
+export const selectionObservationSampleSchema = z.object({
+  id, result_id: id, selection_id: id, reference_session: day, strategy: strategySchema, symbol: z.string(),
+  windows: z.array(outcomeWindowSchema),
+}).superRefine((sample, context) => {
+  if (sample.windows.map(window => window.horizon).join(',') !== '1,3,5,10,20') context.addIssue({ code: 'custom', message: '正式观测窗口不完整' })
+})
+export const selectionObservationSamplePageSchema = z.object({ items: z.array(selectionObservationSampleSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
+
 export type EvaluationJob = z.infer<typeof evaluationJobSchema>
 export type EvaluationResult = z.infer<typeof evaluationResultSchema>
 export type EvaluationSample = z.infer<typeof evaluationSampleSchema>
 export type EvaluationHorizon = z.infer<typeof horizonSchema>
+export type SelectionObservationJob = z.infer<typeof selectionObservationJobSchema>
+export type SelectionObservationResult = z.infer<typeof selectionObservationResultSchema>
+export type SelectionObservationSample = z.infer<typeof selectionObservationSampleSchema>
 export interface CreateEvaluation { profile: string; cutoff: string; allow_current_universe: boolean }
+export interface CreateSelectionObservation { report_id: string; cutoff: string }
 export function evaluationActive(job: EvaluationJob): boolean { return job.status === 'pending' || job.status === 'running' }
+export function selectionObservationActive(job: SelectionObservationJob): boolean { return job.status === 'pending' || job.status === 'running' }

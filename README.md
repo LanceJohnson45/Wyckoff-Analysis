@@ -397,4 +397,4 @@ wyckoff mcp-list
 
 [研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。本机正式API/股票tick已于11月25日04:55采用本批，直接与同源状态读取通过；该状态区域已在正式6fc65f46页面补验刷新、跨日状态、partial修订跳转最近完整研究及单区域保持，原业务记录不变。
 
-[正式初选后续观测CLI](docs/stock_research_selection_observations.md)源码已接固定报告和只读PG绑定，按提交后首个开盘记录五窗口、成本与SPY；晚到顺延、pending/缺数、缺策略与空池分别保留。重启/修订/损坏及真实报告只读核对已有证据，完整本地Python6273项无skip及相关47项已通过，当前提交CI及采用另记。持久作业/API/UI与人工审查尚未因此完成。
+[正式初选后续观测](docs/stock_research_selection_observations.md)已从CLI/不可变文件续接到独立持久作业API与Agent区：复用现有评估表，历史量化与`formal_selection_observations`资源族隔离，保留原输入续跑、真实取消、幂等命名空间、五窗口、空名单、pending/缺数与成本边界。聚焦PG/ASGI、完整Python6323项、Web契约与生产dry-run build已通过；真实浏览器操作、提交CI与运行包采用另记。人工审查尚未因此完成，详见[作业设计](docs/design/stock-research-selection-observation-jobs.md)。

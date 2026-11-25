@@ -1,6 +1,6 @@
 # 固定正式初选的后续观测
 
-`observe-selections`消费已保存报告的正式初选，不重跑量化或模型，也不补拉行情、发送通知、创建订单或发布参数。它与`evaluate`的历史量化池回放分别标记，当前先提供CLI和不可变文件；持久作业/API/Agent展示仍须后续接线，不能据此称完整阶段六完成。
+`observe-selections`消费已保存报告的正式初选，不重跑量化或模型，也不补拉行情、发送通知、创建订单或发布参数。它与`evaluate`的历史量化池回放分别标记。CLI和不可变文件已可用；持久作业/API/Agent源码已接本批工作树，但提交CI、真实浏览器验收与运行包采用仍另行验收，不能据此称完整阶段六完成。
 
 ```bash
 .venv/bin/python -m stock_research.cli observe-selections \

@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import date
+from pathlib import Path
 
 from pydantic import UUID4, TypeAdapter
 
@@ -104,38 +105,43 @@ def observe_fixed_scope(settings: Settings, scope: SelectionScope, cutoff: date)
     ensure_source_current()
     with data_lock(settings.artifacts_path / "locks", "selection-observations", str(scope.report_id)):
         inputs = observation_input(settings, scope, cutoff)
-        report = observation_report(inputs)
-        root = settings.artifacts_path / "selection-observations" / report.input_hash
-        request = {**inputs.model_dump(mode="json", exclude={"bars", "issues"}), "input_hash": report.input_hash}
-        files = {
-            "request.json": canonical_json(request) + "\n",
-            "input.json": inputs.model_dump_json() + "\n",
-            "report.json": report.model_dump_json() + "\n",
-        }
-        for name, content in files.items():
-            path = root / name
-            if (
-                len(content.encode()) > MAX_OBSERVATION_FILE_BYTES
-                or path.exists()
-                and path.stat().st_size > MAX_OBSERVATION_FILE_BYTES
-            ):
-                raise ValueError("正式初选观测文件超出上限")
-            write_once(path, content)
-        loaded = SelectionObservationInput.model_validate_json((root / "input.json").read_text(encoding="utf-8"))
-        verified = SelectionObservationReport.model_validate_json((root / "report.json").read_text(encoding="utf-8"))
-        if digest(loaded.model_dump(mode="json")) != verified.input_hash or verified != report:
-            raise ValueError("正式初选观测文件绑定不一致")
-        ensure_source_current()
+        return publish_observations(settings.artifacts_path, inputs)
+
+
+def publish_observations(artifacts: Path, inputs: SelectionObservationInput) -> dict[str, object]:
+    """CLI和拥有的worker共用不可变文件、大小及绑定校验。"""
+    report = observation_report(inputs)
+    root = artifacts / "selection-observations" / report.input_hash
+    request = {**inputs.model_dump(mode="json", exclude={"bars", "issues"}), "input_hash": report.input_hash}
+    files = {
+        "request.json": canonical_json(request) + "\n",
+        "input.json": inputs.model_dump_json() + "\n",
+        "report.json": report.model_dump_json() + "\n",
+    }
+    for name, content in files.items():
+        path = root / name
+        if (
+            len(content.encode()) > MAX_OBSERVATION_FILE_BYTES
+            or path.exists()
+            and path.stat().st_size > MAX_OBSERVATION_FILE_BYTES
+        ):
+            raise ValueError("正式初选观测文件超出上限")
+        write_once(path, content)
+    loaded = SelectionObservationInput.model_validate_json((root / "input.json").read_text(encoding="utf-8"))
+    verified = SelectionObservationReport.model_validate_json((root / "report.json").read_text(encoding="utf-8"))
+    if digest(loaded.model_dump(mode="json")) != verified.input_hash or verified != report:
+        raise ValueError("正式初选观测文件绑定不一致")
+    ensure_source_current()
     return {
         "kind": verified.kind,
         "path": str((root / "report.json").resolve()),
         "content_hash": verified.content_hash,
         "input_hash": verified.input_hash,
-        "report_id": str(scope.report_id),
-        "cutoff": str(cutoff),
-        "selection_count": len(scope.selections),
+        "report_id": str(inputs.scope.report_id),
+        "cutoff": str(inputs.cutoff),
+        "selection_count": len(inputs.scope.selections),
         "observation_count": len(verified.samples),
-        "missing_strategies": sorted({"martin", "wyckoff"} - {row.strategy for row in scope.selections}),
+        "missing_strategies": sorted({"martin", "wyckoff"} - {row.strategy for row in inputs.scope.selections}),
         "manual_review": "pending",
         "limitations": verified.limitations,
     }
