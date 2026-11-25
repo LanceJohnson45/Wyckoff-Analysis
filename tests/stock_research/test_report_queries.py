@@ -201,7 +201,11 @@ def test_normal_research_mcp_has_eight_readonly_tools(tmp_path: Path) -> None:
         parameters = StdioServerParameters(
             command=sys.executable,
             args=["-m", "stock_research.research_mcp"],
-            env={"PATH": os.environ.get("PATH", ""), "STOCK_RESEARCH_QUERY_TOKEN": READER},
+            env={
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": str(Path(__file__).resolve().parents[2]),
+                "STOCK_RESEARCH_QUERY_TOKEN": READER,
+            },
             cwd=tmp_path,
         )
         async with stdio_client(parameters) as (read, write), ClientSession(read, write) as session:
@@ -218,6 +222,15 @@ def test_normal_research_mcp_has_eight_readonly_tools(tmp_path: Path) -> None:
                 "stock_research_strategy_rules",
             }
             assert all(tool.annotations.readOnlyHint and not tool.annotations.openWorldHint for tool in tools)
+            paged = [
+                tool
+                for tool in tools
+                if tool.name in {"stock_research_latest_report", "stock_research_stock", "stock_research_run_status"}
+            ]
+            assert all(
+                "cursor" in tool.inputSchema["properties"] and "chunks" in tool.outputSchema["properties"]
+                for tool in paged
+            )
             denied = await session.call_tool(
                 "stock_research_compare_stocks", {"report_id": new_id(), "symbols": ["AAPL", "../.env"]}
             )

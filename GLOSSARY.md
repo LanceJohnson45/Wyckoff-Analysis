@@ -552,3 +552,5 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 **研究操作状态**：目标日首报/恢复通知、全日期最近完整研究及最近确认送达记录的只读投影。研究completed不等于通知sent；sent须有有效原生引用，unknown与无记录分别保留。Personal账本更新时间不是原生消息创建时刻，来源不可访问返回明确503，见[状态契约](docs/stock_research_operations.md)。
 
 **正式初选前向观测**：以固定报告所引用的已提交初选为范围，参考不早于目标日且严格晚于提交时刻的首个XNYS开盘，至第1/3/5/10/20个交易日收盘观察；晚到顺延。独立于量化截面前收盘口径，缺策略不补、缺数不跳日，当前为CLI/不可变文件，详见[观测契约](docs/stock_research_selection_observations.md)。
+
+**研究MCP完整续页**：原三工具QueryPage v2源码候选；每页回显固定result_id/内容摘要/原scope，以JSON路径保存完整子树，长字符串有字符偏移。next_cursor非空表示尚未读完，续页不刷新latest或当前运行；缓存期限/容量或进程重启后明确拒绝，不能拼接新旧结果。单页SDK文本≤32KiB；线上采用另验，HTTP/CLI原领域模型不变，见[查询契约](docs/stock_research_queries.md)。

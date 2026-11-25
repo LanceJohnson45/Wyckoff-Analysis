@@ -67,3 +67,15 @@ RunView.quant新增固定修订当时的两策略量化状态；缺计算时股�
 每次读取仍向PostgreSQL查询workspace、未删除状态、schema版本、内容摘要和`xmin`行版本。任何UPDATE（即使保留update_time）、删除或workspace变化都会重新读取或拒绝；不以TTL延后检测。调用者得到独立的质量字典，不能改变下一次查询。新快照按内容身份读取，不改旧报告，不缓存报告修订或量化状态。
 
 本机71,975,276字节、165,781根日线的只读测量：两路并发连续5轮，修复前传输10份、请求耗时1.42～3.44秒；修复后传输1份，首轮约2.12秒，其余8次0.65～1.62毫秒。这是同机存储读取测量，不能直接当作HTTP或浏览器延迟，也不是多进程共享缓存的保证。切换快照会替换这一份缓存。
+
+## MCP v2完整续页（源码候选，尚未采用）
+
+原三项工具增加可选cursor，返回统一QueryPage；HTTP/ResearchReader/只读CLI仍返回原ReportView、StockObservation或RunView。独立研究八工具中的同名三项也采用QueryPage，另外五项保持原模型；绑定报告问答的chat MCP不变。工具名称/数量、身份及无资源目录保持。
+
+每页含schema_version=2、result_id、tool、content_hash、scope、page、total_pages、next_cursor和chunks。scope保留本次读回实际存在的run/report/snapshot/as_of等元数据，未在原模型出现的值为null，不补推断。保持原参数并传next_cursor续读，所有页result_id/content_hash必须相同；读到next_cursor=null才取得完整结果。chunks.path是原JSON对象键/数组下标序列，value是原子树；长字符串另给Unicode码点位置text_offset及完整长度text_total。按path放回，长字符串按Unicode码点偏移连接，可完整重建原模型并用既有规范摘要核对；空对象/数组、false、null、0、原证据ref与限制均保留。
+
+每页完整SDK文本UTF-8≤32KiB，不依赖客户端截断或文件spill。续页只读本进程首次读回的已授权值，不刷新latest或当前run；独立scope.observed_at与本页读取时间不同。缓存固定5分钟、最多8结果/8MiB序列化页。跨工具/入参、失效、淘汰或进程重启后的cursor明确拒绝；须重新查询并核对版本，不能拼接新旧结果。它不是文件、URL、业务ID或通用资源能力。
+
+实际旧三份结果通过生产MCP入口完整还原为2/4/2页，最大32736字节；真实固定IEX的320根历史为8页，原模型/摘要全等。以上为隔离源码候选的SDK/HTTP验证，零模型/写入；线上Personal仍用d42旧返回格式。34项相关回归包含原生PG/ASGI链、Unicode/转义/空值、缓存绑定/淘汰/期限以及真实stdio三项/八项目录。stdio回归另复现了子进程误读原checkout，已显式绑定测试源码路径并重跑；完整门禁、精确CI和运行采用分别跟踪。
+
+本批最终完整Python6313通过/无skip、50条既有警告（308.85秒），34聚焦及Ruff/1360文件格式/函数质量、workflow/dependency hygiene与CI同形操作dry-run通过；最终全量前后源码指纹相同。原大小复现循环已由失败转为通过，另逐页重建证明全部原事实保留；这不是把首页面当作完整结果。15次正式业务读取全成功/P95 0.336秒，原五类HTTP摘要和四类研究表投影保持、四类活动0。精确CI、固定包采用及新版共享宿主模型读取仍待验，线上保持d42。
