@@ -4,6 +4,7 @@
 
 ```bash
 .venv/bin/python -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20
+.venv/bin/python -m stock_research.cli evaluate-parameters --profile baseline-v1 --cutoff 2026-11-20 --field support_atr --values 0.5 0.75 1.0
 ```
 
 CLI输入为 operator 配置的本地行情库、成分/分类文件和两策略参数文件；API作业在准备阶段通过既有发布解析器冻结实际参数、截止日有效的主题/自选和来源。仅接受已完成正式收盘的截止日，profile必须与实际Martin参数版本一致。一次只读一致备份取得截止日前最多400个交易日、最多250000行；超限报错，不静默截断。不联网补数，不使用配置的供应商基准补充文件。三基准在本地源中须有足够长的完整历史：每个候选日有320根历史，且预留20日标签；20个候选至少需要359个连续交易日。数据不够或抽中截面质量未通过时明确失败，不能以空结果或重复日期凑数。
@@ -20,6 +21,8 @@ CLI输入为 operator 配置的本地行情库、成分/分类文件和两策略
 - `report.json` 保存20日截面/两策略的分母、原排除计数、池归属、观察窗口和限制。
 
 同输入重跑校验并复用已完成证据，不覆盖；中断后的完整单策略产物可复用。损坏证据、不同绑定或不一致输出拒收。源码、输入、参数、覆盖或成本变化会另起请求目录。CLI内逐截面检查总预算，单个同步计算过程中仍依赖CLI进程终止；API另有隔离进程硬期限，不混称同一种超时。
+
+`evaluate-parameters` 只支持首轮计划的 `support_atr`、`extension_atr`、`contraction_ratio` 三个字段，每次必须显式给三个不重复值。该命令复用当前发布输入但生成带 `:experiment:` 后缀的独立参数版本，三个结果分别落请求摘要目录；不发布生产参数，组合实验必须等三个单组实验完成并另行显式运行。同一冻结输入的既有缓存允许内容相同的另一份冻结文件，但仍拒绝不同行情内容；变体重跑复用原报告。
 
 表现按截面收盘参考价观察后1/3/5/10/20个XNYS交易日，百分数以百分点计。净收益扣 `core.trade_friction.round_trip_cost_pct(code="<symbol>.US")` 的既有工程估算；净超额减去SPY毛收益，不等于实盘alpha。MFE/MAE从参考收盘起算，含零，使用后续窗口高低价；当前日高低价不混入。窗口未走完保留pending；内部缺股票或SPY行情保留missing_data及具体日期，不将缺数行直接丢掉。
 
@@ -60,7 +63,7 @@ API将原始行情一次物化到作业目录；结果目录的input.json为同�
 
 上述为隔离合成验收，不是正式模型效果或生产采用。窗口未成熟/缺数由契约及渲染测试覆盖；当前离线回放预留20日完整观察，未用虚构行情制造生产pending结果。源码提交和CI不表示旧运行包已采用，实际运行入口仍另验。实现依据见[单页设计](design/stock-research-evaluation-panel.md)。
 
-`kind=historical_quant_pool`、`model_selection=null`、`manual_review=pending` 是该评估链路的真实范围。正式初选另有[固定报告观测CLI](stock_research_selection_observations.md)，按实际提交后的首个开盘观察，不能与本页量化截面收盘口径混同；其持久作业/API/UI已接线并完成真实页面验收。每策略10入选/10排除人工审查、参数单组/组合实验、AKQuant整批比较及扩展实验界面仍未完成。研究与比较结论应记录到GitHub Issue，不提交结果文件或收益表到仓库文档。
+`kind=historical_quant_pool`、`model_selection=null`、`manual_review=pending` 是该评估链路的真实范围。正式初选另有[固定报告观测CLI](stock_research_selection_observations.md)，按实际提交后的首个开盘观察，不能与本页量化截面收盘口径混同；其持久作业/API/UI已接线并完成真实页面验收。参数单组实验CLI已接线并通过合成真实评估路径测试，三个正式单组及后续组合尚未实跑。每策略10入选/10排除人工审查、AKQuant整批比较及扩展实验界面仍未完成。研究与比较结论应记录到GitHub Issue，不提交结果文件或收益表到仓库文档。
 
 2026-11-25上海16:37，正式初选观测的持久作业/API/UI已从源码验收进入真实页面操作：固定报告b14ad808修订14、截止11月23日一次尝试完成，页面读回2份入选、7条逐股观察、缺失策略无、人工审查pending；7个窗口均为未满。冻结输入文件含报告哈希/修订、run、快照、两份初选、7只成本与源摘要。手动重载仍为1条记录/7行观察，浏览器error为0。此项不表示人工审查、参数实验或策略有效性完成。
 

@@ -490,7 +490,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI及私有作业API](docs/stock_research_evaluations.md)，当前覆盖20截面基线回放、描述性观察、时间净化与作业恢复，Agent量化池回放已补隔离合成页面验收。正式初选持久观测已接API/UI并完成16:37真实页面验收；人工审查、参数单组/组合实验、AKQuant、Tailscale、真实unknown及自然日仍待验收，阶段六不因此视为完整完成。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI及私有作业API](docs/stock_research_evaluations.md)，当前覆盖20截面基线回放、描述性观察、时间净化与作业恢复，Agent量化池回放已补隔离合成页面验收。正式初选持久观测已接API/UI并完成16:37真实页面验收；参数单组实验CLI已接通，人工审查、三个正式单组实跑、组合实验、AKQuant、Tailscale、真实unknown及自然日仍待验收，阶段六不因此视为完整完成。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 

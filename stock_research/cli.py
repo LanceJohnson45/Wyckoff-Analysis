@@ -21,7 +21,7 @@ from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
-from stock_research.evaluation_cli import evaluate_command
+from stock_research.evaluation_cli import evaluate_command, evaluate_parameter_experiments_command
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
@@ -97,6 +97,12 @@ def parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--profile", required=True)
     evaluate.add_argument("--cutoff", type=date.fromisoformat, required=True)
     evaluate.add_argument("--allow-current-universe", action="store_true", help="显式接受当前成分及分类回溯限制")
+    experiments = commands.add_parser("evaluate-parameters", help="同一冻结输入运行首轮单组参数实验，不发布生产参数")
+    experiments.add_argument("--profile", required=True)
+    experiments.add_argument("--cutoff", type=date.fromisoformat, required=True)
+    experiments.add_argument("--field", choices=["support_atr", "extension_atr", "contraction_ratio"], required=True)
+    experiments.add_argument("--values", nargs=3, type=float, required=True)
+    experiments.add_argument("--allow-current-universe", action="store_true")
     observe = commands.add_parser("observe-selections", help="固定报告正式初选的前向观测，不调用模型或发送通知")
     observe.add_argument("--report-id", required=True)
     observe.add_argument("--cutoff", type=date.fromisoformat, required=True)
@@ -264,6 +270,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "evaluate-parameters":
+        return execute_evaluation_parameters(args, settings)
     if args.command == "evaluate":
         return evaluate_command(
             settings, args.profile, args.cutoff, allow_current_universe=args.allow_current_universe
@@ -315,10 +323,7 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
 
         return asyncio.run(refresh_command(settings, args.as_of))
     if args.command == "refresh-versions":
-        if not args.allow_current_universe:
-            raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")
-        if args.as_of > latest_complete_session():
-            raise ValueError("研究截止日尚未完成收盘")
+        validate_refresh_versions(args)
         return refresh_versions(settings, args.version, args.as_of, args.output_dir), 0
     if args.command == "snapshot":
         return snapshot_command(settings, args.as_of, offline=args.offline)
@@ -360,6 +365,29 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         if args.file:
             return Snapshot.model_validate_json(args.file.read_text(encoding="utf-8")).model_dump(mode="json"), 0
     return asyncio.run(database_command(settings, args.command, getattr(args, "id", None))), 0
+
+
+def execute_evaluation_parameters(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
+    """单组实验显式冻结一份输入，三个变体顺序复用。"""
+    return (
+        evaluate_parameter_experiments_command(
+            settings,
+            args.profile,
+            args.cutoff,
+            args.field,
+            tuple(args.values),
+            allow_current_universe=args.allow_current_universe,
+        ),
+        0,
+    )
+
+
+def validate_refresh_versions(args: argparse.Namespace) -> None:
+    """公开来源版本回溯必须显式接受限制且不越过收盘。"""
+    if not args.allow_current_universe:
+        raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")
+    if args.as_of > latest_complete_session():
+        raise ValueError("研究截止日尚未完成收盘")
 
 
 def main(argv: list[str] | None = None) -> int:

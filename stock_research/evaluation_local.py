@@ -114,7 +114,8 @@ def evaluate_files(
             try:
                 os.link(files.frozen_input_path, root / "input.json")
             except FileExistsError:
-                if not (root / "input.json").samefile(files.frozen_input_path):
+                cached = EvaluationInput.model_validate_json((root / "input.json").read_text(encoding="utf-8"))
+                if inputs != cached:
                     raise ValueError("评估缓存未引用原冻结输入") from None
         report = evaluate_history(
             inputs,
