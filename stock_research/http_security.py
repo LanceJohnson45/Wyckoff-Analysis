@@ -109,6 +109,8 @@ def install_security(app: FastAPI, settings: Settings) -> None:
                     "/v1/evaluation-results",
                     "/v1/selection-observations",
                     "/v1/selection-observation-results",
+                    "/v1/parameter-experiments",
+                    "/v1/parameter-experiment-results",
                     "/v1/theme-proposals",
                     "/v1/input-publications",
                     "/v1/universe-overrides",

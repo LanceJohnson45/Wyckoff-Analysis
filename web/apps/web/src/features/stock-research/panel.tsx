@@ -11,6 +11,7 @@ import type { ResearchReport } from './api'
 import { ResearchInputMaintenance } from './inputs'
 import { ResearchEvaluations } from './evaluations'
 import { ResearchSelectionObservations } from './selection-observations'
+import { ResearchParameterExperiments } from './parameter-experiments'
 import { ResearchOperations } from './operations'
 
 export default function StockResearchPanel() {
@@ -43,6 +44,7 @@ export default function StockResearchPanel() {
     <ResearchParameters runId={report?.run.run_id} />
     <ResearchInputMaintenance runId={report?.run.run_id} />
     <ResearchEvaluations initialCutoff={report?.run.as_of} />
+    <ResearchParameterExperiments initialCutoff={report?.run.as_of} />
     {report && <ResearchSelectionObservations reportId={report.report_id} initialCutoff={report.run.as_of} />}
   </div>
 }

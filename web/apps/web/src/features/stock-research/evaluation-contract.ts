@@ -21,6 +21,18 @@ export const selectionObservationJobSchema = z.object({
   if (job.status === 'completed' ? !job.result_id || job.error_code !== null || job.attempt_count === 0 : job.result_id !== null) context.addIssue({ code: 'custom', message: '正式观测完成状态与结果不一致' })
 })
 export const selectionObservationJobPageSchema = z.object({ items: z.array(selectionObservationJobSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
+const experimentFieldSchema = z.enum(['support_atr', 'extension_atr', 'contraction_ratio'])
+const experimentValuesSchema = z.tuple([z.number().finite(), z.number().finite(), z.number().finite()]).refine(values => new Set(values).size === 3)
+export const experimentJobSchema = z.object({
+  id, kind: z.literal('parameter_experiments'), profile: z.string().min(1), cutoff: day,
+  field: experimentFieldSchema, values: experimentValuesSchema,
+  status: z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']), error_code: z.string().nullable(),
+  result_id: id.nullable(), cancel_requested: z.boolean(), attempt_count: z.number().int().min(0).max(2),
+  create_time: z.string().datetime({ offset: true }), update_time: z.string().datetime({ offset: true }),
+}).superRefine((job, context) => {
+  if (job.status === 'completed' ? !job.result_id || job.error_code !== null || job.attempt_count === 0 : job.result_id !== null) context.addIssue({ code: 'custom', message: '参数实验完成状态与结果不一致' })
+})
+export const experimentJobPageSchema = z.object({ items: z.array(experimentJobSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
 export const horizonSchema = z.union([z.literal(1), z.literal(3), z.literal(5), z.literal(10), z.literal(20)])
 const metric = z.number().finite().nullable()
 export const outcomeWindowSchema = z.object({
@@ -79,6 +91,17 @@ export const selectionObservationSampleSchema = z.object({
   if (sample.windows.map(window => window.horizon).join(',') !== '1,3,5,10,20') context.addIssue({ code: 'custom', message: '正式观测窗口不完整' })
 })
 export const selectionObservationSamplePageSchema = z.object({ items: z.array(selectionObservationSampleSchema), total: z.number().int().nonnegative(), page: z.number().int().positive(), page_size: z.number().int().min(1).max(100) })
+const experimentVariantSchema = z.object({
+  report_hash: hash, input_hash: hash, parameter_hash: hash, value: z.number().finite(),
+  candidate_count: z.number().int().nonnegative(), usable_sections: z.record(z.number().int().nonnegative()),
+  limitations: z.array(z.string()),
+})
+export const experimentResultSchema = z.object({
+  id, job_id: id, kind: z.literal('parameter_experiments'), profile: z.string().min(1), cutoff: day,
+  field: experimentFieldSchema, values: experimentValuesSchema,
+  input_hash: hash, source_hash: hash, variants: z.array(experimentVariantSchema).length(3),
+  manual_review: z.literal('pending'), limitations: z.array(z.string()),
+})
 
 export type EvaluationJob = z.infer<typeof evaluationJobSchema>
 export type EvaluationResult = z.infer<typeof evaluationResultSchema>
@@ -87,7 +110,16 @@ export type EvaluationHorizon = z.infer<typeof horizonSchema>
 export type SelectionObservationJob = z.infer<typeof selectionObservationJobSchema>
 export type SelectionObservationResult = z.infer<typeof selectionObservationResultSchema>
 export type SelectionObservationSample = z.infer<typeof selectionObservationSampleSchema>
+export type ExperimentJob = z.infer<typeof experimentJobSchema>
+export type ExperimentResult = z.infer<typeof experimentResultSchema>
 export interface CreateEvaluation { profile: string; cutoff: string; allow_current_universe: boolean }
 export interface CreateSelectionObservation { report_id: string; cutoff: string }
 export function evaluationActive(job: EvaluationJob): boolean { return job.status === 'pending' || job.status === 'running' }
 export function selectionObservationActive(job: SelectionObservationJob): boolean { return job.status === 'pending' || job.status === 'running' }
+export interface CreateExperiment { profile: string; cutoff: string; field: ExperimentJob['field']; values: [number, number, number] }
+export function experimentActive(job: ExperimentJob): boolean { return job.status === 'pending' || job.status === 'running' }
+export function businessNumber(createTime: string, identifier: string) {
+  const day = createTime.slice(0, 10).replaceAll('-', '')
+  const suffix = identifier.replaceAll('-', '').slice(0, 6).toUpperCase()
+  return `SR-${day}-US-${suffix}`
+}

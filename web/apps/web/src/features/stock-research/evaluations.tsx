@@ -3,6 +3,7 @@ import { ResearchApiError } from './api'
 import { useEvaluationWorkspace } from './evaluation-state'
 import { EvaluationJobView, evaluationStatus } from './evaluation-job'
 import { EvaluationResultView } from './evaluation-result'
+import { businessNumber } from './evaluation-contract'
 
 type Workspace = ReturnType<typeof useEvaluationWorkspace>
 const button = 'rounded-lg border border-border px-3 py-2 text-xs hover:bg-muted disabled:opacity-40'
@@ -63,7 +64,7 @@ function EvaluationHistory({ state }: { state: Workspace }) {
     {history.isPending && <p role="status" className="text-xs">正在读取评估记录…</p>}
     {history.error && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">{history.error.message}</p>}
     {history.data && <><div className="grid gap-2 md:grid-cols-2">{history.data.items.map(job => <button type="button" key={job.id} aria-pressed={job.id === state.selected} className={`min-w-0 rounded-xl border p-3 text-left text-xs ${job.id === state.selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`} onClick={() => state.setSelected(job.id)}>
-      <span className="block font-medium">截至 {job.cutoff} · {evaluationStatus[job.status]}</span><span className="mt-1 block break-all text-muted-foreground">{job.profile} · {job.completed_sections}/20 截面 · 创建 {new Date(job.create_time).toLocaleString('zh-CN')}</span>
+      <span className="block font-medium">{businessNumber(job.create_time, job.id)} · 截至 {job.cutoff} · {evaluationStatus[job.status]}</span><span className="mt-1 block break-all text-muted-foreground">{job.profile} · {job.completed_sections}/20 截面 · 创建 {new Date(job.create_time).toLocaleString('zh-CN')}</span>
     </button>)}</div>
       {history.data.total === 0 && <p className="text-xs text-muted-foreground">尚无历史评估。填写截止交易日后显式创建。</p>}
       <div className="flex items-center justify-between gap-2 text-xs"><button type="button" disabled={state.page === 1 || history.isFetching} className={button} onClick={() => state.setPage(state.page - 1)}>上一页评估</button><span>{state.page} 页 · 共 {history.data.total} 次</span><button type="button" disabled={state.page * history.data.page_size >= history.data.total || history.isFetching} className={button} onClick={() => state.setPage(state.page + 1)}>下一页评估</button></div>

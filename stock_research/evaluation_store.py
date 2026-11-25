@@ -12,6 +12,11 @@ from stock_research.run_store import RunStore, verified_payload
 from stock_research.schema import EVALUATION_JOBS
 from stock_research.schemas.evaluation_execution import EvaluationFiles, EvaluationFrame
 from stock_research.schemas.evaluations import CreateEvaluation, EvaluationJobPage, EvaluationJobView, EvaluationStatus
+from stock_research.schemas.parameter_experiment_jobs import (
+    CreateParameterExperiment,
+    ParameterExperimentJobPage,
+    ParameterExperimentJobView,
+)
 from stock_research.schemas.selection_observation_execution import SelectionObservationFiles, SelectionObservationFrame
 from stock_research.schemas.selection_observation_jobs import (
     CreateSelectionObservation,
@@ -36,7 +41,15 @@ def observation_job_view(row: dict[str, object]) -> SelectionObservationJobView:
     return result
 
 
-def batch_view(row: dict[str, object]) -> EvaluationJobView | SelectionObservationJobView:
+def parameter_job_view(row: dict[str, object]) -> ParameterExperimentJobView:
+    """参数实验资源单独类型化，不混入历史评估或正式观测。"""
+    result = batch_view(row)
+    if not isinstance(result, ParameterExperimentJobView):
+        raise ResearchNotFound("参数实验不存在")
+    return result
+
+
+def batch_view(row: dict[str, object]) -> EvaluationJobView | SelectionObservationJobView | ParameterExperimentJobView:
     """状态列必须与完整payload一致，不让损坏状态驱动恢复。"""
     payload = verified_payload(row)
     if row["status"] != payload["status"]:
@@ -59,22 +72,32 @@ def batch_view(row: dict[str, object]) -> EvaluationJobView | SelectionObservati
             {key: value for key, value in request.items() if key != "kind"}
         )
         return SelectionObservationJobView(**body.model_dump(), **common)
+    if request.get("kind") == "parameter_experiments":
+        body = CreateParameterExperiment.model_validate({key: value for key, value in request.items() if key != "kind"})
+        return ParameterExperimentJobView(**body.model_dump(), **common)
     raise ResearchIntegrityError("评估作业类型无效")
 
 
-def batch_request(body: CreateEvaluation | CreateSelectionObservation) -> dict[str, object]:
+def batch_request(
+    body: CreateEvaluation | CreateSelectionObservation | CreateParameterExperiment,
+) -> dict[str, object]:
     """旧请求规范字节保持；新资源的类型由服务端固定，不接收用户kind。"""
     payload = body.model_dump(mode="json")
     return (
         {"kind": "formal_selection_observations", **payload}
         if isinstance(body, CreateSelectionObservation)
+        else {"kind": "parameter_experiments", **payload}
+        if isinstance(body, CreateParameterExperiment)
         else payload
     )
 
 
 def request_key(workspace: str, key: str, request: dict[str, object]) -> str:
     """两种资源的幂等命名空间独立，历史key摘要不变。"""
-    namespace = "selection_observation" if request.get("kind") == "formal_selection_observations" else "evaluation"
+    namespace = {
+        "formal_selection_observations": "selection_observation",
+        "parameter_experiments": "parameter_experiment",
+    }.get(request.get("kind"), "evaluation")
     return digest({"workspace": workspace, namespace: key})
 
 
@@ -197,7 +220,7 @@ class EvaluationStore:
                 cancel_requested=False,
                 attempt_count=0,
             )
-            if isinstance(body, CreateEvaluation):
+            if not isinstance(body, CreateSelectionObservation):
                 payload["completed_sections"] = 0
             await connection.execute(
                 insert(EVALUATION_JOBS).values(
@@ -230,6 +253,13 @@ class EvaluationStore:
         total, rows = await self.page_rows(page, page_size, "formal_selection_observations")
         return SelectionObservationJobPage(
             items=tuple(observation_job_view(row) for row in rows), total=total, page=page, page_size=page_size
+        )
+
+    async def experiment_page(self, page: int, page_size: int) -> ParameterExperimentJobPage:
+        """参数实验资源只统计自己的作业，不改旧历史集合默认内容。"""
+        total, rows = await self.page_rows(page, page_size, "parameter_experiments")
+        return ParameterExperimentJobPage(
+            items=tuple(parameter_job_view(row) for row in rows), total=total, page=page, page_size=page_size
         )
 
     async def page_rows(self, page: int, page_size: int, kind: str) -> tuple[int, tuple[dict[str, object], ...]]:
@@ -300,6 +330,8 @@ class EvaluationStore:
                 raise ResearchConflict("评估源码和期限不能重新开始")
             if payload["request"].get("kind") == "formal_selection_observations":
                 SelectionObservationFiles.model_validate(configuration.get("files"))
+            elif payload["request"].get("kind") == "parameter_experiments":
+                EvaluationFiles.model_validate(configuration.get("files"))
             else:
                 EvaluationFiles.model_validate(configuration.get("files"))
             await save_evaluation(connection, self.store, row, {**payload, "configuration": configuration})

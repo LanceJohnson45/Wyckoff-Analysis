@@ -13,12 +13,16 @@ import {
   evaluationJobSchema,
   evaluationResultSchema,
   evaluationSamplePageSchema,
+  experimentJobPageSchema,
+  experimentJobSchema,
+  experimentResultSchema,
   selectionObservationJobPageSchema,
   selectionObservationJobSchema,
   selectionObservationResultSchema,
   selectionObservationSamplePageSchema,
   type CreateEvaluation,
   type CreateSelectionObservation,
+  type CreateExperiment,
 } from './evaluation-contract'
 import { renewResearchWebSession } from './web-session'
 import { operationsSchema } from './operations-contract'
@@ -307,6 +311,32 @@ export async function createSelectionObservation(body: CreateSelectionObservatio
 export async function controlSelectionObservation(identifier: string, action: 'cancel' | 'retry') {
   const value = await request(`/v1/selection-observations/${id.parse(identifier)}/${action}`, selectionObservationJobSchema, { method: 'POST' }, '正式观测操作结果未知，请刷新原任务状态')
   if (value.id !== identifier) throw new ResearchApiError('正式观测操作身份不一致', 503, 'invalid_response')
+  return value
+}
+
+export async function readExperiments(page: number, signal?: AbortSignal) {
+  const value = await request(`/v1/parameter-experiments?page=${page}&page_size=5`, experimentJobPageSchema, { signal })
+  if (value.page !== page || value.page_size !== 5) throw new ResearchApiError('参数实验分页与查询不一致', 503, 'invalid_response')
+  return value
+}
+export async function readExperiment(identifier: string, signal?: AbortSignal) {
+  const value = await request(`/v1/parameter-experiments/${id.parse(identifier)}`, experimentJobSchema, { signal })
+  if (value.id !== identifier) throw new ResearchApiError('参数实验任务身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function createExperiment(body: CreateExperiment, key: string) {
+  const value = await request('/v1/parameter-experiments', experimentJobSchema, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': key }, body: JSON.stringify(body) }, '参数实验提交结果未知，请核对原提交')
+  if (value.profile !== body.profile || value.cutoff !== body.cutoff || value.field !== body.field || value.values.join() !== body.values.join()) throw new ResearchApiError('参数实验受理内容与原提交不一致', 503, 'invalid_response')
+  return value
+}
+export async function controlExperiment(identifier: string, action: 'cancel' | 'retry') {
+  const value = await request(`/v1/parameter-experiments/${id.parse(identifier)}/${action}`, experimentJobSchema, { method: 'POST' }, '参数实验操作结果未知，请刷新原任务状态')
+  if (value.id !== identifier) throw new ResearchApiError('参数实验操作身份不一致', 503, 'invalid_response')
+  return value
+}
+export async function readExperimentResult(identifier: string, jobId: string, signal?: AbortSignal) {
+  const value = await request(`/v1/parameter-experiment-results/${id.parse(identifier)}`, experimentResultSchema, { signal })
+  if (value.id !== identifier || value.job_id !== jobId) throw new ResearchApiError('参数实验结果不属于原任务', 503, 'invalid_response')
   return value
 }
 export async function readSelectionObservationResult(identifier: string, jobId: string, signal?: AbortSignal) {

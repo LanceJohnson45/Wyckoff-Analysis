@@ -21,7 +21,9 @@
     "/v1/evaluations(?:/{id})?",
     "/v1/evaluation-results/{id}(?:/samples)?",
     "/v1/selection-observations(?:/{id})?",
-    "/v1/selection-observation-results/{id}(?:/samples)?"
+    "/v1/selection-observation-results/{id}(?:/samples)?",
+    "/v1/parameter-experiments(?:/{id})?",
+    "/v1/parameter-experiment-results/{id}"
   ],
   "POST": [
     "/v1/research-runs(?:/{id}/(?:retry|cancel))?",
@@ -31,6 +33,7 @@
     "/v1/theme-proposals(?:/{id}/confirm)?",
     "/v1/universe-overrides",
     "/v1/evaluations(?:/{id}/(?:retry|cancel))?",
-    "/v1/selection-observations(?:/{id}/(?:retry|cancel))?"
+    "/v1/selection-observations(?:/{id}/(?:retry|cancel))?",
+    "/v1/parameter-experiments(?:/{id}/(?:retry|cancel))?"
   ]
 }

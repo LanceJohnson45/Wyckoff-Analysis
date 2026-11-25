@@ -12,6 +12,7 @@ import {
 } from './api'
 import {
   selectionObservationActive,
+  businessNumber,
   type CreateSelectionObservation,
   type SelectionObservationJob,
 } from './evaluation-contract'
@@ -125,7 +126,7 @@ function ObservationHistory({ state }: { state: { history: ObservationHistoryQue
     {history.isPending && <p role="status" className="text-xs">正在读取正式观测记录…</p>}
     {history.error && !(history.error instanceof ResearchApiError && history.error.status === 404) && <p role="alert" className="text-xs text-amber-700 dark:text-amber-300">{history.error.message}</p>}
     {history.data && <><div className="grid gap-2 md:grid-cols-2">{history.data.items.map(job => <button type="button" key={job.id} aria-pressed={job.id === state.selected} className={`min-w-0 rounded-xl border p-3 text-left text-xs ${job.id === state.selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`} onClick={() => { state.setSelected(job.id); state.setPage(1) }}>
-      <span className="block font-medium">报告 {job.report_id.slice(0, 8)} · {job.status}</span><span className="mt-1 block break-all text-muted-foreground">截至 {job.cutoff} · 尝试 {job.attempt_count}/2 · 创建 {new Date(job.create_time).toLocaleString('zh-CN')}</span>
+      <span className="block font-medium">{businessNumber(job.create_time, job.id)} · {job.status}</span><span className="mt-1 block break-all text-muted-foreground">报告 {job.report_id.slice(0, 8)} · 截至 {job.cutoff} · 尝试 {job.attempt_count}/2</span>
     </button>)}</div>
       {history.data.total === 0 && <p className="text-xs text-muted-foreground">尚无正式观测。当前报告有正式初选后可显式创建。</p>}
       <div className="flex items-center justify-between gap-2 text-xs"><button type="button" disabled={state.page === 1 || history.isFetching} className={button} onClick={() => state.setPage(state.page - 1)}>上一页观测</button><span>{state.page} 页 · 共 {history.data.total} 次</span><button type="button" disabled={state.page * history.data.page_size >= history.data.total || history.isFetching} className={button} onClick={() => state.setPage(state.page + 1)}>下一页观测</button></div>
