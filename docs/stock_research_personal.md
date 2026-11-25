@@ -91,3 +91,6 @@ stock-research personal-mcp --replace --workspace /operator/fixed-query-workspac
 本次新页面无error，截图及原生回执分别保存。页面用时74秒；完整读取增加模型轮次，不能据此宣称提速或降成本。采用后15次正式业务读全成功、P95 0.431秒，原五类HTTP摘要及四类研究表投影保持，全workspace四类活动0。
 
 已有会话继续原预设修订，旧v1会话不会自动变成分页v2；使用本次新能力应新建Personal会话，并以实际schema_version=2核对。CLI预览的runtime_verified=false保持原义，实机采用/执行由以上独立证据确认。自然交易日、真实通知unknown及完整计划其余交付仍未完成。
+
+
+09:55 API/tick另采用八项CI成功的633固定包；Personal声明、ece83代码及d42解释器保持。按现有声明启动的清空环境stdio在新API完整读回三项结果2/8/2页（IEX320根），原模型/摘要与HTTP一致、每页≤32736字节，owned进程已回收，原进程/live profile保持，模型调用0。此为SDK兼容检查，原08:32页面/真实模型证据单列；详见[新API采用](stock_research_mvp.md#2026-11-25并发准备采用)。

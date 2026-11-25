@@ -22,7 +22,7 @@ React Web、CLI、MCP 与 GitHub Actions 共同组成当前产品形态；日线
 
 独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，最新检查点见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。
 
-本机API与股票tick于2026-11-25上海06:38采用固定运行包`notifications-d42fa219`，该代码[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45499569161)全部成功。已有研究复用前移、手动/定点通知隔离及旧正文来源保护已安装；真实固定报告追问、引用逐值核验及重启读回已补验；正式历史评估创建、20截面完成、固定产物重读、分页与页面重载也已验收，限制见[评估记录](docs/stock_research_evaluations.md#正式页面与真实行情验收)。自然交易日、真实通知unknown恢复、Tailscale入口和完整计划其余项仍独立验收，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。
+本机API与股票tick于2026-11-25上海09:55采用固定运行包`preparation-633b4dd2`，该代码[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45527062177)全部成功。同库并发首次准备现按共享快照范围在原预算内串行并复用首次冻结。已有研究复用前移、手动/定点通知隔离及旧正文来源保护已安装；真实固定报告追问、引用逐值核验及重启读回已补验；正式历史评估创建、20截面完成、固定产物重读、分页与页面重载也已验收，限制见[评估记录](docs/stock_research_evaluations.md#正式页面与真实行情验收)。自然交易日、真实通知unknown恢复、Tailscale入口和完整计划其余项仍独立验收，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25并发准备采用)。
 
 数据与量化已接通：[数据CLI](docs/stock_research_data_cli.md)提供公开成分版本、只读同步、一致快照及独立基准，[来源与实测](docs/stock_research_public_data.md)保留公开源和当前池回溯限制；[Martin量化](docs/stock_research_martin_cli.md)、[Wyckoff生产适配](docs/stock_research_wyckoff_cli.md)形成独立复核池，[执行预览](docs/stock_research_executor.md)保存初选及交叉评议。
 
@@ -378,7 +378,7 @@ wyckoff mcp-list
 
 冻结快照读取共用连接池内的一份有界缓存，热查询仅核对PostgreSQL行版本，避免报告、股票池及个股反复传输完整行情。缓存失效、隔离和测量边界见[研究查询](docs/stock_research_queries.md)。完整页面操作与自然交易日定点送达分别验收，进度见[实施计划](plan.md)。
 
-当前开发版对同库盘前首次准备按共享快照范围串行，等待计入原预算、获得执行权后复用首次冻结；正式d42包尚未采用，适用范围与取消/失败边界见[并发准备](docs/stock_research_preparations.md#并发首次准备)。
+正式633运行包对同库盘前首次准备按共享快照范围串行，等待计入原预算、获得执行权后复用首次冻结；适用范围与取消/失败边界见[并发准备](docs/stock_research_preparations.md#并发首次准备)。
 研究资料维护保留逐行分类出处；公开成分刷新会沿用当前有效成员的GICS缺项补充，完整基线不由15条[补充清单](config/research/classification-supplement-20261124-v1.json)替代。上市历史限制与漏同步的核查方法见[公开资料说明](docs/stock_research_public_data.md)。
 固定报告问答的工具结果按用途投影并分页，每页48KiB、每轮累计256KiB，只登记实际返回的证据。可用`fact_offset`续读，完整参数单独查询，避免多次工具调用重复装入整份报告。见[问答契约](docs/stock_research_chat.md)。
 盘前任务仅在研究终态且所有实际发布（包括恢复更新）已送达后写当天完成标记；恢复消息未知或待重试不会被首报成功掩盖。后续tick保留原期限和通知业务键，见[盘前MVP](docs/stock_research_mvp.md)。

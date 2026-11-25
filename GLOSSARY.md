@@ -521,7 +521,7 @@ flowchart LR
 
 **盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，同日同配置及触发类别的新事件在重读行情前复用首次研究，回执origin标明首次事件和期限；别名quality引用原冻结清单，不表示重新补拉，market_refresh为空。取消标记约束全部别名，强制重分析须operator显式force+parent_run_id。准备记录的market_refresh区分只读同步、显式基准补充与后续快照质量，未知计数不补零；更新完成不等于研究完成。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。
 
-**盘前准备互斥**：开发版同库API按解析后产物根目录/市场/行情日取得事务级PG锁，等待计入原准备和事件预算；获得锁后重新查同配置冻结身份，ready提交后释放。它协调共享物理快照，不合并workspace或不同配置的研究，也不替代运行执行锁；正式d42尚未采用。见[适用边界](docs/stock_research_preparations.md#并发首次准备)。
+**盘前准备互斥**：633b4dd2起同库API按解析后产物根目录/市场/行情日取得事务级PG锁，等待计入原准备和事件预算；获得锁后重新查同配置冻结身份，ready提交后释放。它协调共享物理快照，不合并workspace或不同配置的研究，也不替代运行执行锁；上海11月25日09:55已采用633固定包。见[适用边界](docs/stock_research_preparations.md#并发首次准备)。
 
 **通知冻结范围**：定点业务键沿用`us:目标日:phase`，手动使用`us:目标日:manual:phase`，各自固定正文并保存scope.json；unknown重放同键同正文。旧共享路径缺来源元数据时停止并返回mvp_publication_scope_unconfirmed，不自动归类或补发。核对原执行、报告、账本、正文与原生回执后，旧定点记录只追加来源/Publication摘要，不改正文或再发送；旧manual不能改标。Agent只统计定点键。见[MVP旧记录边界](docs/stock_research_mvp.md#通知范围与旧记录)。
 
@@ -547,7 +547,7 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 
 **原提交核对**：网络结果未知后沿原正文和幂等键找回受理记录。后续核对的401/403/409/422只能说明本次核对未成功，不能证明原提交被拒绝；评估、输入维护和问答保留原意图并锁住新提交，确认找到原记录后解锁。仅带会话过期标记的认证前401允许同源续会话后重放一次。
 
-**研究运行包采用**：以精确Git提交、锁定依赖及专用资产组成Documents之外的固定release。当前API/股票tick为d42fa219；该提交八项CI成功，四类零活动/worker退出保护后采用，本批无表迁移，评估表在此前09版本已显式初始化，撤回保留账本及新表。启动、送达和自然日分别验收，见[部署记录](docs/stock_research_mvp.md)。
+**研究运行包采用**：以精确Git提交、锁定依赖及专用资产组成Documents之外的固定release。当前API/股票tick为633b4dd2；该提交八项CI成功，四类零活动/worker退出保护后采用，本批无表迁移，评估表在此前09版本已显式初始化，撤回保留账本及新表。Personal仍使用ece83代码/d42解释器；启动、送达和自然日分别验收，见[部署记录](docs/stock_research_mvp.md)。
 
 **Personal研究只读客户端**：DSH stocks预设的三项MCP仅持专用查询身份，读取共享固定报告/个股/运行；私人问答和评估403。固定ece83完整分页客户端已于11月25日08:32采用，复用d42锁定解释器和原只读身份；新Personal会话实际读完三种结果2/4/2页、全模型/摘要与HTTP对照通过。原权限/其他配置和旧会话保持，旧会话不自动升级；客户端与API采用分别取证，见[Personal接入](docs/stock_research_personal.md)。
 
