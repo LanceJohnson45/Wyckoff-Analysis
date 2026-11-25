@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import create_engine, delete
 
 from stock_research.calendar import latest_complete_session
-from stock_research.cli import snapshot_command
+from stock_research.cli import snapshot_command, supported_python
 from stock_research.config import Settings
 from stock_research.data import DAILY_BARS
 from stock_research.models import ClassificationVersion, UniverseVersion
@@ -130,6 +130,12 @@ def test_error_doctor_does_not_expose_database_secret(tmp_path: Path) -> None:
     assert json.loads(result.stdout)["checks"]["database"] is False
     assert secret not in result.stdout + result.stderr
     assert "Traceback" not in result.stdout + result.stderr
+
+
+def test_doctor_accepts_release_python_floor() -> None:
+    """【边界值】发布venv是3.11；doctor必须按项目下限判定，而非CI解释器。"""
+    assert supported_python((3, 11, 16, "final", 0))
+    assert not supported_python((3, 10, 12, "final", 0))
 
 
 def test_validation_incomplete_session_is_rejected(configured: Settings) -> None:

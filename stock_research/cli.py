@@ -7,6 +7,7 @@ import json
 import sqlite3
 import subprocess
 import sys
+from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
 
@@ -49,6 +50,13 @@ from stock_research.store import (
     save_snapshot,
 )
 from stock_research.versions import build_classifications, build_universe, import_version
+
+MINIMUM_PYTHON = (3, 11)
+
+
+def supported_python(version: Sequence[int]) -> bool:
+    """生产包运行于3.11，doctor不能误用CI开发解释器作为最低版本。"""
+    return tuple(version[:2]) >= MINIMUM_PYTHON
 
 
 def parser() -> argparse.ArgumentParser:
@@ -225,7 +233,7 @@ async def database_command(settings: Settings, command: str, snapshot_id: str | 
 
 def doctor(settings: Settings) -> tuple[dict[str, object], int]:
     """脱敏检查配置、日历、版本、行情格式和研究数据库可读性。"""
-    checks: dict[str, object] = {"python": sys.version_info[:2] == (3, 12)}
+    checks: dict[str, object] = {"python": sys.version_info[:2] >= (3, 11)}
     checks["dependencies"] = {
         name: importlib.metadata.version(name)
         for name in (
