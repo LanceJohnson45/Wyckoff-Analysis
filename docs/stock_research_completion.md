@@ -117,3 +117,5 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 06:54取消状态运行包采用：`fcd635e9`八项CI成功后，API/tick已切到`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的`cancelled/evaluation_interrupted`不再渲染成资料缺数；2005个跟踪文件逐blob匹配、依赖清单不变、无DDL，切换前/后七类账本active为0。15次readyz和15次目标报告读全200，修订14报告518/518且coverage 1.0，窗口外tick退出0；隔离CDP 9223读回新`research-D106y3CL.js`和三个区域标题，未创建评估、观测、问答或通知。自然窗口、真实unknown、真实瞬时故障和Tailscale远端继续未完成。
 
 07:31知识reader闭环：首次生产配置后真实追问暴露知识身份文件被`SecretStr.model_dump_json()`掩码化，工具进程启动失败并保留原终态；`f50cfd6b`显式写入子进程私有0600文件并补回读测试。该head[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功后，API/tick采用不可变包。切换前七类账本active为0；新API 15次readyz全200/P95 25.651ms，15次目标报告读全200，修订14仍518/518且coverage 1.0，窗口外tick退出0。生产8788追问一次尝试完成、4次成功只读调用、828条facts且20条来自knowledge_search，回执/API无reader令牌；答案明确工程语料只是背景。自然窗口、真实unknown、真实瞬时故障和Tailscale远端继续未完成。
+
+07:40Serve配置推进：当前节点DNS名、完整Tailnet登录身份和HTTPS Origin已写入生产0600环境并备份；API重启为PID7699且本地入口保持健康，15次readyz/report全200，修订14仍518/518。Tailscale CLI确认`No serve config`并提示账户未开启Serve；因此真实远端浏览器仍缺账户级开关和远端设备验收。没有开启Funnel，也没有放宽身份/同源边界。

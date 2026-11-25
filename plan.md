@@ -8,6 +8,8 @@
 
 2026-11-26上海07:31知识检索检查点：`f50cfd6b`修复知识身份子进程序列化后[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功，正式API/tick已采用`knowledge-token-f50cfd6b-20261126T0714`。生产已配置127.0.0.1:18785专用`ws-beta`reader；一次真实生产追问4次成功只读调用、828条本轮facts（其中20条`knowledge_search`），答案引用经逐值校验，回执/API无令牌。2026-11-27自然窗口、自然瞬时`OperationalError`、真实unknown和Tailscale远端仍未验收。
 
+2026-11-26上海07:40Serve配置检查点：生产0600环境已配置Tailnet节点名、完整登录身份和HTTPS Origin，API重启健康且本机入口保持原边界；但Tailscale CLI显示账户未启用Serve、`No serve config`，远端浏览器验收仍未开始。外部缺口现在是账户级Serve开关、远端设备访问、2026-11-27自然窗口、自然瞬时`OperationalError`和真实unknown。
+
 06:54取消状态修复检查点：`fcd635e9`八项CI成功后，正式API/tick已采用`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的显式取消与历史不足/行情质量缺数分开显示；候选2005文件逐blob匹配、依赖清单不变、无DDL。切换前/后七类账本active为0，15次readyz和15次报告读全200，修订14报告518/518，窗口外tick退出0；隔离CDP读回新前端资产和三个区域，未创建业务任务。2026-11-27自然窗口、真实瞬时`OperationalError`、真实unknown和Tailscale远端继续待验。
 
 06:38采用检查点：正式API及股票tick为`notifications-d42fa219`，精确代码八项CI、包内128项和四类空闲/worker退出保护通过，无DDL。两条已证实定点旧通知只追加scope，三个旧正文/原生消息/账本保持；正式报告追问已获得真实模型回答，3次只读调用和20项声明逐值核验，新包重启后同一问题/回执仍原值。Tailscale节点在线但尚无Serve入口，远程同源/身份契约未验，其他正式写控件与自然日继续分别推进，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。

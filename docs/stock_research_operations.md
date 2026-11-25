@@ -2,7 +2,7 @@
 
 现有Agent运行区新增小型状态读取，目标美国交易日沿用上方运行表单。最近完整研究、该日首报/恢复通知和最近确认送达记录分别展示；历史报告保持原修订。状态查询不创建研究、续跑或投递任务。
 
-本机当前API/tick为2026-11-26 07:28采用的`knowledge-token-f50cfd6b-20261126T0714`（源码`f50cfd6b`）；09:55采用的633b4dd2是历史检查点，其精确代码八项CI、包内139项及切换空闲/进程保护通过。当前包切换后的15次readyz全成功/P95 25.651ms，15次修订14报告读全200且质量518/518，窗口外tick退出0。knowledge reader已配置生产loopback入口与专用reader，真实授权检索经schema/证据审计通过；不以状态读代替真实unknown或自然日。
+本机当前API/tick为2026-11-26 07:28采用的`knowledge-token-f50cfd6b-20261126T0714`（源码`f50cfd6b`）；07:40为加入Tailscale Serve环境配置重启为PID7699。09:55采用的633b4dd2是历史检查点，其精确代码八项CI、包内139项及切换空闲/进程保护通过。当前包重启后的15次readyz全成功/P95 21.887ms，15次修订14报告读全200且质量518/518，窗口外tick退出0。knowledge reader已配置生产loopback入口与专用reader，真实授权检索经schema/证据审计通过；Tailnet Serve候选身份/Origin已配置，但账户未开启Serve、无Serve反代。不以状态读代替真实unknown或自然日。
 
 `GET /v1/operations?target_session=YYYY-MM-DD`为operator私有接口，只接受一个目标日参数。只读工具身份和盘前身份均返回403，缺身份401；无效日期、额外参数或重复目标日422。浏览器同源固定清单只开放此GET，直接接口仍须Bearer。返回沿用code/message/data/correlation_id。
 

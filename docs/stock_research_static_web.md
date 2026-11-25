@@ -19,6 +19,8 @@ STOCK_RESEARCH_API_ALLOWED_ORIGINS=["http://127.0.0.1:8788","http://localhost:87
 
 通过Serve的请求必须来自loopback、携带单值Tailscale `X-Forwarded-For/Proto/Host`、`Proto=https`、`Host`与白名单Serve主机一致、`Tailscale-User-Login`等于配置身份，且Origin/Fetch-Site满足同源边界。该远端请求签发`Secure`会话cookie；显式配置Serve后，普通`127.0.0.1`本机入口和HTTP会话继续可用。按Tailscale文档，本机服务只把Host上的其他进程留在本地信任边界内；本配置不放松Bearer、浏览器路由和原工作区身份，也不把这条代码路径当真实入口验收。
 
+2026-11-26 07:40配置检查点：生产0600环境已添加当前节点DNS名、完整Tailnet登录身份和对应HTTPS Origin；原环境备份在`state/config-backups/tailscale-serve-e571dc48/env.pre-serve`。API以当前不可变包重启为PID7699，15次readyz全200/P95 21.887ms，15次修订14报告读全200且518/518、coverage 1.0；`/chat`本机HTTP入口保持可读。`tailscale serve status`仍为`No serve config`，CLI明确提示Tailnet账户未开启Serve；这是账户级外部开关，尚未发生远端浏览器验收。仍只计划根路径反代loopback:8788，不启用Funnel。
+
 `/chat`签发12小时、HttpOnly、SameSite=Strict、host-only、按端口命名的会话cookie，签名密钥只留在进程中，重启轮换。浏览器沿 `/api/stock-research/v1/...` 调用固定白名单；来源、方法、会话及正文上限通过后，在同进程内进入原Bearer鉴权链。直接 `/v1/...` 继续要求Bearer，cookie不能代替。API身份不会写入HTML、浏览器脚本或localStorage。入口设置同源CSP、禁止嵌入、nosniff及no-referrer；HTML/私有响应不缓存，带hash资产可长期缓存。
 
 只有桥接在执行业务前返回的带 `X-Research-Web-Session: required` 的401可触发自动续会话：合并读取一次 `/chat`，确认 `ready` 标记，再以原正文、幂等键、取消信号和总超时重发一次。普通401、网络未知和5xx不触发自动重发。评估、输入维护及问答已结果未知时，后续核对收到任何错误也保留原意图和锁定状态；本次核对被拒绝不能证明早先未受理。确认找到原记录后才解锁。
