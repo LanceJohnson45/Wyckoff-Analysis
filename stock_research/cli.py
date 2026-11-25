@@ -233,7 +233,7 @@ async def database_command(settings: Settings, command: str, snapshot_id: str | 
 
 def doctor(settings: Settings) -> tuple[dict[str, object], int]:
     """脱敏检查配置、日历、版本、行情格式和研究数据库可读性。"""
-    checks: dict[str, object] = {"python": sys.version_info[:2] >= (3, 11)}
+    checks: dict[str, object] = {"python": supported_python(sys.version_info)}
     checks["dependencies"] = {
         name: importlib.metadata.version(name)
         for name in (

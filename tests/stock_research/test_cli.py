@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -136,6 +137,31 @@ def test_doctor_accepts_release_python_floor() -> None:
     """【边界值】发布venv是3.11；doctor必须按项目下限判定，而非CI解释器。"""
     assert supported_python((3, 11, 16, "final", 0))
     assert not supported_python((3, 10, 12, "final", 0))
+
+
+def test_doctor_uses_supported_python_floor(configured: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    """【接线】边界函数必须被doctor生产路径消费，而不是只被自身测试调用。"""
+    from stock_research import cli
+
+    observed: list[tuple[int, int]] = []
+
+    def supported(version: Sequence[int]) -> bool:
+        observed.append(tuple(version[:2]))
+        return True
+
+    async def unavailable_database(settings: Settings, command: str, snapshot_id: str | None = None) -> bool:
+        return False
+
+    monkeypatch.setattr(cli, "supported_python", supported)
+    monkeypatch.setattr(cli, "database_command", unavailable_database)
+    monkeypatch.setattr(cli.sys, "version_info", (3, 11, 16, "final", 0))
+
+    output, status = cli.doctor(configured)
+
+    assert observed == [(3, 11)]
+    assert output["checks"]["python"] is True
+    assert output["checks"]["database"] is False
+    assert status == 2
 
 
 def test_validation_incomplete_session_is_rejected(configured: Settings) -> None:
