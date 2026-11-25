@@ -63,7 +63,7 @@ Personal固定客户端迁移推进：原安装拒绝所有不同注册，已新
 - 采用：研究结束且研究/问答/准备活动数均为零后，API及调度已采用cc35c3ac。只读复制10,000行批次、未变行免UPDATE；API为Interactive、编排Standard。重启后20次真实HTTP全部成功，含冷加载P95 1.97秒、后16次热读最长0.43秒。
 - 验证：本地6,160通过/无skip；代码cc35c3ac的远端八项CI全部成功（远端6,159通过/一项既有安装DSH条件skip，coverage86%），含完整Web及操作dry-run。原42条计划和共享服务保持，草稿PR未合入；最终文档提交的CI与另session整体审查分别跟踪。
 
-2026-11-26复验：正式`parameter-ui-ac6ba511`仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。`knowledge_search`仍无授权接线，正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
+2026-11-26复验：正式`parameter-ui-ac6ba511`仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。knowledge_search已补可选授权源码接线：专用reader凭据固定作用域、服务入口限本机、模型只能提交查询词，响应经schema和证据审计；默认八工具回归保持。生产reader配置与真实授权检索验收仍缺。正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
 
 05:34自然窗口预检：`stocks`的chat、evaluation、preparation、quant attempt/job、research和stage七类账本pending/running均为0；无真实worker。API/调度launchd的program和working directory均为`parameter-ui-ac6ba511`，调度不运行且上次退出0；窗口外手动tick退出0。这只证明11月27日前服务可受理，不替代无人干预定点首报/恢复/去重。
 

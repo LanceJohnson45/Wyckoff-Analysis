@@ -7,6 +7,8 @@ from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
+from stock_research.knowledge_settings import KnowledgeSettings
+
 PUBLIC_GITHUB_API = "https://api.github.com"
 
 
@@ -61,6 +63,8 @@ class Settings(BaseSettings):
     model_api: Literal["openai-completions", "openai-responses", "anthropic-messages"] = "openai-completions"
     models_by_role: dict[str, str] = Field(default_factory=dict)
     model_output_tokens: int = Field(default=8192, ge=512, le=16384)
+    knowledge_base_url: str = ""
+    knowledge_read_token: SecretStr | None = None
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
 
@@ -121,6 +125,22 @@ class Settings(BaseSettings):
         self.tailscale_serve_host = host
         self.tailscale_serve_login = login
         return self
+
+    @property
+    def knowledge_settings(self) -> KnowledgeSettings | None:
+        """两项同时配置才授权第九项工具；空值保持原八工具目录。"""
+        if bool(self.knowledge_base_url) != bool(self.knowledge_read_token):
+            raise ValueError("知识检索入口与专用身份须同时配置")
+        if not self.knowledge_base_url:
+            return None
+        identities = {
+            token.get_secret_value()
+            for token in (self.api_read_token, self.api_token, self.api_workflow_token)
+            if token
+        }
+        if self.knowledge_read_token.get_secret_value() in identities:
+            raise ValueError("知识检索身份不能复用研究API身份")
+        return KnowledgeSettings(base_url=self.knowledge_base_url, token=self.knowledge_read_token)
 
     @property
     def tailscale_serve_origin(self) -> str | None:

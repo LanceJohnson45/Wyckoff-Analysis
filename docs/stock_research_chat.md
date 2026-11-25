@@ -1,6 +1,6 @@
 # 固定报告研究问答
 
-现有Agent「策略研究」内提供独立问答。「带此报告继续讨论」和个股讨论会载入问题并固定报告；提交后后台使用可信模型连接及八项只读工具核对证据，不再将大段冻结JSON交给通用交易聊天。上方切换历史报告不会更改已经开始的问答，需显式改用另一报告。
+现有Agent「策略研究」内提供独立问答。「带此报告继续讨论」和个股讨论会载入问题并固定报告；提交后后台使用可信模型连接和固定只读工具核对证据，不再将大段冻结JSON交给通用交易聊天。上方切换历史报告不会更改已经开始的问答，需显式改用另一报告。
 
 ## 输入、历史与状态
 
@@ -12,7 +12,7 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 证据与模型边界
 
-后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；实际注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。knowledge_search尚未授权接入。
+后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；默认注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。`STOCK_RESEARCH_KNOWLEDGE_BASE_URL`和专用`STOCK_RESEARCH_KNOWLEDGE_READ_TOKEN`同时配置时才注册knowledge_search；工具只接收查询词，workspace/subject由服务端reader凭据固定。当前生产尚未配置该reader，也没有真实授权检索验收。
 
 默认180秒、20次工具请求预算；一次JSON修正共享剩余预算。明确返回transient_provider_error、provider_stream_idle_timeout或transport_error、仍有时间和工具余额时，自动重试一次；两次使用原截止时间、模型连接、报告和父链，不重新计时。第一次失败先持久保存，第二次只得到20减已确认请求数的余额。provider_rate_limit、invalid_output、max_tokens、deadline_exceeded、tool_budget_exceeded、边界/清理错误及取消均不重试。本地清单/证据文件缺失属于边界失败，执行器文件缺失或无执行权限记executor_unavailable，不能当作provider网络抖动重试。重启或未知投递结果仍不重复模型请求。选股任务原有重试边界保持。问答与研究运行在同一API实例共享两席执行容量，为证据查询预留数据库连接；满员409不创建新问答。
 
@@ -33,7 +33,7 @@ Node开发代理仍仅loopback/同源/固定路由。问答创建正文上限48K
 量化恢复接入后，工具沿固定报告返回当时quant状态；未成功计算、null池/分组/计数不能解释为空池、零或否定股票。run_status的后来补齐仅是当前进展，不可写回report_read旧修订；提示词按此更新，原已完成问答保持。当前尝试分页不增加聊天工具或重算权限。
 ## 问答证据体积与分页
 
-八项问答工具均支持`fact_offset`（默认0），返回`total_facts`及可选`next_offset`。保留同一工具的其他入参，用`next_offset`续读必要页。每页工具JSON不超过48KiB，每个工具进程累计返回不超过256KiB；超限明确报错，不截断标量、不把未返回页登记为已读。数组`count`仍是原数组完整条目数，`total_facts`仅表示标量证据总数。
+默认八项问答工具均支持`fact_offset`（默认0），返回`total_facts`及可选`next_offset`。保留同一工具的其他入参，用`next_offset`续读必要页。可选knowledge_search最多返回50条授权结果，不接受续页偏移。每页工具JSON不超过48KiB，每个工具进程累计返回不超过256KiB；超限明确报错，不截断标量、不把未返回页登记为已读。数组`count`仍是原数组完整条目数，`total_facts`仅表示标量证据总数。
 
 `stock_factors`返回股票事实、排除与观点，完整参数/定义改由`strategy_rules`读取；`stock_history`只返回身份和日线。`run_status`返回当前状态，固定意见由`report_read`读取。报告/市场不重复返回整个数据合格股票清单，量化池沿`market_overview`，完整成员沿`view=universe`查询。报告观点中的原始引用清单不当作本轮已读原事实，需通过相应股票/分组工具读取才能用于数值声明。
 
