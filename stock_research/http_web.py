@@ -10,7 +10,7 @@ from starlette.responses import RedirectResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from stock_research.config import Settings
-from stock_research.http_security import error_response
+from stock_research.http_security import error_response, trusted_tailscale
 from stock_research.identity import new_id
 from stock_research.schemas.api import Code
 from stock_research.web_files import ResearchWebFiles
@@ -31,6 +31,9 @@ def install_web(app: FastAPI, settings: Settings) -> None:
         expected = "http://127.0.0.1" + (f":{settings.api_port}" if settings.api_port != 80 else "")
         if expected not in settings.api_allowed_origins:
             raise ValueError("研究静态入口须在API_ALLOWED_ORIGINS允许实际同源端口")
+        serve_origin = settings.tailscale_serve_origin
+        if serve_origin is not None and serve_origin not in settings.api_allowed_origins:
+            raise ValueError("Tailscale Serve入口须在API_ALLOWED_ORIGINS允许HTTPS主机")
         files = ResearchWebFiles(settings.web_dist_path)
         app.add_middleware(LocalResearchWeb, settings=settings, files=files)
 
@@ -66,6 +69,8 @@ class LocalResearchWeb:
 
     def trusted(self, request: Request) -> bool:
         """不信任转发头、其他端口或跨站导航；写操作必须有同源Origin。"""
+        if trusted_tailscale(request, self.settings):
+            return True
         hosts = {f"127.0.0.1:{self.settings.api_port}", f"localhost:{self.settings.api_port}"}
         if self.settings.api_port == 80:
             hosts.update({"127.0.0.1", "localhost"})
@@ -99,6 +104,7 @@ class LocalResearchWeb:
                         max_age=SESSION_SECONDS,
                         httponly=True,
                         samesite="strict",
+                        secure=trusted_tailscale(request, self.settings),
                     )
                 return response
             return await self.files.asset(request.url.path.lstrip("/"), request.scope)

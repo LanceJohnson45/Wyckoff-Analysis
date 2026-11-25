@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
 
@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")
+    tailscale_serve_host: str = ""
+    tailscale_serve_login: str = ""
     web_dist_path: Path | None = None
     mvp_status_config_path: Path | None = None
     coverage_min: float = Field(default=0.95, gt=0, le=1)
@@ -97,6 +99,33 @@ class Settings(BaseSettings):
         if value is not None and not value.is_absolute():
             raise ValueError("通知状态配置须使用绝对路径")
         return value
+
+    @model_validator(mode="after")
+    def normalize_tailscale_serve(self) -> "Settings":
+        """Serve入口必须同时固定主机与允许的真实Tailscale身份。"""
+        host = self.tailscale_serve_host.strip().lower()
+        login = self.tailscale_serve_login.strip()
+        if bool(host) != bool(login):
+            raise ValueError("Tailscale Serve须同时配置主机和允许的用户身份")
+        labels = host.split(".")
+        if host and (
+            len(labels) < 2
+            or any(
+                not label or label[0] == "-" or label[-1] == "-" or not label.replace("-", "").isalnum()
+                for label in labels
+            )
+        ):
+            raise ValueError("Tailscale Serve主机无效")
+        if login and (" " in login or "@" not in login):
+            raise ValueError("Tailscale Serve身份须为完整登录名")
+        self.tailscale_serve_host = host
+        self.tailscale_serve_login = login
+        return self
+
+    @property
+    def tailscale_serve_origin(self) -> str | None:
+        """远端入口只使用Tailscale HTTPS主机，不支持路径或端口变体。"""
+        return f"https://{self.tailscale_serve_host}" if self.tailscale_serve_host else None
 
     def database_url(self, *, test: bool = False) -> URL:
         """由离散配置构造连接；测试库强制增加 _test 后缀。"""

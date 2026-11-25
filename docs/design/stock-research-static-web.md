@@ -22,4 +22,6 @@ operator显式配置绝对路径 `STOCK_RESEARCH_WEB_DIST_PATH` 才启用静态�
 - [x] 03:58实际采用独立固定release，显式新表初始化、四类活动/worker退出保护、HTTP业务摘要复验通过。
 - [ ] 正式入口浏览器复验及Tailscale真实身份入口。
 
+2026-11-25 23:23补显式Serve候选：同时配置Tailnet主机和登录身份；只接受loopback上Tailscale覆盖的HTTPS `X-Forwarded-*`、一致Host、白名单登录和同源Origin/Fetch-Site；远端会话`Secure`，本机会话与入口保留。隔离PG/ASGI回归覆盖正常远端读、坏契约、歧义Host、未同源写、配置拒启和本机回退；完整Python6343项通过。真实Serve浏览器入口、运行包采用及部署仍分别待验。
+
 验收进一步发现并修复：原提交未知后，核对收到普通401不能清掉原意图。评估、输入维护及问答共享此判定，三项真实页面均已验证锁定和同键找回。问答未调用外部模型，回答失败明确保留。操作及发布边界见[运行说明](../stock_research_static_web.md)。

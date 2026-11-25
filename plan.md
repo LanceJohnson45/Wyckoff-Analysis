@@ -654,3 +654,5 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 观测CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45492379784)已全部成功；该检查时正式运行包仍6fc65f46，该阶段随后采用d42；当前运行包见开头。下一稳定性修复已复现“原研究完成但新手动事件仍依赖当前行情文件”：在读行情前按共用配置身份查找原run，以原冻结quality确认别名准备；缺失/无效质量不能复用，新配置/触发类别/force保持独立。真实隔离PG及实际量化48项聚焦通过，本地完整Python6280/无skip及fast/quality/hygiene/操作dry-run已通过，本批CI/采用另验；不将此确定性缺陷当作此前偶发并发失败的已证实根因。
 
 f17c689d已提交推送且CI45496618794八项全部成功；后续通知稳定性核对发现done虽分开、正文目录和业务键却共用。真实publish四用例先红，现手动与定点分别冻结/去重；定点键保持，旧无范围文件停止核对，不自动改标或补发。相关50项已验正文摘要/篡改拒收、未知重放、旧正文保持、两个入口错误/完成标记及原生PG状态过滤；本批最终完整Python6296/无skip、fast/quality/hygiene/操作dry-run通过，源码指纹保持；后续d42八项CI及06:38旧记录完整核对/实际采用已补验。自然窗口及真实unknown仍待实跑。
+
+23:23Tailscale Serve候选已补显式代码路径：必须同时配置Tailnet主机与允许登录，`https://<host>`须白名单；运行时只接受loopback反代、单值HTTPS `X-Forwarded-*`、一致Host、白名单身份和同源Origin/Fetch-Site，远端会话加`Secure`，本机HTTP入口保留。Tailscale与静态入口聚焦回归24项通过，覆盖正常远端读、坏主机/协议/身份/跨站、歧义Host、未同源写、配置拒启与本机回退；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。当前head CI、运行包采用和真实远端浏览器验收另行记录，不开启Funnel。

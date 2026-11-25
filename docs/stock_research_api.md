@@ -4,6 +4,8 @@
 
 可选同进程HTML/资产及浏览器会话入口见[静态工作台](stock_research_static_web.md)；启用后只有固定浏览器前缀经会话转换进入原鉴权链，直接API端点仍使用Bearer。
 
+显式配置 `STOCK_RESEARCH_TAILSCALE_SERVE_HOST` 和 `STOCK_RESEARCH_TAILSCALE_SERVE_LOGIN` 后，API可在loopback被Tailscale Serve反代访问。启动要求 `https://<host>` 已进入Origin白名单；运行时只接受Serve覆盖的单值HTTPS forwarding头、一致Host和白名单登录身份。这不是自动开启的公网入口，也未替代真实远端验收。
+
 健康检查 `/healthz`、依赖就绪 `/readyz` 无需身份，其余端点包括OpenAPI均需 `Authorization: Bearer <研究API身份>`。Host只接受localhost/127.0.0.1；带Origin的浏览器请求须在白名单内。当前未配置跨源CORS代理，工作台接入须使用受信同源后端。令牌不能进入URL、原始报告、浏览器持久化或日志。
 
 所有JSON响应为code/message/data/correlation_id四键，与plan.md约定一致。成功code为0000；未认证401、未授权来源403、对象不存在404、状态/幂等冲突409、无效参数422、数据或存储未就绪503。未处理错误使用500及脱敏消息，不输出驱动错误、凭据或本地文件路径。
