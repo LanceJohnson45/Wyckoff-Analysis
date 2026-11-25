@@ -22,7 +22,12 @@ from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
 from stock_research.evaluation import EvaluationReport
-from stock_research.evaluation_cli import evaluate_command, evaluate_parameter_experiments_command
+from stock_research.evaluation_cli import (
+    evaluate_combined_parameter_experiment,
+    evaluate_command,
+    evaluate_parameter_experiments_command,
+    evaluation_files,
+)
 from stock_research.evaluation_review import manual_review_samples
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
@@ -105,6 +110,15 @@ def parser() -> argparse.ArgumentParser:
     experiments.add_argument("--field", choices=["support_atr", "extension_atr", "contraction_ratio"], required=True)
     experiments.add_argument("--values", nargs=3, type=float, required=True)
     experiments.add_argument("--allow-current-universe", action="store_true")
+    combined = commands.add_parser(
+        "evaluate-combined-parameters", help="同一冻结输入运行首轮有限组合实验，不发布生产参数"
+    )
+    combined.add_argument("--profile", required=True)
+    combined.add_argument("--cutoff", type=date.fromisoformat, required=True)
+    combined.add_argument(
+        "--values", nargs=3, type=float, required=True, metavar=("SUPPORT", "EXTENSION", "CONTRACTION")
+    )
+    combined.add_argument("--allow-current-universe", action="store_true")
     review = commands.add_parser("review-evaluation", help="从已完成评估生成每策略10入选/10排除审查清单")
     review.add_argument("--report", type=Path, required=True)
     observe = commands.add_parser("observe-selections", help="固定报告正式初选的前向观测，不调用模型或发送通知")
@@ -276,6 +290,8 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
         return doctor(settings)
     if args.command == "evaluate-parameters":
         return execute_evaluation_parameters(args, settings)
+    if args.command == "evaluate-combined-parameters":
+        return execute_combined_evaluation_parameters(args, settings)
     if args.command == "review-evaluation":
         return execute_evaluation_review(args)
     if args.command == "evaluate":
@@ -391,6 +407,18 @@ def execute_evaluation_parameters(args: argparse.Namespace, settings: Settings) 
         ),
         0,
     )
+
+
+def execute_combined_evaluation_parameters(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
+    """组合实验单独显式执行，不复用单组结果推断。"""
+    files = evaluation_files(
+        settings,
+        args.profile,
+        args.cutoff,
+        args.allow_current_universe,
+        settings.artifacts_path / "parameter-experiments" / "combined" / "input.json",
+    )
+    return (evaluate_combined_parameter_experiment(files, tuple(args.values)), 0)
 
 
 def execute_evaluation_review(args: argparse.Namespace) -> tuple[object, int]:

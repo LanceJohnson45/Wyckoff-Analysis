@@ -8,7 +8,11 @@ from stock_research.config import Settings
 from stock_research.evaluation_local import evaluate_files
 from stock_research.identity import digest
 from stock_research.models import ClassificationVersion, UniverseVersion
-from stock_research.parameter_experiments import ParameterExperiment, experiment_parameter_sets
+from stock_research.parameter_experiments import (
+    ParameterExperiment,
+    combined_parameter_experiment,
+    experiment_parameter_sets,
+)
 from stock_research.parameters import MartinParameters
 from stock_research.schemas.evaluation_execution import EvaluationFiles
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY, ensure_source_current
@@ -86,3 +90,14 @@ def evaluate_experiment(files: EvaluationFiles, experiment: ParameterExperiment)
     """变体报告显式带实验字段和值，不修改生产发布。"""
     result = evaluate_files(files.model_copy(update={"martin": experiment.parameters}))
     return {**result, "experiment": {"field": experiment.field, "value": experiment.value}}
+
+
+def evaluate_combined_parameter_experiment(
+    files: EvaluationFiles, values: tuple[float, float, float]
+) -> dict[str, object]:
+    """有限组合必须另行显式执行，不复用单组结果推断。"""
+    experiment = combined_parameter_experiment(
+        files.martin, ("support_atr", "extension_atr", "contraction_ratio"), values
+    )
+    result = evaluate_files(files.model_copy(update={"martin": experiment.parameters}))
+    return {**result, "experiment": {"kind": "combined", "values": experiment.values}}
