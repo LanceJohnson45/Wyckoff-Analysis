@@ -6,7 +6,7 @@
 
 2026-11-26上海03:22审查检查点：另一个session/model已按`long-task-review-gate`审查`76af9041`，未发现P0/P1缺陷；因原始agent会话不可用，流程审查明确降级为Git/CI/runtime/文件/测试证据。审查发现的P2文档版本漂移已在`e23316f1`同步，独立wiki在本地`codex/stock-research`分支单独提交`44e9972`。阶段六外部缺口保持不变：真实Serve远端浏览器、2026-11-27自然窗口的无人干预3/4→4/4与去重、自然瞬时`OperationalError`及Feishu `unknown`仍未验收。
 
-2026-11-26上海06:12运行包检查点：可选`knowledge_search`接线提交`1409a288`八项CI成功后，正式API/tick已采用`knowledge-1409a288`；生产仍未配置专用reader，默认目录保持八工具。候选无DDL、依赖清单不变、前端资产不变；切换前/后七类账本active均为0，15次readyz全200，修订14固定报告518/518，窗口外tick退出0。真实授权检索、2026-11-27自然窗口、自然瞬时`OperationalError`、真实unknown和Tailscale远端仍未验收。
+2026-11-26上海07:31知识检索检查点：`f50cfd6b`修复知识身份子进程序列化后[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功，正式API/tick已采用`knowledge-token-f50cfd6b-20261126T0714`。生产已配置127.0.0.1:18785专用`ws-beta`reader；一次真实生产追问4次成功只读调用、828条本轮facts（其中20条`knowledge_search`），答案引用经逐值校验，回执/API无令牌。2026-11-27自然窗口、自然瞬时`OperationalError`、真实unknown和Tailscale远端仍未验收。
 
 06:54取消状态修复检查点：`fcd635e9`八项CI成功后，正式API/tick已采用`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的显式取消与历史不足/行情质量缺数分开显示；候选2005文件逐blob匹配、依赖清单不变、无DDL。切换前/后七类账本active为0，15次readyz和15次报告读全200，修订14报告518/518，窗口外tick退出0；隔离CDP读回新前端资产和三个区域，未创建业务任务。2026-11-27自然窗口、真实瞬时`OperationalError`、真实unknown和Tailscale远端继续待验。
 
@@ -67,7 +67,7 @@ Personal固定客户端迁移推进：原安装拒绝所有不同注册，已新
 - 采用：研究结束且研究/问答/准备活动数均为零后，API及调度已采用cc35c3ac。只读复制10,000行批次、未变行免UPDATE；API为Interactive、编排Standard。重启后20次真实HTTP全部成功，含冷加载P95 1.97秒、后16次热读最长0.43秒。
 - 验证：本地6,160通过/无skip；代码cc35c3ac的远端八项CI全部成功（远端6,159通过/一项既有安装DSH条件skip，coverage86%），含完整Web及操作dry-run。原42条计划和共享服务保持，草稿PR未合入；最终文档提交的CI与另session整体审查分别跟踪。
 
-2026-11-26复验：正式`parameter-ui-ac6ba511`仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。knowledge_search已补可选授权源码接线：专用reader凭据固定作用域、服务入口限本机、模型只能提交查询词，响应经schema和证据审计；默认八工具回归保持。生产reader配置与真实授权检索验收仍缺。正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
+2026-11-26复验：正式报告仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。knowledge_search已接生产专用reader，真实授权检索返回3个工程语料结果；模型只能提交查询词，作用域由服务端reader凭据固定，响应经schema和证据审计。正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
 
 05:34自然窗口预检：`stocks`的chat、evaluation、preparation、quant attempt/job、research和stage七类账本pending/running均为0；无真实worker。API/调度launchd的program和working directory均为`parameter-ui-ac6ba511`，调度不运行且上次退出0；窗口外手动tick退出0。这只证明11月27日前服务可受理，不替代无人干预定点首报/恢复/去重。
 

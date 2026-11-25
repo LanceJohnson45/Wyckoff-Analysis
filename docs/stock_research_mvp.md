@@ -161,3 +161,13 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 切换前七张状态表pending/running均为0且无真实worker；两个plist备份在`state/plist-backups/cancel-ui-fcd635e9/`。API首次bootstrap出现旧进程关闭竞争的I/O error，核对服务已卸载后重试成功；新API实际PID91954且cwd在新包。15次readyz全200、P95 30.751ms；15次目标报告读全200，revision14报告仍518/518且coverage 1.0。调度加载后窗口外tick退出0，切后七类active复查仍0；`release.json`的API与调度指针指向`fcd635e9`和候选目录，原`knowledge-1409a288`保留回退。
 
 隔离CDP 9223新建8788页面：标题“个人投研工作台”、正文13,905字符、实际加载`research-D106y3CL.js`，历史评估、正式初选观测和参数实验折叠区可读；仅GET且未创建业务任务。2026-11-27自然窗口、真实瞬时`OperationalError`、真实unknown和Tailscale远端继续未完成。
+
+### 2026-11-26知识reader身份修复采用
+
+生产环境先原子配置`STOCK_RESEARCH_KNOWLEDGE_BASE_URL=http://127.0.0.1:18785`和专用reader令牌，原`.env`备份在`state/backups/knowledge-reader-fcd635e9/env.pre-knowledge-reader`，权限0600。首次真实追问暴露`KnowledgeSettings.model_dump_json()`把`SecretStr`写成掩码，子进程校验失败后Harness报`boundary_or_protocol_failed`；失败和零工具调用保持终态。实现提交`f50cfd6b`改为显式JSON序列化reader凭据，并断言落盘文件回读等于原`KnowledgeSettings`、权限0600且令牌不进入profile。焦点13项、Ruff/format和函数门禁通过；该head[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功。
+
+候选来自精确Git归档的2005个跟踪文件，Python加载身份`ebff0b8f1743a5159b877ee423db5d7aecc05667e66f59fa57b8b7c6defb6f84`；`pyproject.toml`/`uv.lock`与`cancel-ui-fcd635e9`逐字节相同，无DDL。专用前端5个文件与前一包逐字节相同；候选`.env`继承生产reader并仅改`WEB_DIST_PATH`，权限0600。8790临时候选15次readyz全200/P95 33.029ms，`/chat`可读，真实只读追问一次尝试完成，4次成功调用和20条knowledge facts。切换前七类账本active为0。
+
+上海07:28正式API/tick采用`knowledge-token-f50cfd6b-20261126T0714`。plist先备份到`state/plist-backups/knowledge-token-f50cfd6b/`；首次`plutil -replace ProgramArguments.N`插入而非替换旧参数，API两次SyntaxError且tick退出2，当前记录保留。随即卸载服务、删除冗余旧参数后重新bootstrap，两个plist lint通过。新API PID4007、cwd在新包；15次readyz全200/P95 25.651ms，15次目标报告读全200，修订14报告518/518且coverage 1.0。调度加载后窗口外tick退出0，切换后七类账本active复查0；`release.json`的API与调度指针指向`f50cfd6b`和新包，`cancel-ui-fcd635e9`保留回退。
+
+8788生产追问`499d881b-bb4b-43cf-948e-6d9e3f9e0c8a`一次尝试完成，耗时2分16秒，4次成功只读调用、828条facts且20条来自knowledge_search；答案引用/claims校验通过，并明确工程语料只是背景。reader令牌未进入回执或公开API。2026-11-27自然窗口无人干预首报/3/4→4/4/去重、自然瞬时`OperationalError`、真实unknown和Tailscale远端继续未完成。

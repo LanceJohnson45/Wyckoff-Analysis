@@ -12,7 +12,7 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 证据与模型边界
 
-后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；默认注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。`STOCK_RESEARCH_KNOWLEDGE_BASE_URL`和专用`STOCK_RESEARCH_KNOWLEDGE_READ_TOKEN`同时配置时才注册knowledge_search；工具只接收查询词，workspace/subject由服务端reader凭据固定。当前生产尚未配置该reader，也没有真实授权检索验收。
+后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；默认注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status，配置授权资料后精确追加knowledge_search。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。`STOCK_RESEARCH_KNOWLEDGE_BASE_URL`和专用`STOCK_RESEARCH_KNOWLEDGE_READ_TOKEN`同时配置时才注册knowledge_search；工具只接收查询词，workspace/subject由服务端reader凭据固定。当前生产已配置loopback专用reader；真实追问已返回工程语料并进入证据审计，不把工程记录当作方法学证据。
 
 默认180秒、20次工具请求预算；一次JSON修正共享剩余预算。明确返回transient_provider_error、provider_stream_idle_timeout或transport_error、仍有时间和工具余额时，自动重试一次；两次使用原截止时间、模型连接、报告和父链，不重新计时。第一次失败先持久保存，第二次只得到20减已确认请求数的余额。provider_rate_limit、invalid_output、max_tokens、deadline_exceeded、tool_budget_exceeded、边界/清理错误及取消均不重试。本地清单/证据文件缺失属于边界失败，执行器文件缺失或无执行权限记executor_unavailable，不能当作provider网络抖动重试。重启或未知投递结果仍不重复模型请求。选股任务原有重试边界保持。问答与研究运行在同一API实例共享两席执行容量，为证据查询预留数据库连接；满员409不创建新问答。
 
@@ -44,3 +44,5 @@ Node开发代理仍仅loopback/同源/固定路由。问答创建正文上限48K
 2026-11-25已补正式静态工作台的真实模型验收：从固定报告修订14提问IEX的两策略分歧，一次执行、3次成功只读调用，20项声明及全部观点引用经独立注册表重验。回答保存后切换API至d42fa219，独立API/PG/回执摘要与浏览器重载均保持同一问/答案，引用与原始数值展开可见，控制台无error；旧研究/报告/初选/快照保持。此项不是隔离凭据下的失败模拟，也不代表定性推论或收益正确；数值/日期按既有契约放claims，短答偏好不是硬输出保证。
 
 2026-11-26浏览器复验发现原profile默认`auto/deepseek-v4.1-flash`上游已返回退役410；两次失败都停在模型请求前，零次工具调用且原失败终态保留。运行时改用显式`auto/qwen3.8-flash`后，修订14新会话和同会话失败续跑均保存为completed，各一次只读工具调用并核验引用；中间一次8192输出预算耗尽按`max_tokens`保留为failed，未伪装成成功，也未触发不允许的重试。将研究输出预算提升到16384后重跑成功。这是当前operator部署配置和真实页面证据，不是新默认参数承诺。
+
+2026-11-26 07:31生产reader实跑：专用reader配置在0600运行环境，入口只允许loopback。首次开启后暴露`SecretStr.model_dump_json()`把身份文件写成掩码的缺陷，工具进程启动失败并保留`boundary_or_protocol_failed`；`f50cfd6b`改为显式序列化专用凭据并补落盘回读测试。修复后8788生产追问一次尝试完成，4次成功只读调用、828条facts（20条来自knowledge_search），答案引用与claims经审计校验；回执和公开响应不含reader令牌。检索结果只是工程背景，不构成策略证据。
