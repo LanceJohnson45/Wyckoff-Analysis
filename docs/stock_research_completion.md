@@ -99,3 +99,5 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 22:58稳定性采用：正式API/股票tick已切到`stability-51c1ee22`，新增预算内只重试一次的瞬时源`OperationalError`。精确归档、无DDL、空闲保护、16次HTTP、窗口外tick退出和活动复查通过；原包保留。真实瞬时故障重放、下一自然日无人干预首报/恢复/去重、Tailscale Serve、真实unknown及独立整体审查继续未完成。
 
 23:23Tailscale候选：Serve入口新增显式主机/登录配置，只接受loopback上Tailscale覆盖的HTTPS forwarding头、一致Host、白名单身份和同源边界；远端会话`Secure`，本机会话保留。Tailscale与静态入口聚焦回归24项通过；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。2026-11-26 00:07，`1802719f`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45648628187)全部成功且本机API/tick已采用该候选；真实Serve浏览器入口仍待账号开关。
+
+2026-11-26 doctor下限修复`beade4f0`通过八项CI后，正式API/tick已采用`doctor-beade4f0`。真实candidate doctor在Python 3.11返回ready=true，15次readyz全200/P95 12.868ms，固定报告仍revision 14且518/518；窗口外tick退出0、五类active为0。远端Serve、自然恢复窗口、真实unknown和独立审查继续保持未完成。

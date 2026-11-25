@@ -123,3 +123,11 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 切换前研究、准备、评估、正式观测和问答的pending/running均为0，无真实worker。两个launchd plist备份在`state/plist-backups/tailscale-1802719f/`后定向替换；新API实际PID69764且cwd在新包。调度加载后窗口外tick退出0。候选`.env`权限0600，仅把`WEB_DIST_PATH`改到新包，未新增Serve键。采用后15次真实HTTP全200，P95 1532.828ms、中位数99.624ms；首读latest report冷加载1532.828ms，读回修订14、目标2026-11-24。五类资源active复查仍0。
 
 `release.json`的API与调度指针均指向`tailscale-1802719f`；原`stability-51c1ee22`保留回退。当前`tailscale serve status`仍是`No serve config`，候选代码没有启用远端入口。真实Serve远端浏览器验收、自然交易日3/4→4/4恢复、瞬时故障重放和真实通知unknown继续未完成。
+
+## 2026-11-26 doctor Python下限候选采用
+
+正式运行时candidate doctor暴露一个真实缺陷：Python 3.11锁定环境本身满足`requires-python = ">=3.11"`，但`doctor`硬编码3.12，导致除该项外全部通过时仍返回`ready=false`。实现提交`beade4f0`把判定改为`MINIMUM_PYTHON=(3,11)`并补边界测试；该head的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45662796166)全部completed/success，远端Python测试和smoke dry-run均通过。
+
+上海01:31，正式API与股票tick采用`doctor-beade4f0`。候选来自该head精确Git归档的1996个跟踪文件；`pyproject.toml`与`uv.lock`和`tailscale-1802719f`逐字节相同，锁定解释器仍为Python 3.11.16，无schema变更。候选`.env`继承原配置并只把`WEB_DIST_PATH`改到新包，权限0600，未新增Serve键。两个plist备份在`state/plist-backups/doctor-beade4f0/`。API首次bootstrap再次出现旧进程关闭竞争的Input/output error，核对API已卸载且旧调度tick退出后分别重新bootstrap；重启前五类资源active为0。
+
+采用后API实际PID93548、cwd在新包；15次`readyz`全200，P95 12.868ms、中位数10.682ms、最大55.495ms。candidate doctor返回`ready=true`，Python检查通过，其余依赖、日历、universe、分类、本地行情、基准补充和数据库检查全部通过。`reports/latest?target_session=2026-11-24`读回`b14ad808-a5ec-456e-add7-d53bef90365e`、revision 14、518/518且coverage 1.0；五类资源active复查仍0。新调度owner加载后窗口外手动tick退出0。`release.json`的API与调度指针指向`doctor-beade4f0`，`tailscale-1802719f`保留回退。Tailscale Serve仍是`No serve config`；远端浏览器、自然交易日3/4→4/4恢复、真实瞬时故障和真实通知unknown继续未完成。
