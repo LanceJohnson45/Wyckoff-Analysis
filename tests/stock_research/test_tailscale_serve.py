@@ -170,8 +170,6 @@ def test_validation_tailscale_serve_rejects_duplicate_host_and_unmarked_write(
 
     asyncio.run(scenario())
 
-    asyncio.run(scenario())
-
 
 def test_validation_tailscale_serve_requires_pair_and_https_origin(tailscale_settings: Settings) -> None:
     """[VALIDATION] 配置缺身份或未允许HTTPS主机必须拒启，旧本机入口保持可用。"""
