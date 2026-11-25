@@ -102,6 +102,7 @@ def test_knowledge_identity_is_file_scoped_and_not_in_profile(tmp_path: Path) ->
     profile = (files.home / "profiles/research/cordis.patch.yml").read_text()
     assert files.knowledge is not None and str(files.knowledge) in profile and READER not in profile
     assert files.knowledge.stat().st_mode & 0o777 == 0o600
+    assert KnowledgeSettings.model_validate_json(files.knowledge.read_text()) == settings.knowledge_settings
 
 
 def test_client_forwards_query_only_and_registers_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

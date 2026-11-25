@@ -178,7 +178,10 @@ def prepare_chat_files(
     )
     write_once(identity, json.dumps({"token": token}) + "\n")
     if knowledge_path:
-        write_once(knowledge_path, knowledge.model_dump_json() + "\n")
+        write_once(
+            knowledge_path,
+            json.dumps({"base_url": knowledge.base_url, "token": knowledge.token.get_secret_value()}) + "\n",
+        )
     return ChatFiles(root, home, manifest, identity, knowledge_path)
 
 
