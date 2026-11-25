@@ -4,7 +4,7 @@
 
 ## 采用含评估作业的新API版本
 
-评估API源码加入 `evaluation_jobs/results/samples` 三表，需在研究库显式执行新版本 `init-schema`，保留原账本；启动只检查，不自动迁移。2026-11-25上海03:58，正式本机API/调度采用 `09bdd3cb`时，新增评估三表由公开CLI显式初始化；当前运行版本为下文06:38采用的d42fa219。09提交的[完整八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45474002419)全部成功；原运行包保留供撤回。下一次采用须先取得该提交完整成功CI，再确认研究、问答、输入准备及评估作业均无pending/running任务；取消评估要等所属进程真实退出，不能只改数据库状态。
+评估API源码加入 `evaluation_jobs/results/samples` 三表，需在研究库显式执行新版本 `init-schema`，保留原账本；启动只检查，不自动迁移。2026-11-25上海03:58，正式本机API/调度采用 `09bdd3cb`时，新增评估三表由公开CLI显式初始化；该批次后续运行版本为下文06:38采用的d42fa219。09提交的[完整八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45474002419)全部成功；原运行包保留供撤回。下一次采用须先取得该提交完整成功CI，再确认研究、问答、输入准备及评估作业均无pending/running任务；取消评估要等所属进程真实退出，不能只改数据库状态。截至2026-11-26 02:10，当前运行版本为文末`doctor-wiring-c0ae327b`。
 
 运行包切换继续限于已有独立API/调度，不修改原42条Personal计划及共享服务。回退保留新三表和已保存结果，不删除实验数据；有未完成评估时先用其对应版本收尾，不让旧版本接管不认识的worker协议。新评估的进程隔离、容量与预算见[评估作业](stock_research_evaluations.md)，自然交易日验收仍分别记录。
 
