@@ -23,7 +23,7 @@ from stock_research.input_configuration import resolve_run_inputs
 from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
 from stock_research.pipeline import STRATEGIES, prepare_preview, preview_configuration, resume_preview
-from stock_research.preparations import record_preparation
+from stock_research.preparations import premarket_preparation_lock, record_preparation
 from stock_research.quant_compute import quant_parameters
 from stock_research.request_store import RequestStore
 from stock_research.run_store import RunStore
@@ -92,6 +92,7 @@ async def prepare_from_market(
         async with (
             record_preparation(store, data.target_session, "api", request_id) as attempt,
             asyncio.timeout(max(0, budget)),
+            premarket_preparation_lock(store, settings.artifacts_path, previous, enabled=premarket is not None),
         ):
             settings, parameter_sources = await resolve_run_parameters(store, settings)
             await attempt.checkpoint("snapshot")

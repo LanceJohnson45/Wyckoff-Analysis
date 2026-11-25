@@ -377,6 +377,8 @@ wyckoff mcp-list
 # 股票研究稳定性
 
 冻结快照读取共用连接池内的一份有界缓存，热查询仅核对PostgreSQL行版本，避免报告、股票池及个股反复传输完整行情。缓存失效、隔离和测量边界见[研究查询](docs/stock_research_queries.md)。完整页面操作与自然交易日定点送达分别验收，进度见[实施计划](plan.md)。
+
+当前开发版对同库盘前首次准备按共享快照范围串行，等待计入原预算、获得执行权后复用首次冻结；正式d42包尚未采用，适用范围与取消/失败边界见[并发准备](docs/stock_research_preparations.md#并发首次准备)。
 研究资料维护保留逐行分类出处；公开成分刷新会沿用当前有效成员的GICS缺项补充，完整基线不由15条[补充清单](config/research/classification-supplement-20261124-v1.json)替代。上市历史限制与漏同步的核查方法见[公开资料说明](docs/stock_research_public_data.md)。
 固定报告问答的工具结果按用途投影并分页，每页48KiB、每轮累计256KiB，只登记实际返回的证据。可用`fact_offset`续读，完整参数单独查询，避免多次工具调用重复装入整份报告。见[问答契约](docs/stock_research_chat.md)。
 盘前任务仅在研究终态且所有实际发布（包括恢复更新）已送达后写当天完成标记；恢复消息未知或待重试不会被首报成功掩盖。后续tick保留原期限和通知业务键，见[盘前MVP](docs/stock_research_mvp.md)。

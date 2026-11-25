@@ -2,7 +2,11 @@
 
 import asyncio
 import json
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import timedelta
+from pathlib import Path
+from threading import Event
 
 import httpx
 import pytest
@@ -36,7 +40,27 @@ def client(app: FastAPI) -> httpx.AsyncClient:
     )
 
 
-def test_different_manual_events_concurrently_share_first_frozen_run(configured: tuple[Settings, Clock]) -> None:
+def test_different_manual_events_concurrently_share_first_frozen_run(
+    configured: tuple[Settings, Clock], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """【幂等性】真实首份快照仍持锁时，新事件应等待并复用，无须重试。"""
+    from stock_research.cli import data_lock
+
+    acquired, release, contender = Event(), Event(), Event()
+
+    @contextmanager
+    def held_snapshot(root: Path, market: str, as_of: str) -> Iterator[None]:
+        if acquired.is_set():
+            contender.set()
+        with data_lock(root, market, as_of):
+            if not acquired.is_set():
+                acquired.set()
+                if not release.wait(5):
+                    raise TimeoutError("snapshot test barrier was not released")
+            yield
+
+    monkeypatch.setattr("stock_research.cli.data_lock", held_snapshot)
+
     async def scenario() -> None:
         settings, clock = configured
         engine = database_engine(settings)
@@ -52,21 +76,21 @@ def test_different_manual_events_concurrently_share_first_frozen_run(configured:
                 events = [intent(kind="manual"), intent("2026-11-23T13:01:00Z", kind="manual")]
                 ids = [await seed_intent(app.state.manager, item, item.schedule.scheduled_for) for item in events]
                 clock.at += timedelta(minutes=1)
-                replies = await asyncio.gather(
-                    *(
-                        connection.post("/v1/premarket-jobs", json=item.model_dump(mode="json"))
-                        for connection, item in zip((http, other_http), events, strict=True)
+                first = asyncio.create_task(http.post("/v1/premarket-jobs", json=events[0].model_dump(mode="json")))
+                try:
+                    assert await asyncio.to_thread(acquired.wait, 5)
+                    second = asyncio.create_task(
+                        other_http.post("/v1/premarket-jobs", json=events[1].model_dump(mode="json"))
                     )
-                )
+                    await asyncio.to_thread(contender.wait, 0.5)
+                finally:
+                    release.set()
+                replies = await asyncio.gather(first, second)
                 assert all(reply.status_code == 202 for reply in replies)
                 receipts = [await settled(http, job_id) for job_id in ids]
-                for index, receipt in enumerate(receipts):
-                    if receipt["status"] == "failed_preparation":
-                        assert receipt["preparation"]["error_code"] == "input_unavailable" and receipt["run"] is None
-                        replay = await http.post("/v1/premarket-jobs", json=events[index].model_dump(mode="json"))
-                        assert replay.status_code == 202
-                        receipts[index] = await settled(http, ids[index])
                 assert {item["status"] for item in receipts} == {"completed"}
+                assert not contender.is_set()
+                assert {item["preparation"]["status"] for item in receipts} == {"ready"}
                 assert len({item["run"]["run_id"] for item in receipts}) == 1
                 assert receipts[0]["report"] == receipts[1]["report"]
                 origin = receipts[0]["origin"]
@@ -80,9 +104,15 @@ def test_different_manual_events_concurrently_share_first_frozen_run(configured:
                         await connection.scalar(
                             select(func.count()).select_from(table).where(table.c.workspace == settings.workspace)
                         )
-                        for table in (API_REQUESTS, RESEARCH_RUNS, QUANT_ATTEMPTS)
+                        for table in (
+                            API_REQUESTS,
+                            RESEARCH_RUNS,
+                            QUANT_ATTEMPTS,
+                            MARKET_SNAPSHOTS,
+                            PREPARATION_ATTEMPTS,
+                        )
                     ]
-                assert counts == [2, 1, 2]
+                assert counts == [2, 1, 2, 1, 2]
         finally:
             await close_engine(engine)
 

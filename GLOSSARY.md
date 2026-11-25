@@ -521,6 +521,8 @@ flowchart LR
 
 **盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，同日同配置及触发类别的新事件在重读行情前复用首次研究，回执origin标明首次事件和期限；别名quality引用原冻结清单，不表示重新补拉，market_refresh为空。取消标记约束全部别名，强制重分析须operator显式force+parent_run_id。准备记录的market_refresh区分只读同步、显式基准补充与后续快照质量，未知计数不补零；更新完成不等于研究完成。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。
 
+**盘前准备互斥**：开发版同库API按解析后产物根目录/市场/行情日取得事务级PG锁，等待计入原准备和事件预算；获得锁后重新查同配置冻结身份，ready提交后释放。它协调共享物理快照，不合并workspace或不同配置的研究，也不替代运行执行锁；正式d42尚未采用。见[适用边界](docs/stock_research_preparations.md#并发首次准备)。
+
 **通知冻结范围**：定点业务键沿用`us:目标日:phase`，手动使用`us:目标日:manual:phase`，各自固定正文并保存scope.json；unknown重放同键同正文。旧共享路径缺来源元数据时停止并返回mvp_publication_scope_unconfirmed，不自动归类或补发。核对原执行、报告、账本、正文与原生回执后，旧定点记录只追加来源/Publication摘要，不改正文或再发送；旧manual不能改标。Agent只统计定点键。见[MVP旧记录边界](docs/stock_research_mvp.md#通知范围与旧记录)。
 
 **研究分支CI**：开发分支的push/PR复用标准ci.yml并显式覆盖完整Web门禁；按实际head SHA检查终态。分支验证、PR策略与生产部署分别验收，不因分支检查成功自动启用调度。见[研究CI](docs/stock_research_ci.md)。
