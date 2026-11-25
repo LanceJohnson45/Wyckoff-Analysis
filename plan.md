@@ -660,3 +660,5 @@ f17c689d已提交推送且CI45496618794八项全部成功；后续通知稳定�
 23:23Tailscale Serve候选已补显式代码路径：必须同时配置Tailnet主机与允许登录，`https://<host>`须白名单；运行时只接受loopback反代、单值HTTPS `X-Forwarded-*`、一致Host、白名单身份和同源Origin/Fetch-Site，远端会话加`Secure`，本机HTTP入口保留。Tailscale与静态入口聚焦回归24项通过，覆盖正常远端读、坏主机/协议/身份/跨站、歧义Host、未同源写、配置拒启与本机回退；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。`1802719f`的八项CI与本机运行包采用已另行补记；真实远端浏览器验收仍须等待Tailscale Serve账号开关，不开启Funnel。
 
 2026-11-26 00:39浏览器续验：股票池搜索、IEX图表锚点、维护刷新、评估与正式观测重读、修订14新问及失败续跑均通过真实页面；退役模型410和一次8192输出预算耗尽均保留failed，切换Qwen并将输出预算提升到16384后completed回执各有一次只读工具调用。自然定点首报/失败恢复/通知去重、真实unknown、Tailscale远端和独立终审仍未完成。
+
+2026-11-26 00:57部署一致性续验：定点launchd入口由旧回滚包脚本迁至`tailscale-1802719f`候选包，参数修复后实际tick退出0、60秒间隔保持；原plist和模型/输出预算改前环境均以0600备份保存在state/config-backups。这消除“schedule_release指向候选但入口导入旧包”的漂移，不构成自然定点4/4完成。
