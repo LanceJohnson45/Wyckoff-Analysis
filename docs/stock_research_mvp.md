@@ -145,3 +145,11 @@ Personal仍使用固定ece83代码和d42锁定解释器；按当前声明另启�
 切换前`chat_turns`、`evaluation_jobs`、`preparation_attempts`、`quant_attempts`、`quant_jobs`、`research_runs`和`stage_runs`的pending/running均为0；schedule未运行，真实worker不存在。候选`.env`权限0600，仅改`WEB_DIST_PATH`。两个plist先备份到`state/plist-backups/parameter-ui-ac6ba511/`，随后先卸载旧调度、再等旧API退出且8788释放，最后加载候选两个owner。新API实际PID55377且cwd在新包；15次readyz全200、P95 19.411ms。窗口外tick加载后退出0。`release.json`的API与调度指针均指向`ac6ba511`和候选目录，原`doctor-wiring-c0ae327b`保留回退。
 
 真实隔离CDP 9223页面核验8788 Agent工作台：历史报告修订14、518/518覆盖、股票池搜索区和问答区可读；参数实验折叠区显示completed/cancelled/failed历史，打开成功作业`SR-20261125-US-CD8D35`可读人工审查pending、三变体候选36、research 1/validation 0/sealed 4及参数摘要。未创建新实验，console和page error为0。自然交易日定点首报、失败恢复、通知去重、Tailscale远端浏览器与真实unknown仍待验。
+
+### 2026-11-26 knowledge_search运行包采用
+
+上海06:12，正式API与股票tick采用`knowledge-1409a288`。实现提交`1409a288`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45708909614)全部成功；候选来自精确Git归档，2005个跟踪文件逐blob内容匹配、加载源码身份`5f1ea65fced1178f9976cbcc8f6d9a3dbcec73ec74b019f81ae14d511f14c9d5`，`pyproject.toml`/`uv.lock`与`parameter-ui-ac6ba511`逐字节相同，无DDL。可选knowledge接线在候选中33项焦点测试通过；生产未配置knowledge凭据，实际工具目录仍是默认八项。专用前端与前一包逐SHA256相同，候选`.env`仅改`WEB_DIST_PATH`且权限0600。
+
+切换前七张状态表（chat/evaluation/preparation/quant attempt/quant job/research/stage）pending/running均为0，无真实worker；两个plist先备份到`state/plist-backups/knowledge-1409a288/`。本次先卸载旧调度和API，等待8788释放后加载新API，再加载调度。新API实际PID79511且cwd在新包；15次readyz全200、P95 37.968ms、中位数10.035ms。修订14目标2026-11-24报告仍为`b14ad808-a5ec-456e-add7-d53bef90365e`，quality 518/518且coverage 1.0。窗口外手动tick退出0，切后七类active复查仍0；`release.json`的API与调度指针均指向`1409a288`和候选目录，原`parameter-ui-ac6ba511`保留回退。
+
+候选doctor的`local_market=false`是2026-11-25最新已完成交易段尚未由今晚定点补数的诚实状态；候选对2026-11-24的本地行情只读复核为521根且无issue，固定报告quality仍518/518。没有提前补拉11-25资料。隔离CDP 9223新建8788页面并重载：标题“个人投研工作台”、正文含策略研究区，重载可读13,905字符、15个输入和历史修订14；仅GET，不新建问答/评估/观测/通知。新会话初始捕获两次同源桥接401，随重载恢复页面；这符合原提交意图保留契约，不代表全部写控件复验。生产reader配置与真实授权knowledge检索、2026-11-27自然窗口无人干预首报/3/4→4/4/去重、真实unknown和Tailscale远端继续未完成。
