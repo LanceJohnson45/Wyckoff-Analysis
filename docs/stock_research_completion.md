@@ -131,3 +131,9 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 07:40环境变更重启后的正式`f50cfd6b`包继续健康：`/readyz`为200，操作状态按目标日分别读回11/24首报/恢复`sent`、11/25首报`sent`且恢复无记录、11/26假期无记录。既有8788真实页面重载后仍显示修订14、518/518和100%覆盖；冻结池搜索`Apple`只命中1只，同源AAPL观察接口返回320根，锚点接口返回200。
 
 该复核只使用GET和页面本地状态切换，不创建研究、评估、观测、问答或通知。它补验重启后的本机真实入口，不替代Tailscale远端浏览器、自然交易日恢复、真实瞬时`OperationalError`或Feishu `unknown`验收。
+
+## 08:49自然窗口只读预检
+
+正式API/tick保持`f50cfd6b`不可变包。`/readyz`、修订14目标11/24报告、研究run、历史评估和准备账本HTTP均200；操作状态按目标日读回11/24首报/恢复均`sent`且带原生引用，11/25首报`sent`、恢复`not_recorded`，11/26假期两阶段`not_recorded`。本地生产PG只读统计显示research_runs、stage_runs、quant_jobs、quant_attempts、preparation_attempts、chat_turns和evaluation_jobs七张账本全workspace active均为0。
+
+当前包窗口外手动tick退出0。`tailscale serve --bg 8788`仍被Tailnet账户级开关拒绝；`serve status`保持`No serve config`，未留下反代配置或业务记录。该预检不触发研究、评估、问答或投递，也不能把11/26交易所假期当作自然日；2026-11-27窗口和真实故障/unknown仍保持未完成。

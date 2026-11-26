@@ -14,6 +14,8 @@
 
 2026-11-26上海08:27重启后本地页面复核：`/readyz`仍200，操作状态读回11/24首报/恢复`sent`、11/25首报`sent`且恢复无记录、11/26假期无记录。既有8788真实页面重载后显示修订14和518/518；同源冻结池搜索Apple命中1只，AAPL观察320根、锚点HTTP均200。本轮只做GET和页面状态切换，不新建研究、评估、观测、问答或通知；这补验07:40重启后的本机入口，仍不等同远端Serve。
 
+2026-11-26上海08:49自然窗口只读预检：正式API/tick仍在`f50cfd6b`包，readyz、修订14目标11/24报告、研究run、历史评估和准备账本HTTP均200；操作状态确认11/24首报/恢复均sent且带原生引用，11/25首报sent、恢复not_recorded，11/26假期两阶段not_recorded。七张状态账本research_runs、stage_runs、quant_jobs、quant_attempts、preparation_attempts、chat_turns和evaluation_jobs全workspace active均为0；当前包窗口外手动tick退出0。`tailscale serve --bg 8788`仍被Tailnet账户级开关拒绝，serve config保持空。预检不触发研究/投递，也不把11/26假期当作自然验收。
+
 06:54取消状态修复检查点：`fcd635e9`八项CI成功后，正式API/tick已采用`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的显式取消与历史不足/行情质量缺数分开显示；候选2005文件逐blob匹配、依赖清单不变、无DDL。切换前/后七类账本active为0，15次readyz和15次报告读全200，修订14报告518/518，窗口外tick退出0；隔离CDP读回新前端资产和三个区域，未创建业务任务。2026-11-27自然窗口、真实瞬时`OperationalError`、真实unknown和Tailscale远端继续待验。
 
 06:38采用检查点：正式API及股票tick为`notifications-d42fa219`，精确代码八项CI、包内128项和四类空闲/worker退出保护通过，无DDL。两条已证实定点旧通知只追加scope，三个旧正文/原生消息/账本保持；正式报告追问已获得真实模型回答，3次只读调用和20项声明逐值核验，新包重启后同一问题/回执仍原值。Tailscale节点在线但尚无Serve入口，远程同源/身份契约未验，其他正式写控件与自然日继续分别推进，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。
