@@ -119,3 +119,9 @@ CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysi
 07:31知识reader闭环：首次生产配置后真实追问暴露知识身份文件被`SecretStr.model_dump_json()`掩码化，工具进程启动失败并保留原终态；`f50cfd6b`显式写入子进程私有0600文件并补回读测试。该head[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功后，API/tick采用不可变包。切换前七类账本active为0；新API 15次readyz全200/P95 25.651ms，15次目标报告读全200，修订14仍518/518且coverage 1.0，窗口外tick退出0。生产8788追问一次尝试完成、4次成功只读调用、828条facts且20条来自knowledge_search，回执/API无reader令牌；答案明确工程语料只是背景。自然窗口、真实unknown、真实瞬时故障和Tailscale远端继续未完成。
 
 07:40Serve配置推进：当前节点DNS名、完整Tailnet登录身份和HTTPS Origin已写入生产0600环境并备份；API重启为PID7699且本地入口保持健康，15次readyz/report全200，修订14仍518/518。Tailscale CLI确认`No serve config`并提示账户未开启Serve；因此真实远端浏览器仍缺账户级开关和远端设备验收。没有开启Funnel，也没有放宽身份/同源边界。
+
+## 08:05生产资料与快照读取复核
+
+正式API/tick保持`f50cfd6b`不可变包，`readyz`为200。固定报告b14ad808修订14的质量门禁为518/518、coverage 1.0。生产HTTP整池复核读回518/518只：缺行业为0，非目标日行情为0；历史不足保留FDXF/HONA/Q/SPCX/VYLR五只、六项策略排除，全部沿用上市或分拆时间限制且不拼母公司历史。原“15只缺行业、1只缺最新行情”的缺口已收敛。
+
+同一报告的6路整池分页并发HTTP读取全200；首读22.1ms，共享缓存后的热读341.7～946.6ms。该证据覆盖当前生产读取路径的并发可用性，不把本次HTTP复核当作远端浏览器验收、自然交易日恢复、真实瞬时`OperationalError`重放或Feishu `unknown`恢复。08:05再次尝试`tailscale serve`仍提示Tailnet账户未启用Serve，远端入口继续等待账户级开关。
