@@ -261,6 +261,8 @@ async def execute_chat(settings: Settings, context: ChatContext, connection: Mod
                 )
             finally:
                 files.identity.unlink(missing_ok=True)
+                if files.knowledge:
+                    files.knowledge.unlink(missing_ok=True)
     return ChatResult(
         status=status,
         answer=answer,

@@ -6,10 +6,12 @@ import time
 
 import httpx
 import pytest
+from pydantic import ValidationError
 
 from stock_research.config import Settings
 from stock_research.http_api import create_app
 from stock_research.schema import EVALUATION_JOBS
+from stock_research.schemas.parameter_experiment_jobs import CreateParameterExperiment
 from stock_research.store import close_engine, database_engine, initialize_schema
 from tests.stock_research.test_evaluation_api import OPERATOR
 from tests.stock_research.test_evaluation_api import evaluation_settings as evaluation_settings
@@ -21,6 +23,58 @@ async def initialize(settings: Settings) -> None:
         await initialize_schema(engine)
     finally:
         await close_engine(engine)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (float("inf"), 0.75, 1.0),
+        (float("nan"), 0.75, 1.0),
+        (0.5, 0.5, 1.0),
+    ],
+)
+def test_create_parameter_experiment_rejects_invalid_values(values: tuple[float, float, float]) -> None:
+    """[PARAMETER] 非有限值和重复变体值在请求模型层拒绝。"""
+    body = {"profile": "boundary-v1", "cutoff": "2026-11-20", "field": "support_atr", "values": values}
+
+    with pytest.raises(ValidationError, match="值|finite"):
+        CreateParameterExperiment.model_validate(body)
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        (float("inf"), 0.75, 1.0),
+        (float("nan"), 0.75, 1.0),
+        (0.5, 0.5, 1.0),
+    ],
+)
+def test_parameter_experiment_api_rejects_invalid_values(
+    evaluation_settings: Settings, values: tuple[float, float, float]
+) -> None:
+    """[VALIDATION] 作业请求非法变体值在进入worker前返回422。"""
+
+    async def scenario() -> None:
+        app = create_app(evaluation_settings)
+        body = {
+            "profile": "boundary-v1",
+            "cutoff": "2026-11-20",
+            "field": "support_atr",
+            "values": values,
+        }
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://127.0.0.1:8788",
+            headers={"Authorization": "Bearer " + OPERATOR},
+        ) as client:
+            response = await client.post(
+                "/v1/parameter-experiments",
+                content=json.dumps(body, allow_nan=True).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            assert response.status_code == 422 and response.json()["code"] == "research.invalid_input"
+
+    asyncio.run(scenario())
 
 
 async def terminal(client: httpx.AsyncClient, identifier: str) -> dict[str, object]:

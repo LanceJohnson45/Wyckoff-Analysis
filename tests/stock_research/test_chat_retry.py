@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from pydantic import SecretStr
 from sqlalchemy import select
 
 from stock_research.chat_manager import ChatManager
@@ -102,7 +103,13 @@ def test_retry_actual_harness_preserves_attempts_and_http_replay(
     """真实受理/执行/回收/独立重读，重试不改模型、截止或原问题。"""
 
     async def scenario() -> None:
-        settings = chat_settings.model_copy(update={"dsh_executable": controlled_harness})
+        settings = chat_settings.model_copy(
+            update={
+                "dsh_executable": controlled_harness,
+                "knowledge_base_url": "http://127.0.0.1:9000",
+                "knowledge_read_token": SecretStr("knowledge-reader-token-with-at-least-32-characters"),
+            }
+        )
         store, report_id = await chat_report(settings, snapshot)
         model_calls = []
 
@@ -164,7 +171,7 @@ def test_retry_actual_harness_preserves_attempts_and_http_replay(
                     pid = int((path.parent / "owned-pid").read_text())
                     with pytest.raises(ProcessLookupError):
                         os.kill(pid, 0)
-                identities = list(settings.dsh_home.glob(f"chat/{identifier}/*/query-identity.json"))
+                identities = list(settings.dsh_home.glob(f"chat/{identifier}/*/*-identity.json"))
                 assert identities == []
             finally:
                 await close_engine(independent)

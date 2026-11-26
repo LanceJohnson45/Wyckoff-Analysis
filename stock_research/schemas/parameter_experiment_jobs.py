@@ -1,7 +1,7 @@
 """首轮参数实验的私有作业契约；不发布生产参数，不承接任意字段。"""
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import UUID4, AwareDatetime, Field, model_validator
 
@@ -9,12 +9,21 @@ from stock_research.parameter_experiments import ExperimentField
 from stock_research.schemas.api import ApiModel
 from stock_research.schemas.evaluations import EvaluationStatus
 
+FiniteValue = Annotated[float, Field(allow_inf_nan=False)]
+ExperimentValues = tuple[FiniteValue, FiniteValue, FiniteValue]
+
 
 class CreateParameterExperiment(ApiModel):
     profile: str = Field(min_length=1, max_length=256, pattern=r"^[^\x00]+$")
     cutoff: date
     field: ExperimentField
-    values: tuple[float, float, float]
+    values: ExperimentValues
+
+    @model_validator(mode="after")
+    def distinct_values(self) -> "CreateParameterExperiment":
+        if len(set(self.values)) != 3:
+            raise ValueError("三个变体值必须互异")
+        return self
 
 
 class ParameterExperimentJobView(ApiModel):
@@ -23,7 +32,7 @@ class ParameterExperimentJobView(ApiModel):
     profile: str
     cutoff: date
     field: ExperimentField
-    values: tuple[float, float, float]
+    values: ExperimentValues
     status: EvaluationStatus
     error_code: str | None
     result_id: UUID4 | None
@@ -67,7 +76,7 @@ class ParameterExperimentResultView(ApiModel):
     profile: str
     cutoff: date
     field: ExperimentField
-    values: tuple[float, float, float]
+    values: ExperimentValues
     input_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     source_hash: str = Field(pattern=r"^[a-f0-9]{64}$")
     variants: tuple[ParameterExperimentVariant, ...]
