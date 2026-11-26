@@ -3,9 +3,11 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy import URL
+
+from stock_research.knowledge_settings import KnowledgeSettings
 
 PUBLIC_GITHUB_API = "https://api.github.com"
 
@@ -42,6 +44,10 @@ class Settings(BaseSettings):
     api_host: Literal["127.0.0.1"] = "127.0.0.1"
     api_port: int = Field(default=8788, ge=1, le=65535)
     api_allowed_origins: tuple[str, ...] = ("http://127.0.0.1:8788", "http://localhost:8788")
+    tailscale_serve_host: str = ""
+    tailscale_serve_login: str = ""
+    web_dist_path: Path | None = None
+    mvp_status_config_path: Path | None = None
     coverage_min: float = Field(default=0.95, gt=0, le=1)
     history_rows: int = Field(default=320, ge=320)
     adjustment: Literal["qfq"] = "qfq"
@@ -57,13 +63,22 @@ class Settings(BaseSettings):
     model_api: Literal["openai-completions", "openai-responses", "anthropic-messages"] = "openai-completions"
     models_by_role: dict[str, str] = Field(default_factory=dict)
     model_output_tokens: int = Field(default=8192, ge=512, le=16384)
+    knowledge_base_url: str = ""
+    knowledge_read_token: SecretStr | None = None
     stage_timeout_seconds: int = Field(default=180, ge=1, le=600)
     run_timeout_seconds: int = Field(default=3000, ge=1, le=3000)
 
-    @field_validator("benchmark_path", "model_profile_path", "model_env_path", mode="before")
+    @field_validator(
+        "benchmark_path",
+        "model_profile_path",
+        "model_env_path",
+        "web_dist_path",
+        "mvp_status_config_path",
+        mode="before",
+    )
     @classmethod
     def empty_benchmark_path(cls, value: object) -> object:
-        """空配置表示继续使用云端基准，禁止把空串解释为当前目录。"""
+        """空可选定位保持None，禁止把空串解释为当前目录。"""
         return None if value == "" else value
 
     @field_validator(
@@ -73,11 +88,64 @@ class Settings(BaseSettings):
         "dsh_executable",
         "dsh_home",
         "dsh_agents_home",
+        "web_dist_path",
+        "mvp_status_config_path",
     )
     @classmethod
     def expand_operator_home(cls, value: Path | None) -> Path | None:
         """dotenv不经过交互shell，部署路径中的~需显式展开。"""
         return value.expanduser() if value is not None else None
+
+    @field_validator("mvp_status_config_path")
+    @classmethod
+    def absolute_status_config(cls, value: Path | None) -> Path | None:
+        """状态子进程只能引用operator固定的绝对配置路径。"""
+        if value is not None and not value.is_absolute():
+            raise ValueError("通知状态配置须使用绝对路径")
+        return value
+
+    @model_validator(mode="after")
+    def normalize_tailscale_serve(self) -> "Settings":
+        """Serve入口必须同时固定主机与允许的真实Tailscale身份。"""
+        host = self.tailscale_serve_host.strip().lower()
+        login = self.tailscale_serve_login.strip()
+        if bool(host) != bool(login):
+            raise ValueError("Tailscale Serve须同时配置主机和允许的用户身份")
+        labels = host.split(".")
+        if host and (
+            len(labels) < 2
+            or any(
+                not label or label[0] == "-" or label[-1] == "-" or not label.replace("-", "").isalnum()
+                for label in labels
+            )
+        ):
+            raise ValueError("Tailscale Serve主机无效")
+        if login and (" " in login or "@" not in login):
+            raise ValueError("Tailscale Serve身份须为完整登录名")
+        self.tailscale_serve_host = host
+        self.tailscale_serve_login = login
+        return self
+
+    @property
+    def knowledge_settings(self) -> KnowledgeSettings | None:
+        """两项同时配置才授权第九项工具；空值保持原八工具目录。"""
+        if bool(self.knowledge_base_url) != bool(self.knowledge_read_token):
+            raise ValueError("知识检索入口与专用身份须同时配置")
+        if not self.knowledge_base_url:
+            return None
+        identities = {
+            token.get_secret_value()
+            for token in (self.api_read_token, self.api_token, self.api_workflow_token)
+            if token
+        }
+        if self.knowledge_read_token.get_secret_value() in identities:
+            raise ValueError("知识检索身份不能复用研究API身份")
+        return KnowledgeSettings(base_url=self.knowledge_base_url, token=self.knowledge_read_token)
+
+    @property
+    def tailscale_serve_origin(self) -> str | None:
+        """远端入口只使用Tailscale HTTPS主机，不支持路径或端口变体。"""
+        return f"https://{self.tailscale_serve_host}" if self.tailscale_serve_host else None
 
     def database_url(self, *, test: bool = False) -> URL:
         """由离散配置构造连接；测试库强制增加 _test 后缀。"""

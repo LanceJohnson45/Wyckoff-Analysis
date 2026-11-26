@@ -8,6 +8,7 @@ import signal
 from pathlib import Path
 
 from stock_research.artifacts import data_lock, write_once
+from stock_research.errors import PublicationScopeError
 from stock_research.identity import canonical_json, now
 from stock_research.models import UniverseVersion
 from stock_research.mvp_delivery import call_worker, deliveries_sent, publication, publish
@@ -18,19 +19,26 @@ from stock_research.schemas.premarket import PremarketInput, PremarketPlan, Prem
 from stock_research.workflow_settings import load_workflow_identity
 
 
+async def refresh_source(settings: MvpSettings, data: PremarketInput, plan: PremarketPlan) -> dict[str, object]:
+    """对已复现的来源进程瞬时失败做一次预算内重试，其余失败仍保持原语义。"""
+    try:
+        universe = UniverseVersion.model_validate_json(await asyncio.to_thread(settings.universe_path.read_bytes))
+        payload = {"as_of": str(plan.as_of), "symbols": list(universe.active(plan.as_of))}
+        remaining = (data.schedule.execution_deadline - now()).total_seconds()
+        refresh = await call_worker(settings, "refresh", payload, min(900, max(1, remaining - 300)))
+        if remaining > 300 and refresh.get("status") == "failed" and refresh.get("error_type") == "OperationalError":
+            remaining = (data.schedule.execution_deadline - now()).total_seconds()
+            refresh = await call_worker(settings, "refresh", payload, min(900, max(1, remaining - 300)))
+        return refresh
+    except (OSError, ValueError, TimeoutError):
+        return {"status": "unconfirmed", "error_code": "source_refresh_unconfirmed"}
+
+
 async def research_pipeline(
     settings: MvpSettings, data: PremarketInput, plan: PremarketPlan, progress: list[PremarketReceipt]
 ) -> tuple[dict[str, object], WorkflowOutcome]:
     """补拉在API准备之前，来源失败仍让正式质量门禁如实裁决缓存。"""
-    remaining = (data.schedule.execution_deadline - now()).total_seconds()
-    try:
-        universe = UniverseVersion.model_validate_json(await asyncio.to_thread(settings.universe_path.read_bytes))
-        symbols = list(universe.active(plan.as_of))
-        refresh = await call_worker(
-            settings, "refresh", {"as_of": str(plan.as_of), "symbols": symbols}, min(900, max(1, remaining - 300))
-        )
-    except (OSError, ValueError, TimeoutError):
-        refresh = {"status": "unconfirmed", "error_code": "source_refresh_unconfirmed"}
+    refresh = await refresh_source(settings, data, plan)
     try:
         outcome = await run_workflow(data, load_workflow_identity(settings.workflow_identity_file), progress=progress)
     except (OSError, ValueError):
@@ -100,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
         with data_lock(settings.state_path, "us", str(data.schedule.target_session)):
             result = asyncio.run(execute_mvp(settings, data))
         write_once(output, canonical_json(result) + "\n")
+    except PublicationScopeError:
+        print(json.dumps({"mode": "mvp", "error_code": "mvp_publication_scope_unconfirmed"}))
+        return 1
     except (OSError, ValueError, KeyError, TimeoutError):
         print(json.dumps({"mode": "mvp", "error_code": "mvp_execution_unconfirmed"}))
         return 1

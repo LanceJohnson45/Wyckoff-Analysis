@@ -1,6 +1,6 @@
 # 独立美股研究数据命令
 
-本页描述 `codex/stock-research` 的数据阶段实现。[Martin量化观察](stock_research_martin_cli.md)、[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)、[模型初选与互评预览](stock_research_executor.md)和[研究API](stock_research_api.md)已接通；[盘前MVP](stock_research_mvp.md)记录已安装定时任务、飞书送达及尚待无人干预自然日验收的边界。[历史评估CLI](stock_research_evaluations.md)已提供基线量化池回放，完整阶段六仍未完成。旧同步入口保留在独立来源工作树，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
+本页描述 `codex/stock-research` 的数据阶段实现。[Martin量化观察](stock_research_martin_cli.md)、[Wyckoff固定快照适配](stock_research_wyckoff_cli.md)、[模型初选与互评预览](stock_research_executor.md)和[研究API](stock_research_api.md)已接通；[盘前MVP](stock_research_mvp.md)记录已安装定时任务、飞书送达及尚待无人干预自然日验收的边界。[历史评估CLI](stock_research_evaluations.md)提供基线量化池回放，另有`observe-selections --report-id <UUID> --cutoff <day>`的[正式初选文件观测](stock_research_selection_observations.md)，二者参考价和样本来源分别标记，完整阶段六仍未完成。旧同步入口保留在独立来源工作树，配置见[Mac mini 行情接入说明](stock_research_data_bootstrap_2026-11-23.md)。
 
 本机已启用按Git提交冻结的公开成分及独立供应商基准，并生成通过门槛的快照。`refresh-versions`、`fetch-benchmarks` 的来源、配置和初期实测见[公开成分与基准补充](stock_research_public_data.md)。初期QQQ/IWM缺口使用显式供应商文件补充；当前可用范围以本地源和补充文件的实际截止日、完整性及来源检查为准，不能把早期缺口记录当成当前源状态。评估命令仅用本地源，不自动消费该补充文件。
 
@@ -33,7 +33,7 @@
 
 新入口复用根目录 `PG_*`，拒绝非空 `PG_DSN`，连接和源事务均为只读；不执行云端补拉或写入。查询含 `INDEX:US:SPY/QQQ/IWM` 三个独立基准键，同名 `US:QQQ` 保留stock身份。新范围 `research:us:all:benchmarks-v1` 不沿用旧SPY-only水位，初次使用会完整复制已有历史。后续按更新时间并重叠一天，包含历史修订；每批原子提交，全部读取成功并退出源事务后才推进水位，取消可重跑。不同云端身份不能混写已有文件，身份摘要算法保留来源工作树的JSON编码约定。
 
-本机首次同步结果为195132行、520只股票、1只SPY基准，最新日期2026-11-20。WBD在2026-10-05的1根异常日线已隔离，同步返回2。只读云端检查未发现 `INDEX:US:QQQ/IWM` 或 `US:QQQ/IWM` 数据，须继续实现源数据补齐。新同步器已经在同一文件运行，未解除异常隔离；研究库已初始化，真实数据快照提交和独立重读已完成。
+本机首次同步结果为195132行、520只股票、1只SPY基准，最新日期2026-11-20。WBD在2026-10-05的1根异常日线已隔离，同步返回2。截至2026-11-26的云端只读核对显示，`INDEX:US:SPY/QQQ/IWM`均已补到375行且最新为2026-11-24；US股票当日有528个symbol，2026-11-25仍待自然补数。WBD的2026-10-05坏行仍保持源端隔离，yfinance同窗口无价格数据，不得手工改云端数据。新同步器已经在同一文件运行，未解除异常隔离；研究库已初始化，真实数据快照提交和独立重读已完成。
 
 ## 股票池与分类版本
 

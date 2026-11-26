@@ -22,9 +22,11 @@ React Web、CLI、MCP 与 GitHub Actions 共同组成当前产品形态；日线
 
 独立美股研究系统正在 `codex/stock-research` 分支开发，实施范围见 [plan.md](plan.md)，最新检查点见 [开发交接](docs/stock_research_handoff_2026-11-23.md)。
 
+截至2026-11-26上海09:55，本机API与股票tick由固定运行包`f50cfd6b`提供；同库并发首次准备按共享快照范围在原预算内串行并复用首次冻结。已有研究复用前移、手动/定点通知隔离及旧正文来源保护已安装；真实固定报告追问、引用逐值核验及重启读回已补验；正式历史评估创建、20截面完成、固定产物重读、分页与页面重载也已验收，限制见[评估记录](docs/stock_research_evaluations.md#正式页面与真实行情验收)。自然交易日、真实通知unknown恢复、Tailscale入口和完整计划其余项仍独立验收，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25并发准备采用)。
+
 数据与量化已接通：[数据CLI](docs/stock_research_data_cli.md)提供公开成分版本、只读同步、一致快照及独立基准，[来源与实测](docs/stock_research_public_data.md)保留公开源和当前池回溯限制；[Martin量化](docs/stock_research_martin_cli.md)、[Wyckoff生产适配](docs/stock_research_wyckoff_cli.md)形成独立复核池，[执行预览](docs/stock_research_executor.md)保存初选及交叉评议。
 
-[研究API](docs/stock_research_api.md)、[三项外部只读工具](docs/stock_research_queries.md)、[持续名单](docs/stock_research_watchlists.md)和[参数版本/CAS发布](docs/stock_research_parameters.md)已接通后台及实际消费。现有[Agent研究面板](docs/stock_research_agent_panel.md)已接报告、名单、[固定个股事实/行情图](docs/stock_research_stock_view.md)和参数版本维护，个人本机已支持直接进入研究界面，无需账户密码；根`.env`显式开启`STOCK_RESEARCH_WEB_SINGLE_USER=true`并启用研究代理，生产构建保留原账号流程。[源码保护](docs/stock_research_source_guard.md)要求改Python后重启再执行新研究。[输入准备回执](docs/stock_research_preparations.md)已接HTTP/CLI和Agent，即使未建run也可核对失败。[固定报告研究查询](docs/stock_research_queries.md)新增市场、分组、比较和规则，并提供独立八项只读研究MCP；原Personal三项入口保持范围。[固定报告研究问答](docs/stock_research_chat.md)已接独立模型循环、逐值引用校验、持久会话与Agent界面；临时provider/传输错误至多重试一次，共用原期限与工具余额，逐次回执保留。[完整股票池搜索/分页](docs/stock_research_universe.md)已接固定报告HTTP、绑定问答工具与Agent个股区；[主题确认与人工自选](docs/stock_research_input_maintenance.md)已接追加修订、日期生效、API/CLI输入消费与Agent维护；已确认锚点的目录、单条日线估算叠加和固定报告HTTP/CLI已接个股图表；API/CLI run的[量化执行](docs/stock_research_quant_execution.md)已接可停止的独立进程、按策略回执与只补失败的恢复，固定旧修订不变；[Personal三项只读查询](docs/stock_research_personal.md)已接本机DSH预设，原个人工具与持仓查询保持；[盘前固定入口](docs/stock_research_premarket.md)已接原计划时刻、独立有限API身份及实际受理/等待/局部恢复，同日同配置的新事件复用首次研究，新增可选[有界行情准备](docs/stock_research_market_refresh.md)及Agent回执，隔离direct runner经真实HTTP读回固定报告；新增[单用户盘前MVP](docs/stock_research_mvp.md)，连接来源补拉、定点首报/恢复和Personal持久飞书交付；主要浏览器路径已实测；本次定点含人工部署恢复，首报与自动恢复送达记录见MVP验收。
+[研究API](docs/stock_research_api.md)、[三项外部只读工具](docs/stock_research_queries.md)、[持续名单](docs/stock_research_watchlists.md)和[参数版本/CAS发布](docs/stock_research_parameters.md)已接通后台及实际消费。现有[Agent研究面板](docs/stock_research_agent_panel.md)已接报告、名单、[固定个股事实/行情图](docs/stock_research_stock_view.md)和参数版本维护，个人本机已支持直接进入研究界面，无需账户密码；根`.env`显式开启`STOCK_RESEARCH_WEB_SINGLE_USER=true`并启用研究代理；公开站点构建保留原账号流程，另有[专用同进程静态入口](docs/stock_research_static_web.md)。[源码保护](docs/stock_research_source_guard.md)要求改Python后重启再执行新研究。[输入准备回执](docs/stock_research_preparations.md)已接HTTP/CLI和Agent，即使未建run也可核对失败。[固定报告研究查询](docs/stock_research_queries.md)新增市场、分组、比较和规则，并提供独立八项只读研究MCP；原Personal三项入口保持范围。[固定报告研究问答](docs/stock_research_chat.md)已接独立模型循环、逐值引用校验、持久会话与Agent界面；临时provider/传输错误至多重试一次，共用原期限与工具余额，逐次回执保留。[完整股票池搜索/分页](docs/stock_research_universe.md)已接固定报告HTTP、绑定问答工具与Agent个股区；[主题确认与人工自选](docs/stock_research_input_maintenance.md)已接追加修订、日期生效、API/CLI输入消费与Agent维护；已确认锚点的目录、单条日线估算叠加和固定报告HTTP/CLI已接个股图表；API/CLI run的[量化执行](docs/stock_research_quant_execution.md)已接可停止的独立进程、按策略回执与只补失败的恢复，固定旧修订不变；[Personal三项只读查询](docs/stock_research_personal.md)已采用固定ece83客户端及d42锁定解释器；新会话的三种工具8次调用完整读完2/4/2页，原模型/摘要与HTTP一致、每页≤32KiB，私有资源仍403，其他工具/旧会话保持；旧会话不自动升级分页；[盘前固定入口](docs/stock_research_premarket.md)已接原计划时刻、独立有限API身份及实际受理/等待/局部恢复，同日同配置的新事件在重读行情前复用首次研究与原质量回执，新增可选[有界行情准备](docs/stock_research_market_refresh.md)及Agent回执，隔离direct runner经真实HTTP读回固定报告；新增[单用户盘前MVP](docs/stock_research_mvp.md)，连接来源补拉、定点首报/恢复和Personal持久飞书交付，手动/定点分别冻结与去重、旧无来源正文明确停止核对；主要浏览器路径已实测；本次定点含人工部署恢复，首报与自动恢复送达记录见MVP验收。
 
 研究开发分支通过[完整CI](docs/stock_research_ci.md)复用标准验证；运行结果按对应head SHA单独核对。
 
@@ -371,10 +373,12 @@ wyckoff mcp-list
 </picture>
 <!-- star-history:end -->
 
-研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选尚未生产采用，不据此称旧云端写入已互斥。
+研究行情复制的[源端协调协议](docs/stock_research_market_coordination.md)已在研究与独立来源候选分支接线；源候选883872cb已用于独立MVP补拉副本，旧云端任务和未升级写入器仍未自动参加协议。
 # 股票研究稳定性
 
 冻结快照读取共用连接池内的一份有界缓存，热查询仅核对PostgreSQL行版本，避免报告、股票池及个股反复传输完整行情。缓存失效、隔离和测量边界见[研究查询](docs/stock_research_queries.md)。完整页面操作与自然交易日定点送达分别验收，进度见[实施计划](plan.md)。
+
+正式633运行包对同库盘前首次准备按共享快照范围串行，等待计入原预算、获得执行权后复用首次冻结；适用范围与取消/失败边界见[并发准备](docs/stock_research_preparations.md#并发首次准备)。
 研究资料维护保留逐行分类出处；公开成分刷新会沿用当前有效成员的GICS缺项补充，完整基线不由15条[补充清单](config/research/classification-supplement-20261124-v1.json)替代。上市历史限制与漏同步的核查方法见[公开资料说明](docs/stock_research_public_data.md)。
 固定报告问答的工具结果按用途投影并分页，每页48KiB、每轮累计256KiB，只登记实际返回的证据。可用`fact_offset`续读，完整参数单独查询，避免多次工具调用重复装入整份报告。见[问答契约](docs/stock_research_chat.md)。
 盘前任务仅在研究终态且所有实际发布（包括恢复更新）已送达后写当天完成标记；恢复消息未知或待重试不会被首报成功掩盖。后续tick保留原期限和通知业务键，见[盘前MVP](docs/stock_research_mvp.md)。
@@ -387,4 +391,10 @@ wyckoff mcp-list
 
 量化worker的信号退出或缺终帧非零退出现保留进程失败原因，默认研究入口可沿原期限自动补算一次；未受信号中断的完整坏协议和明确计算错误继续失败。真实worker/原生PG的先红后绿记录见[量化恢复](docs/stock_research_quant_execution.md)。
 
-主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。[历史评估CLI/私有作业API](docs/stock_research_evaluations.md)已接入20截面、生产量化池、观察窗口及时间净化，隔离worker支持原输入续跑、取消与重启恢复，结果分表分页，封存组不输出表现；运行包采用另记。整份计划仍有正式入选观测、参数实验/界面、静态运行入口及自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。
+主题/自选维护已补验实际确认、旧修订锁定、未来生效、未知响应核对、分页和重启读回；已确认主题不再冒充待确认冲突。[历史评估CLI/私有作业API](docs/stock_research_evaluations.md)已接入20截面、生产量化池、观察窗口及时间净化，隔离worker支持原输入续跑、取消与重启恢复，结果分表分页，封存组不输出表现。现有Agent的量化池回放、原提交核对、取消续跑和两级分页已通过隔离合成资料的真实页面验收；历史不足/质量失败明确归因并拒绝重算原坏输入，运行包采用另记。[同进程静态入口](docs/stock_research_static_web.md)已接专用研究构建、同源会话及固定API桥接；隔离真实页面补验服务重启续会话，评估/维护/问答核对失败继续保留原意图。整份计划仍有正式入选观测、参数实验及其界面、正式入口写控件复验、远程入口和自然日等缺口，见[完整验收矩阵](docs/stock_research_completion.md)。
+
+截至2026-11-26，个人本机同进程工作台由固定版本`f50cfd6b`的Python API提供，入口为`http://127.0.0.1:8788/chat`；显式表初始化和四类活动/worker退出检查后切换。正式入口已补518成员搜索、320根图表及锚点、历史修订切换和评估空历史只读页面验收；写控件与Tailscale仍单独验收。见[运行说明](docs/stock_research_static_web.md)。
+
+[研究与通知状态](docs/stock_research_operations.md)源码已接operator私有GET与现有Agent运行区：完整研究和首报/恢复送达分别读取，未配置/无记录/未知/失败不混同；只读子进程使用既有Personal账本，不触发发送。本机正式API/股票tick已于11月25日04:55采用本批，直接与同源状态读取通过；该状态区域已在正式6fc65f46页面补验刷新、跨日状态、partial修订跳转最近完整研究及单区域保持，原业务记录不变。
+
+[正式初选后续观测](docs/stock_research_selection_observations.md)已从CLI/不可变文件续接到独立持久作业API与Agent区：复用现有评估表，历史量化与`formal_selection_observations`资源族隔离，保留原输入续跑、真实取消、幂等命名空间、五窗口、空名单、pending/缺数与成本边界。聚焦PG/ASGI、完整Python6323项、Web契约与生产dry-run build已通过；真实浏览器操作、提交CI与运行包采用另记。人工审查尚未因此完成，详见[作业设计](docs/design/stock-research-selection-observation-jobs.md)。

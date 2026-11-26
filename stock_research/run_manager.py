@@ -13,6 +13,7 @@ from stock_research.config import Settings
 from stock_research.errors import (
     ResearchConflict,
     ResearchInputError,
+    ResearchIntegrityError,
     ResearchQualityError,
     ResearchSourceChanged,
     ResearchUnavailable,
@@ -21,16 +22,53 @@ from stock_research.identity import now
 from stock_research.input_configuration import resolve_run_inputs
 from stock_research.models import QualityReport, Snapshot
 from stock_research.parameter_config import resolve_run_parameters
-from stock_research.pipeline import prepare_preview, resume_preview
-from stock_research.preparations import record_preparation
+from stock_research.pipeline import STRATEGIES, prepare_preview, preview_configuration, resume_preview
+from stock_research.preparations import premarket_preparation_lock, record_preparation
+from stock_research.quant_compute import quant_parameters
 from stock_research.request_store import RequestStore
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
+from stock_research.schemas.input_maintenance import InputSources
 from stock_research.schemas.premarket import PremarketBinding
 from stock_research.schemas.requests import CreateRun
 from stock_research.source_guard import ensure_source_current
 
 logger = structlog.get_logger(__name__)
+
+
+async def reusable_premarket(
+    store: RunStore,
+    settings: Settings,
+    data: CreateRun,
+    binding: PremarketBinding,
+    sources: dict[str, object],
+    inputs: InputSources,
+) -> tuple[str, QualityReport] | None:
+    """只复用同配置已冻结运行，原质量回执不冒充当前行情检查。"""
+    _, report_due, previous = session_times(data.target_session)
+    parameters = await asyncio.gather(*(asyncio.to_thread(quant_parameters, settings, key) for key in STRATEGIES))
+    _, key = await asyncio.to_thread(
+        preview_configuration,
+        settings,
+        data.target_session,
+        report_due,
+        (inputs.universe_hash, inputs.classification_hash),
+        {key: value.model_dump(mode="json") for key, value in zip(STRATEGIES, parameters, strict=True)},
+        parameter_sources=sources,
+        input_sources=inputs.model_dump(mode="json"),
+        premarket=binding,
+    )
+    ensure_source_current()
+    existing = await store.find_run(key)
+    if existing is None:
+        return None
+    try:
+        quality = QualityReport.model_validate(existing["payload"].get("quality"))
+    except ValueError:
+        raise ResearchIntegrityError("原冻结质量回执缺失或损坏") from None
+    if not quality.passed or quality.expected_session != previous:
+        raise ResearchIntegrityError("原冻结质量回执与盘前范围不符")
+    return existing["uuid"], quality
 
 
 async def prepare_from_market(
@@ -54,10 +92,18 @@ async def prepare_from_market(
         async with (
             record_preparation(store, data.target_session, "api", request_id) as attempt,
             asyncio.timeout(max(0, budget)),
+            premarket_preparation_lock(store, settings.artifacts_path, previous, enabled=premarket is not None),
         ):
             settings, parameter_sources = await resolve_run_parameters(store, settings)
             await attempt.checkpoint("snapshot")
             settings, input_sources = await resolve_run_inputs(store, settings, previous)
+            if premarket is not None:
+                reusable = await reusable_premarket(store, settings, data, premarket, parameter_sources, input_sources)
+                if reusable is not None:
+                    run_id, quality = reusable
+                    await attempt.checkpoint("freeze", quality)
+                    await attempt.ready(run_id)
+                    return run_id
             if premarket is not None and settings.premarket_refresh:
                 from stock_research.market_refresh import refresh_market
 

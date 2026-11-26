@@ -7,6 +7,7 @@ import json
 import sqlite3
 import subprocess
 import sys
+from collections.abc import Sequence
 from datetime import date
 from pathlib import Path
 
@@ -21,7 +22,14 @@ from stock_research.calendar import latest_complete_session, sessions_ending
 from stock_research.config import MarketSourceSettings, Settings
 from stock_research.data import read_market
 from stock_research.errors import ResearchSourceChanged, ResearchUnavailable
-from stock_research.evaluation_cli import evaluate_command
+from stock_research.evaluation import EvaluationReport
+from stock_research.evaluation_cli import (
+    evaluate_combined_parameter_experiment,
+    evaluate_command,
+    evaluate_parameter_experiments_command,
+    evaluation_files,
+)
+from stock_research.evaluation_review import manual_review_samples
 from stock_research.factor_benchmark import benchmark
 from stock_research.identity import digest
 from stock_research.market_sync import sync_market
@@ -32,6 +40,7 @@ from stock_research.public_versions import refresh_versions
 from stock_research.quality import build_snapshot
 from stock_research.research_commands import analyze_command, read_run_command, run_command, track_run_command
 from stock_research.schema import schema_ddl
+from stock_research.selection_observation_cli import observe_selections_command
 from stock_research.store import (
     close_engine,
     database_engine,
@@ -41,6 +50,13 @@ from stock_research.store import (
     save_snapshot,
 )
 from stock_research.versions import build_classifications, build_universe, import_version
+
+MINIMUM_PYTHON = (3, 11)
+
+
+def supported_python(version: Sequence[int]) -> bool:
+    """生产包运行于3.11，doctor不能误用CI开发解释器作为最低版本。"""
+    return tuple(version[:2]) >= MINIMUM_PYTHON
 
 
 def parser() -> argparse.ArgumentParser:
@@ -56,7 +72,11 @@ def parser() -> argparse.ArgumentParser:
     personal.add_argument("--workspace", type=Path, default=Path.cwd())
     personal.add_argument("--python", type=Path)
     personal.add_argument("--apply", action="store_true")
-    personal.add_argument("--remove", action="store_true", help="只撤回本次股票MCP，保留其他Personal配置")
+    personal_action = personal.add_mutually_exclusive_group()
+    personal_action.add_argument("--remove", action="store_true", help="只撤回本次股票MCP，保留其他Personal配置")
+    personal_action.add_argument(
+        "--replace", action="store_true", help="仅迁移已注册股票MCP的目录与解释器，单次CAS发布"
+    )
     personal.add_argument("--expected-profile-hash")
     personal.add_argument("--backup-dir", type=Path)
     run = commands.add_parser("run", help="双策略独立初选及提交后互评，持久化预览不发送通知")
@@ -92,6 +112,26 @@ def parser() -> argparse.ArgumentParser:
     evaluate.add_argument("--profile", required=True)
     evaluate.add_argument("--cutoff", type=date.fromisoformat, required=True)
     evaluate.add_argument("--allow-current-universe", action="store_true", help="显式接受当前成分及分类回溯限制")
+    experiments = commands.add_parser("evaluate-parameters", help="同一冻结输入运行首轮单组参数实验，不发布生产参数")
+    experiments.add_argument("--profile", required=True)
+    experiments.add_argument("--cutoff", type=date.fromisoformat, required=True)
+    experiments.add_argument("--field", choices=["support_atr", "extension_atr", "contraction_ratio"], required=True)
+    experiments.add_argument("--values", nargs=3, type=float, required=True)
+    experiments.add_argument("--allow-current-universe", action="store_true")
+    combined = commands.add_parser(
+        "evaluate-combined-parameters", help="同一冻结输入运行首轮有限组合实验，不发布生产参数"
+    )
+    combined.add_argument("--profile", required=True)
+    combined.add_argument("--cutoff", type=date.fromisoformat, required=True)
+    combined.add_argument(
+        "--values", nargs=3, type=float, required=True, metavar=("SUPPORT", "EXTENSION", "CONTRACTION")
+    )
+    combined.add_argument("--allow-current-universe", action="store_true")
+    review = commands.add_parser("review-evaluation", help="从已完成评估生成每策略10入选/10排除审查清单")
+    review.add_argument("--report", type=Path, required=True)
+    observe = commands.add_parser("observe-selections", help="固定报告正式初选的前向观测，不调用模型或发送通知")
+    observe.add_argument("--report-id", required=True)
+    observe.add_argument("--cutoff", type=date.fromisoformat, required=True)
     compare = commands.add_parser("benchmark", help="独立进程对拍ATR/ADR和冷/热耗时，不比较未对齐EMA")
     compare.add_argument("--as-of", type=date.fromisoformat, required=True)
     compare.add_argument("--profile", required=True)
@@ -193,7 +233,7 @@ async def database_command(settings: Settings, command: str, snapshot_id: str | 
 
 def doctor(settings: Settings) -> tuple[dict[str, object], int]:
     """脱敏检查配置、日历、版本、行情格式和研究数据库可读性。"""
-    checks: dict[str, object] = {"python": sys.version_info[:2] == (3, 12)}
+    checks: dict[str, object] = {"python": supported_python(sys.version_info)}
     checks["dependencies"] = {
         name: importlib.metadata.version(name)
         for name in (
@@ -256,17 +296,20 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     """CLI 与生产数据路径共用领域实现。"""
     if args.command == "doctor":
         return doctor(settings)
+    if args.command == "evaluate-parameters":
+        return execute_evaluation_parameters(args, settings)
+    if args.command == "evaluate-combined-parameters":
+        return execute_combined_evaluation_parameters(args, settings)
+    if args.command == "review-evaluation":
+        return execute_evaluation_review(args)
     if args.command == "evaluate":
         return evaluate_command(
             settings, args.profile, args.cutoff, allow_current_universe=args.allow_current_universe
         ), 0
+    if args.command == "observe-selections":
+        return asyncio.run(observe_selections_command(settings, args.report_id, args.cutoff)), 0
     if args.command == "serve":
-        import uvicorn
-
-        from stock_research.http_api import create_app
-
-        uvicorn.run(create_app(settings), host=settings.api_host, port=settings.api_port, access_log=False)
-        return {"stopped": True}, 0
+        return _serve_command(settings), 0
     if args.command == "read-run":
         return asyncio.run(read_run_command(settings, args.id)), 0
     if args.command == "track-run":
@@ -305,10 +348,7 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
 
         return asyncio.run(refresh_command(settings, args.as_of))
     if args.command == "refresh-versions":
-        if not args.allow_current_universe:
-            raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")
-        if args.as_of > latest_complete_session():
-            raise ValueError("研究截止日尚未完成收盘")
+        validate_refresh_versions(args)
         return refresh_versions(settings, args.version, args.as_of, args.output_dir), 0
     if args.command == "snapshot":
         return snapshot_command(settings, args.as_of, offline=args.offline)
@@ -352,6 +392,57 @@ def execute(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
     return asyncio.run(database_command(settings, args.command, getattr(args, "id", None))), 0
 
 
+def _serve_command(settings: Settings) -> dict[str, object]:
+    """独立API仅监听operator配置的loopback地址。"""
+    import uvicorn
+
+    from stock_research.http_api import create_app
+
+    uvicorn.run(create_app(settings), host=settings.api_host, port=settings.api_port, access_log=False)
+    return {"stopped": True}
+
+
+def execute_evaluation_parameters(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
+    """单组实验显式冻结一份输入，三个变体顺序复用。"""
+    return (
+        evaluate_parameter_experiments_command(
+            settings,
+            args.profile,
+            args.cutoff,
+            args.field,
+            tuple(args.values),
+            allow_current_universe=args.allow_current_universe,
+        ),
+        0,
+    )
+
+
+def execute_combined_evaluation_parameters(args: argparse.Namespace, settings: Settings) -> tuple[object, int]:
+    """组合实验单独显式执行，不复用单组结果推断。"""
+    files = evaluation_files(
+        settings,
+        args.profile,
+        args.cutoff,
+        args.allow_current_universe,
+        settings.artifacts_path / "parameter-experiments" / "combined" / "input.json",
+    )
+    return (evaluate_combined_parameter_experiment(files, tuple(args.values)), 0)
+
+
+def execute_evaluation_review(args: argparse.Namespace) -> tuple[object, int]:
+    """只读已完成评估，不重算或补造审查样本。"""
+    report = EvaluationReport.model_validate_json(args.report.read_text(encoding="utf-8"))
+    return manual_review_samples(report, args.report.parent), 0
+
+
+def validate_refresh_versions(args: argparse.Namespace) -> None:
+    """公开来源版本回溯必须显式接受限制且不越过收盘。"""
+    if not args.allow_current_universe:
+        raise ValueError("公开源为当前取得清单，须显式提供 --allow-current-universe 并保留回溯限制")
+    if args.as_of > latest_complete_session():
+        raise ValueError("研究截止日尚未完成收盘")
+
+
 def main(argv: list[str] | None = None) -> int:
     """JSON 输出和稳定退出码：0 通过，2 数据未就绪，1 命令错误。"""
     args = parser().parse_args(argv)
@@ -367,6 +458,7 @@ def main(argv: list[str] | None = None) -> int:
                     python=args.python,
                     apply=args.apply,
                     remove=args.remove,
+                    replace=args.replace,
                     expected_hash=args.expected_profile_hash,
                     backup_dir=args.backup_dir,
                 ),

@@ -55,8 +55,9 @@ def replay_chat(row: dict[str, object], request: CreateChatTurn) -> ChatTurnView
 class ChatStore:
     """一个workspace的operator私有问答，不是共享行情工具的读取范围。"""
 
-    def __init__(self, store: RunStore) -> None:
+    def __init__(self, store: RunStore, *, prompt_hash: str | None = None) -> None:
         self.store = store
+        self.prompt_hash = prompt_hash or chat_prompt_identity()
 
     async def read(self, identifier: str) -> ChatTurnView:
         """UUID查询仍必须带workspace，未知和越权使用相同缺失结果。"""
@@ -121,7 +122,7 @@ class ChatStore:
                 "model": None,
                 "context_hash": None,
                 "source_hash": LOADED_SOURCE_IDENTITY,
-                "prompt_hash": chat_prompt_identity(),
+                "prompt_hash": self.prompt_hash,
                 "tool_calls": 0,
                 "receipt_path": None,
                 "attempts": [],

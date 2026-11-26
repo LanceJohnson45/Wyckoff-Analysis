@@ -29,3 +29,15 @@ class ResearchSourceChanged(ResearchUnavailable):
 
 class ResearchQualityError(ResearchUnavailable):
     """真实快照覆盖或基准质量未通过，不能创建研究运行。"""
+
+
+class PublicationScopeError(ValueError):
+    """冻结通知来源未知或不符，不能沿既有业务键继续投递。"""
+
+
+class EvaluationHistoryInsufficient(ValueError):
+    """冻结历史不能提供所需独立截面，重算原输入不会补齐资料。"""
+
+
+class EvaluationQualityFailed(ValueError):
+    """冻结截面未过数据质量门槛，必须补齐资料后创建新评估。"""

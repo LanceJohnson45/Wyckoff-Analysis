@@ -4,10 +4,12 @@ import asyncio
 import sys
 from collections.abc import Awaitable, Callable
 from tempfile import gettempdir
+from typing import Literal, TypeVar
 
 from stock_research.errors import ResearchUnavailable
 from stock_research.evaluation import EvaluationReport
 from stock_research.identity import digest
+from stock_research.models import FrozenModel
 from stock_research.processes import isolated_environment, stop_process_group
 from stock_research.schemas.evaluation_execution import (
     MAX_EVALUATION_REPORT,
@@ -18,6 +20,7 @@ from stock_research.schemas.evaluation_execution import (
 )
 
 Checkpoint = Callable[[EvaluationFrame], Awaitable[None]]
+WorkerResult = TypeVar("WorkerResult")
 
 
 class EvaluationExecutionError(ResearchUnavailable):
@@ -84,6 +87,22 @@ async def execute_evaluation(
     checkpoint: Checkpoint | None = None,
 ) -> EvaluationReport:
     """保留控制管道，父进程死亡和取消均触发子进程实际清理。"""
+
+    async def consume(process: asyncio.subprocess.Process) -> EvaluationReport:
+        result = await evaluation_response(process, request, checkpoint)
+        return await asyncio.to_thread(read_evaluation_report, result, request)
+
+    return await execute_worker(request, "stock_research.evaluation_worker", timeout=timeout, consume=consume)
+
+
+async def execute_worker(
+    request: FrozenModel,
+    module: Literal["stock_research.evaluation_worker", "stock_research.selection_observation_worker"],
+    *,
+    timeout: float,
+    consume: Callable[[asyncio.subprocess.Process], Awaitable[WorkerResult]],
+) -> WorkerResult:
+    """两类评估共用有界进程所有权，具体Adapter验证各自帧和产物。"""
     raw = (request.model_dump_json() + "\n").encode("utf-8")
     if len(raw) > MAX_EVALUATION_REQUEST:
         raise EvaluationExecutionError("evaluation_input_invalid")
@@ -93,7 +112,7 @@ async def execute_evaluation(
             process = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-m",
-                "stock_research.evaluation_worker",
+                module,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.DEVNULL,
@@ -103,9 +122,7 @@ async def execute_evaluation(
             )
             process.stdin.write(raw)
             await process.stdin.drain()
-            result = await evaluation_response(process, request, checkpoint)
-            report = await asyncio.to_thread(read_evaluation_report, result, request)
-            return report
+            return await consume(process)
     except TimeoutError:
         raise EvaluationExecutionError("evaluation_timeout") from None
     except (OSError, ValueError):

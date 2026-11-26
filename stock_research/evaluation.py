@@ -12,6 +12,7 @@ from pydantic import UUID4, Field, model_validator
 
 from stock_research.artifacts import write_once
 from stock_research.calendar import sessions_ending
+from stock_research.errors import EvaluationQualityFailed
 from stock_research.evaluation_outcomes import LONGEST_HORIZON, OutcomeWindow, indexed_outcomes, price_index
 from stock_research.evaluation_sampling import SECTION_COUNT, EvaluationSection, sample_sections
 from stock_research.identity import digest
@@ -191,7 +192,9 @@ def evaluate_section(
         ),
     )
     if not snapshot.quality.passed:
-        raise ValueError(f"截面{section.as_of}质量未通过：覆盖={snapshot.quality.coverage:.4f}；不能凑足样本")
+        raise EvaluationQualityFailed(
+            f"截面{section.as_of}质量未通过：覆盖={snapshot.quality.coverage:.4f}；不能凑足样本"
+        )
     binding = root / f"{section.as_of}-snapshot.json"
     if binding.exists():
         saved = SectionBinding.model_validate_json(binding.read_text(encoding="utf-8"))

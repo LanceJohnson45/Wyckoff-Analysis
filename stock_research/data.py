@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from pydantic import ValidationError
-from sqlalchemy import Column, Date, Float, MetaData, String, Table, create_engine, select
+from sqlalchemy import Column, Date, Float, MetaData, String, Table, create_engine, select, tuple_
 from sqlalchemy.engine import Connection, RowMapping
 
 from stock_research.identity import digest
@@ -62,7 +62,13 @@ def consistent_copy(path: Path, timeout: float = 30) -> Iterator[Path]:
 
 
 def window_rows(
-    connection: Connection, table: Table, start: date, as_of: date, max_rows: int | None
+    connection: Connection,
+    table: Table,
+    start: date,
+    as_of: date,
+    max_rows: int | None,
+    instruments: Sequence[tuple[str, str]] | None = None,
+    session_dates: Sequence[date] | None = None,
 ) -> Sequence[RowMapping]:
     """SQL端限制批量worker的输入规模，越界明确失败而非静默截断。"""
     query = (
@@ -70,6 +76,12 @@ def window_rows(
         .where(table.c.market == "us", table.c.date.between(start, as_of))
         .order_by(table.c.kind, table.c.symbol, table.c.date)
     )
+    if "adjust" in table.c:
+        query = query.where(table.c.adjust == "qfq")
+    if instruments is not None:
+        query = query.where(tuple_(table.c.kind, table.c.symbol).in_(instruments))
+    if session_dates is not None:
+        query = query.where(table.c.date.in_(session_dates))
     if max_rows is not None:
         if max_rows < 1:
             raise ValueError("行情读取行数上限必须为正")
@@ -81,7 +93,13 @@ def window_rows(
 
 
 def read_market(
-    path: Path, start: date, as_of: date, *, max_rows: int | None = None
+    path: Path,
+    start: date,
+    as_of: date,
+    *,
+    max_rows: int | None = None,
+    instruments: Sequence[tuple[str, str]] | None = None,
+    session_dates: Sequence[date] | None = None,
 ) -> tuple[str, tuple[Bar, ...], tuple[QualityIssue, ...]]:
     """仅取指定窗口的前复权日线；损坏和云端隔离信息进入质量报告。"""
     with consistent_copy(path) as copied:
@@ -93,8 +111,8 @@ def read_market(
                 )
                 if not source_id:
                     raise ValueError("行情库缺少 cloud_source 身份，不接受来源不明的数据")
-                rows = window_rows(connection, DAILY_BARS, start, as_of, max_rows)
-                rejected = window_rows(connection, SOURCE_ISSUES, start, as_of, max_rows)
+                rows = window_rows(connection, DAILY_BARS, start, as_of, max_rows, instruments, session_dates)
+                rejected = window_rows(connection, SOURCE_ISSUES, start, as_of, max_rows, instruments, session_dates)
         finally:
             engine.dispose()
     source_identity = "local-market:" + digest(source_id)

@@ -292,6 +292,54 @@ def canonical_analyses(
     return result
 
 
+def preview_configuration(
+    settings: Settings,
+    target_session: date,
+    report_due: datetime,
+    versions: tuple[str, str],
+    parameters: dict[str, object],
+    *,
+    parent_id: str | None = None,
+    force: bool = False,
+    request_id: str | None = None,
+    parameter_sources: dict[str, object] | None = None,
+    input_sources: dict[str, object] | None = None,
+    premarket: PremarketBinding | None = None,
+    wyckoff_hash: str | None = None,
+) -> tuple[dict[str, object], str]:
+    """首次冻结与复用共用配置身份，查原运行不需要重读行情。"""
+    if force != bool(parent_id):
+        raise ValueError("强制重分析须同时指定force和父运行")
+    config = {
+        "workspace": settings.workspace,
+        "source_hash": LOADED_SOURCE_IDENTITY,
+        "prompt_hash": prompt_identity(),
+        "target_session": str(target_session),
+        "report_due": report_due.isoformat(),
+        "universe_hash": versions[0],
+        "classification_hash": versions[1],
+        "parameters": parameters,
+        "parameter_sources": parameter_sources or {},
+        "input_sources": input_sources or {},
+        "algorithms": {"wyckoff": wyckoff_hash if wyckoff_hash is not None else engine_hash()},
+        "model_preferences": model_preferences(settings),
+        "preview": True,
+        "stage_timeout_seconds": settings.stage_timeout_seconds,
+        "run_timeout_seconds": settings.run_timeout_seconds,
+        "parent_id": parent_id,
+        "manual_nonce": (request_id or new_id()) if force else None,
+    }
+    if premarket is not None:
+        if premarket.schedule.target_session != target_session or force:
+            raise ValueError("盘前绑定与目标日或新建方式不一致")
+        config["premarket"] = premarket.model_dump(mode="json")
+    # 输入版本摘要已入幂等键；入口来源只描述首次冻结，不应让同版API/CLI重复选股。
+    identity = {key: value for key, value in config.items() if key != "input_sources"}
+    if premarket is not None:
+        identity["premarket"] = premarket.schedule.research_scope()
+    return config, digest(identity)
+
+
 async def prepare_preview(
     engine: AsyncEngine,
     settings: Settings,
@@ -310,41 +358,26 @@ async def prepare_preview(
     ensure_source_current()
     report_due = validated_report_deadline(snapshot, analyses, target_session, input_sources)
     store = RunStore(engine, settings.workspace)
-    if force != bool(parent_id):
-        raise ValueError("强制重分析须同时指定force和父运行")
     parameters = (
         {key: value.parameters for key, value in analyses.items()}
         if analyses is not None
         else {key: await asyncio.to_thread(quant_parameters, settings, key) for key in STRATEGIES}
     )
-    config = {
-        "workspace": settings.workspace,
-        "source_hash": LOADED_SOURCE_IDENTITY,
-        "prompt_hash": prompt_identity(),
-        "target_session": str(target_session),
-        "report_due": report_due.isoformat(),
-        "universe_hash": digest(snapshot.universe.model_dump(mode="json")),
-        "classification_hash": digest(snapshot.classifications.model_dump(mode="json")),
-        "parameters": {key: value.model_dump(mode="json") for key, value in parameters.items()},
-        "parameter_sources": parameter_sources or {},
-        "input_sources": input_sources or {},
-        "algorithms": {"wyckoff": analyses["wyckoff"].engine_hash if analyses else engine_hash()},
-        "model_preferences": model_preferences(settings),
-        "preview": True,
-        "stage_timeout_seconds": settings.stage_timeout_seconds,
-        "run_timeout_seconds": settings.run_timeout_seconds,
-        "parent_id": parent_id,
-        "manual_nonce": (request_id or new_id()) if force else None,
-    }
-    if premarket is not None:
-        if premarket.schedule.target_session != target_session or force:
-            raise ValueError("盘前绑定与目标日或新建方式不一致")
-        config["premarket"] = premarket.model_dump(mode="json")
-    # 输入版本摘要已入幂等键；入口来源只描述首次冻结，不应让同版API/CLI重复选股。
-    identity = {key: value for key, value in config.items() if key != "input_sources"}
-    if premarket is not None:
-        identity["premarket"] = premarket.schedule.research_scope()
-    run_key = digest(identity)
+    config, run_key = await asyncio.to_thread(
+        preview_configuration,
+        settings,
+        target_session,
+        report_due,
+        (digest(snapshot.universe.model_dump(mode="json")), digest(snapshot.classifications.model_dump(mode="json"))),
+        {key: value.model_dump(mode="json") for key, value in parameters.items()},
+        parent_id=parent_id,
+        force=force,
+        request_id=request_id,
+        parameter_sources=parameter_sources,
+        input_sources=input_sources,
+        premarket=premarket,
+        wyckoff_hash=analyses["wyckoff"].engine_hash if analyses else None,
+    )
     existing = await store.find_run(run_key)
     if existing:
         return existing["uuid"], {}
@@ -386,6 +419,7 @@ async def freeze_new_run(
         "model_error": model_error,
         "snapshot_id": snapshot.id,
         "snapshot_hash": snapshot.content_hash,
+        "quality": snapshot.quality.model_dump(mode="json"),
         "factor_results": factors,
         "analysis_hashes": {key: value.content_hash for key, value in (analyses or {}).items()},
         "models": {key: value.model_dump(mode="json") for key, value in connections.items()},

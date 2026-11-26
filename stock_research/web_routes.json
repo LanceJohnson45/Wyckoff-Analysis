@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "body_limits": { "default": 8192, "chat": 49152, "inputs": 65536 },
+  "uuid": "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+  "symbol": "[A-Z][A-Z0-9.-]{0,31}",
+  "GET": [
+    "/v1/operations",
+    "/v1/reports/(?:latest|{id})",
+    "/v1/reports/{id}/(?:market|groups|compare|rules|universe)",
+    "/v1/reports/{id}/anchors/{symbol}",
+    "/v1/research-runs(?:/{id}(?:/(?:reports|events|parameters|inputs|quant-attempts))?)?",
+    "/v1/watchlists(?:/events)?",
+    "/v1/stocks/{symbol}/observations",
+    "/v1/strategies",
+    "/v1/parameter-sets(?:/{id})?",
+    "/v1/preparations",
+    "/v1/chat-turns(?:/{id})?",
+    "/v1/theme-proposals(?:/{id})?",
+    "/v1/input-publications",
+    "/v1/universe-overrides(?:/{symbol})?",
+    "/v1/evaluations(?:/{id})?",
+    "/v1/evaluation-results/{id}(?:/samples)?",
+    "/v1/selection-observations(?:/{id})?",
+    "/v1/selection-observation-results/{id}(?:/samples)?",
+    "/v1/parameter-experiments(?:/{id})?",
+    "/v1/parameter-experiment-results/{id}"
+  ],
+  "POST": [
+    "/v1/research-runs(?:/{id}/(?:retry|cancel))?",
+    "/v1/parameter-sets",
+    "/v1/strategies/(?:martin|wyckoff)/activate-parameters",
+    "/v1/chat-turns(?:/{id}/cancel)?",
+    "/v1/theme-proposals(?:/{id}/confirm)?",
+    "/v1/universe-overrides",
+    "/v1/evaluations(?:/{id}/(?:retry|cancel))?",
+    "/v1/selection-observations(?:/{id}/(?:retry|cancel))?",
+    "/v1/parameter-experiments(?:/{id}/(?:retry|cancel))?"
+  ]
+}

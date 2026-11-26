@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -52,6 +53,170 @@ def profile(tmp_path: Path) -> Path:
     path.write_text(PROFILE)
     path.chmod(0o600)
     return path
+
+
+@pytest.fixture
+def replacement_workspace(workspace: Path, tmp_path: Path) -> Path:
+    """迁移目标使用独立路径，实际子进程可辨别是否仍在旧目录运行。"""
+    root = tmp_path / "installed client"
+    shutil.copytree(workspace, root, symlinks=True)
+    (root / "stock_research/query_mcp.py").write_text(
+        "import json,os\nprint(json.dumps({'origin': __file__, 'environment': dict(os.environ)}))\n"
+    )
+    return root
+
+
+def test_normal_replace_cli_migrates_managed_client_atomically(
+    profile: Path, workspace: Path, replacement_workspace: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """【正常值】真实CLI预览和CAS切换后启动新目录，原配置及备份可独立重读。"""
+    initial = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=initial["before_hash"])
+    original = profile.read_bytes()
+    (workspace / ".stock-research/query.env").unlink()
+    args = ["personal-mcp", "--profile", str(profile), "--workspace", str(replacement_workspace), "--replace"]
+
+    assert main(args) == 0
+    preview = json.loads(capsys.readouterr().out)
+    assert preview["operation"] == "replace" and preview["change_required"]
+    assert profile.read_bytes() == original and not preview["runtime_verified"]
+    assert main([*args, "--apply", "--expected-profile-hash", preview["before_hash"]]) == 0
+    applied = json.loads(capsys.readouterr().out)
+    after = profile.read_bytes()
+
+    assert applied["applied"] and Path(applied["backup"]).read_bytes() == original
+    assert personal_integration.remove_plugin(after) == PROFILE.encode()
+    assert hashlib.sha256(after).hexdigest() == preview["after_hash"]
+    assert profile.stat().st_mode & 0o777 == 0o600
+    config = applied["plugin"]["config"]
+    child = subprocess.run(
+        [config["command"], *config["args"]], cwd=config["cwd"], capture_output=True, text=True, check=True, timeout=10
+    )
+    body = json.loads(child.stdout)
+    assert Path(body["origin"]).is_relative_to(replacement_workspace)
+    assert set(body["environment"]) <= {"PATH", "PYTHONUTF8", "LC_CTYPE", "__CF_USER_TEXT_ENCODING"}
+    stamp = profile.stat().st_mtime_ns
+    assert main([*args, "--apply", "--expected-profile-hash", preview["before_hash"]]) == 0
+    assert json.loads(capsys.readouterr().out)["already_in_desired_state"]
+    assert profile.stat().st_mtime_ns == stamp
+
+
+@pytest.mark.parametrize(
+    "before,after",
+    [
+        pytest.param(b"toolCallTimeoutMs: 20000", b"toolCallTimeoutMs: 10000", id="changed-budget"),
+        pytest.param(b"command: /usr/bin/env", b"command: /bin/sh", id="changed-command"),
+        pytest.param(b"- -i", b"- -x", id="changed-environment-clear"),
+        pytest.param(b"transport: stdio", b"transport: sse", id="changed-transport"),
+        pytest.param(b"failOnStartupError: true", b"failOnStartupError: false", id="changed-startup-policy"),
+    ],
+)
+def test_validation_replace_rejects_changed_policy_without_writes(
+    profile: Path, workspace: Path, replacement_workspace: Path, before: bytes, after: bytes
+) -> None:
+    """【参数校验】显式迁移也不能覆盖不同工具权限、协议或失败语义。"""
+    preview = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=preview["before_hash"])
+    changed = profile.read_bytes().replace(before, after)
+    profile.write_bytes(changed)
+    backups = sorted((profile.parent / "stock-research-backups").iterdir())
+
+    with pytest.raises(ValueError, match="仅允许迁移"):
+        configure_personal(
+            profile, replacement_workspace, replace=True, apply=True, expected_hash=hashlib.sha256(changed).hexdigest()
+        )
+
+    assert profile.read_bytes() == changed
+    assert sorted((profile.parent / "stock-research-backups").iterdir()) == backups
+
+
+def test_validation_replace_requires_existing_registration_and_current_preview(
+    profile: Path, workspace: Path, replacement_workspace: Path
+) -> None:
+    """【参数校验】缺注册或过期预览不能转换成安装或覆盖后来配置。"""
+    with pytest.raises(ValueError, match="尚未注册"):
+        configure_personal(profile, replacement_workspace, replace=True)
+    initial = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=initial["before_hash"])
+    preview = configure_personal(profile, replacement_workspace, replace=True)
+    newer = profile.read_bytes() + b"# later owner edit\n"
+    profile.write_bytes(newer)
+
+    with pytest.raises(ValueError, match="expected-profile-hash"):
+        configure_personal(
+            profile, replacement_workspace, replace=True, apply=True, expected_hash=preview["before_hash"]
+        )
+    with pytest.raises(ValueError, match="不能同时"):
+        configure_personal(profile, replacement_workspace, replace=True, remove=True)
+
+    assert profile.read_bytes() == newer
+
+
+def test_validation_cli_rejects_replace_with_remove(profile: Path, workspace: Path) -> None:
+    """【参数校验】命令行不能把迁移与撤回合成模糊操作。"""
+    before = profile.read_bytes()
+
+    with pytest.raises(SystemExit) as rejected:
+        main(["personal-mcp", "--profile", str(profile), "--workspace", str(workspace), "--replace", "--remove"])
+
+    assert rejected.value.code == 2 and profile.read_bytes() == before
+
+
+def test_normal_replace_preserves_plugin_order_and_adjacent_comments(
+    profile: Path, workspace: Path, replacement_workspace: Path
+) -> None:
+    """【正常值】路径迁移不得把中间插件移到末尾或删除相邻注释。"""
+    initial = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=initial["before_hash"])
+    original = profile.read_bytes()
+    start = original.index(b"          - id: stock-research-mcp\n")
+    end = original.index("        sentinel: 保持".encode())
+    block = original[start:end]
+    retained = original[:start] + original[end:]
+    position = retained.index(b"          - id: custom-guard\n")
+    ordered = retained[:position] + block + b"          # keep guard order\n" + retained[position:]
+    profile.write_bytes(ordered)
+
+    preview = configure_personal(profile, replacement_workspace, replace=True)
+    configure_personal(profile, replacement_workspace, replace=True, apply=True, expected_hash=preview["before_hash"])
+
+    after = profile.read_bytes()
+    assert after.index(b"id: stock-research-mcp") < after.index(b"id: custom-guard")
+    assert b"          # keep guard order\n          - id: custom-guard\n" in after
+
+
+def test_validation_replace_rejects_external_path_alias(
+    profile: Path, workspace: Path, replacement_workspace: Path
+) -> None:
+    """【参数校验】查询路径引用外部标量时不能修改其他节点的锚点。"""
+    initial = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=initial["before_hash"])
+    prefix = (
+        f"- id: path-holder\n  config: {{python: &query-python {json.dumps(str(workspace / '.venv/bin/python'))}}}\n"
+    )
+    original = profile.read_text().replace(f"- {workspace}/.venv/bin/python", "- *query-python")
+    aliased = (prefix + original).encode()
+    profile.write_bytes(aliased)
+
+    with pytest.raises(ValueError, match="外部别名"):
+        configure_personal(profile, replacement_workspace, replace=True)
+
+    assert profile.read_bytes() == aliased
+
+
+def test_validation_replace_rejects_second_stocks_namespace(
+    profile: Path, workspace: Path, replacement_workspace: Path
+) -> None:
+    """【参数校验】另一个stocks声明不能借路径迁移被静默保留。"""
+    initial = configure_personal(profile, workspace)
+    configure_personal(profile, workspace, apply=True, expected_hash=initial["before_hash"])
+    conflicting = profile.read_bytes().replace(b"serverName: personal", b"serverName: stocks")
+    profile.write_bytes(conflicting)
+
+    with pytest.raises(ValueError, match="命名空间"):
+        configure_personal(profile, replacement_workspace, replace=True)
+
+    assert profile.read_bytes() == conflicting
 
 
 def test_profile_preview_apply_noop_and_exact_revoke_keep_other_settings(profile: Path, workspace: Path) -> None:

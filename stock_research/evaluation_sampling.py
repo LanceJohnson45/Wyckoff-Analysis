@@ -4,6 +4,7 @@ import math
 from datetime import date
 from typing import Literal
 
+from stock_research.errors import EvaluationHistoryInsufficient
 from stock_research.evaluation_outcomes import observation_sessions
 from stock_research.models import FrozenModel
 
@@ -26,7 +27,7 @@ class EvaluationSection(FrozenModel):
 def sample_sections(candidates: dict[date, float], cutoff: date) -> tuple[EvaluationSection, ...]:
     """包含强弱两端的20个等距秩，收益同值以日期稳定排序。"""
     if len(candidates) < SECTION_COUNT:
-        raise ValueError("完整行情截面不足20个，不能宣称已完成20截面评估")
+        raise EvaluationHistoryInsufficient("完整行情截面不足20个，不能宣称已完成20截面评估")
     if any(not math.isfinite(value) for value in candidates.values()):
         raise ValueError("SPY环境收益必须为有限数值")
     ranked = sorted(candidates, key=lambda day: (candidates[day], day))

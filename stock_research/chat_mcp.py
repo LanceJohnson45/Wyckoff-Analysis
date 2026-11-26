@@ -6,11 +6,14 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from stock_research.chat_evidence import ChatAudit, ChatToolOutput
-from stock_research.query_client import ResearchReader
+from stock_research.knowledge_client import KnowledgeClient
+from stock_research.knowledge_settings import KnowledgeSettings
+from stock_research.query_client import QueryError, ResearchReader
 from stock_research.query_settings import QuerySettings
 from stock_research.schemas.chat import ChatContext
 from stock_research.schemas.report_queries import Symbol
@@ -32,8 +35,17 @@ CHAT_TOOLS = tuple(
     )
 )
 
+KNOWLEDGE_TOOL = "mcp__chat__knowledge_search"
 
-def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit) -> FastMCP:
+
+def chat_tools(knowledge: KnowledgeSettings | None = None) -> tuple[str, ...]:
+    """授权资料是可选只读能力；默认工具目录保持精确八项。"""
+    return CHAT_TOOLS + ((KNOWLEDGE_TOOL,) if knowledge else ())
+
+
+def create_server(
+    reader: ResearchReader, context: ChatContext, audit: ChatAudit, knowledge: KnowledgeSettings | None = None
+) -> FastMCP:
     """工具入参没有报告、URL、文件或配置；目录等于计划约定的八项能力。"""
     server = FastMCP("stock-research-chat")
     annotations = ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False)
@@ -74,6 +86,9 @@ def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit
 
     register_stock_tools(server, reader, context, audit, annotations)
 
+    if knowledge:
+        register_knowledge_tool(server, audit, annotations, knowledge)
+
     @server.tool(annotations=annotations)
     async def strategy_rules(fact_offset: FactOffset = 0) -> ChatToolOutput:
         """冻结参数、因子定义与有效配置，工程默认值不构成收益验证。"""
@@ -92,6 +107,21 @@ def create_server(reader: ResearchReader, context: ChatContext, audit: ChatAudit
         return await audit.respond("run_status", lambda: reader.run_status(context.run_id), fact_offset=fact_offset)
 
     return server
+
+
+def register_knowledge_tool(
+    server: FastMCP, audit: ChatAudit, annotations: ToolAnnotations, knowledge: KnowledgeSettings
+) -> None:
+    """第九项工具只接受查询词，作用域保留在服务端reader凭据里。"""
+
+    @server.tool(annotations=annotations)
+    async def knowledge_search(query: Annotated[str, Field(min_length=1, max_length=512)]) -> ChatToolOutput:
+        """只查既有服务授权语料；workspace/subject不能由模型选择。"""
+        try:
+            client = KnowledgeClient(knowledge)
+            return await audit.respond("knowledge_search", lambda: client.search(query))
+        except QueryError as error:
+            raise ToolError(str(error)) from None
 
 
 def register_stock_tools(
@@ -138,11 +168,15 @@ def main() -> None:
         context = ChatContext.model_validate_json(path.read_text())
         identity = json.loads(Path(os.environ["STOCK_RESEARCH_CHAT_QUERY_FILE"]).read_text())
         settings = QuerySettings(_env_file=None, port=context.api_port, **identity)
+        knowledge = None
+        knowledge_path = os.environ.get("STOCK_RESEARCH_CHAT_KNOWLEDGE_FILE")
+        if knowledge_path:
+            knowledge = KnowledgeSettings.model_validate_json(Path(knowledge_path).read_text())
         audit = ChatAudit(context.content_hash, path.parent / "chat-evidence.json")
         audit.persist()
     except (KeyError, ValueError, OSError):
         raise SystemExit("固定研究问答工具配置无效，不输出配置原值") from None
-    create_server(ResearchReader(settings), context, audit).run(transport="stdio")
+    create_server(ResearchReader(settings), context, audit, knowledge).run(transport="stdio")
 
 
 if __name__ == "__main__":

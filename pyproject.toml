@@ -74,6 +74,7 @@ include = ["agents*", "cli*", "core*", "integrations*", "llmdoc*", "tools*", "ut
 
 [tool.setuptools.package-data]
 llmdoc = ["*.json", "*.md", "cases/*.md"]
+stock_research = ["web_routes.json"]
 
 [tool.setuptools.data-files]
 "share/youngcan-wyckoff-analysis" = ["CHANGELOG.md"]

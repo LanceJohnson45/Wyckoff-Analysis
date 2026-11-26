@@ -35,7 +35,7 @@ class ChatManager:
         peer_tasks: Mapping[str, asyncio.Task[None]] | None = None,
     ) -> None:
         self.store, self.settings = store, settings
-        self.chats = ChatStore(store)
+        self.chats = ChatStore(store, prompt_hash=chat_prompt_identity(settings))
         self.tasks: dict[str, asyncio.Task[None]] = {}
         self.admission = admission or asyncio.Lock()
         self.peer_tasks = peer_tasks if peer_tasks is not None else {}
@@ -108,7 +108,9 @@ class ChatManager:
                 if turn.status == "running":
                     await self.chats.transition(identifier, "failed", error="execution_interrupted")
                     return
-                if turn.source_hash != LOADED_SOURCE_IDENTITY or turn.prompt_hash != chat_prompt_identity():
+                if turn.source_hash != LOADED_SOURCE_IDENTITY or turn.prompt_hash != chat_prompt_identity(
+                    self.settings
+                ):
                     await self.chats.transition(identifier, "failed", error="execution_version_changed")
                     return
                 async with asyncio.timeout(self.settings.stage_timeout_seconds):

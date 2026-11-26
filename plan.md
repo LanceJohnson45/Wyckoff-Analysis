@@ -4,13 +4,67 @@
 
 当前目标为完成本文全部工程交付，单用户决定继续有效。按[完整验收矩阵](docs/stock_research_completion.md)逐项核对，执行边界见[本轮宪法](docs/design/stock-research-completion-2026-11-25.md)。已提交/已部署的稳定性批次不代替阶段六，也不替代未发生的自然日。
 
-续接起点发现`evaluate`、`POST /v1/evaluations`、历史截面/后续表现/参数实验台账尚不存在；通知状态和最近成功时间的工作台呈现、正式静态运行入口仍需核对补齐。现有主题/自选维护已进入实际页面验收。自然任务须等待11月25日21:00/21:30/21:50窗口的真实回执，目标保持进行中。
+2026-11-26上海03:22审查检查点：另一个session/model已按`long-task-review-gate`审查`76af9041`，未发现P0/P1缺陷；因原始agent会话不可用，流程审查明确降级为Git/CI/runtime/文件/测试证据。审查发现的P2文档版本漂移已在`e23316f1`同步，独立wiki在本地`codex/stock-research`分支单独提交`44e9972`。阶段六外部缺口保持不变：真实Serve远端浏览器、2026-11-27自然窗口的无人干预3/4→4/4与去重、自然瞬时`OperationalError`及Feishu `unknown`仍未验收。
 
-续接进展：主题/自选维护已补实际页面验收及06412209成功CI；`evaluate` 已接入20截面的正式量化池基线回放，当前版本和限制见[历史评估CLI](docs/stock_research_evaluations.md)。正式初选观测、人工审查、参数实验、评估API/界面及自然日仍分别待完成，不将这一批量化回放视为整个阶段六交付。
+2026-11-26上海07:31知识检索检查点：`f50cfd6b`修复知识身份子进程序列化后[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45719214292)全部成功，正式API/tick已采用`knowledge-token-f50cfd6b-20261126T0714`。生产已配置127.0.0.1:18785专用`ws-beta`reader；一次真实生产追问4次成功只读调用、828条本轮facts（其中20条`knowledge_search`），答案引用经逐值校验，回执/API无令牌。2026-11-27自然窗口、自然瞬时`OperationalError`、真实unknown和Tailscale远端仍未验收。
 
-后续源码已接私有评估作业API和同源代理：实际发布版本冻结、隔离worker、取消/重启/原输入续跑及结果SQL分页已有原生PG和真实进程验证。当前批次完整门禁/提交/运行包采用另记；实验组件、正式初选观测及参数实验仍未完成。
+2026-11-26上海07:40Serve配置检查点：生产0600环境已配置Tailnet节点名、完整登录身份和HTTPS Origin，API重启健康且本机入口保持原边界；但Tailscale CLI显示账户未启用Serve、`No serve config`，远端浏览器验收仍未开始。外部缺口现在是账户级Serve开关、远端设备访问、2026-11-27自然窗口、自然瞬时`OperationalError`和真实unknown。
+
+2026-11-26上海08:05资料与读取复核：正式API/tick保持`f50cfd6b`包；修订14报告518/518、coverage 1.0。整池HTTP复核518只，缺行业为0、非目标日行情为0；历史不足收敛为FDXF/HONA/Q/SPCX/VYLR五只、六项策略排除，全部保留上市或分拆时间限制而非漏同步。同一报告6路整池分页并发读取全200，首读22.1ms、热读341.7～946.6ms，证明共享快照缓存承接并发分页；该结果只复核当前生产读路径，不替代远端浏览器和自然日。08:05再次尝试配置Serve仍提示Tailnet账户未启用，远端入口继续未验收。
+
+2026-11-26上海08:27重启后本地页面复核：`/readyz`仍200，操作状态读回11/24首报/恢复`sent`、11/25首报`sent`且恢复无记录、11/26假期无记录。既有8788真实页面重载后显示修订14和518/518；同源冻结池搜索Apple命中1只，AAPL观察320根、锚点HTTP均200。本轮只做GET和页面状态切换，不新建研究、评估、观测、问答或通知；这补验07:40重启后的本机入口，仍不等同远端Serve。
+
+2026-11-26上海08:49自然窗口只读预检：正式API/tick仍在`f50cfd6b`包，readyz、修订14目标11/24报告、研究run、历史评估和准备账本HTTP均200；操作状态确认11/24首报/恢复均sent且带原生引用，11/25首报sent、恢复not_recorded，11/26假期两阶段not_recorded。七张状态账本research_runs、stage_runs、quant_jobs、quant_attempts、preparation_attempts、chat_turns和evaluation_jobs全workspace active均为0；当前包窗口外手动tick退出0。`tailscale serve --bg 8788`仍被Tailnet账户级开关拒绝，serve config保持空。预检不触发研究/投递，也不把11/26假期当作自然验收。
+
+06:54取消状态修复检查点：`fcd635e9`八项CI成功后，正式API/tick已采用`cancel-ui-fcd635e9`。历史评估、参数实验和正式观测的显式取消与历史不足/行情质量缺数分开显示；候选2005文件逐blob匹配、依赖清单不变、无DDL。切换前/后七类账本active为0，15次readyz和15次报告读全200，修订14报告518/518，窗口外tick退出0；隔离CDP读回新前端资产和三个区域，未创建业务任务。2026-11-27自然窗口、真实瞬时`OperationalError`、真实unknown和Tailscale远端继续待验。
+
+06:38采用检查点：正式API及股票tick为`notifications-d42fa219`，精确代码八项CI、包内128项和四类空闲/worker退出保护通过，无DDL。两条已证实定点旧通知只追加scope，三个旧正文/原生消息/账本保持；正式报告追问已获得真实模型回答，3次只读调用和20项声明逐值核验，新包重启后同一问题/回执仍原值。Tailscale节点在线但尚无Serve入口，远程同源/身份契约未验，其他正式写控件与自然日继续分别推进，见[MVP采用记录](docs/stock_research_mvp.md#2026-11-25通知隔离采用)。
+
+续接起点发现`evaluate`、`POST /v1/evaluations`、历史截面/后续表现/参数实验台账尚不存在；通知状态和最近成功时间的工作台呈现、正式静态运行入口当时仍待补齐。现有主题/自选维护已进入实际页面验收。自然任务须等待11月25日21:00/21:30/21:50窗口的真实回执，目标保持进行中。
+
+续接进展：主题/自选维护已补实际页面验收及06412209成功CI；`evaluate` 已接入20截面的正式量化池基线回放，当前版本和限制见[历史评估CLI](docs/stock_research_evaluations.md)。正式初选观测、人工审查、参数实验、评估界面整体验收及自然日仍分别待完成，不将这一批量化回放视为整个阶段六交付。
+
+后续源码已接私有评估作业API和同源代理：实际发布版本冻结、隔离worker、取消/重启/原输入续跑及结果SQL分页已有原生PG和真实进程验证，d72206be及Agent界面a9de2de9各八项CI成功。量化池回放已补隔离合成资料的真实页面验收：原请求核对、取消续跑、两级分页、成本窗口、封存和旧服务提示。验收发现的资料失败泛化已细分历史不足/截面质量，明确提示补齐后新建并拒绝无效原输入续跑；本地完整Python6217项无跳过、Web445/API221（两个既有外部条件跳过）及完整前端/操作dry-run通过；当前提交CI和运行包采用另记。2026-11-26上海03:51继续补齐首轮参数实验私有API/UI：仅开放三个计划字段、三个互异值和同一冻结输入，真实临时PG/API/worker验证三变体完成、原键重放不新建、历史量化与正式观测互不混入；三类批量作业记录列表已显示`SR-YYYYMMDD-US-*`业务单号。真实参数实验页面、当前head CI与运行包采用见04:29/04:52记录，人工审查、AKQuant、组合实验已另行记录。
+
+15:23正式初选观测源码续接：现有评估作业表复用出`formal_selection_observations`独立资源族，API含创建/分页/详情/取消/续跑/结果与逐股分页，身份、幂等命名空间、worker真实进程、损坏原输入拒续、空名单与五窗口保留已有聚焦PG/ASGI验证；Agent面板已挂正式观测区，提交未知保留原幂等意图，空名单/未满/缺数不显示为零收益。本地聚焦作业5项、完整Python6323/50条既有警告、Ruff/format/函数及hygiene、操作dry-run、Web strict TypeScript、Web465/API221（两个既有条件跳过）与生产dry-run build通过。真实浏览器操作、提交CI与运行包采用仍欠，人工审查、参数实验、自然日及真实通知unknown继续分别推进。
+
+16:05进度核对：`formal_selection_observations`提交14d414cd已推送，PR #10指向该head且八项检查全部成功；本机`state/release.json`的API与调度指针均指向`selection-14d414cd`。该记录只核对远端CI与运行包元数据，不把源码提交冒充正式观测业务验收；真实观测操作、人工审查、参数实验、自然日窗口及真实通知unknown继续待验。
+
+16:37正式观测页面验收：从`selection-14d414cd`工作台针对固定报告b14ad808修订14、截止11月23日显式创建正式初选观测，一次尝试完成。页面显示2份入选、7条逐股观察、缺失策略无、人工审查pending；7个窗口均为未满而非零收益。冻结输入落盘并含报告哈希/修订、run、快照、两份初选、7只成本与源摘要。手动重载后记录和逐股表仍为1条/7行，浏览器error为0。人工审查、参数实验、自然日窗口与真实通知unknown继续待验。
+
+17:33三个正式单组参数实验已用当前正式输入边界完成：`support_atr` 0.5/0.75/1.0、`extension_atr` 2/3/4、`contraction_ratio` 0.6/0.7/0.8各一次尝试完成，九份报告均为20截面、`manual_review=pending`、同一冻结输入哈希且参数哈希互异，未发布生产参数。净化后仍只有1个研究截面和4个封存截面，因此仅描述性记录，不能据此调参或得出策略有效性结论。本仓库Issues功能已关闭，无法按规则把研究记录提交Issue；结果文件留在本机受控产物目录，不进仓库docs。人工审查、AKQuant、组合实验、Tailscale、真实unknown及自然日仍待完成。
+
+18:05人工审查抽样CLI已接通：从正式baseline-v1报告同目录只读量化证据，每策略输出10条入选观察与10条排除记录；封存截面仅补足入选审查，不读取其表现。真实基线报告实际执行得到Martin/Wyckoff各10/10且18个唯一入选symbol，不足时明确失败。逐条人工复核尚未开始。AKQuant 0.3.93已实测固定快照ATR/ADR一致性：164784行、keys一致、warmup缺失一致、最大绝对误差0、阈值1e-10通过；pandas冷/热0.473/0.585秒、AKQuant冷/热0.478/0.064秒，独立进程峰值RSS均约1297MiB。该结果只覆盖可对齐ATR/ADR，不代表EMA一致或完整策略性能，不据此替换生产路径。
+
+18:29人工审查闭环：Martin与Wyckoff各10条入选、10条排除已逐条核对。Martin入选覆盖research/validation/sealed为7/1/2，至少一个分支qualified且必要条件、支撑与延伸事实一致；5条未满足收缩仅不加分，不导致排除。Wyckoff入选10条均为L1-L4与qualified全真，MCO重复出现属于连续截面观察；排除样本逐项核对为上市时间不足或目标日行情缺失，FDXF/HONA/SPCX/VYLR不拼母公司历史，内部无漏日。审查记录只落本机受控产物目录，不把该规则/质量审查当策略有效性或调参证据。1d3e9a6a的八项CI已全部成功，含完整测试和smoke dry-run。组合实验、Tailscale Serve账号开关、真实unknown及自然窗口仍待完成。
+
+18:58受控组合实验已补源码并实跑：`evaluate-combined-parameters` 只允许三个计划字段的显式非生产值，生成独立`:experiment:combined:`参数版本，不发布生产参数。真实组合1.0/4.0/0.8与三个单组逐字节同冻结输入（SHA256均为99db6452...），一次尝试完成20截面/40策略产物，独立重读及重跑均保持同一路径与报告哈希；净化后仅1个研究截面和4个封存截面，只作工程描述，不据此调参或比较收益。首次误用11月20日截止日生成的不同输入组合产物已删除，不计入验收。Tailscale Serve账号开关、真实unknown及自然窗口仍待完成。
+
+21:52自然窗口检查：21:00:36定点tick自动创建execution，21:30原生飞书首报`sent`且写入done，之后到21:52无重复通知。但云端源在21:10只有80/518只2026-11-24收盘，本地复制未漏同步；准备如实失败于15.44%覆盖率，状态`failed_preparation`，因此没有可改善的研究阶段，也无恢复项。随后用源端候选正式`us_research_refresh.py`显式补拉缺失438只：438/438、156547行、failed=0、write_fail=0、目标日无缺失，三基准各495根；研究端只读增量复制186482行、rejected=0，唯一issue仍是既有WBD历史。重跑离线快照通过，518/518对齐、覆盖率1.0，5只上市历史限制如实保留。这次只证明失败路径、首报发送和补拉入口；自然交易日的3/4→4/4自动恢复仍未发生，明天须重新验收。
+
+22:12瞬时源失败修复候选：已安装worker当晚先快速失败于`OperationalError`，同一安装环境和源根随后完整重放41.59秒成功，说明是可重试进程故障而非配置或锁竞争。MVP现在只对`failed/OperationalError`且剩余研究预算超过300秒的明确回执重试一次，超时、取消、校验失败和其他错误不重试；最终失败仍进入正式质量门禁。回归覆盖一次重试成功、两次失败终止、非重试终止与低预算终止。代码提交`250fe70a`的[Stock Research CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45631935944)已整体成功，完整Python、Web、smoke dry-run均为success；运行包采用、真实瞬时失败重放和自然窗口继续分别验收。
+
+22:58运行包采用：正式API与股票tick已切至`stability-51c1ee22`，包含上述有界源重试。精确归档1995文件逐blob核对，schema/依赖与前一包逐字节相同、无DDL；包内85项相关测试通过。切换前四类活动0、无worker；切换后16次HTTP全200、P95 50.202ms，窗口外tick退出0，活动复查仍0，`release.json`指向同一固定包。原`selection-14d414cd`保留回退。这只完成运行包采用；真实瞬时失败重放、下一自然交易日无人干预首报/恢复/去重仍未闭环。
+
+2026-11-26 00:07 Tailscale候选运行包采用：`1802719f`的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45648628187)全部成功，远端Python6342通过/1项既有安装DSH条件skip，smoke dry-run成功。该候选精确归档1996个跟踪文件逐blob相同，`uv.lock`/`pyproject.toml`与51包逐字节相同，无schema差异；专用前端5文件，候选自身24项Serve/静态回归、health/ready启动、15次真实HTTP全200（P95 1532.828ms，含首读1.532s冷加载）、报告修订14/目标11月24日、窗口外tick退出0及零活动复查通过。API/tick已指向`tailscale-1802719f`，原51包保留。候选`.env`仅改`WEB_DIST_PATH`，未配置Serve，`tailscale serve status`仍为`No serve config`；这只完成本机候选包采用，真实远端浏览器、 Serve账号开关、自然日、瞬时故障重放及真实unknown继续待验。
+
++2026-11-26 04:29参数实验页面验收发现并修复冻结缺陷：真实8789源码实例中`support_atr` 0.5/0.75/1.0先失败为`evaluation_quality_failed`；根因是参数作业转成历史评估时把当前池回填固定为false，旧截面active universe为0。修复后固定显式回填当前股票池与分类并在UI说明存活偏差，聚焦测试断言持久化files为true。重建源码前端后第二次真实提交`SR-20261125-US-CD8D35`一次尝试完成，三个变体同一input hash、参数hash互异、`manual_review=pending`、未发布生产参数；独立新键重放返回同一job且总数只增1，随后实际取消为`cancelled`；页面重载后原结果可读，console/error为0。精确head CI和新运行包采用见04:52记录；自然日与真实unknown不变。
+
+04:52参数实验运行包采用：`ac6ba511`精确head CI八项全部成功。正式API/tick已切至`parameter-ui-ac6ba511`；精确归档2002个跟踪文件、源码身份`17b952e988e9c35aab3794da527dee665842cb167d1aa240556ec2599662e8f1`、依赖清单逐字节相同且无DDL。切换前七张状态表pending/running为0，切换后API PID/cwd、15次readyz全200/P95 19.411ms、窗口外tick退出0通过。8788真实页面读到参数实验completed/cancelled/failed历史和成功作业三变体摘要，只读复核未新建实验、console/error为0。自然交易日定点启动、首报、失败恢复、通知去重、Tailscale远端浏览器及真实unknown仍待验。
+
+07:03正式评估补验：2026-11-25上海06:57从正式d42静态工作台显式创建baseline-v1、截止11月23日的当前池回溯评估，一次尝试于06:59完成20截面。独立只读PG/API与文件重读重建20份截面、校验40份正式量化产物、612条观察及2425个公开窗口，127条封存观察保持无表现；API全量/分策略分页共64次读取及页面分页、策略/窗口、成本展开、审计和整页重载原结果均通过，浏览器无error。原报告/运行/初选/快照四类投影及五类HTTP摘要不变；计算期间15次业务读全成功，P95 0.479秒，终态worker已退出、四类活动0。净化后仅1个研究/0个验证/4个封存截面可用，不能据此调参；人工审查、模型正式初选持久观测、参数实验和AKQuant仍缺。
+
+同进程静态工作台候选已补：专用研究构建由Python API提供，同源有签名会话及内存桥接复用原鉴权；无Vite/Node的隔离真实页面验证重启续会话、固定报告/图表/评估窗口，以及评估/主题建议/问答原提交的回执丢失和普通401后同键找回。原研究摘要不变；模型凭据隔离，问答未取得回答。运行包03:58采用09bdd3cb后，04:55继续采用八项CI成功的6fc65f46；正式只读页面与新状态区已补浏览器验收，写控件及Tailscale仍分别核验，见[静态入口](docs/stock_research_static_web.md)。
+
+Personal固定客户端于07:41采用：迁移器b79c2e60八项CI全成功，线上声明和operator镜像已切到秘密目录/d42锁定解释器。共享宿主新子进程实际cwd、33项完整目录中的原11项Personal/3项stocks和真实页面一次问答/3次只读调用已核对，原会话/42计划/研究数据保持。当时发现的截断已于08:32通过v2分页采用及新会话实跑验证，旧会话保留原预设，见[采用记录](docs/stock_research_personal.md#固定客户端采用与真实personal问答)。
+
+08:32分页客户端已采用：ece83八项CI全成功，固定1977文件/原身份及d42解释器核验后，live/operator仅定向改变查询cwd；新Personal真实问答1轮7步/8次调用，报告/个股/运行2/4/2页均完整JSON，最大32736字节，全模型/摘要与独立HTTP一致。33项目录其余30项定义、3个旧会话及API/tick/42计划保持；15次业务读全200/P95 0.431秒，原数据摘要保持。旧会话不自动升级v2；页面74秒不作为提速或降成本证据。自然日、真实unknown及其余完整计划仍继续，见[分页采用](docs/stock_research_queries.md#0832-personal采用与模型读取)。
+
+并发首份准备继续排查：原用例虽允许重试后通过，20次详细取证均捕获首次文件锁竞争；强制重叠的双API回归先红后绿。开发版现按物理快照范围在原预算内串行、获得执行权后复用原run；原无屏障场景40次、80份回执均直接completed，无首次失败。原始重试耗尽与另一轮partial仍未证实根因。本轮全量另捕获明确DiskFullError，清理可重建依赖下载缓存后原命令6318项/无skip通过，源码指纹保持；633b4dd2八项CI成功后，09:55正式API/tick已采用同一固定包；139项包内测试、27张表小投影/27份保护文件/4个Personal会话及3条旧原生通知保持。见[准备互斥](docs/stock_research_preparations.md#并发首次准备)。
 
 ## 当前稳定性批次（2026-11-24）
+
+Personal固定客户端迁移推进：原安装拒绝所有不同注册，已新增仅目录/解释器的显式迁移候选，保持默认覆盖保护、其他文本/权限及单次原子CAS。临时工作区CLI回归先红后绿；固定d42查询候选1979文件、三工具/403及原身份0600已验。此前准备状态已由上文07:41实际采用更新；输出完整性仍待修复，见[迁移说明](docs/stock_research_personal.md#受管只读客户端迁移)。
 
 按读取稳定性→资料补齐→真实页面→自然交易日闭环推进，暂不扩功能。[本批约束与验收清单](docs/design/stock-research-stability-2026-11-24.md)独立记录。
 
@@ -20,6 +74,10 @@
 - 定点：自然slot上海21:00:06触发；旧同步三次90秒超时，21:16:30人工部署恢复同一事件。随后自动重试同步66.77秒完成；21:30:01.834原生首报含3/4阶段，21:37:02.310原生恢复更新含4/4阶段，两条业务记录均sent、对应冻结正文。完成后及部署后的tick未新增业务行或消息回执。本次有人工部署恢复，全程无人干预自然日仍待下一交易日。
 - 采用：研究结束且研究/问答/准备活动数均为零后，API及调度已采用cc35c3ac。只读复制10,000行批次、未变行免UPDATE；API为Interactive、编排Standard。重启后20次真实HTTP全部成功，含冷加载P95 1.97秒、后16次热读最长0.43秒。
 - 验证：本地6,160通过/无skip；代码cc35c3ac的远端八项CI全部成功（远端6,159通过/一项既有安装DSH条件skip，coverage86%），含完整Web及操作dry-run。原42条计划和共享服务保持，草稿PR未合入；最终文档提交的CI与另session整体审查分别跟踪。
+
+2026-11-26复验：正式报告仍读修订14、518/518；五只历史排除均为分拆/上市限制。隔离CDP页面按“Apple”搜索命中1只。同源两批各16路唯一搜索全200，第一批P95 2.038秒，第二批P95 1.905秒；只读复验未创建评估或消息。knowledge_search已接生产专用reader，真实授权检索返回3个工程语料结果；模型只能提交查询词，作用域由服务端reader凭据固定，响应经schema和证据审计。正式初选观测只有1条，多任务跨页/失败视图继续等自然生产数据或显式受控任务。
+
+05:34自然窗口预检：`stocks`的chat、evaluation、preparation、quant attempt/job、research和stage七类账本pending/running均为0；无真实worker。API/调度launchd的program和working directory均为`parameter-ui-ac6ba511`，调度不运行且上次退出0；窗口外手动tick退出0。这只证明11月27日前服务可受理，不替代无人干预定点首报/恢复/去重。
 
 续接稳定性：实际4次TIMEOUT均为DSH 60秒流空闲，新增`provider_stream_idle_timeout`贯穿阶段/问答/定点恢复，保留原预算与重试次数。相同冻结复核在原60秒阈值两次重放成功、120秒候选一次成功，不足以证明延长阈值有效，因此未采用。参数登记409提示已修正；隔离原生PG的真实页面补验参数发布/CAS/重启/响应丢失读回、量化失败只补单策略、问答未知提交确认/自动重试取消。成功因子/阶段与旧报告逐行未变。完整Python6,167通过；主题/自选维护逐项页面、模型偶发慢响应、自然无人干预日、通知真实unknown与独立整体审查仍待处理。
 
@@ -46,6 +104,8 @@
 暂停检查点保留了Personal交付记录；恢复后按用户确认先实现单用户MVP，独立股票launchd负责原纽约slot，通知复用Personal组件，原42条计划保持。多用户、完整浏览器、自然交易日和效果/PIT验收仍分别跟踪，不能把工程测试当作收益证据。
 
 日期为2026-11-23。本文保存已确认的实施计划；数据、量化、执行账本、完整真实互评及本机API已实现，Agent面板已接线且页面操作待登录验证。固定股票查询与三项只读CLI/MCP也已接通；持续名单的终态跟踪、HTTP/CLI与Agent面板，以及固定报告个股事实/行情图也已接通；参数版本与CAS发布已接后台、API/CLI消费和Agent维护界面；未建run的输入准备回执也已接HTTP/CLI和Agent；固定报告的市场、分组、比较和规则查询已接HTTP及独立研究MCP；固定报告研究问答已接独立模型循环、持久父链与Agent界面，整池搜索/分页已接HTTP、绑定工具与个股区；主题/自选维护已接人工确认、版本消费与Agent；Personal三项只读查询已接本机DSH预设；页面操作、Mac mini正式部署及定时任务仍待验收，以第16节及交接文档检查点为准。用户已确认首版方向，本文将工程默认值作为可审阅的研究基线。
+
+通知状态/最近成功时间批次已接源码：GET /v1/operations及既有Agent运行区，小型研究投影、既有Personal固定通知账本的只读子进程、目标日首报/恢复与全日期最近记录、未知/失败/无记录/未配置分别表达。临时原生PG及实际进程验证，不读行情大快照；真实页面日期切换残留问题已修复。当前提交/采用、自然日及其余完整计划缺口继续分别核验，见[操作状态](docs/stock_research_operations.md)。
 
 ## 1 目标与成功标准
 
@@ -468,7 +528,7 @@ AKQuant承担批量计算与历史实验。用同一股票池、历史区间和�
 | python3.12 -m stock_research.cli evaluate --profile baseline-v1 --cutoff 2026-11-20 | 版本化截面评估及样本限制 |
 | python3.12 -m stock_research.cli benchmark --profile baseline-v1 --as-of 2026-11-20 --snapshot-file "$SNAPSHOT_FILE" | 同快照ATR/ADR逐值对拍与计算耗时；不代表完整策略性能 |
 
-doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI](docs/stock_research_evaluations.md)，当前仅覆盖20截面基线回放、描述性观察及时间净化，不含正式模型初选观测、人工审查、参数实验或评估API；阶段六仍待完整验收。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
+doctor、snapshot、Martin/Wyckoff的analyze及ATR/ADR的benchmark已实现并实际运行；run已完成真实四阶段预览及独立重读。evaluate已接入[历史量化池CLI及私有作业API](docs/stock_research_evaluations.md)，当前覆盖20截面基线回放、描述性观察、时间净化与作业恢复，Agent量化池回放已补隔离合成页面验收。正式初选持久观测已接API/UI并完成16:37真实页面验收；参数单组实验CLI已接通，人工审查、三个正式单组实跑、组合实验、AKQuant、Tailscale、真实unknown及自然日仍待验收，阶段六不因此视为完整完成。其他已实现命令与限制以[数据CLI](docs/stock_research_data_cli.md)、[Martin CLI](docs/stock_research_martin_cli.md)、[Wyckoff CLI](docs/stock_research_wyckoff_cli.md)为准。开发验收同时运行上游AGENTS规定的pytest、ruff、quality_gate、工作流及依赖检查，前端运行构建、类型检查和相关测试；services运行其既有完整检查及受影响的契约测试。
 
 ## 15 文件与跨仓库工作清单
 
@@ -610,3 +670,19 @@ Mac mini上已有任务与通知能力按既有资产登记。股票新增计划
 - [AKQuant参数优化](https://akquant.akfamily.xyz/guide/optimization/)
 
 2026-11-24行情协调续接：研究复制新增数据库范围任务/写事务协议锁；独立源候选从实际wxjer生产基线复用既有维护、PG写入与固定目标日检查，提供显式研究池/三基准补齐及既有手动Actions参数。原source工作树与根.env保持。源码候选、原生验证、远端门禁和生产采用分别记录，未自动启用补拉或改变cron；源端部署、云端QQQ/IWM/WBD及完整阶段一/五验收仍未勾选，见[来源协调](docs/stock_research_market_coordination.md)。
+
+11月25日04:55检查点：通知状态实现6fc65f46八项CI全部成功，正式API/股票tick已采用固定包；无表迁移，四类活动/worker保护通过，直接与同源状态读取成功且原业务/通知证据保持。新状态区域正式浏览器复验、自然日、正式初选后续观测/人工审查和参数实验继续分别开发，完整目标保持进行中。
+
+正式初选后续观测源码已接`observe-selections`：固定报告身份/原生PG只读事务、初选实际提交后首开盘、五窗口/成本/SPY、pending/缺数及修订文件均分别保存。当前为CLI文件产物，持久作业/API/Agent仍待接线；人工审查和参数实验不因此完成。正式6fc状态区已补真实页面刷新/跨日/完整报告跳转验收，该CLI完整门禁与CI已通过，后续持久API/Agent另推进。
+
+观测CLI提交d0218231的[八项CI](https://github.com/LanceJohnson45/Wyckoff-Analysis/actions/runs/45492379784)已全部成功；该检查时正式运行包仍6fc65f46，该阶段随后采用d42；当前运行包见开头。下一稳定性修复已复现“原研究完成但新手动事件仍依赖当前行情文件”：在读行情前按共用配置身份查找原run，以原冻结quality确认别名准备；缺失/无效质量不能复用，新配置/触发类别/force保持独立。真实隔离PG及实际量化48项聚焦通过，本地完整Python6280/无skip及fast/quality/hygiene/操作dry-run已通过，本批CI/采用另验；不将此确定性缺陷当作此前偶发并发失败的已证实根因。
+
+f17c689d已提交推送且CI45496618794八项全部成功；后续通知稳定性核对发现done虽分开、正文目录和业务键却共用。真实publish四用例先红，现手动与定点分别冻结/去重；定点键保持，旧无范围文件停止核对，不自动改标或补发。相关50项已验正文摘要/篡改拒收、未知重放、旧正文保持、两个入口错误/完成标记及原生PG状态过滤；本批最终完整Python6296/无skip、fast/quality/hygiene/操作dry-run通过，源码指纹保持；后续d42八项CI及06:38旧记录完整核对/实际采用已补验。自然窗口及真实unknown仍待实跑。
+
+23:23Tailscale Serve候选已补显式代码路径：必须同时配置Tailnet主机与允许登录，`https://<host>`须白名单；运行时只接受loopback反代、单值HTTPS `X-Forwarded-*`、一致Host、白名单身份和同源Origin/Fetch-Site，远端会话加`Secure`，本机HTTP入口保留。Tailscale与静态入口聚焦回归24项通过，覆盖正常远端读、坏主机/协议/身份/跨站、歧义Host、未同源写、配置拒启与本机回退；完整Python6343项通过、无skip及50条既有警告，Ruff/format、函数质量、workflow/dependency hygiene通过。`1802719f`的八项CI与本机运行包采用已另行补记；真实远端浏览器验收仍须等待Tailscale Serve账号开关，不开启Funnel。
+
+2026-11-26 00:39浏览器续验：股票池搜索、IEX图表锚点、维护刷新、评估与正式观测重读、修订14新问及失败续跑均通过真实页面；退役模型410和一次8192输出预算耗尽均保留failed，切换Qwen并将输出预算提升到16384后completed回执各有一次只读工具调用。自然定点首报/失败恢复/通知去重、真实unknown、Tailscale远端和独立终审仍未完成。
+
+2026-11-26 00:57部署一致性续验：定点launchd入口由旧回滚包脚本迁至`tailscale-1802719f`候选包，参数修复后实际tick退出0、60秒间隔保持；原plist和模型/输出预算改前环境均以0600备份保存在state/config-backups。这消除“schedule_release指向候选但入口导入旧包”的漂移，不构成自然定点4/4完成。
+
+2026-11-26 01:23doctor修复：候选venv为满足项目下限的Python3.11，但doctor曾硬编码3.12，导致数据/日历/库全通过时`ready=false`。已改为按`>=3.11`判定并补3.11/3.10边界测试；此修复须经CI和运行包采用后，才可宣称生产doctor就绪。

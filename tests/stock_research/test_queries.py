@@ -19,10 +19,15 @@ from stock_research.identity import digest, new_id
 from stock_research.models import Snapshot
 from stock_research.pipeline import run_preview
 from stock_research.query_client import QueryError, ResearchReader
+from stock_research.query_mcp import create_server as query_server
 from stock_research.query_settings import QuerySettings
 from stock_research.run_store import RunStore
 from stock_research.schema import RESEARCH_RUNS
+from stock_research.schemas.api import ReportView, RunView
+from stock_research.schemas.observations import StockObservation
+from stock_research.schemas.query_pages import QueryPage
 from stock_research.store import close_engine, database_engine, initialize_schema
+from tests.stock_research.test_query_pages import reconstruct
 from tests.stock_research.test_run_store import analyses_for
 
 OPERATOR = "synthetic-operator-token-with-32-characters"
@@ -63,6 +68,7 @@ def test_frozen_stock_read_client_and_readonly_identity(
                 run_id = report.run.run_id
                 assert str(run_id) == run["run_id"]
                 assert (await reader.run_status(run_id)).status == "completed"
+                await check_mcp_readback(reader, report)
                 stock = await reader.stock("AAPL", run_id, 5)
                 assert stock.report_id is None
                 assert stock.company.name == "Apple"
@@ -120,6 +126,44 @@ def test_frozen_stock_read_client_and_readonly_identity(
     asyncio.run(scenario())
 
 
+async def check_mcp_readback(reader: ResearchReader, report: ReportView) -> None:
+    """真实PG/ASGI客户端经公开MCP包装完整还原三份原领域模型。"""
+    server = query_server(reader)
+    cases = (
+        ("stock_research_latest_report", {}, ReportView, await reader.latest_report()),
+        (
+            "stock_research_stock",
+            {"symbol": "AAPL", "run_id": str(report.run.run_id), "report_id": str(report.report_id), "limit": 320},
+            StockObservation,
+            await reader.stock("AAPL", report.run.run_id, 320, report.report_id),
+        ),
+        (
+            "stock_research_run_status",
+            {"run_id": str(report.run.run_id)},
+            RunView,
+            await reader.run_status(report.run.run_id),
+        ),
+    )
+    for name, arguments, model, expected in cases:
+        pages, cursor = [], None
+        while True:
+            content, structured = await server.call_tool(name, {**arguments, "cursor": cursor})
+            assert len(content[0].text.encode()) <= 32 * 1024
+            page = QueryPage.model_validate_json(content[0].text)
+            assert page.model_dump(mode="json") == structured
+            assert page.scope.run_id == report.run.run_id and page.scope.snapshot_id == report.run.snapshot_id
+            pages.append(page)
+            cursor = page.next_cursor
+            if cursor is None:
+                break
+        actual = model.model_validate(reconstruct(pages))
+        excluded = {"observed_at"} if model is RunView else set()
+        assert actual.model_dump(exclude=excluded) == expected.model_dump(exclude=excluded)
+        if model is StockObservation:
+            assert len(pages) > 1 and len(actual.history) == 320
+            assert page.scope.report_id == report.report_id
+
+
 def test_readonly_configuration_cannot_reuse_operator_or_arbitrary_host() -> None:
     with pytest.raises(ValueError, match="独立"):
         create_app(Settings(_env_file=None, api_token=OPERATOR, api_read_token=OPERATOR))
@@ -134,7 +178,11 @@ def test_actual_query_mcp_exports_only_three_read_tools(tmp_path: Path) -> None:
         parameters = StdioServerParameters(
             command=sys.executable,
             args=["-m", "stock_research.query_mcp"],
-            env={"PATH": os.environ.get("PATH", ""), "STOCK_RESEARCH_QUERY_TOKEN": READER},
+            env={
+                "PATH": os.environ.get("PATH", ""),
+                "PYTHONPATH": str(Path(__file__).resolve().parents[2]),
+                "STOCK_RESEARCH_QUERY_TOKEN": READER,
+            },
             cwd=tmp_path,
         )
         async with stdio_client(parameters) as (read, write), ClientSession(read, write) as session:
@@ -146,6 +194,15 @@ def test_actual_query_mcp_exports_only_three_read_tools(tmp_path: Path) -> None:
                 "stock_research_run_status",
             }
             assert all(tool.annotations.readOnlyHint and not tool.annotations.openWorldHint for tool in tools)
+            paged = [
+                tool
+                for tool in tools
+                if tool.name in {"stock_research_latest_report", "stock_research_stock", "stock_research_run_status"}
+            ]
+            assert all(
+                "cursor" in tool.inputSchema["properties"] and "chunks" in tool.outputSchema["properties"]
+                for tool in paged
+            )
             denied = await session.call_tool("stock_research_stock", {"symbol": "../.env", "run_id": new_id()})
             assert denied.isError
             assert not (await session.list_resources()).resources
@@ -158,7 +215,11 @@ def test_invalid_mcp_configuration_never_logs_token_input(tmp_path: Path) -> Non
     result = subprocess.run(
         [sys.executable, "-m", "stock_research.query_mcp"],
         cwd=tmp_path,
-        env={"PATH": os.environ.get("PATH", ""), "STOCK_RESEARCH_QUERY_TOKEN": invalid},
+        env={
+            "PATH": os.environ.get("PATH", ""),
+            "PYTHONPATH": str(Path(__file__).resolve().parents[2]),
+            "STOCK_RESEARCH_QUERY_TOKEN": invalid,
+        },
         capture_output=True,
         text=True,
         timeout=15,

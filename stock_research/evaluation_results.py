@@ -3,7 +3,7 @@
 from sqlalchemy import func, select, update
 from sqlalchemy.dialects.postgresql import insert
 
-from stock_research.errors import ResearchConflict
+from stock_research.errors import ResearchConflict, ResearchNotFound
 from stock_research.evaluation import EvaluationReport
 from stock_research.evaluation_store import locked_evaluation
 from stock_research.identity import digest, new_id
@@ -132,6 +132,8 @@ async def publish_evaluation(store: RunStore, identifier: str, report: Evaluatio
 async def evaluation_result(store: RunStore, identifier: str) -> EvaluationResultView:
     """只读小结果元数据，不到文件系统解析行情或重复量化。"""
     row = await store.row(EVALUATION_RESULTS, identifier)
+    if row["payload"].get("kind") != "historical_quant_pool":
+        raise ResearchNotFound("历史评估不存在")
     return EvaluationResultView(id=row["uuid"], job_id=row["job_uuid"], **row["payload"])
 
 
@@ -139,7 +141,8 @@ async def sample_page(
     store: RunStore, result_id: str, page: int, page_size: int, strategy: Strategy | None = None
 ) -> EvaluationSamplePage:
     """结果身份先校验，计数与分页查询共享相同SQL过滤。"""
-    await store.row(EVALUATION_RESULTS, result_id)
+    if (await store.row(EVALUATION_RESULTS, result_id))["payload"].get("kind") != "historical_quant_pool":
+        raise ResearchNotFound("历史评估不存在")
     base = select(EVALUATION_SAMPLES).where(
         EVALUATION_SAMPLES.c.workspace == store.workspace,
         EVALUATION_SAMPLES.c.result_uuid == result_id,

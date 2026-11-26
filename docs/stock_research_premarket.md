@@ -41,7 +41,7 @@ late表示观察时刻已过原报告期限。计划预览的`--at`必须带时�
 
 专用身份仅可访问这四个动作，不能列举全部任务、管理普通研究、查询共享报告或私人问答、修改参数/持仓/配置。对象、来源或研究workspace不符404，其他功能403，未认证401，跨站/Host校验保持。普通共享只读身份也不能读取盘前job。API_REQUESTS复用原账本记录独立前缀的原事件与run绑定，PREPARATION_ATTEMPTS记录失败；没有新表/迁移，普通CreateRun请求载荷保持。
 
-原事件各自使用请求级PG锁领取回执；恢复与取消统一领取首次意图锁，SQL摘要CAS保留共享取消标记；重放先找原run，冻结后绑定前崩溃也可恢复映射；别名已ready但未绑定时，从已校验的PREPARATION_ATTEMPTS找回原run，不因后来配置变化重新准备。不同API同时固定同日快照可能先返回input_unavailable准备回执，原事件按既有退避重放后复用首次run。已取消意图及其别名不能由另一个API拥有者或后来的事件复活。取消已结束的partial任务只封存任务，保留原run/报告/初选，不把有效结果改写成空。恢复先保存pending状态，再排队执行。
+原事件各自使用请求级PG锁领取回执；恢复与取消统一领取首次意图锁，SQL摘要CAS保留共享取消标记；重放先找原run，冻结后绑定前崩溃也可恢复映射；别名已ready但未绑定时，从已校验的PREPARATION_ATTEMPTS找回原run，不因后来配置变化重新准备。盘前首次准备还按共享快照范围串行，获得执行权后重新查找原run，见[准备互斥](stock_research_preparations.md#并发首次准备)。已取消意图及其别名不能由另一个API拥有者或后来的事件复活。取消已结束的partial任务只封存任务，保留原run/报告/初选，不把有效结果改写成空。恢复先保存pending状态，再排队执行。
 
 ## 客户端恢复与收尾
 
@@ -54,5 +54,9 @@ execute可由operator明确启用[有界行情准备](stock_research_market_refr
 研究幂等键按研究workspace、目标日、来源能力/trigger_kind和完整配置版本计算；事件ID、job ID和新事件时刻不进入研究键。每个事件保留自身job/plan/准备回执，`origin`给出首次PremarketBinding（job_id、schedule、execution_deadline）；未冻结则为null。相同配置的新manual事件返回同一run与固定报告，不重算量化或成功初选、不刷新运行期限，原冻结清单不改写。新事件plan的预算仅描述该事件窗口，实际研究仍服从origin和原run预算；客户端不在origin截止后恢复。不同trigger_kind或配置仍创建独立研究。
 
 强制重分析使用operator的POST /v1/research-runs，显式force=true和parent_run_id并提供新的Idempotency-Key；新run保留父链，重放同一请求仍返回原新run，原报告/初选保持。workflow身份不能调用普通创建或指定force/父链，避免新manual事件被隐式当作强制重算。
+
+MVP通知也按manual与scheduled分开正文目录和Personal业务键，同范围重放不替换正文；定点原业务键保持，旧无范围正文停止等待核对。该边界独立于研究run复用和done标记，不能靠完成标记分开就认为通知已隔离，详见[MVP通知范围](stock_research_mvp.md#通知范围与旧记录)。
+
+同配置原run的查找已前移到行情准备之前：先核对实际生效参数、成分/分类、模型和源码配置，再查原冻结身份。别名沿用原清单的成功质量回执，即使当前行情文件暂不可用也不重读；不新增补拉回执、快照或量化，原期限和取消约束照常执行。首次冻结及配置变化仍通过完整质量门槛；盘前并发等待也计入原准备/事件预算，真正输入失败仍保留失败回执及原重放规则。上海11月25日09:55正式API/tick已采用八项CI成功的633固定包，代码与采用证据分别记录。详见[准备回执](stock_research_preparations.md)。
 
 量化进程信号退出或无终帧非零退出已准确映射quant_process_failed，默认研究内部先沿原总期限补算一次，仍失败时才由盘前既有恢复规则处理。未受信号中断的完整非法协议、输出超限及明确计算/源码错误不因此进入临时错误白名单；恢复不另给原事件新的期限。

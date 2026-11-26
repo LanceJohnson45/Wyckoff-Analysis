@@ -1,6 +1,6 @@
 # 固定报告研究问答
 
-现有Agent「策略研究」内提供独立问答。「带此报告继续讨论」和个股讨论会载入问题并固定报告；提交后后台使用可信模型连接及八项只读工具核对证据，不再将大段冻结JSON交给通用交易聊天。上方切换历史报告不会更改已经开始的问答，需显式改用另一报告。
+现有Agent「策略研究」内提供独立问答。「带此报告继续讨论」和个股讨论会载入问题并固定报告；提交后后台使用可信模型连接和固定只读工具核对证据，不再将大段冻结JSON交给通用交易聊天。上方切换历史报告不会更改已经开始的问答，需显式改用另一报告。
 
 ## 输入、历史与状态
 
@@ -12,7 +12,7 @@ GET /v1/chat-turns必填report_id，可选conversation_id，page>=1、page_size=
 
 ## 证据与模型边界
 
-后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；实际注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。knowledge_search尚未授权接入。
+后台沿用operator已有MODEL_PROFILE_PATH或MODEL_ENV_PATH的可信主模型，不接受问题指定模型、连接或路径。每轮独立DSH home及进程组；默认注册目录必须精确为market_overview、group_strength、stock_factors、stock_history、compare_stocks、strategy_rules、report_read、run_status，配置授权资料后精确追加knowledge_search。market_overview默认读取市场，可用view=universe分页/搜索全部冻结成员，详见[整池浏览](stock_research_universe.md)。工具不接收报告、URL、SQL或文件参数，范围由本轮冻结上下文固定。`STOCK_RESEARCH_KNOWLEDGE_BASE_URL`和专用`STOCK_RESEARCH_KNOWLEDGE_READ_TOKEN`同时配置时才注册knowledge_search；工具只接收查询词，workspace/subject由服务端reader凭据固定。当前生产已配置loopback专用reader；真实追问已返回工程语料并进入证据审计，不把工程记录当作方法学证据。
 
 默认180秒、20次工具请求预算；一次JSON修正共享剩余预算。明确返回transient_provider_error、provider_stream_idle_timeout或transport_error、仍有时间和工具余额时，自动重试一次；两次使用原截止时间、模型连接、报告和父链，不重新计时。第一次失败先持久保存，第二次只得到20减已确认请求数的余额。provider_rate_limit、invalid_output、max_tokens、deadline_exceeded、tool_budget_exceeded、边界/清理错误及取消均不重试。本地清单/证据文件缺失属于边界失败，执行器文件缺失或无执行权限记executor_unavailable，不能当作provider网络抖动重试。重启或未知投递结果仍不重复模型请求。选股任务原有重试边界保持。问答与研究运行在同一API实例共享两席执行容量，为证据查询预留数据库连接；满员409不创建新问答。
 
@@ -33,8 +33,16 @@ Node开发代理仍仅loopback/同源/固定路由。问答创建正文上限48K
 量化恢复接入后，工具沿固定报告返回当时quant状态；未成功计算、null池/分组/计数不能解释为空池、零或否定股票。run_status的后来补齐仅是当前进展，不可写回report_read旧修订；提示词按此更新，原已完成问答保持。当前尝试分页不增加聊天工具或重算权限。
 ## 问答证据体积与分页
 
-八项问答工具均支持`fact_offset`（默认0），返回`total_facts`及可选`next_offset`。保留同一工具的其他入参，用`next_offset`续读必要页。每页工具JSON不超过48KiB，每个工具进程累计返回不超过256KiB；超限明确报错，不截断标量、不把未返回页登记为已读。数组`count`仍是原数组完整条目数，`total_facts`仅表示标量证据总数。
+默认八项问答工具均支持`fact_offset`（默认0），返回`total_facts`及可选`next_offset`。保留同一工具的其他入参，用`next_offset`续读必要页。可选knowledge_search最多返回50条授权结果，不接受续页偏移。每页工具JSON不超过48KiB，每个工具进程累计返回不超过256KiB；超限明确报错，不截断标量、不把未返回页登记为已读。数组`count`仍是原数组完整条目数，`total_facts`仅表示标量证据总数。
 
 `stock_factors`返回股票事实、排除与观点，完整参数/定义改由`strategy_rules`读取；`stock_history`只返回身份和日线。`run_status`返回当前状态，固定意见由`report_read`读取。报告/市场不重复返回整个数据合格股票清单，量化池沿`market_overview`，完整成员沿`view=universe`查询。报告观点中的原始引用清单不当作本轮已读原事实，需通过相应股票/分组工具读取才能用于数值声明。
 
 这些投影和分页只影响问答工具载荷，HTTP报告、浏览器图表与冻结产物保持原结构。2026-11-24已在单用户浏览器重新实跑AAPL固定报告问题，回答保存且引用与数值校验通过；旧失败问答保留原终态，不因修复而改写。模型上下文溢出与工具预算耗尽均不能当作成功回答。
+
+原提交结果未知后，后续核对即使收到普通401/403/409/422，也继续保留原请求身份和表单锁定；本次核对失败不能证明早先未受理。成功找回原记录后才解锁。专用静态入口的认证前会话续期只重放一次原请求，详见[同源会话与核对](stock_research_static_web.md)。
+
+2026-11-25已补正式静态工作台的真实模型验收：从固定报告修订14提问IEX的两策略分歧，一次执行、3次成功只读调用，20项声明及全部观点引用经独立注册表重验。回答保存后切换API至d42fa219，独立API/PG/回执摘要与浏览器重载均保持同一问/答案，引用与原始数值展开可见，控制台无error；旧研究/报告/初选/快照保持。此项不是隔离凭据下的失败模拟，也不代表定性推论或收益正确；数值/日期按既有契约放claims，短答偏好不是硬输出保证。
+
+2026-11-26浏览器复验发现原profile默认`auto/deepseek-v4.1-flash`上游已返回退役410；两次失败都停在模型请求前，零次工具调用且原失败终态保留。运行时改用显式`auto/qwen3.8-flash`后，修订14新会话和同会话失败续跑均保存为completed，各一次只读工具调用并核验引用；中间一次8192输出预算耗尽按`max_tokens`保留为failed，未伪装成成功，也未触发不允许的重试。将研究输出预算提升到16384后重跑成功。这是当前operator部署配置和真实页面证据，不是新默认参数承诺。
+
+2026-11-26 07:31生产reader实跑：专用reader配置在0600运行环境，入口只允许loopback。首次开启后暴露`SecretStr.model_dump_json()`把身份文件写成掩码的缺陷，工具进程启动失败并保留`boundary_or_protocol_failed`；`f50cfd6b`改为显式序列化专用凭据并补落盘回读测试。修复后8788生产追问一次尝试完成，4次成功只读调用、828条facts（20条来自knowledge_search），答案引用与claims经审计校验；回执和公开响应不含reader令牌。检索结果只是工程背景，不构成策略证据。

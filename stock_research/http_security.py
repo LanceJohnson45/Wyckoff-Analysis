@@ -3,6 +3,7 @@
 import re
 import secrets
 from collections.abc import Awaitable, Callable
+from ipaddress import ip_address
 
 import structlog
 from fastapi import FastAPI, Request, Response
@@ -24,6 +25,35 @@ from stock_research.identity import new_id
 from stock_research.schemas.api import ApiResponse, Code
 
 logger = structlog.get_logger(__name__)
+
+
+def trusted_tailscale(request: Request, settings: Settings) -> bool:
+    """只接受loopback上的Tailscale Serve反代及其显式白名单身份。"""
+    host = settings.tailscale_serve_host
+    if not host or request.client is None or request.client.host not in {"127.0.0.1", "::1"}:
+        return False
+    headers = {
+        name: request.headers.getlist(name)
+        for name in ("x-forwarded-for", "x-forwarded-proto", "x-forwarded-host", "tailscale-user-login")
+    }
+    if any(len(values) != 1 for values in headers.values()):
+        return False
+    try:
+        ip_address(headers["x-forwarded-for"][0])
+    except ValueError:
+        return False
+    actual_host = request.headers.get("host", "").lower()
+    target_hosts = {host, f"127.0.0.1:{settings.api_port}"}
+    return (
+        headers["x-forwarded-proto"][0].lower() == "https"
+        and headers["x-forwarded-host"][0].lower() == host
+        and len(request.headers.getlist("host")) == 1
+        and actual_host in target_hosts
+        and secrets.compare_digest(headers["tailscale-user-login"][0], settings.tailscale_serve_login)
+        and request.headers.get("sec-fetch-site", "none") in {"same-origin", "none"}
+        and request.headers.get("origin") in {None, settings.tailscale_serve_origin}
+        and (request.method in {"GET", "HEAD"} or request.headers.get("origin") is not None)
+    )
 
 
 def error_response(request: Request, status: int, code: Code, message: str) -> JSONResponse:
@@ -52,7 +82,9 @@ def install_security(app: FastAPI, settings: Settings) -> None:
     @app.middleware("http")
     async def authentication(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         request.state.correlation_id = new_id()
-        if request.headers.get("host", "").split(":", 1)[0] not in {"127.0.0.1", "localhost"}:
+        actual_host = request.headers.get("host", "")
+        tailscale = trusted_tailscale(request, settings)
+        if actual_host.split(":", 1)[0] not in {"127.0.0.1", "localhost"} and not tailscale:
             return error_response(request, 403, Code.FORBIDDEN, "研究API只接受本机Host")
         origin = request.headers.get("origin")
         if origin is not None and origin not in settings.api_allowed_origins:
@@ -75,10 +107,15 @@ def install_security(app: FastAPI, settings: Settings) -> None:
                     "/v1/chat-turns",
                     "/v1/evaluations",
                     "/v1/evaluation-results",
+                    "/v1/selection-observations",
+                    "/v1/selection-observation-results",
+                    "/v1/parameter-experiments",
+                    "/v1/parameter-experiment-results",
                     "/v1/theme-proposals",
                     "/v1/input-publications",
                     "/v1/universe-overrides",
                     "/v1/premarket-jobs",
+                    "/v1/operations",
                 )
             ) or request.url.path.endswith("/inputs")
             if workflow and not workflow_route(request.method, request.url.path):

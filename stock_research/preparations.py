@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 from typing import Literal
 
 from sqlalchemy import func, insert, select, update
@@ -24,6 +25,27 @@ from stock_research.schema import API_REQUESTS, PREPARATION_ATTEMPTS, RESEARCH_R
 from stock_research.schemas.market_refresh import RefreshReceipt
 from stock_research.schemas.preparations import PreparationPage, PreparationPhase, PreparationState, PreparationView
 from stock_research.source_guard import LOADED_SOURCE_IDENTITY
+
+PREPARATION_POLL_SECONDS = 0.05
+
+
+@asynccontextmanager
+async def premarket_preparation_lock(
+    store: RunStore, artifacts: Path, as_of: date, *, enabled: bool
+) -> AsyncIterator[None]:
+    """串行准备共享快照；等待受调用方原预算约束，不占用等待线程。"""
+    if not enabled:
+        yield
+        return
+    root = await asyncio.to_thread(artifacts.resolve)
+    scope = {"premarket_preparation": str(root), "market": "us", "as_of": as_of.isoformat()}
+    key = int(digest(scope)[:16], 16) - (1 << 63)
+    while True:
+        async with store.engine.begin() as connection:
+            if await connection.scalar(select(func.pg_try_advisory_xact_lock(key))):
+                yield
+                return
+        await asyncio.sleep(PREPARATION_POLL_SECONDS)
 
 
 def preparation_view(row: dict[str, object]) -> PreparationView:

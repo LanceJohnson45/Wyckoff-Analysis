@@ -28,6 +28,7 @@ htmlcov/
 
 pip-wheel-metadata/
 dist/
+web/apps/web/dist-research/
 build/
 *.egg-info/
 

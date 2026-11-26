@@ -2,12 +2,17 @@
 
 `stock-research serve` 启动独立研究API，仅监听 `127.0.0.1:8788`。本机研究库需先显式 `init-schema`，启动会检查运行账本及请求映射表可读，不自动迁移。`.env` 中配置独立且至少32字符的 `STOCK_RESEARCH_API_TOKEN`，不能复用Personal网关身份；本机已生成身份，保存在0600的忽略文件中。部署主机和端口分别使用API_HOST/API_PORT，Origin白名单使用API_ALLOWED_ORIGINS的JSON数组；不提供任意主机绑定或关闭认证的配置。
 
+可选同进程HTML/资产及浏览器会话入口见[静态工作台](stock_research_static_web.md)；启用后只有固定浏览器前缀经会话转换进入原鉴权链，直接API端点仍使用Bearer。
+
+显式配置 `STOCK_RESEARCH_TAILSCALE_SERVE_HOST` 和 `STOCK_RESEARCH_TAILSCALE_SERVE_LOGIN` 后，API可在loopback被Tailscale Serve反代访问。启动要求 `https://<host>` 已进入Origin白名单；运行时只接受Serve覆盖的单值HTTPS forwarding头、一致Host和白名单登录身份。这不是自动开启的公网入口，也未替代真实远端验收。
+
 健康检查 `/healthz`、依赖就绪 `/readyz` 无需身份，其余端点包括OpenAPI均需 `Authorization: Bearer <研究API身份>`。Host只接受localhost/127.0.0.1；带Origin的浏览器请求须在白名单内。当前未配置跨源CORS代理，工作台接入须使用受信同源后端。令牌不能进入URL、原始报告、浏览器持久化或日志。
 
 所有JSON响应为code/message/data/correlation_id四键，与plan.md约定一致。成功code为0000；未认证401、未授权来源403、对象不存在404、状态/幂等冲突409、无效参数422、数据或存储未就绪503。未处理错误使用500及脱敏消息，不输出驱动错误、凭据或本地文件路径。
 
 | 入口 | 已接通行为 |
 |---|---|
+| GET /v1/operations | operator私有目标日首报/恢复状态与全日期最近完整研究/送达，小投影不读行情；见[操作状态](stock_research_operations.md) |
 | GET /v1/research-runs | SQL分页，page>=1、page_size=1～100，创建时间及UUID稳定排序 |
 | POST /v1/research-runs | 固定共同输入、两份量化任务与首份pending报告后返回202，后台按策略量化并执行模型阶段 |
 | GET /v1/research-runs/{UUID} | 当前状态、质量、数据截止日、报告期限、初选、互评及错误 |

@@ -13,12 +13,23 @@ from stock_research.parameters import MartinParameters
 from stock_research.run_store import RunStore
 from stock_research.schemas.evaluation_execution import EvaluationFiles
 from stock_research.schemas.evaluations import CreateEvaluation
+from stock_research.schemas.parameter_experiment_jobs import CreateParameterExperiment
 from stock_research.wyckoff import WyckoffParameters
 
 
 async def freeze_evaluation(store: RunStore, settings: Settings, row: dict[str, object]) -> dict[str, object]:
     """冻结后恢复只消费原清单，参数发布和人工输入另有版本出处。"""
-    request = CreateEvaluation.model_validate(row["payload"]["request"])
+    raw_request = row["payload"]["request"]
+    if raw_request.get("kind") == "parameter_experiments":
+        body = CreateParameterExperiment.model_validate(
+            {key: value for key, value in raw_request.items() if key != "kind"}
+        )
+        # 参数实验固定回放当前池；旧截面不回填会使当前版本的有效期早于所有抽样日。
+        request = CreateEvaluation.model_validate(
+            {"profile": body.profile, "cutoff": body.cutoff, "allow_current_universe": True}
+        )
+    else:
+        request = CreateEvaluation.model_validate(raw_request)
     config = row["payload"]["configuration"]
     settings, parameter_sources = await resolve_run_parameters(store, settings)
     settings, input_sources = await resolve_run_inputs(store, settings, request.cutoff)

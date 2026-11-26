@@ -16,7 +16,9 @@
 
 ### 历史量化池观测（开发中）
 
-`stock-research evaluate --profile baseline-v1 --cutoff YYYY-MM-DD` 按过去SPY20日收益分层取20截面，调用两策略正式量化实现，按时间12/4/4划分并清除跨边界标签；封存组不输出表现。私有评估API将实际发布输入/参数和原期限冻结为持久作业，支持隔离执行、取消、恢复和逐股SQL分页，运行包采用另记。收益观察扣既有美股工程成本，缺数保留，当前池回溯需显式接受并保留来源限制。量化池不是模型正式初选，描述性收盘观测不是交易回测，见[评估CLI与作业](docs/stock_research_evaluations.md)。
+`stock-research evaluate --profile baseline-v1 --cutoff YYYY-MM-DD` 按过去SPY20日收益分层取20截面，调用两策略正式量化实现，按时间12/4/4划分并清除跨边界标签；封存组不输出表现。私有评估API将实际发布输入/参数和原期限冻结为持久作业，支持隔离执行、取消、恢复和逐股SQL分页。Agent“历史评估 · 量化池回放”接相同资源，未知提交核对原正文与幂等键，窗口未满/缺数/封存均不当零收益；隔离合成资料及正式d42运行包的真实行情页面均已验；后者从创建到20截面完成、独立落库/产物校验和页面重载通过，保持当前池回溯、净化后样本不足及封存限制。冻结历史不足和截面质量失败分别保留固定原因，不能通过原任务续跑补资料，须修复后创建新评估。收益观察扣既有美股工程成本，缺数保留，当前池回溯需显式接受并保留来源限制。量化池不是模型正式初选，描述性收盘观测不是交易回测，见[评估CLI与作业](docs/stock_research_evaluations.md)。
+
+显式取消终态为`cancelled/evaluation_interrupted`，保留已完成截面和原输入；它与历史不足、行情质量缺数分开显示。
 
 ### 午间独立研究扫描
 
@@ -519,7 +521,11 @@ flowchart LR
 
 **量化worker执行边界**：API/CLI run对原生产量化的独立进程监督，取消/超时等候终态，父进程EOF使worker终止，校验成功后才发布缓存。按策略任务和追加尝试持久化，成功计算/初选复用；当前绑定投影保存到新报告修订，旧修订不补读后来产物。信号退出或非零退出缺终帧属于quant_process_failed，可沿原run期限自动再试一次；未受信号中断的完整非法协议/输出超限仍不可重试。详见[量化执行](docs/stock_research_quant_execution.md)。
 
-**盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，同日同配置及触发类别的新事件复用首次研究，回执origin标明首次事件和期限；取消标记约束全部别名，强制重分析须operator显式force+parent_run_id。准备记录的market_refresh区分只读同步、显式基准补充与后续快照质量，未知计数不补零；更新完成不等于研究完成。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。
+**盘前计划上下文**：direct cron显式pass_schedule_context传递原计划时刻/事件/来源工作区及触发类型；研究目标日取原slot纽约日期。plan输出日期/期限/预算且research_started=false；execute用独立有限API管理原任务，同日同配置及触发类别的新事件在重读行情前复用首次研究，回执origin标明首次事件和期限；别名quality引用原冻结清单，不表示重新补拉，market_refresh为空。取消标记约束全部别名，强制重分析须operator显式force+parent_run_id。准备记录的market_refresh区分只读同步、显式基准补充与后续快照质量，未知计数不补零；更新完成不等于研究完成。runner completed表示程序结束，研究与通知状态分别读取。见[盘前入口](docs/stock_research_premarket.md)。
+
+**盘前准备互斥**：633b4dd2起同库API按解析后产物根目录/市场/行情日取得事务级PG锁，等待计入原准备和事件预算；获得锁后重新查同配置冻结身份，ready提交后释放。它协调共享物理快照，不合并workspace或不同配置的研究，也不替代运行执行锁；上海11月25日09:55已采用633固定包。见[适用边界](docs/stock_research_preparations.md#并发首次准备)。
+
+**通知冻结范围**：定点业务键沿用`us:目标日:phase`，手动使用`us:目标日:manual:phase`，各自固定正文并保存scope.json；unknown重放同键同正文。旧共享路径缺来源元数据时停止并返回mvp_publication_scope_unconfirmed，不自动归类或补发。核对原执行、报告、账本、正文与原生回执后，旧定点记录只追加来源/Publication摘要，不改正文或再发送；旧manual不能改标。Agent只统计定点键。见[MVP旧记录边界](docs/stock_research_mvp.md#通知范围与旧记录)。
 
 **研究分支CI**：开发分支的push/PR复用标准ci.yml并显式覆盖完整Web门禁；按实际head SHA检查终态。分支验证、PR策略与生产部署分别验收，不因分支检查成功自动启用调度。见[研究CI](docs/stock_research_ci.md)。
 
@@ -529,7 +535,7 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 
 **盘前单用户发布**：纽约08:30冻结已知首报，08:50原期限内成功阶段增加再发一条恢复更新；交易日与initial/recovery构成固定通知身份。Personal原生消息回执才表示sent，未知或待发送不等于送达。见[单用户MVP](docs/stock_research_mvp.md)。
 
-**本机单用户研究界面**：根`.env`的`STOCK_RESEARCH_WEB_SINGLE_USER=true`配合研究代理，在Vite serve的loopback访问中直接进入现有`/chat`研究工作台，不创建云端账号或会话。独立研究API身份留在Node代理；生产静态构建恒关闭此入口，保留原账号鉴权。
+**本机单用户研究界面**：根`.env`的`STOCK_RESEARCH_WEB_SINGLE_USER=true`配合研究代理，在Vite serve的loopback访问中直接进入现有`/chat`研究工作台，不创建云端账号或会话。开发时研究API身份留在Node代理。专用`build:research`由Python API同进程提供静态入口和有签名的HttpOnly同源会话，须显式配置`WEB_DIST_PATH`；公开站点构建保留原账号鉴权。见[同进程入口](docs/stock_research_static_web.md)。
 **冻结快照读缓存**：每个研究连接池最多保留一份不超过96MiB载荷的已验证快照。请求仍查询PG的workspace、删除状态、摘要、schema及xmin；版本变化重新读取并完整验证。缓存不覆盖历史报告修订、实时运行状态或量化产物校验，关闭池释放。
 **研究分类补充**：只有当前有效成员、已到生效日且属于同一GICS体系的已有分类可以补新成分源的缺项；不覆盖新源已有行业，原出处及限制保留。上市后日线不足与上市后的漏同步分别核查，母公司行情不能代替分拆后证券历史。
 **问答事实分页**：`total_facts`为查询投影的标量事实总数，`next_offset`为后续页位置；数组`count`仍保留原基数。每页工具JSON不超过48KiB、单进程累计不超过256KiB，仅当前已返回页进入引用注册表；未读取页不构成已核验证据。
@@ -540,3 +546,15 @@ US任务锁WYKUS01与缓存数据锁WYKDAT1是数据库范围的两把事务协�
 **研究行情导入时间**：表示最近一次实际数据/修订导入；重叠窗口读到完全相同行不刷新此值。同步回执rows仍表示有效读取量，不能当作修改量。
 
 **模型响应流空闲超时**：`provider_stream_idle_timeout`，仅对应DSH的`TIMEOUT`加`pi-ai stream idle timeout after ...`终态。与HTTP请求超时、阶段期限及工具超时分别保留；属于原预算内可重试错误，不代表已经消除模型服务慢响应。
+
+**原提交核对**：网络结果未知后沿原正文和幂等键找回受理记录。后续核对的401/403/409/422只能说明本次核对未成功，不能证明原提交被拒绝；评估、输入维护和问答保留原意图并锁住新提交，确认找到原记录后解锁。仅带会话过期标记的认证前401允许同源续会话后重放一次。
+
+**研究运行包采用**：以精确Git提交、锁定依赖及专用资产组成Documents之外的固定release。截至2026-11-26，当前API/股票tick为f50cfd6b；四类零活动/worker退出保护后采用，本批无表迁移，评估表在此前09版本已显式初始化，撤回保留账本及新表。Personal仍使用ece83代码/d42解释器；启动、送达和自然日分别验收，见[部署记录](docs/stock_research_mvp.md)。
+
+**Personal研究只读客户端**：DSH stocks预设的三项MCP仅持专用查询身份，读取共享固定报告/个股/运行；私人问答和评估403。固定ece83完整分页客户端已于11月25日08:32采用，复用d42锁定解释器和原只读身份；新Personal会话实际读完三种结果2/4/2页、全模型/摘要与HTTP对照通过。原权限/其他配置和旧会话保持，旧会话不自动升级；客户端与API采用分别取证，见[Personal接入](docs/stock_research_personal.md)。
+
+**研究操作状态**：目标日首报/恢复通知、全日期最近完整研究及最近确认送达记录的只读投影。研究completed不等于通知sent；sent须有有效原生引用，unknown与无记录分别保留。Personal账本更新时间不是原生消息创建时刻，来源不可访问返回明确503，见[状态契约](docs/stock_research_operations.md)。
+
+**正式初选前向观测**：以固定报告所引用的已提交初选为范围，参考不早于目标日且严格晚于提交时刻的首个XNYS开盘，至第1/3/5/10/20个交易日收盘观察；晚到顺延。独立于量化截面前收盘口径，缺策略不补、缺数不跳日；显式取消`cancelled/evaluation_interrupted`与窗口缺数分开保留。CLI/不可变文件已可用；持久作业/API与Agent源码已接独立`formal_selection_observations`资源族，提交CI、真实页面与运行包采用另行验收，详见[观测契约](docs/stock_research_selection_observations.md)与[作业设计](docs/design/stock-research-selection-observation-jobs.md)。
+
+**研究MCP完整续页**：原三工具QueryPage v2，Personal新会话已实际采用；每页回显固定result_id/内容摘要/原scope，以JSON路径保存完整子树，长字符串有字符偏移。next_cursor非空表示尚未读完，续页不刷新latest或当前运行；缓存期限/容量或进程重启后明确拒绝，不能拼接新旧结果。单页SDK文本≤32KiB；新会话8次真实调用及原生/HTTP逐页重建已验，旧会话保留原预设，HTTP/CLI原领域模型不变，见[查询契约](docs/stock_research_queries.md)。

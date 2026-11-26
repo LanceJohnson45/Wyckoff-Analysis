@@ -4,6 +4,7 @@ import asyncio
 from collections import ChainMap
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 from typing import Annotated
 
 import structlog
@@ -21,13 +22,18 @@ from stock_research.http_evaluations import router as evaluation_router
 from stock_research.http_events import register_events
 from stock_research.http_inputs import router as input_router
 from stock_research.http_observations import register_observations
+from stock_research.http_operations import router as operations_router
+from stock_research.http_parameter_experiments import router as parameter_experiment_router
 from stock_research.http_parameters import register_parameter_actions, register_parameter_reads
 from stock_research.http_premarket import router as premarket_router
 from stock_research.http_preparations import register_preparations
 from stock_research.http_report_queries import router as report_query_router
 from stock_research.http_reports import register_reports
 from stock_research.http_security import install_security
+from stock_research.http_selection_observations import router as selection_observation_router
 from stock_research.http_watchlists import register_watchlists
+from stock_research.http_web import install_web
+from stock_research.operations import Operations
 from stock_research.queries import list_runs, run_view
 from stock_research.run_manager import RunManager
 from stock_research.run_store import RunStore
@@ -73,53 +79,56 @@ RUNTIME_TABLES = (
 )
 
 
+@asynccontextmanager
+async def research_lifespan(app: FastAPI, *, config: Settings) -> AsyncIterator[None]:
+    engine = database_engine(config)
+    manager = chat = evaluations = operations = None
+    try:
+        async with engine.connect() as connection:
+            for table in RUNTIME_TABLES:
+                await connection.execute(select(table.c.uuid).limit(0))
+        app.state.store = RunStore(engine, config.workspace)
+        app.state.settings = config
+        operations = app.state.operations = Operations(app.state.store, config)
+        manager = app.state.manager = RunManager(app.state.store, config)
+        # 执行锁会占用PG连接，共享容量才能为模型的只读证据查询留下连接。
+        chat = app.state.chat = ChatManager(
+            app.state.store, config, admission=manager.admission, peer_tasks=manager.tasks
+        )
+        evaluations = app.state.evaluations = EvaluationManager(
+            app.state.store, config, admission=manager.admission, peer_tasks=ChainMap(manager.tasks, chat.tasks)
+        )
+        manager.peer_tasks = ChainMap(chat.tasks, evaluations.tasks)
+        chat.peer_tasks = ChainMap(manager.tasks, evaluations.tasks)
+        await manager.restore()
+        await chat.restore()
+        await evaluations.restore()
+        yield
+    finally:
+        try:
+            outcomes = await asyncio.wait_for(
+                asyncio.gather(
+                    *(owner.close() for owner in (operations, evaluations, chat, manager) if owner),
+                    return_exceptions=True,
+                ),
+                25,
+            )
+            if any(isinstance(outcome, BaseException) for outcome in outcomes):
+                structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
+        except (TimeoutError, SQLAlchemyError, OSError):
+            structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
+        finally:
+            await close_engine(engine)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """启动检查真实账本可读性，不在多进程启动阶段自动迁移表。"""
     config = settings or Settings()
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        engine = database_engine(config)
-        manager = chat = evaluations = None
-        try:
-            async with engine.connect() as connection:
-                for table in RUNTIME_TABLES:
-                    await connection.execute(select(table.c.uuid).limit(0))
-            app.state.store = RunStore(engine, config.workspace)
-            app.state.settings = config
-            manager = app.state.manager = RunManager(app.state.store, config)
-            # 执行锁会占用PG连接，共享容量才能为模型的只读证据查询留下连接。
-            chat = app.state.chat = ChatManager(
-                app.state.store, config, admission=manager.admission, peer_tasks=manager.tasks
-            )
-            evaluations = app.state.evaluations = EvaluationManager(
-                app.state.store, config, admission=manager.admission, peer_tasks=ChainMap(manager.tasks, chat.tasks)
-            )
-            manager.peer_tasks = ChainMap(chat.tasks, evaluations.tasks)
-            chat.peer_tasks = ChainMap(manager.tasks, evaluations.tasks)
-            await manager.restore()
-            await chat.restore()
-            await evaluations.restore()
-            yield
-        finally:
-            try:
-                outcomes = await asyncio.wait_for(
-                    asyncio.gather(
-                        *(owner.close() for owner in (evaluations, chat, manager) if owner), return_exceptions=True
-                    ),
-                    25,
-                )
-                if any(isinstance(outcome, BaseException) for outcome in outcomes):
-                    structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
-            except (TimeoutError, SQLAlchemyError, OSError):
-                structlog.get_logger(__name__).error("研究API关闭未完成，未提交状态待恢复")
-            finally:
-                await close_engine(engine)
-
     app = FastAPI(
         title="Stock Research",
         version="1",
-        lifespan=lifespan,
+        lifespan=partial(research_lifespan, config=config),
         docs_url=None,
         redoc_url=None,
         responses={status: {"model": ApiResponse[None]} for status in (401, 403, 404, 409, 422, 500, 503)},
@@ -132,6 +141,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(input_router)
     app.include_router(premarket_router)
     app.include_router(evaluation_router)
+    app.include_router(parameter_experiment_router)
+    app.include_router(selection_observation_router)
+    app.include_router(operations_router)
     register_observations(app)
     register_watchlists(app)
     register_parameter_reads(app)
@@ -139,6 +151,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     register_preparations(app)
     register_events(app)
     register_actions(app)
+    install_web(app, config)
     return app
 
 
